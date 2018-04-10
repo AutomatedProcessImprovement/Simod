@@ -1,0 +1,67 @@
+------------------------
+ProConformance v2.0
+------------------------
+
+REQUIREMENTS: 
+Java 8 or above
+
+WHAT IT DOES:
+	ProConformance v2.0 is a business process conformance checking tool for identifying and verbalising differences between a process model and an event log in a scalable way.
+
+HOW:
+	ProConformance v2.0 implements the conformance checking technique described in the paper 
+      "Scalable Conformance Checking of Business Processes" by D. Reißner, R. Conforti, M. Dumas, M. La Rosa 
+	and A. Armas-Cervantes.
+
+USAGE:
+	java -jar ProConformance2.jar [folder] [logfile] [modelfile] [doOneOptimal] [stateLimit] [materlialiseDataStructures]
+
+	Input : A process model in bpmn or pnml format and an event log in either mxml or xes format.
+	Output: The difference between the model and the event log in terms of control-flow.
+
+PARAMETERS:
+
+[folder]      						: Folder where all input files are located and where the output files will be created.
+[logFile]     					: Event log including extension (either .mxml or .xes).
+[modelFile]    					: Process model including extension (.pnml or bpmn).
+[doOneOptimal]  				: (optional) type “true” for applying the one optimal alignment variant.
+[stateLimit]						: (optional) specify a state limit for the algorithm, i.e. “10000”.
+[materialiseDataStructures]	: (optional) type “true” for materialising the underlying DAFSA, tales reachability graph and PSP Data structures.
+
+Parameters [folder], [logfile] and [modelfile] are compulsory.
+Parameters [doOneOptimal], [stateLimit] and [materialiseDataStructures] are optional, but expected in this order.
+If the algorithm should materialise data structures for the all optimal variant with no state limit, it can be specified by adding: “” “no” “true”. 
+
+Using the tool without any parameters will provide release information of the tool.
+
+OUTPUT:
+	The tool will create three output files in the specified [folder] with the following names and contents:
+		AlignmentStatistics.csv : Statistics of the alignment process for each case present in the event log. Averages are also reported.
+		CaseTypeAlignmentResults.csv : Alignment Results for each case type. Can be cross referenced with file AlignmentStatistics.csv to obtain all optimal alignments for each case.
+		BehavioralStatements.txt: List of natural language statements about higher level behavioural issues between the event log and the process model.
+
+	In Case the parameter [materialiseDataStructures] is set to “true”, the tool will in addition output three files representing the applied data structures:
+		[logfile]_dafsa.dot : DAFSA representation of the event log in the .dot format.
+		[modelfile]_taulessRG.dot : Tauless reachability graph representation of the specified process model in the .dot format.
+		[psp.dot] : The synchronised product automaton between the DAFSA and the tales reachability graph in the .dot format.
+
+	The .dot format (https://en.wikipedia.org/wiki/DOT_(graph_description_language)) represents graph structures.
+		Files in this format can be opened with the application graphviz (http:http://www.graphviz.org) for example.
+
+ASSUMPTIONS:
+	The input model should be formatted according to the pnml (http://www.pnml.org/) format.
+      	To check that the input model is correctly formatted, you can open the model using WoPeD.
+
+	The tool accepts models formatted according to the bpmn (http://http://www.bpmn.org) format.
+		The tool will internally convert the bpmn diagram to its equivalent Petri net representation.
+	
+	The input log should be formatted according to the mxml or xes (OpenXES, http://www.xes-standard.org/) format.
+      	To check that the input log is correctly formatted, you can open the log using the ProM toolkit.
+
+	If the parameter [doOneOptimal] is anything else than “true”, the tool applies the all optimal variant.
+	The parameter [stateLimit] expects an integer value or the value “no”, if no state limit should be specified.
+	If the parameter [materialiseDataStructures] is anything else than “true”, the tool will not output the data structures.
+
+RELEASE NOTES:
+
+	1.0: initial version
