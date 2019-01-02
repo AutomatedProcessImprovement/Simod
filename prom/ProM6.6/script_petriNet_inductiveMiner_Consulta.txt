@@ -1,0 +1,27 @@
+System.out.println("Loading");
+
+log = open_xes_log_file("ConsultaDataMining2016Apr2.xes");
+
+
+System.out.println("Creating Petri");
+
+org.processmining.plugins.InductiveMiner.mining.MiningParametersIMi parameters = new org.processmining.plugins.InductiveMiner.mining.MiningParametersIMi();
+
+
+System.out.println("Calling");
+
+pn_and_marking = mine_petri_net_with_inductive_miner_with_parameters(log, parameters);
+
+
+System.out.println("Saving");
+
+File net_file = new File("ConsultaDataMining2016Apr2.pnml");
+
+pnml_export_petri_net_(pn_and_marking[0], net_file);
+
+
+System.out.println("done converting Petri");
+bpmn = convert_petri_net_to_bpmn_diagram(pn_and_marking[0]);
+File bpmn_file = new File("ConsultaDataMining2016Apr2.bpmn");
+bpmn_xml_2_0_export(bpmn[0], bpmn_file);
+

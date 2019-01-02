@@ -1,0 +1,33 @@
+System.out.println("Loading");
+log = open_xes_log_file("ConsultaDataMining2016Apr2.xes");
+
+System.out.println("Creating Petri net");
+org.processmining.plugins.InductiveMiner.mining.MiningParametersIMi parameters = new org.processmining.plugins.InductiveMiner.mining.MiningParametersIMi();
+
+System.out.println("Calling");
+pn_and_marking = mine_petri_net_with_inductive_miner_with_parameters(log, parameters);
+
+System.out.println("Loading Flex");
+
+System.out.println("Creating Flex");
+
+
+
+flex_and_others = convert_petri_net_to_flexible_model(pn_and_marking[0]);
+
+
+
+System.out.println("Finish flex \n Starting bpmn convert");
+
+bpmn = 
+convert_c_net_to_bpmn(flex_and_others[0]);
+
+
+File bpmn_file = new File("ConsultaDataMining2016Apr2.bpmn");
+
+bpmn_xml_2_0_export(bpmn, bpmn_file);
+
+
+
+System.out.println("done");
+

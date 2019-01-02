@@ -4,8 +4,13 @@ import numpy as np
 import datetime
 import os
 import csv
+import uuid
 
-
+def folder_id():
+	return datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')
+#generate unique bimp element ids
+def gen_id():
+    return "qbp_" + str(uuid.uuid4())
 #printing process functions
 def print_progress(percentage, text):
 	stdout.write("\r%s" % text + str(percentage)[0:5] + chr(37) + "...      ")
@@ -69,3 +74,15 @@ def round_preserve(l,expected_sum):
 		idx= l.index(max(l))
 	l[idx] +=difference
 	return l
+
+def create_symetric_list(width, length):
+    positions = list()
+    numbers = list()
+    [positions.append(width * (i + 1)) for i in range(0, length)]
+    a = np.median(positions)
+    [numbers.append(x - a) for x in positions]
+    return numbers
+
+def zero_to_nan(values):
+    """Replace every 0 with 'nan' and return a copy."""
+    return [float('nan') if x==0 else x for x in values]

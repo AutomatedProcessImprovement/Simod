@@ -1,0 +1,22 @@
+System.out.println("Loading");
+
+log = open_xes_log_file("ConsultaDataMining2016Apr2.xes");
+
+
+System.out.println("Miningl");
+
+net_and_marking = alpha_miner(log);
+
+net = net_and_marking[0];
+
+marking = net_and_marking[1];
+
+
+System.out.println("Saving");
+
+File net_file = new File("mined_net.pnml");
+
+pnml_export_petri_net_(net, net_file);
+
+
+System.out.println("done")
