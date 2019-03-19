@@ -29,7 +29,7 @@ Next you can find a short description about the main hyper-parameters of the too
 * The tag [FILE] - name is related with the eventlog name that will be used asn an input for the BPS model generation
 * The tag [EXECUTION] - starttimeformat is related with the string format of the eventlog start timestamp (default %Y-%m-%dT%H:%M:%S.000)
 * The tag [EXECUTION] - endtimeformat is related with the string format of the eventlog complete timestamp (default %Y-%m-%dT%H:%M:%S.000)
-* * The tag [EXECUTION] - mining enables the generation of BPMN models using the SplitMiner tool
+* The tag [EXECUTION] - mining enables the generation of BPMN models using the SplitMiner tool
 * The tag [EXECUTION] - alignment enables the eventlog trace alignment and repairing using the ProConformancev2 tool
 * The tag [EXECUTION] - parameters enables the BPS model extraction
 * The tag [EXECUTION] - simulation enables the simulation of a BPS model, using the BIMP or the Scylla simulators (the simulator choise es configured with the tag [SIMULATOR] - simulator)
