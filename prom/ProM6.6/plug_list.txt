@@ -1,5 +1,0 @@
-Mac OS X: Working directory set to /Users/camilomontenegro/Documents/semestre6/monitoriaInvestigacion/SIMO_V3/SiMo_v3/prom/ProM 6.6 (from /Users/camilomontenegro/Documents/semestre6/monitoriaInvestigacion/SIMO_V3/SiMo_v3/prom/ProM 6.6/.)
-Mac OS X: Working directory set to /Users/camilomontenegro/Documents/semestre6/monitoriaInvestigacion/SIMO_V3/SiMo_v3/prom/ProM 6.6 (from /Users/camilomontenegro/Documents/semestre6/monitoriaInvestigacion/SIMO_V3/SiMo_v3/prom/ProM 6.6/.)
-Starting script execution engine...
-[%1, %2]
-initializing all plugins
