@@ -16,10 +16,10 @@ class LogReader(object):
 	This class reads and parse the elements of a given process log in format .xes or .csv
 	"""
 
-    def __init__(self, input, start_timeformat, end_timeformat, log_columns_numbers=[], ns_include=True, one_timestamp=False):
+    def __init__(self, input, timeformat, ns_include=True, one_timestamp=False):
         """constructor"""
         self.input = input
-        self.data, self.raw_data = self.load_data_from_file(log_columns_numbers, start_timeformat, end_timeformat, ns_include, one_timestamp)
+        self.data, self.raw_data = self.load_data_from_file(timeformat, ns_include, one_timestamp)
 
 
     # Support Method
@@ -55,19 +55,19 @@ class LogReader(object):
         return outfilename, fileExtension
 
     # Reading methods
-    def load_data_from_file(self, log_columns_numbers, start_timeformat, end_timeformat, ns_include, one_timestamp):
+    def load_data_from_file(self, timeformat, ns_include, one_timestamp):
         """reads all the data from the log depending the extension of the file"""
         temp_data = list()
         filename, file_extension = self.define_ftype()
         if file_extension == '.xes':
-            temp_data, raw_data = self.get_xes_events_data(filename,start_timeformat, end_timeformat, ns_include, one_timestamp)
+            temp_data, raw_data = self.get_xes_events_data(filename,timeformat, ns_include, one_timestamp)
         elif file_extension == '.csv':
-            temp_data, raw_data = self.get_csv_events_data(log_columns_numbers, start_timeformat, end_timeformat)
+            temp_data, raw_data = self.get_csv_events_data(timeformat)
         elif file_extension == '.mxml':
-            temp_data, raw_data = self.get_mxml_events_data(filename,start_timeformat, end_timeformat)
+            temp_data, raw_data = self.get_mxml_events_data(filename,timeformat)
         return temp_data, raw_data
 
-    def get_xes_events_data(self, filename,start_timeformat, end_timeformat, ns_include, one_timestamp):
+    def get_xes_events_data(self, filename,timeformat, ns_include, one_timestamp):
         """reads and parse all the events information from a xes file"""
         temp_data = list()
         tree = ET.parse(filename)
@@ -102,15 +102,15 @@ class LogReader(object):
                     if string.attrib['key'] == 'Complete_Timestamp':
                         complete_timestamp = string.attrib['value']
                         if complete_timestamp != 'End':
-                            complete_timestamp = datetime.datetime.strptime(complete_timestamp, end_timeformat)
+                            complete_timestamp = datetime.datetime.strptime(complete_timestamp, timeformat)
                 timestamp = ''
                 for date in event.findall(tags['date'], ns):
                     if date.attrib['key'] == 'time:timestamp':
                         timestamp = date.attrib['value']
                         try:
-                            timestamp = datetime.datetime.strptime(timestamp[:-6], start_timeformat)
+                            timestamp = datetime.datetime.strptime(timestamp[:-6], timeformat)
                         except ValueError:
-                            timestamp = datetime.datetime.strptime(timestamp, start_timeformat)
+                            timestamp = datetime.datetime.strptime(timestamp, timeformat)
                 if not (task == '0' or task == '-1'):
                     temp_data.append(
                         dict(caseid=caseid, task=task, event_type=event_type, user=user, start_timestamp=timestamp,
@@ -150,7 +150,7 @@ class LogReader(object):
                         ordered_event_log.extend(temp_trace)
         return ordered_event_log
 
-    def get_mxml_events_data(self, filename,start_timeformat, end_timeformat):
+    def get_mxml_events_data(self, filename,timeformat):
         """read and parse all the events information from a MXML file"""
         temp_data = list()
         tree = ET.parse(filename)
@@ -177,7 +177,7 @@ class LogReader(object):
                         user = attr.text
                 event_type = trail.find('EventType').text
                 timestamp = trail.find('Timestamp').text
-                timestamp = datetime.datetime.strptime(trail.find('Timestamp').text[:-6], start_timeformat)
+                timestamp = datetime.datetime.strptime(trail.find('Timestamp').text[:-6], timeformat)
                 temp_data.append(
                     dict(caseid=caseid, task=task, event_type=event_type, user=user, start_timestamp=timestamp,
                          end_timestamp=timestamp))
@@ -198,26 +198,48 @@ class LogReader(object):
                              user=x['user'], start_timestamp=x['start_timestamp'], end_timestamp=y['start_timestamp']))
         return data
 
-    def get_csv_events_data(self, log_columns_numbers, start_timeformat, end_timeformat):
+#    def get_csv_events_data(self, log_columns_numbers, timeformat):
+#        """reads and parse all the events information from a csv file"""
+#        flength = sup.file_size(self.input)
+#        i = 0
+#        temp_data = list()
+#        with open(self.input, 'r') as csvfile:
+#            filereader = csv.reader(csvfile, delimiter=',', quotechar='"')
+#            next(filereader, None)  # skip the headers
+#            for row in filereader:
+#                sup.print_progress(((i / (flength - 1)) * 100), 'Reading log traces ')
+#                timestamp = ''
+#                complete_timestamp = ''
+#                if row[log_columns_numbers[1]] != 'End':
+#                    timestamp = datetime.datetime.strptime(row[log_columns_numbers[4]], timeformat)
+#                    complete_timestamp = datetime.datetime.strptime(row[log_columns_numbers[5]], timeformat)
+#                temp_data.append(dict(caseid=row[log_columns_numbers[0]], task=row[log_columns_numbers[1]],
+#                                      event_type=row[log_columns_numbers[2]], user=row[log_columns_numbers[3]],
+#                                      start_timestamp=timestamp, end_timestamp=complete_timestamp))
+#                i += 1
+#        return temp_data, temp_data
+
+    def get_csv_events_data(self, timeformat):
         """reads and parse all the events information from a csv file"""
         flength = sup.file_size(self.input)
         i = 0
         temp_data = list()
         with open(self.input, 'r') as csvfile:
-            filereader = csv.reader(csvfile, delimiter=',', quotechar='"')
-            next(filereader, None)  # skip the headers
+            filereader = csv.DictReader(csvfile, delimiter=',')
             for row in filereader:
                 sup.print_progress(((i / (flength - 1)) * 100), 'Reading log traces ')
                 timestamp = ''
                 complete_timestamp = ''
-                if row[log_columns_numbers[1]] != 'End':
-                    timestamp = datetime.datetime.strptime(row[log_columns_numbers[4]], start_timeformat)
-                    complete_timestamp = datetime.datetime.strptime(row[log_columns_numbers[5]], end_timeformat)
-                temp_data.append(dict(caseid=row[log_columns_numbers[0]], task=row[log_columns_numbers[1]],
-                                      event_type=row[log_columns_numbers[2]], user=row[log_columns_numbers[3]],
+                if row['task'] != 'End':
+                    timestamp = datetime.datetime.strptime(row['start_timestamp'], timeformat)
+                    complete_timestamp = datetime.datetime.strptime(row['end_timestamp'], timeformat)
+                temp_data.append(dict(caseid=row['caseid'], task=row['task'],
+                                      event_type=row['task'], user=row['resource'],
                                       start_timestamp=timestamp, end_timestamp=complete_timestamp))
                 i += 1
+            csvfile.close()
         return temp_data, temp_data
+
 
     # TODO manejo de excepciones
     def find_first_task(self):

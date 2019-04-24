@@ -32,5 +32,4 @@ def import_bimp_statistics(output_dir, bpmn_file_name, source='bimp'):
             # Process replaying
             conformed_traces, not_conformed_traces, process_stats = rpl.replay(process_graph, log, source=source, run_num=i)
             sim_statistics.extend(process_stats)
-    [x.update(dict(role=x['resource'])) for x in sim_statistics]
     return sim_statistics

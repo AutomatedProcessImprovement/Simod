@@ -4,15 +4,12 @@ from support_modules import support as sup
 
 from collections import OrderedDict
 
-def replay(process_graph, log, source='log', run_num=0):
+def replay(process_graph, traces):
     subsec_set = create_subsec_set(process_graph)
     parallel_gt_exec = parallel_execution_list(process_graph)
     not_conformant_traces = list()
     conformant_traces=list()
-    process_stats=list()
-    traces = log.get_traces()
     for index in range(0,len(traces)):
-        trace_times = list()
         trace = traces[index]
         temp_gt_exec = parallel_gt_exec
         cursor = list()
@@ -20,24 +17,14 @@ def replay(process_graph, log, source='log', run_num=0):
         cursor.append(current_node)
         removal_allowed = True
         is_conformant = True
-        #----time recording------
-        trace_times.append(create_record(trace, 0))
-        #------------------------
         for i in range(1, len(trace)):
             next_node = find_task_node(process_graph,trace[i]['task'])
             # If loop management
             if next_node == cursor[-1]:
-                prev_record = find_previous_record(trace_times, process_graph.node[next_node]['name'])
-                trace_times.append(create_record(trace, i, prev_record))
                 process_graph.node[next_node]['executions'] += 1
             else:
                 try:
                     cursor, prev_node = update_cursor(next_node, process_graph, cursor)
-                    #----time recording------
-                    prev_record = find_previous_record(trace_times, process_graph.node[prev_node]['name'])
-                    trace_times.append(create_record(trace, i, prev_record))
-                    process_graph.node[next_node]['executions'] += 1
-                    #------------------------
                 except:
                     is_conformant = False
                     break
@@ -64,18 +51,9 @@ def replay(process_graph, log, source='log', run_num=0):
             not_conformant_traces.append(trace)
         else:
             conformant_traces.append(trace)
-            process_stats.extend(trace_times)
         sup.print_progress(((index / (len(traces)-1))* 100),'Replaying process traces ')
-    #------Filtering records and calculate stats---
-    process_stats = list(filter(lambda x: x['task'] != 'Start' and x['task'] != 'End' and x['resource'] != 'AUTO', process_stats))
-    process_stats = calculate_process_metrics(process_stats)
-    [x.update(dict(source=source, run_num=run_num)) for x in process_stats]
-    #----------------------------------------------
     sup.print_done_task()
-    #------conformance percentage------------------
-#    print('Conformance percentage: ' + str(sup.ffloat((len(conformant_traces)/len(traces)) * 100,2)) + '%')
-    #----------------------------------------------
-    return conformant_traces, not_conformant_traces, process_stats
+    return conformant_traces, not_conformant_traces
 
 def update_cursor(nnode,process_graph,cursor):
     tasks = list(filter(lambda x: process_graph.node[x]['type']=='task',cursor))
@@ -94,44 +72,6 @@ def update_cursor(nnode,process_graph,cursor):
     # Preserve order and leave only new
     cursor = list(OrderedDict.fromkeys(ap_list))
     return cursor, prev_node
-
-def create_record(trace, index, last_event=dict()):
-    start_time = trace[index]['start_timestamp']
-    end_time = trace[index]['end_timestamp']
-    caseid = trace[index]['caseid']
-    resource = trace[index]['user']
-    if not bool(last_event):
-        enabling_time = trace[index]['end_timestamp']
-    else:
-        enabling_time = last_event['end_timestamp']
-    return dict(caseid=caseid,task=trace[index]['task'],start_timestamp=start_time,
-        end_timestamp=end_time,enable_timestamp=enabling_time,resource=resource)
-
-def find_previous_record(trace_times, task):
-    event = dict()
-    for x in trace_times[::-1]:
-        if task == x['task']:
-            event = x
-            break
-    return event
-
-def calculate_process_metrics(process_stats):
-    for record in process_stats:
-        duration=(record['end_timestamp']-record['start_timestamp']).total_seconds()
-        waiting=(record['start_timestamp']-record['enable_timestamp']).total_seconds()
-        multitasking=0
-        #TODO check resourse for multi_tasking
-        if waiting<0:
-            waiting=0
-            if record['end_timestamp'] > record['enable_timestamp']:
-                duration=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
-                multitasking=(record['enable_timestamp']-record['start_timestamp']).total_seconds()
-            else:
-                multitasking = duration
-        record['processing_time'] = duration
-        record['waiting_time'] = waiting
-        record['multitasking'] = multitasking
-    return process_stats
 
 def create_subsec_set(process_graph):
     subsec_set = set()

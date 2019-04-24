@@ -2,12 +2,14 @@
 import re
 from support_modules import support as sup
 from operator import itemgetter
+import subprocess
+import os
 
-
-def align_traces(log, align_info_file, align_type_file):
+def align_traces(log, settings):
     """this method is the kernel of all the alignment process"""
-    optimal_alignments = read_alignment_info(align_info_file)
-    traces_alignments = traces_alignment_type(align_type_file)
+    evaluate_alignment(settings)
+    optimal_alignments = read_alignment_info(settings['aligninfo'])
+    traces_alignments = traces_alignment_type(settings['aligntype'])
     raw_traces=log.get_raw_traces()
     aligned_traces = list()
     i = 0
@@ -16,18 +18,16 @@ def align_traces(log, align_info_file, align_type_file):
         try:
             # Alignment of each trace
             aligned_trace = process_trace(raw_trace, optimal_alignments, traces_alignments )
-            # Conformity check and error correction
+            # Conformity check and reformating
             aligned_trace = trace_verification(aligned_trace, raw_trace)
-            # [print(x['task'] + ' ' + str((x['end_timestamp'] - x['start_timestamp']).total_seconds())) for x in aligned_trace]
-            aligned_traces.extend(aligned_trace)
+            if aligned_trace:
+                aligned_traces.extend(aligned_trace)
         except Exception as e:
             print(str(e))
-            # print(raw_trace[0]['caseid'])
         sup.print_progress(((i / (size-1))* 100),'Aligning log traces with model ')
         i += 1
-    # Set the aligned data in the log object
-    log.set_data(aligned_traces)
     sup.print_done_task()
+    return aligned_traces
 
 def process_trace(raw_trace, optimal_alignments, traces_alignments ):
     """this method performs the alignment of each trace according with the data optimal alignment"""
@@ -61,30 +61,48 @@ def process_trace(raw_trace, optimal_alignments, traces_alignments ):
 
 def trace_verification(aligned_trace, raw_trace):
     """this method performs the conformity check, error correction and joints the start and complete events"""
-    data = list()
-    i = 0
-    while(i < len(aligned_trace)):
-        current_event = aligned_trace[i]
-        next_event = aligned_trace[i + 1]
-        if not (current_event['task'] == next_event['task'] and current_event['event_type'] == 'start' and next_event['event_type'] == 'complete'):
-            if current_event['event_type'] == 'start':
-                raw_list = sorted(list(filter(lambda x: x['task']==current_event['task'] and x['event_type'] == 'complete' and current_event['start_timestamp'] <= x['start_timestamp'], raw_trace)), key=itemgetter('start_timestamp'))
-                aligned_trace.insert(i + 1, raw_list[0])
-            elif current_event['event_type'] == 'complete':
-                raw_list = sorted(list(filter(lambda x: x['task']==current_event['task'] and x['event_type'] == 'start' and current_event['start_timestamp'] >= x['start_timestamp'], raw_trace)), key=itemgetter('start_timestamp'))
-                aligned_trace.insert(i, raw_list[0])
-            i = 0
-            break
+    tasks = list({x['task'] for x in aligned_trace})
+    start_list = list(filter(lambda x: x['event_type'] == 'start', aligned_trace))
+    complete_list = list(filter(lambda x: x['event_type'] == 'complete', aligned_trace))
+    new_trace = list()
+    missalignment = False    
+    for task in tasks:
+        missalignment = False
+        start_events = sorted(list(filter(lambda x: x['task'] == task, start_list)), key=itemgetter('start_timestamp'))
+        complete_events = sorted(list(filter(lambda x: x['task'] == task, complete_list)), key=itemgetter('start_timestamp'))
+        if(len(start_events) == len(complete_events)):
+            for i, _ in enumerate(start_events):
+                new_trace.append(dict(caseid=start_events[i]['caseid'], 
+                                 task=start_events[i]['task'],
+                                 event_type=start_events[i]['task'],
+                                 user=start_events[i]['user'],
+                                 start_timestamp=start_events[i]['start_timestamp'],
+                                 end_timestamp=complete_events[i]['start_timestamp']))
         else:
-            i += 2
-    # Joining of start and complete events
-    if(len(aligned_trace)%2 == 0):
-        for i in range(0,len(aligned_trace),2):
-            current_event = aligned_trace[i]
-            next_event = aligned_trace[i + 1]
-            data.append(dict(caseid=current_event['caseid'], task=current_event['task'], event_type=current_event['task'],
-                     user=current_event['user'], start_timestamp=current_event['start_timestamp'], end_timestamp=next_event['start_timestamp']))
-    return data
+            missalignment = True
+            break
+    if not missalignment:
+        new_trace = sorted(new_trace, key=itemgetter('start_timestamp'))
+    else:
+        new_trace = list()
+    return new_trace
+
+# =============================================================================
+# External tool calling
+# =============================================================================
+
+def evaluate_alignment(settings):
+    """Evaluate business process traces alignment in relation with BPMN structure.
+    Args:
+        settings (dict): Path to jar and file names
+    """
+    print(" -- Evaluating event log alignment --")
+    args = ['java', '-jar', settings['align_path'],
+            settings['output']+os.sep,
+            settings['file'],
+            settings['file'].split('.')[0]+'.bpmn',
+            'true']
+    subprocess.call(args, bufsize=-1)
 
 # --support --
 # Methods for the reading of the alignment data generated by the proconformance plug-in

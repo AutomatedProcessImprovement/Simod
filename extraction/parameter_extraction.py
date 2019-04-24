@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from support_modules import support as sup
-from extraction import process_structure as gph
 from extraction import log_replayer as rpl
 from extraction import task_duration_distribution as td
 from extraction import interarrival_definition as arr
@@ -12,12 +11,11 @@ import networkx as nx
 import itertools
 
 # -- Extract parameters --
-def extract_parameters(log, bpmn):
+def extract_parameters(log, bpmn, process_graph):
     if bpmn != None and log != None:
         bpmnId = bpmn.getProcessId()
         startEventId = bpmn.getStartEventId()
         # Creation of process graph
-        process_graph = gph.create_process_structure(bpmn)
         #-------------------------------------------------------------------
         # Analysing resource pool LV917 or 247
         roles, resource_table = rl.read_resource_pool(log, drawing=False, sim_percentage=0.5)
@@ -35,7 +33,6 @@ def extract_parameters(log, bpmn):
         inter_arrival_times = arr.define_interarrival_tasks(process_graph, conformed_traces)
         arrival_rate_bimp = (td.get_task_distribution(inter_arrival_times, 50))
         arrival_rate_bimp['startEventId'] = startEventId
-        print(arrival_rate_bimp)
         #-------------------------------------------------------------------
         # Gateways probabilities 1=Historycal, 2=Random, 3=Equiprobable
         sequences = gt.define_probabilities(process_graph, bpmn, log, 1)
@@ -67,6 +64,7 @@ def extract_parameters(log, bpmn):
                               elements_data=elements_data, sequences=sequences, instances=len(conformed_traces),
                               bpmnId=bpmnId)
         return parameters, process_stats
+#        return len(conformed_traces)/(len(conformed_traces)+ len(not_conformed_traces))
 
 # --support --
 def find_resource_id(resource_pool, resource_name):
