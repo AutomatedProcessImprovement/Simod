@@ -1,7 +1,9 @@
 import numpy as np
 import random
+import os
 from operator import itemgetter
-#import math
+from support_modules import support as sup
+
 #import matplotlib.pyplot as plt
 
 def mesurement(data, settings, rep, ramp_io_perc = 0.2):
@@ -16,15 +18,36 @@ def mesurement(data, settings, rep, ramp_io_perc = 0.2):
     simulation_data = reformat_events(list(filter(lambda x: x['source']=='simulation'
                                                   and x['run_num']==(rep + 1), filtered_data)),
                                alias, ['task','role'])
+    num_traces = int(len(simulation_data) * ramp_io_perc)
+    simulation_data = simulation_data[num_traces:-num_traces]
+    temp_log_data = random.sample(log_data, len(simulation_data))
+    
     similarity = dict()
     similarity['run_num'] = (rep + 1)
 #    similarity['lognorm'] = np.mean([x['sim_score'] for x in 
 #                                   measure_distance(log_data, simulation_data, 'proc_lognorm')])
 #    similarity['norm'] = np.mean([x['sim_score'] for x in 
 #                                   measure_distance(log_data, simulation_data, 'proc_norm')])
-    similarity['act_norm'] = np.mean([x['sim_score'] for x in 
-                                   measure_distance(log_data, simulation_data, 'proc_act_norm')])
+    sim_data = measure_distance(temp_log_data, simulation_data, 'proc_act_norm')
+    for x in sim_data: x['run_num'] = (rep + 1)
+    similarity['act_norm'] = np.mean([x['sim_score'] for x in sim_data])
+    print_measures(settings, sim_data)   
     return similarity
+
+def print_measures(settings, measurements):
+    if os.path.exists(os.path.join(os.path.join(settings['output'],
+                                                'sim_data',
+                                                'similarity_measures.csv'))):
+        sup.create_csv_file(measurements,
+                            os.path.join(os.path.join(settings['output'],
+                                                'sim_data',
+                                                'similarity_measures.csv')), mode='a')
+    else:
+        sup.create_csv_file_header(measurements,
+                                   os.path.join(os.path.join(settings['output'],
+                                                'sim_data',
+                                                'similarity_measures.csv')))
+
 
 def measure_distance(log_data, simulation_data, scale_method):
     similarity = list()
@@ -55,6 +78,8 @@ def measure_distance(log_data, simulation_data, scale_method):
                 min_index = i
         length=np.max([len(sim_instance['profile']), len(temp_log_data[min_index]['profile'])])        
         similarity.append(dict(caseid=sim_instance['caseid'],
+                               sim_order=sim_instance['profile'],
+                               log_order=temp_log_data[min_index]['profile'],
                                sim_score=(1-(min_dist/length))))
         del temp_log_data[min_index]
     return similarity

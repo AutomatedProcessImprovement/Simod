@@ -5,31 +5,27 @@ Created on Thu Mar 28 10:56:25 2019
 @author: Manuel Camargo
 """
 import sys
-import getopt
 import re
 import os
 import subprocess
 import configparser as cp
+import getopt
+from shutil import copyfile
+
 import pandas as pd
 import numpy as np
 
-from shutil import copyfile
-from support_modules import support as sup
-
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
-#from hyperopt.pyll.stochastic import sample
 
-#from support_modules.readers import readers as rd
+from support_modules import support as sup
 from support_modules.readers import log_reader as lr
 from support_modules.readers import bpmn_reader as br
 from support_modules.readers import process_structure as gph
-
 from support_modules.writers import xml_writer as xml
 from support_modules.analyzers import generalization as gen
-
-
 from support_modules.log_repairing import conformance_checking as chk
+
 from extraction import parameter_extraction as par
 from extraction import log_replayer as rpl
 
@@ -78,63 +74,63 @@ def objective(params):
             try:
                 simulate(settings, rep)
                 if settings['analysis']:
-                    process_stats = process_stats.append(measure_stats(process_stats,
-                                                                       settings, bpmn, rep),
+                    process_stats = process_stats.append(measure_stats(settings,
+                                                                       bpmn, rep),
                                                          ignore_index=True,
                                                          sort=False)
                     sim_values.append(gen.mesurement(process_stats, settings, rep))
             except:
-                status = STATUS_FAIL            
+                status = STATUS_FAIL
                 break
 
     if status == STATUS_OK:
         loss = (1 - np.mean([x['act_norm'] for x in sim_values]))
-        response = {'loss': loss, 'params': params, 'status': status}
+        if loss < 0:
+            response = {'loss': loss, 'params': params, 'status': STATUS_FAIL}
+        else:
+            response = {'loss': loss, 'params': params, 'status': status}
     else:
         response = {'params': params, 'status': status}
     return response
 
-    # Save results
-#    measurements = list()
-#    measurements.append({**dict(conf=conformance), **parameters})
-#    if os.path.exists(os.path.join(config.get('FOLDERS', 'outputs'), 'total_measures.csv')):
-#        sup.create_csv_file(measurements,
-#                            os.path.join(config.get('FOLDERS', 'outputs'),
-#                                         'total_measures.csv'), mode='a')
-#    else:
-#        sup.create_csv_file_header(measurements,
-#                                   os.path.join(config.get('FOLDERS', 'outputs'),
-#                                                'total_measures.csv'))
 
 def main(argv):
-    space = {'epsilon': hp.uniform('epsilon', 0.0, 1.0), 
-             'eta': hp.uniform('eta', 0.0, 1.0),
-             'alg_manag': hp.choice('alg_manag', ['replacement',
-                                                  'trace_alignment',
-                                                  'removal'])}
-    ## Trials object to track progress
-    bayes_trials = Trials()
-    max_evals = 2
-    ## Optimize
-    best = fmin(fn=objective, space=space, algo=tpe.suggest, 
-                max_evals=max_evals, trials=bayes_trials, show_progressbar=False)
-
-    print(best)
-    measurements = list()
-    for res in bayes_trials.results:
-        measurements.append({
-                'loss': res['loss'], 
-                'alg_manag': res['params']['alg_manag'], 
-                'epsilon': res['params']['epsilon'], 
-                'eta': res['params']['eta'], 
+    """Execute splitminer for bpmn structure mining."""
+    if argv:
+        parameters = define_parameter(argv)
+        response = objective(parameters)
+        print('Results:')
+        print(response)
+    else:
+        space = {'epsilon': hp.uniform('epsilon', 0.0, 1.0),
+                 'eta': hp.uniform('eta', 0.0, 1.0),
+                 'alg_manag': hp.choice('alg_manag', ['replacement',
+                                                      'trace_alignment',
+                                                      'removal'])}
+        ## Trials object to track progress
+        bayes_trials = Trials()
+        max_evals = 50
+        ## Optimize
+        best = fmin(fn=objective, space=space, algo=tpe.suggest,
+                    max_evals=max_evals, trials=bayes_trials, show_progressbar=False)
+    
+        print(best)
+        # Save results
+        measurements = list()
+        for res in bayes_trials.results:
+            measurements.append({
+                'loss': res['loss'],
+                'alg_manag': res['params']['alg_manag'],
+                'epsilon': res['params']['epsilon'],
+                'eta': res['params']['eta'],
                 'status': res['status'],
                 'output': res['params']['output']
                 })
-    config = cp.ConfigParser(interpolation=None)
-    config.read("./config.ini")
-    sup.create_csv_file_header(measurements,
-                               os.path.join(config.get('FOLDERS', 'outputs'),
-                                            config.get('EXECUTION', 'filename')
+        config = cp.ConfigParser(interpolation=None)
+        config.read("./config.ini")
+        sup.create_csv_file_header(measurements,
+                                   os.path.join(config.get('FOLDERS', 'outputs'),
+                                                config.get('EXECUTION', 'filename')
                                                 .split('.')[0]+'_'+
                                                 sup.folder_id()+'.csv'))
 
@@ -171,10 +167,15 @@ def simulate(settings, rep):
                          settings['file'].split('.')[0]+'_'+str(rep+1)+'.csv')]
     subprocess.call(args)
 
-def measure_stats(process_stats, settings, bpmn, rep):
+def measure_stats(settings, bpmn, rep):
+    """Executes BIMP Simulations.
+    Args:
+        settings (dict): Path to jar and file names
+        rep (int): repetition number
+    """
     timeformat = '%Y-%m-%d %H:%M:%S.%f'
     temp = lr.LogReader(os.path.join(settings['output'], 'sim_data',
-                                    settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),
+                                     settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),
                         timeformat)
     process_graph = gph.create_process_structure(bpmn)
     _, _, temp_stats = rpl.replay(process_graph, temp, source='simulation', run_num=rep + 1)
@@ -210,39 +211,36 @@ def read_settings(params):
     settings['simulation'] = config.get('EXECUTION', 'simulation') in valid_opt
     settings['analysis'] = config.get('EXECUTION', 'analysis') in valid_opt
     settings['repetitions'] = int(config.get('EXECUTION', 'repetitions'))
+    # Conditional settings
     if settings['mining']:
         settings['miner_path'] = reformat_path(config.get('EXTERNAL', 'splitminer'))
     if settings['alignment']:
         settings['alg_manag'] = params['alg_manag']
         if settings['alg_manag'] == 'trace_alignment':
             settings['align_path'] = reformat_path(config.get('EXTERNAL', 'proconformance'))
-            settings['aligninfo'] = os.path.join(settings['output'], config.get('ALIGNMENT', 'aligninfo'))
-            settings['aligntype'] = os.path.join(settings['output'], config.get('ALIGNMENT', 'aligntype'))
+            settings['aligninfo'] = os.path.join(settings['output'],
+                                                 config.get('ALIGNMENT', 'aligninfo'))
+            settings['aligntype'] = os.path.join(settings['output'],
+                                                 config.get('ALIGNMENT', 'aligntype'))
     if settings['simulation']:
         settings['bimp_path'] = reformat_path(config.get('EXTERNAL', 'bimp'))
         if settings['analysis']:
-            settings['repetitions'] = int(config.get('EXECUTION', 'repetitions')) 
+            settings['repetitions'] = int(config.get('EXECUTION', 'repetitions'))
     return settings
 
 
 def define_parameter(argv):
     """Catch parameters fron console or code defined"""
     parameters = dict()
-    switch = {'-e':'epsilon', '-n':'eta'}
-    if not argv:
-#       Different event log structures -> epsilon, eta
-        parameters['epsilon'] = 0.8379750177968592
-        parameters['eta'] = 0.5108435483257637
-    else:
-#       Catch parameters by console
-        try:
-            opts, _ = getopt.getopt(argv, "he:n:",
-                                    ["epsilon=", "eta="])
-            for opt, arg in opts:
-                parameters[switch[opt]] = arg
-        except getopt.GetoptError:
-            print('Invalid option')
-            sys.exit(2)
+    switch = {'-e':'epsilon', '-n':'eta', '-m':'alg_manag'}
+    try:
+        opts, _ = getopt.getopt(argv, "he:n:m:",
+                                ["epsilon=", "eta=", "alg_manag="])
+        for opt, arg in opts:
+            parameters[switch[opt]] = arg
+    except getopt.GetoptError:
+        print('Invalid option')
+        sys.exit(2)
     return parameters
 
 # =============================================================================
