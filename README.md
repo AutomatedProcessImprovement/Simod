@@ -1,6 +1,6 @@
-# SiMo-Discoverer
+# Simod
 
-SiMo-Discoverer combines several process mining techniques to fully automate the generation and validation of BPS models. 
+Simod combines several process mining techniques to fully automate the generation and validation of BPS models. 
 The only input required by the SiMo-Discoverer method is an eventlog in XES, MXML or CSV format.
 
 ### Prerequisites
