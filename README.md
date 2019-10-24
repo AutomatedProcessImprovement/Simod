@@ -1,18 +1,10 @@
-# SiMo-Discoverer
+# Simod
 
-SiMo-Discoverer combines several process mining techniques to fully automate the generation and validation of BPS models. 
-The only input required by the SiMo-Discoverer method is an eventlog in XES, MXML or CSV format.
+Simod combines several process mining techniques to fully automate the generation and validation of BPS models.  The only input required by the Simod method is an eventlog in XES, MXML or CSV format. These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
 ### Prerequisites
 
-Java v8
-Python 3.6.6 and the following libraries are nedded to execute SiMo discoverer:
-
-* lxml==4.2.5
-* matplotlib==2.2.3
-* networkx==2.2
-* numpy==1.15.4
-* seaborn==0.9.0
+To execute this code you just need to install Anaconda in your system, and create an environment using the *simo.yml* specification provided in the repository.
 
 ### Data format
  
@@ -23,22 +15,29 @@ in order to compute the processing time of activities, which is also a required 
 
 ### Configuration
 
-The initial hyper-parameters configuration of simo must be carried on the file simo\config.ini. 
-Next you can find a short description about the main hyper-parameters of the tool.
+Once created the environment you can open the file Simod.ipynb using Jupyter, and execute the first cell of the Notebook.
 
-* The tag [FILE] - name is related with the eventlog name that will be used asn an input for the BPS model generation
-* The tag [EXECUTION] - starttimeformat is related with the string format of the eventlog start timestamp (default %Y-%m-%dT%H:%M:%S.000)
-* The tag [EXECUTION] - endtimeformat is related with the string format of the eventlog complete timestamp (default %Y-%m-%dT%H:%M:%S.000)
-* The tag [EXECUTION] - mining enables the generation of BPMN models using the SplitMiner tool
-* The tag [EXECUTION] - alignment enables the eventlog trace alignment and repairing using the ProConformancev2 tool
-* The tag [EXECUTION] - parameters enables the BPS model extraction
-* The tag [EXECUTION] - simulation enables the simulation of a BPS model, using the BIMP or the Scylla simulators (the simulator choise es configured with the tag [SIMULATOR] - simulator)
-* The tag [EXECUTION] - analysis enables the generation of a comparison report between the simulation and the direct measurments of the eventlog
-* The tag [EXECUTION] - simcycles indicates the desired simulation cycles (default 50)
+### Execution steps
 
-### Execution
+***Event-log loading:*** Under the General tab the event log must be selected, if the user requires a new event log it can be loaded in the folder inputs. Remember the event log must be in XES or MXML format and contain start and complete timestamps. Then It is necessary to define the execution mode between single execution, and Optimizer execution.
 
-To execute the desired configuration run python simo\simo.py
+***Single execution:*** In this execution mode the user defines manually the different preprocessing options of the tool to generate a simulation model. The next parameters needed to be defined:
+
+ - *Percentile for frequency threshold (eta):* SplitMiner parameter
+   related with the filter over the incoming and outgoing edges. Between
+   0.0 and 1.0.    
+ - *Parallelism threshold (epsilon):* SplitMiner parameter related with the quantity of concurrent relations between events to be captured. Between 0.0 and 1.0. 
+ - 	*Non-conformance management:* Simod provides three options to deal with the Non-conformances between the eventlog and the BPMN discovery model. The first option is the   *removal* of the nonconformant traces been the more natural one. The second option is the *replacement* of the non-conformant traces using the conformant most similar ones. The last option is the *reparison* at event level by the creation or deletion of an event when it is necessary.
+ - *Number of simulations runs:* Refers to the number of simulations performed by the BIMP simulator, once the model is created. The goal of define this value is to improve the accuracy of the assessment. Between 1 and 50.
+
+***Optimizer execution:*** In this execution mode the user defines a search space and the tool automatically explore the combination looking for the optimal one. The next parameters needed to be defined:
+
+ - *Percentile for frequency threshold range:* SplitMiner parameter related with the filter over the incoming and outgoing edges. Lower and upper bound between 0.0 and 1.0.
+ - *Parallelism threshold range:* SplitMiner parameter related with the quantity of concurrent relations between events to be captured. Lower and upper bound between 0.0 and 1.0.
+ - *Max evaluations:* With this values Simod defines the number of trials in the search space to be explored using a Bayesian hyperparameter optimizer. Between 1 and 50.
+ - *Number of simulations runs:* Refers to the number of simulations performed by the BIMP simulator, once the model is created. The goal of define this value is to improve the accuracy of the assessment. Between 1 and 50.
+
+Once all the parameters are settled It is time to start the execution and wait for the results.
 
 ## Authors
 
