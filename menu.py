@@ -146,15 +146,13 @@ def work(temp_file):
     global ON_EXECUTION
     file_size = os.path.getsize(os.path.join('outputs', temp_file))    
     while ON_EXECUTION:
-#        time.sleep(0.5)
         new_size = os.path.getsize(os.path.join('outputs', temp_file))
         if file_size < new_size:
             file_size = new_size
             df = pd.read_csv(os.path.join('outputs', temp_file))
-            similarity = lambda x: 1 - x['loss']
-            df['similarity'] = df.apply(similarity, axis=1)
-            update_graph(df)
+            df['similarity'] = 1 - df['loss']
             update_table(df)
+            update_graph(df)
             progress.value = float(len(df.index))/sl_max_evals.value
     
 def change_enablement(container, state):
