@@ -17,7 +17,7 @@ def evaluate_alignment(process_graph, log, settings):
     #------conformance percentage before repair------------------
     print_stats(log, conformant)
     if settings['alg_manag'] == 'replacement':
-        log.set_data(rep.replacement(conformant, not_conformant, log))
+        log.set_data(rep.replacement(conformant, not_conformant, log, settings))
     elif settings['alg_manag'] == 'repairment':
         log.set_data(tal.align_traces(log, settings))
     elif settings['alg_manag'] == 'removal':

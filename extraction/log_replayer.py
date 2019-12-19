@@ -4,7 +4,8 @@ from support_modules import support as sup
 
 from collections import OrderedDict
 
-def replay(process_graph, log, source='log', run_num=0):
+# settings['read_options']['one_timestamp']
+def replay(process_graph, log, settings, source='log', run_num=0):
     subsec_set = create_subsec_set(process_graph)
     parallel_gt_exec = parallel_execution_list(process_graph)
     not_conformant_traces = list()
@@ -95,7 +96,8 @@ def update_cursor(nnode,process_graph,cursor):
     cursor = list(OrderedDict.fromkeys(ap_list))
     return cursor, prev_node
 
-def create_record(trace, index, last_event=dict()):
+def create_record(trace, index, one_timestamp, last_event=dict()):
+    
     start_time = trace[index]['start_timestamp']
     end_time = trace[index]['end_timestamp']
     caseid = trace[index]['caseid']

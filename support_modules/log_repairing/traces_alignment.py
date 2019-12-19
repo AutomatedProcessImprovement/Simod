@@ -6,12 +6,13 @@ import subprocess
 import os
 
 def align_traces(log, settings):
-    """this method is the kernel of all the alignment process"""
+    """this method is the kernel of the alignment process"""
     evaluate_alignment(settings)
     optimal_alignments = read_alignment_info(settings['aligninfo'])
     traces_alignments = traces_alignment_type(settings['aligntype'])
     raw_traces=log.get_raw_traces()
     aligned_traces = list()
+    #TODO: modify to allow one ts
     i = 0
     size = len(raw_traces)
     for raw_trace in raw_traces:
@@ -97,9 +98,10 @@ def evaluate_alignment(settings):
         settings (dict): Path to jar and file names
     """
     print(" -- Evaluating event log alignment --")
+    file_name, _ = os.path.splitext(settings['file'])
     args = ['java', '-jar', settings['align_path'],
             settings['output']+os.sep,
-            settings['file'],
+            file_name+'.xes',
             settings['file'].split('.')[0]+'.bpmn',
             'true']
     subprocess.call(args, bufsize=-1)
