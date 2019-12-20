@@ -9,6 +9,7 @@ from extraction import schedule_tables as sch
 
 import networkx as nx
 import itertools
+import pandas as pd
 
 # -- Extract parameters --
 def extract_parameters(log, bpmn, process_graph, settings):
@@ -23,21 +24,21 @@ def extract_parameters(log, bpmn, process_graph, settings):
         #-------------------------------------------------------------------
         # Process replaying
         conformed_traces, not_conformed_traces, process_stats = rpl.replay(process_graph, log, settings)
-        print(process_stats)
+        process_stats = pd.DataFrame.from_records(process_stats)
         # -------------------------------------------------------------------
-        # # Adding role to process stats
-        # for stat in process_stats:
-        #     role = list(filter(lambda x: x['resource']==stat['resource'],resource_table))[0]['role']
-        #     stat['role'] = role
-        # #-------------------------------------------------------------------
-        # # Determination of first tasks for calculate the arrival rate
-        # inter_arrival_times = arr.define_interarrival_tasks(process_graph, conformed_traces)
-        # arrival_rate_bimp = (td.get_task_distribution(inter_arrival_times, 50))
-        # arrival_rate_bimp['startEventId'] = startEventId
-        # #-------------------------------------------------------------------
-        # # Gateways probabilities 1=Historycal, 2=Random, 3=Equiprobable
-        # sequences = gt.define_probabilities(process_graph, bpmn, log, 1)
-        # #-------------------------------------------------------------------
+        # Adding role to process stats
+        resource_table = pd.DataFrame.from_records(resource_table)        
+        process_stats = process_stats.merge(resource_table, on='resource', how='left')
+        #-------------------------------------------------------------------
+        # Determination of first tasks for calculate the arrival rate
+        inter_arrival_times = arr.define_interarrival_tasks(process_graph, conformed_traces, settings)
+        arrival_rate_bimp = (td.get_task_distribution(inter_arrival_times, 50))
+        print(arrival_rate_bimp)
+        arrival_rate_bimp['startEventId'] = startEventId
+        #-------------------------------------------------------------------
+        # Gateways probabilities 1=Historycal, 2=Random, 3=Equiprobable
+        sequences = gt.define_probabilities(process_graph, bpmn, log, 1)
+        #-------------------------------------------------------------------
         # # Tasks id information
         # elements_data = list()
         # i = 0

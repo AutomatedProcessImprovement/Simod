@@ -214,6 +214,7 @@ class LogReader(object):
         if parameters['one_timestamp']:
             parameters['column_names']['Complete Timestamp']='end_timestamp'
             log = log.rename(columns=parameters['column_names'])
+            log = log[(log.task!='Start') & (log.task!='End')].reset_index(drop=True)
             if parameters['filter_d_attrib']:
                 log = log[['caseid', 'task', 'user', 'end_timestamp']]
             log['end_timestamp'] =  pd.to_datetime(log['end_timestamp'], format=parameters['timeformat'])
@@ -221,6 +222,7 @@ class LogReader(object):
             parameters['column_names']['Start Timestamp']='start_timestamp'
             parameters['column_names']['Complete Timestamp']='end_timestamp'
             log = log.rename(columns=parameters['column_names'])
+            log = log[(log.task!='Start') & (log.task!='End')].reset_index(drop=True)
             if parameters['filter_d_attrib']:
                 log = log[['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']]
             log['start_timestamp'] =  pd.to_datetime(log['start_timestamp'], format=parameters['timeformat'])

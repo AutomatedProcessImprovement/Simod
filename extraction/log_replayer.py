@@ -22,21 +22,21 @@ def replay(process_graph, log, settings, source='log', run_num=0):
         removal_allowed = True
         is_conformant = True
         #----time recording------
-        trace_times.append(create_record(trace, 0))
+        trace_times.append(create_record(trace, 0, settings['read_options']['one_timestamp']))
         #------------------------
         for i in range(1, len(trace)):
             next_node = find_task_node(process_graph,trace[i]['task'])
             # If loop management
             if next_node == cursor[-1]:
                 prev_record = find_previous_record(trace_times, process_graph.node[next_node]['name'])
-                trace_times.append(create_record(trace, i, prev_record))
+                trace_times.append(create_record(trace, i, settings['read_options']['one_timestamp'], prev_record))
                 process_graph.node[next_node]['executions'] += 1
             else:
                 try:
                     cursor, prev_node = update_cursor(next_node, process_graph, cursor)
                     #----time recording------
                     prev_record = find_previous_record(trace_times, process_graph.node[prev_node]['name'])
-                    trace_times.append(create_record(trace, i, prev_record))
+                    trace_times.append(create_record(trace, i, settings['read_options']['one_timestamp'], prev_record))
                     process_graph.node[next_node]['executions'] += 1
                     #------------------------
                 except:
@@ -62,20 +62,17 @@ def replay(process_graph, log, settings, source='log', run_num=0):
                         if removal_allowed:
                             cursor.remove(element)
         if not is_conformant:
-            not_conformant_traces.append(trace)
+            not_conformant_traces.extend(trace)
         else:
-            conformant_traces.append(trace)
+            conformant_traces.extend(trace)
             process_stats.extend(trace_times)
         sup.print_progress(((index / (len(traces)-1))* 100),'Replaying process traces ')
     #------Filtering records and calculate stats---
     process_stats = list(filter(lambda x: x['task'] != 'Start' and x['task'] != 'End' and x['resource'] != 'AUTO', process_stats))
-    process_stats = calculate_process_metrics(process_stats)
+    process_stats = calculate_process_metrics(process_stats, settings['read_options']['one_timestamp'])
     [x.update(dict(source=source, run_num=run_num)) for x in process_stats]
     #----------------------------------------------
     sup.print_done_task()
-    #------conformance percentage------------------
-#    print('Conformance percentage: ' + str(sup.ffloat((len(conformant_traces)/len(traces)) * 100,2)) + '%')
-    #----------------------------------------------
     return conformant_traces, not_conformant_traces, process_stats
 
 def update_cursor(nnode,process_graph,cursor):
@@ -97,17 +94,18 @@ def update_cursor(nnode,process_graph,cursor):
     return cursor, prev_node
 
 def create_record(trace, index, one_timestamp, last_event=dict()):
-    
-    start_time = trace[index]['start_timestamp']
-    end_time = trace[index]['end_timestamp']
-    caseid = trace[index]['caseid']
-    resource = trace[index]['user']
     if not bool(last_event):
         enabling_time = trace[index]['end_timestamp']
     else:
         enabling_time = last_event['end_timestamp']
-    return dict(caseid=caseid,task=trace[index]['task'],start_timestamp=start_time,
-        end_timestamp=end_time,enable_timestamp=enabling_time,resource=resource)
+    record= {'caseid':trace[index]['caseid'],
+             'task':trace[index]['task'],
+             'end_timestamp':trace[index]['end_timestamp'],
+             'enable_timestamp':enabling_time,
+             'resource':trace[index]['user']}
+    if not one_timestamp:
+        record['start_timestamp'] = trace[index]['start_timestamp']
+    return record
 
 def find_previous_record(trace_times, task):
     event = dict()
@@ -117,22 +115,25 @@ def find_previous_record(trace_times, task):
             break
     return event
 
-def calculate_process_metrics(process_stats):
+def calculate_process_metrics(process_stats, one_timestamp):
     for record in process_stats:
-        duration=(record['end_timestamp']-record['start_timestamp']).total_seconds()
-        waiting=(record['start_timestamp']-record['enable_timestamp']).total_seconds()
-        multitasking=0
-        #TODO check resourse for multi_tasking
-        if waiting<0:
-            waiting=0
-            if record['end_timestamp'] > record['enable_timestamp']:
-                duration=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
-                multitasking=(record['enable_timestamp']-record['start_timestamp']).total_seconds()
-            else:
-                multitasking = duration
-        record['processing_time'] = duration
-        record['waiting_time'] = waiting
-        record['multitasking'] = multitasking
+        if one_timestamp:
+            record['duration']=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
+        else:
+            duration=(record['end_timestamp']-record['start_timestamp']).total_seconds()
+            waiting=(record['start_timestamp']-record['enable_timestamp']).total_seconds()
+            multitasking=0
+            #TODO check resourse for multi_tasking
+            if waiting<0:
+                waiting=0
+                if record['end_timestamp'] > record['enable_timestamp']:
+                    duration=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
+                    multitasking=(record['enable_timestamp']-record['start_timestamp']).total_seconds()
+                else:
+                    multitasking = duration
+            record['processing_time'] = duration
+            record['waiting_time'] = waiting
+            record['multitasking'] = multitasking
     return process_stats
 
 def create_subsec_set(process_graph):
