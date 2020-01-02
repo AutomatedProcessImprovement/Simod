@@ -21,7 +21,7 @@ def replacement(conformant, not_conformant, log, settings):
         trace = list(filter(lambda x: x['caseid']==similar['sim_caseid'], conformant_reformated))
         for event in trace:
             new_event = {
-                    'caseid':similar['caseid']+'R',
+                    'caseid':str(similar['caseid'])+'R',
                     'task': event['task'],                    
                     'user': event['user'], 
                     'alias': event['alias'],

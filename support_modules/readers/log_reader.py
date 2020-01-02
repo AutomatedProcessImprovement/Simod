@@ -108,7 +108,7 @@ class LogReader(object):
                             timestamp = datetime.datetime.strptime(timestamp[:-6], parameters['timeformat'])
                         except ValueError:
                             timestamp = datetime.datetime.strptime(timestamp, parameters['timeformat'])
-                if not (task == '0' or task == '-1'):
+                if  task not in ['0','-1','Start','End','start','end']:
                     temp_data.append(
                         dict(caseid=caseid, task=task, event_type=event_type, user=user, start_timestamp=timestamp,
                              end_timestamp=complete_timestamp))
@@ -214,6 +214,7 @@ class LogReader(object):
         if parameters['one_timestamp']:
             parameters['column_names']['Complete Timestamp']='end_timestamp'
             log = log.rename(columns=parameters['column_names'])
+            log = log.astype({'caseid': object})
             log = log[(log.task!='Start') & (log.task!='End')].reset_index(drop=True)
             if parameters['filter_d_attrib']:
                 log = log[['caseid', 'task', 'user', 'end_timestamp']]
@@ -222,6 +223,7 @@ class LogReader(object):
             parameters['column_names']['Start Timestamp']='start_timestamp'
             parameters['column_names']['Complete Timestamp']='end_timestamp'
             log = log.rename(columns=parameters['column_names'])
+            log = log.astype({'caseid': object})
             log = log[(log.task!='Start') & (log.task!='End')].reset_index(drop=True)
             if parameters['filter_d_attrib']:
                 log = log[['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']]
@@ -247,28 +249,51 @@ class LogReader(object):
         first_task_names = list(set(first_task_names))
         return first_task_names
 
-    def get_traces(self):
+    # def get_traces(self):
+    #     """returns the data splitted by caseid and ordered by start_timestamp"""
+    #     cases = list()
+    #     for c in self.data: cases.append(c['caseid'])
+    #     cases = sorted(list(set(cases)))
+    #     traces = list()
+    #     for case in cases:
+    #         # trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('start_timestamp'))
+    #         trace = list(filter(lambda x: (x['caseid'] == case), self.data))
+    #         traces.append(trace)
+    #     return traces
+
+    # def get_raw_traces(self):
+    #     """returns the raw data splitted by caseid and ordered by start_timestamp"""
+    #     cases = list()
+    #     for c in self.raw_data: cases.append(c['caseid'])
+    #     cases = sorted(list(set(cases)))
+    #     traces = list()
+    #     for case in cases:
+    #         trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('start_timestamp'))
+    #         traces.append(trace)
+    #     return traces
+    
+    def get_traces(self, parameters):
         """returns the data splitted by caseid and ordered by start_timestamp"""
-        cases = list()
-        for c in self.data: cases.append(c['caseid'])
-        cases = sorted(list(set(cases)))
+        cases = list(set([x['caseid'] for x in self.data]))
         traces = list()
         for case in cases:
-            # trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('start_timestamp'))
-            trace = list(filter(lambda x: (x['caseid'] == case), self.data))
+            if parameters['one_timestamp']:
+                trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('end_timestamp'))
+            else:
+                trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('start_timestamp'))
+            # trace = list(filter(lambda x: (x['caseid'] == case), self.data))
             traces.append(trace)
         return traces
 
     def get_raw_traces(self):
         """returns the raw data splitted by caseid and ordered by start_timestamp"""
-        cases = list()
-        for c in self.raw_data: cases.append(c['caseid'])
-        cases = sorted(list(set(cases)))
+        cases = list(set([c['caseid'] for c in self.raw_data]))
         traces = list()
         for case in cases:
             trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('start_timestamp'))
             traces.append(trace)
         return traces
+
 
     def read_resource_task(self,task,roles):
         """returns the resource that performs a task"""

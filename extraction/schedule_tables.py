@@ -40,9 +40,10 @@ def analize_schedules(resource_table, log, default=False, dtype=None):
                 dict(id=sup.gen_id(), name=key, total_amount=str(len(group_resources)), costxhour="20",
                      timetable_id="QBP_DEFAULT_TIMETABLE"))
         resource_pool[0]['id'] = 'QBP_DEFAULT_RESOURCE'
-        resource_pool.append(dict(id='0', name = 'Role 0', total_amount = '1', costxhour="0",timetable_id="QBP_DEFAULT_TIMETABLE" ))
     else:
         print('test')
+        # resource_pool[0]['id'] = 'QBP_DEFAULT_RESOURCE'
+        resource_pool.append(dict(id='QBP_DEFAULT_RESOURCE', name = 'Role 0', total_amount = '1', costxhour="0",timetable_id="QBP_DEFAULT_TIMETABLE" ))
     return resource_pool, time_table, resource_table
 
 

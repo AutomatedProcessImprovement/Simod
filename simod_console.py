@@ -14,11 +14,12 @@ from support_modules import support as sup
 # =============================================================================
 # Main function
 # =============================================================================
+#TODO: revisar parametros generados antes y despues de la acrualizacion
 def main(argv):
     settings = dict()
     args = dict()
     # Similarity btw the resources profile execution (Song e.t. all)
-    settings['rp_similarity'] = 0.85
+    settings['rp_similarity'] = 0.4
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
     settings['exec_mode'] = 'single'
@@ -30,8 +31,8 @@ def main(argv):
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # Splittminer settings [0..1]   
-            settings['epsilon'] = 0.7
-            settings['eta'] = 0.7
+            settings['epsilon'] = 0.6
+            settings['eta'] = 0.6
             # 'removal', 'replacement', 'repairment'
             settings['alg_manag'] = 'replacement'
             # Processing time definition method: 'manual', 'automatic', 'apx'
@@ -86,7 +87,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names':column_names,
-                                'one_timestamp': True,
+                                'one_timestamp': False,
                                 'reorder':False,
                                 'filter_d_attrib':True,
                                 'ns_include':True}

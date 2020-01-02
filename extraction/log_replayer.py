@@ -11,7 +11,7 @@ def replay(process_graph, log, settings, source='log', run_num=0):
     not_conformant_traces = list()
     conformant_traces=list()
     process_stats=list()
-    traces = log.get_traces()
+    traces = log.get_traces(settings['read_options'])
     for index in range(0,len(traces)):
         trace_times = list()
         trace = traces[index]

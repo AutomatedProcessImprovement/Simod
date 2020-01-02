@@ -43,6 +43,7 @@ def single_exec(settings):
                        settings['read_options'])
     # Create customized event-log for the external tools
     file_name, _ = os.path.splitext(settings['file'])
+    print(log)
     xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'), settings['read_options'])
     
     # Execution steps
@@ -56,30 +57,30 @@ def single_exec(settings):
 
     print("-- Mining Simulation Parameters --")
     parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
-#     xml.print_parameters(os.path.join(settings['output'],
-#                                       settings['file'].split('.')[0]+'.bpmn'),
-#                           os.path.join(settings['output'],
-#                                       settings['file'].split('.')[0]+'.bpmn'),
-#                           parameters)
-#     response = list()
-#     # status = 'ok'
-#     sim_values = list()
-#     if settings['simulation']:
-# #        if settings['analysis']:
-#         process_stats = pd.DataFrame.from_records(process_stats)
-#         for rep in range(settings['repetitions']):
-#             print("Experiment #" + str(rep + 1))
-#             # try:
-#             simulate(settings, rep)
-#             process_stats = process_stats.append(measure_stats(settings,
-#                                                                 bpmn, rep),
-#                                                   ignore_index=True,
-#                                                   sort=False)
-#             sim_values.append(gen.mesurement(process_stats, settings, rep))
-#             # except:
-            #     print('fail')
-            #     status = 'fail'
-            #     break
+    xml.print_parameters(os.path.join(settings['output'],
+                                      settings['file'].split('.')[0]+'.bpmn'),
+                          os.path.join(settings['output'],
+                                      settings['file'].split('.')[0]+'.bpmn'),
+                          parameters)
+    response = list()
+    # status = 'ok'
+    sim_values = list()
+    if settings['simulation']:
+#        if settings['analysis']:
+        process_stats = pd.DataFrame.from_records(process_stats)
+        for rep in range(settings['repetitions']):
+            print("Experiment #" + str(rep + 1))
+            # try:
+            simulate(settings, rep)
+    #         process_stats = process_stats.append(measure_stats(settings,
+    #                                                             bpmn, rep),
+    #                                               ignore_index=True,
+    #                                               sort=False)
+    #         sim_values.append(gen.mesurement(process_stats, settings, rep))
+    #         # except:
+    #             print('fail')
+    #             status = 'fail'
+    #             break
     # data = {'alg_manag': settings['alg_manag'],
     #         'epsilon': settings['epsilon'],
     #         'eta': settings['eta'],
