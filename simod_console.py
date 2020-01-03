@@ -14,7 +14,7 @@ from support_modules import support as sup
 # =============================================================================
 # Main function
 # =============================================================================
-#TODO: revisar parametros generados antes y despues de la acrualizacion
+#TODO: revisar parametros generados antes y despues de la actualizacion
 def main(argv):
     settings = dict()
     args = dict()
@@ -28,7 +28,7 @@ def main(argv):
     #   Event-log filename    
         settings['file'] = 'Production.csv'
         settings['repetitions'] = 1
-        settings['simulation'] = True
+        settings['simulation'] = False
         if settings['exec_mode'] == 'single':
             # Splittminer settings [0..1]   
             settings['epsilon'] = 0.6
@@ -36,7 +36,7 @@ def main(argv):
             # 'removal', 'replacement', 'repairment'
             settings['alg_manag'] = 'replacement'
             # Processing time definition method: 'manual', 'automatic', 'apx'
-            settings['pdef_method'] = 'automatic'
+            settings['pdef_method'] = 'manual'
             # Single Execution
             sim.single_exec(settings)
         else:
