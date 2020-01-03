@@ -5,7 +5,8 @@ Created on Thu Jan  2 11:17:33 2020
 @author: Manuel Camargo
 """
 import pandas as pd
-from tkinter import *
+import tkinter as tk
+
 
 from extraction import pdf_definition as pdf
 from extraction import manual_edition_ui as me
@@ -18,14 +19,12 @@ def evaluate_tasks(process_graph, process_stats, resource_pool, settings):
     if settings['pdef_method'] == 'automatic':
         elements_data = mine_processing_time(process_stats, process_graph, settings)
     if settings['pdef_method'] == 'manual':
-        define_distributions_manually(process_stats, process_graph)
-    print(elements_data)
-    print(elements_data.dtypes)
+        elements_data = define_distributions_manually(process_stats, process_graph)
 
     # Resource association
     elements_data = associate_resource(elements_data, process_stats, resource_pool)
     elements_data = elements_data.to_dict('records')
-
+    print(elements_data)
     return elements_data
 
 def mine_processing_time(process_stats, process_graph, settings):
@@ -72,14 +71,21 @@ def mine_processing_time(process_stats, process_graph, settings):
    
 def define_distributions_manually(process_stats, process_graph):
     elements_data = default_values(process_stats, process_graph)
-    root = Tk()
+    root = tk.Tk()
     a = me.MainWindow(root, elements_data)
     root.mainloop()
+    new_elements = pd.DataFrame(a.new_elements)
+    elements_data = pd.DataFrame(elements_data)
+    elements_data = new_elements.merge(elements_data[['id','name','elementid']],
+                                        on='id',
+                                        how='left')
+    return elements_data
+            
 
 def default_values(process_stats, process_graph):
     elements_data = list()
     tasks = process_stats.task.unique()
-    default_record = {'type':'FIXED', 'mean':3600,'arg1':0, 'arg2':0}
+    default_record = {'type':'FIXED', 'mean':3600,'arg1':3600, 'arg2':3600}
     for task in tasks:
         elements_data.append({**{'id':sup.gen_id(),'name':task},**default_record})
     elements_data = pd.DataFrame(elements_data)
