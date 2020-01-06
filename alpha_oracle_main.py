@@ -9,14 +9,15 @@ import os
 import pandas as pd
 
 from support_modules.readers import log_reader as lr
-from support_modules.analyzers import alpha_oracle as ao
+from support_modules.analyzers import generalization_test as gen
+
 
 def load_event_log(parms):
     # Dataframe creation
     # Filter load local inter-case features or filter them
     log = lr.LogReader(os.path.join('inputs', parms['file_name']), parms['read_options'])
     log_df = pd.DataFrame(log.data)
-    ao.discover_concurrency(log_df, parms['read_options'])
+    gen.mesurement(log_df, parms)
 
 # =============================================================================
 # Kernel
