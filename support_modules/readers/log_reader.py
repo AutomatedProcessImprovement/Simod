@@ -88,7 +88,6 @@ class LogReader(object):
                 task = ''
                 user = ''
                 event_type = ''
-                complete_timestamp = ''
                 for string in event.findall(tags['string'], ns):
                     if string.attrib['key'] == 'concept:name':
                         task = string.attrib['value']                        
@@ -96,10 +95,6 @@ class LogReader(object):
                         user = string.attrib['value']
                     if string.attrib['key'] == 'lifecycle:transition':
                         event_type = string.attrib['value'].lower()
-                    if string.attrib['key'] == 'Complete_Timestamp':
-                        complete_timestamp = string.attrib['value']
-                        if complete_timestamp != 'End':
-                            complete_timestamp = datetime.datetime.strptime(complete_timestamp, parameters['timeformat'])
                 timestamp = ''
                 for date in event.findall(tags['date'], ns):
                     if date.attrib['key'] == 'time:timestamp':
@@ -109,37 +104,36 @@ class LogReader(object):
                         except ValueError:
                             timestamp = datetime.datetime.strptime(timestamp, parameters['timeformat'])
                 if  task not in ['0','-1','Start','End','start','end']:
-                    temp_data.append(
-                        dict(caseid=caseid, task=task, event_type=event_type, user=user, start_timestamp=timestamp,
-                             end_timestamp=complete_timestamp))
+                    temp_data.append(dict(caseid=caseid, task=task, event_type=event_type, user=user, timestamp=timestamp))
             i += 1
         raw_data = temp_data
-        temp_data = self.reorder_xes(temp_data, parameters['one_timestamp'])
+        temp_data = self.reorder_xes(temp_data, parameters)
         sup.print_done_task()
         return temp_data, raw_data
 
-
-    def reorder_xes(self, temp_data, one_timestamp):
+    def reorder_xes(self, temp_data, parameters):
         """this method joints the duplicated events on the .xes log"""
+        temp_data = pd.DataFrame(temp_data)
         ordered_event_log = list()
-        if one_timestamp:
-            ordered_event_log = list(filter(lambda x: x['event_type'] == 'complete', temp_data))
-            for event in ordered_event_log:
-                event['end_timestamp'] = event['start_timestamp']
+        if parameters['one_timestamp']:
+            parameters['column_names']['Complete Timestamp']='end_timestamp'
+            temp_data = temp_data[temp_data.event_type=='complete']
+            ordered_event_log = temp_data.rename(columns={'timestamp':'end_timestamp'})
         else:
-            events = list(filter(lambda x: (x['event_type'] == 'start' or x['event_type'] == 'complete'), temp_data))
-            cases = list({x['caseid'] for x in events})
+            parameters['column_names']['Start Timestamp']='start_timestamp'
+            parameters['column_names']['Complete Timestamp']='end_timestamp'
+            cases = temp_data.caseid.unique()
             for case in cases:
-                start_events = sorted(list(filter(lambda x: x['event_type'] == 'start' and x['caseid'] == case, events)), key=lambda x:x['start_timestamp'])
-                finish_events = sorted(list(filter(lambda x: x['event_type'] == 'complete' and x['caseid'] == case, events)), key=lambda x:x['start_timestamp'])
+                start_events = temp_data[(temp_data.event_type=='start') & (temp_data.caseid==case)].sort_values(by='timestamp', ascending=True).to_dict('records')
+                finish_events = temp_data[(temp_data.event_type=='complete') & (temp_data.caseid==case)].sort_values(by='timestamp', ascending=True).to_dict('records')
                 if len(start_events) == len(finish_events):
                     temp_trace = list()
                     for i, _ in enumerate(start_events):
                         match = False
                         for j, _ in enumerate(finish_events):
                             if start_events[i]['task'] == finish_events[j]['task']:
-                                temp_trace.append(dict(caseid=case, task=start_events[i]['task'], event_type=start_events[i]['task'],
-                                     user=start_events[i]['user'], start_timestamp=start_events[i]['start_timestamp'], end_timestamp=finish_events[j]['start_timestamp']))
+                                temp_trace.append(dict(caseid=case, task=start_events[i]['task'], user=start_events[i]['user'],
+                                                       start_timestamp=start_events[i]['timestamp'], end_timestamp=finish_events[j]['timestamp']))
                                 match = True
                                 break
                         if match:
@@ -249,29 +243,6 @@ class LogReader(object):
         first_task_names = list(set(first_task_names))
         return first_task_names
 
-    # def get_traces(self):
-    #     """returns the data splitted by caseid and ordered by start_timestamp"""
-    #     cases = list()
-    #     for c in self.data: cases.append(c['caseid'])
-    #     cases = sorted(list(set(cases)))
-    #     traces = list()
-    #     for case in cases:
-    #         # trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('start_timestamp'))
-    #         trace = list(filter(lambda x: (x['caseid'] == case), self.data))
-    #         traces.append(trace)
-    #     return traces
-
-    # def get_raw_traces(self):
-    #     """returns the raw data splitted by caseid and ordered by start_timestamp"""
-    #     cases = list()
-    #     for c in self.raw_data: cases.append(c['caseid'])
-    #     cases = sorted(list(set(cases)))
-    #     traces = list()
-    #     for case in cases:
-    #         trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('start_timestamp'))
-    #         traces.append(trace)
-    #     return traces
-    
     def get_traces(self, parameters):
         """returns the data splitted by caseid and ordered by start_timestamp"""
         cases = list(set([x['caseid'] for x in self.data]))

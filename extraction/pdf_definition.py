@@ -7,26 +7,28 @@ import numpy as np
 from support_modules import support as sup
 
 
-def get_task_distribution(task_data, graph=False, bins=200):
-    """Calculate the probability distribution of one task of a log
+def get_task_distribution(data_serie, bins=200):
+    """Calculate the probability distribution of a series of data
         parameters:
-        task_data: data of time delta for one task
-        graph: activate the comparision graphs of the process
+        data_serie: data of time deltas
     """
     dist = {'norm':'NORMAL', 'lognorm':'LOGNORMAL', 'gamma':'GAMMA', 'expon':'EXPONENTIAL',
             'uniform':'UNIFORM', 'triang':'TRIANGULAR', 'fixed':'FIXED'}
 
-    if not task_data:
+    if not data_serie:
         dname = 'fixed'
         dparams = dict(mean=0,arg1=0, arg2=0)
     else:
         # if all the values of the serie are equal is an automatic activity with fixed distribution
-        if np.min(task_data)==np.max(task_data):
+        if np.min(data_serie)==np.max(data_serie):
             dname = 'fixed'
-            dparams = dict(mean=int(np.min(task_data)),arg1=0, arg2=0)
+            dparams = dict(mean=int(np.min(data_serie)),arg1=0, arg2=0)
+        elif len(data_serie) < 100:
+            dname = 'expon'
+            dparams = dict(mean=0, arg1=sup.ffloat(np.mean(data_serie),1), arg2=0)
         else:
-            dname = dist_best(task_data, bins)
-            dparams =  dist_params(dname, task_data)
+            dname = dist_best(data_serie, bins)
+            dparams =  dist_params(dname, data_serie)
     return dict(dname=dist[dname], dparams=dparams)
 
 # -- Find best distribution --
@@ -67,22 +69,22 @@ def dist_best(series, bins):
     return best_distribution.name
 
 
-def dist_params(dname, task_data):
+def dist_params(dname, data_serie):
     """calculate additional parameters once the probability distribution is found"""
     params = dict()
     if dname=='norm':
         #for effects of the XML arg1=std and arg2=0
-        params=dict(mean=sup.ffloat(np.mean(task_data),1), arg1=sup.ffloat(np.std(task_data),1), arg2=0)
+        params=dict(mean=sup.ffloat(np.mean(data_serie),1), arg1=sup.ffloat(np.std(data_serie),1), arg2=0)
     elif dname=='lognorm' or dname=='gamma':
         #for effects of the XML arg1=var and arg2=0
-        params=dict(mean=sup.ffloat(np.mean(task_data),1), arg1=sup.ffloat(np.var(task_data),1), arg2=0)
+        params=dict(mean=sup.ffloat(np.mean(data_serie),1), arg1=sup.ffloat(np.var(data_serie),1), arg2=0)
     elif dname=='expon':
         #for effects of the XML arg1=0 and arg2=0
-        params=dict(mean=0, arg1=sup.ffloat(np.mean(task_data),1), arg2=0)
+        params=dict(mean=0, arg1=sup.ffloat(np.mean(data_serie),1), arg2=0)
     elif dname=='uniform':
         #for effects of the XML the mean is always 3600, min = arg1 and max = arg2
-        params=dict(mean=3600, arg1=sup.ffloat(np.min(task_data),1), arg2=sup.ffloat(np.max(task_data),1))
+        params=dict(mean=3600, arg1=sup.ffloat(np.min(data_serie),1), arg2=sup.ffloat(np.max(data_serie),1))
     elif dname=='triang':
         #for effects of the XML the mode is stored in the mean parameter, min = arg1 and max = arg2
-        params=dict(mean=sup.ffloat(st.mode(task_data).mode[0],1), arg1=sup.ffloat(np.min(task_data),1), arg2=sup.ffloat(np.max(task_data),1))
+        params=dict(mean=sup.ffloat(st.mode(data_serie).mode[0],1), arg1=sup.ffloat(np.min(data_serie),1), arg2=sup.ffloat(np.max(data_serie),1))
     return params

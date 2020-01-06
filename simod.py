@@ -42,8 +42,7 @@ def single_exec(settings):
     log = lr.LogReader(os.path.join(settings['input'], settings['file']), 
                        settings['read_options'])
     # Create customized event-log for the external tools
-    file_name, _ = os.path.splitext(settings['file'])
-    print(log)
+    file_name = settings['file'].split('.')[0]
     xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'), settings['read_options'])
     
     # Execution steps
@@ -210,7 +209,7 @@ def mining_structure(settings):
     """
     print(" -- Mining Process Structure --")
     # Event log file_name
-    file_name, _ = os.path.splitext(settings['file'])
+    file_name = settings['file'].split('.')[0]
     input_route = os.path.join(settings['output'], file_name+'.xes') 
     # Mining structure definition
     args = ['java', '-jar', settings['miner_path'],

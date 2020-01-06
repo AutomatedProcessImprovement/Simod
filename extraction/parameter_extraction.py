@@ -20,9 +20,7 @@ def extract_parameters(log, bpmn, process_graph, settings):
         #-------------------------------------------------------------------
         # Analysing resource pool LV917 or 247
         roles, resource_table = rl.read_resource_pool(log, drawing=False, sim_percentage=settings['rp_similarity'])
-        # print(roles)
         resource_pool, time_table, resource_table = sch.analize_schedules(resource_table, log, True, '247')
-        # print(resource_pool)
         #-------------------------------------------------------------------
         # Process replaying
         conformed_traces, not_conformed_traces, process_stats = rpl.replay(process_graph, log, settings)
@@ -35,6 +33,7 @@ def extract_parameters(log, bpmn, process_graph, settings):
         # Determination of first tasks for calculate the arrival rate
         inter_arrival_times = arr.define_interarrival_tasks(process_graph, conformed_traces, settings)
         arrival_rate_bimp = (pdf.get_task_distribution(inter_arrival_times, 50))
+        print(arrival_rate_bimp)
         arrival_rate_bimp['startEventId'] = startEventId
         #-------------------------------------------------------------------
         # Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
@@ -44,6 +43,6 @@ def extract_parameters(log, bpmn, process_graph, settings):
         elements_data = te.evaluate_tasks(process_graph, process_stats, resource_pool, settings)
         
         parameters = dict(arrival_rate=arrival_rate_bimp, time_table=time_table, resource_pool=resource_pool,
-                              elements_data=elements_data, sequences=sequences, instances=len(conformed_traces),
+                              elements_data=elements_data, sequences=sequences, instances=len(log.get_traces(settings['read_options'])),
                                 bpmnId=bpmnId)
         return parameters, process_stats

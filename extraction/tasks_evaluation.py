@@ -6,6 +6,7 @@ Created on Thu Jan  2 11:17:33 2020
 """
 import pandas as pd
 import tkinter as tk
+import networkx as nx
 
 
 from extraction import pdf_definition as pdf
@@ -23,8 +24,8 @@ def evaluate_tasks(process_graph, process_stats, resource_pool, settings):
 
     # Resource association
     elements_data = associate_resource(elements_data, process_stats, resource_pool)
+    print(elements_data[['name', 'type', 'mean', 'arg1', 'arg2']])
     elements_data = elements_data.to_dict('records')
-    print(elements_data)
     return elements_data
 
 def mine_processing_time(process_stats, process_graph, settings):
@@ -43,7 +44,9 @@ def mine_processing_time(process_stats, process_graph, settings):
     """
     # TODO: check if all the tasks have distribution and time associated
     elements_data = list()
-    tasks = process_stats.task.unique()
+    # tasks = process_stats.task.unique()
+    tasks = list(filter(lambda x: process_graph.node[x]['type']=='task' , list(nx.nodes(process_graph))))
+    tasks = [process_graph.node[x]['name'] for x in tasks]
     for task in tasks:
         if settings['read_options']['one_timestamp']:
             task_processing = process_stats[process_stats.task==task]['duration'].tolist() 
@@ -84,7 +87,8 @@ def define_distributions_manually(process_stats, process_graph):
 
 def default_values(process_stats, process_graph):
     elements_data = list()
-    tasks = process_stats.task.unique()
+    tasks = list(filter(lambda x: process_graph.node[x]['type']=='task' , list(nx.nodes(process_graph))))
+    tasks = [process_graph.node[x]['name'] for x in tasks]
     default_record = {'type':'FIXED', 'mean':3600,'arg1':3600, 'arg2':3600}
     for task in tasks:
         elements_data.append({**{'id':sup.gen_id(),'name':task},**default_record})

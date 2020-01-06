@@ -99,6 +99,14 @@ def round_preserve(l,expected_sum):
     l[idx] +=difference
     return l
 
+def avoid_zero_prob(l):
+    if len(l)==2:
+        if l[0]==0.00:
+            l=[0.01, 0.99]
+        elif l[1]==0:
+            l=[0.99, 0.01]
+    return l
+
 def create_symetric_list(width, length):
     positions = list()
     numbers = list()

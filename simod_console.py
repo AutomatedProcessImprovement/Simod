@@ -26,17 +26,17 @@ def main(argv):
 #   Parameters setting manual fixed or catched by console for batch operations
     if not argv:
     #   Event-log filename    
-        settings['file'] = 'Production.csv'
+        settings['file'] = 'Production.xes.gz'
         settings['repetitions'] = 1
         settings['simulation'] = False
         if settings['exec_mode'] == 'single':
             # Splittminer settings [0..1]   
-            settings['epsilon'] = 0.6
-            settings['eta'] = 0.6
+            settings['epsilon'] = 0.7
+            settings['eta'] = 0.7
             # 'removal', 'replacement', 'repairment'
             settings['alg_manag'] = 'replacement'
             # Processing time definition method: 'manual', 'automatic', 'apx'
-            settings['pdef_method'] = 'manual'
+            settings['pdef_method'] = 'automatic'
             # Single Execution
             sim.single_exec(settings)
         else:
