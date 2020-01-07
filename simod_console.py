@@ -19,24 +19,24 @@ def main(argv):
     settings = dict()
     args = dict()
     # Similarity btw the resources profile execution (Song e.t. all)
-    settings['rp_similarity'] = 0.4
+    settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
     settings['exec_mode'] = 'single'
 #   Parameters setting manual fixed or catched by console for batch operations
     if not argv:
     #   Event-log filename    
-        settings['file'] = 'Production.xes.gz'
+        settings['file'] = 'PurchasingExample.xes.gz'
         settings['repetitions'] = 1
-        settings['simulation'] = False
+        settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # Splittminer settings [0..1]   
-            settings['epsilon'] = 0.7
-            settings['eta'] = 0.7
+            settings['epsilon'] = 0.5
+            settings['eta'] = 0.3
             # 'removal', 'replacement', 'repairment'
-            settings['alg_manag'] = 'replacement'
-            # Processing time definition method: 'manual', 'automatic', 'apx'
-            settings['pdef_method'] = 'automatic'
+            settings['alg_manag'] = 'repairment'
+            # Processing time definition method: 'manual', 'automatic', 'semi-automatic', 'apx'
+            settings['pdef_method'] = 'semi-automatic'
             # Single Execution
             sim.single_exec(settings)
         else:

@@ -52,6 +52,9 @@ def single_exec(settings):
 
     # Evaluate alignment
     # TODO: modify trace repair to allow one ts
+    # for x in log.get_traces(settings['read_options']):
+    #     if x[0]['caseid'] == 'Case113':
+    #         [print(y) for y in x]
     chk.evaluate_alignment(process_graph, log, settings)
 
     print("-- Mining Simulation Parameters --")

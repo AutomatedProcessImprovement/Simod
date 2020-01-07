@@ -11,20 +11,20 @@ from tkinter import Frame, Button, Toplevel, Label, Entry, messagebox, ttk
 class MainWindow(Frame):
     def __init__(self, master, elements_data):
         Frame.__init__(self, master=None)
-        self.master.title("Probando Dialogos - Manejando datos")
+        self.master.title("Tasks durations distributions")
         self.new_elements = list()
         self.tree = self.make_form(elements_data)
         self.tree.pack()    
         b1 = Button(self.master, text = 'Modify', command=self.dialogo)
         b1.pack(side = tk.LEFT, padx = 5, pady = 5)
-        b2 = Button(self.master, text = 'Quit', command = self.close_window)
+        b2 = Button(self.master, text = 'Continue', command = self.close_window)
         b2.pack(side = tk.LEFT, padx = 5, pady = 5)
 
     def dialogo(self):
         try:
             selected_item = self.tree.selection()[0]
             values = tuple(self.tree.item(selected_item)['values'])
-            d = MyDialog(self.master, values, "Probando Dialogo")
+            d = MyDialog(self.master, values, "PDF edition")
             self.master.wait_window(d.top)
             self.tree.item(selected_item,values=d.values)
         except:

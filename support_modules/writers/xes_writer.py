@@ -71,6 +71,7 @@ def convert_line_in_event(csv_mapping: dict, event: dict, one_timestamp:bool):
 
 def create_xes_file(input_log, output_file, read_options):
     csv_mapping = { v:k for k,v in read_options['column_names'].items()}
+    print(csv_mapping)
     log = XFactory.create_log()
     data = sorted(input_log.data, key=lambda x:x['caseid'])
     for key, group in it.groupby(data, key=lambda x:x['caseid']):

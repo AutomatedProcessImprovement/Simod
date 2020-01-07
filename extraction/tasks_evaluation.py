@@ -19,12 +19,13 @@ def evaluate_tasks(process_graph, process_stats, resource_pool, settings):
     # processing time discovery method
     if settings['pdef_method'] == 'automatic':
         elements_data = mine_processing_time(process_stats, process_graph, settings)
-    if settings['pdef_method'] == 'manual':
-        elements_data = define_distributions_manually(process_stats, process_graph)
+        # TODO: Add manual edition for single execution
+    if settings['pdef_method'] in ['manual', 'semi-automatic']:
+        elements_data = define_distributions_manually(process_stats, process_graph, settings)
 
     # Resource association
     elements_data = associate_resource(elements_data, process_stats, resource_pool)
-    print(elements_data[['name', 'type', 'mean', 'arg1', 'arg2']])
+    # print(elements_data[['name', 'type', 'mean', 'arg1', 'arg2']])
     elements_data = elements_data.to_dict('records')
     return elements_data
 
@@ -72,8 +73,13 @@ def mine_processing_time(process_stats, process_graph, settings):
 
 
    
-def define_distributions_manually(process_stats, process_graph):
-    elements_data = default_values(process_stats, process_graph)
+def define_distributions_manually(process_stats, process_graph, settings):
+    if settings['pdef_method'] == 'semi-automatic':
+        elements_data = mine_processing_time(process_stats, process_graph, settings)
+        elements_data = elements_data.to_dict('records')
+    else:
+        elements_data = default_values(process_stats, process_graph)
+    print(elements_data)
     root = tk.Tk()
     a = me.MainWindow(root, elements_data)
     root.mainloop()

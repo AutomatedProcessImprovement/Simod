@@ -33,7 +33,6 @@ def extract_parameters(log, bpmn, process_graph, settings):
         # Determination of first tasks for calculate the arrival rate
         inter_arrival_times = arr.define_interarrival_tasks(process_graph, conformed_traces, settings)
         arrival_rate_bimp = (pdf.get_task_distribution(inter_arrival_times, 50))
-        print(arrival_rate_bimp)
         arrival_rate_bimp['startEventId'] = startEventId
         #-------------------------------------------------------------------
         # Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable

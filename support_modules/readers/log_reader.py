@@ -35,7 +35,7 @@ class LogReader(object):
         return filename,file_extension
 
     # Decompress .gz files
-    def decompress_file_gzip(self,filename, outFileName):
+    def decompress_file_gzip(self, filename, outFileName):
         inFile = gzip.open(filename, 'rb')
         outFile = open(outFileName,'wb')
         outFile.write(inFile.read())
@@ -119,6 +119,8 @@ class LogReader(object):
             parameters['column_names']['Complete Timestamp']='end_timestamp'
             temp_data = temp_data[temp_data.event_type=='complete']
             ordered_event_log = temp_data.rename(columns={'timestamp':'end_timestamp'})
+            ordered_event_log = ordered_event_log.drop(columns='event_type')
+            ordered_event_log = ordered_event_log.to_dict('records')
         else:
             parameters['column_names']['Start Timestamp']='start_timestamp'
             parameters['column_names']['Complete Timestamp']='end_timestamp'
@@ -261,8 +263,10 @@ class LogReader(object):
         cases = list(set([c['caseid'] for c in self.raw_data]))
         traces = list()
         for case in cases:
-            trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('start_timestamp'))
+            trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('timestamp'))
             traces.append(trace)
+            # trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('start_timestamp'))
+            # traces.append(trace)
         return traces
 
 
