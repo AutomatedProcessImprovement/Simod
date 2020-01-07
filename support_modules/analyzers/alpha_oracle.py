@@ -4,8 +4,6 @@ Created on Sun Jan  5 18:03:15 2020
 
 @author: Manuel Camargo
 """
-import random
-import string
 import itertools
 from enum import Enum
 
@@ -15,17 +13,7 @@ class Rel(Enum):
     NOT_CONNECTED = 3
     PARALLEL = 4
 
-def discover_concurrency(log, parameters):
-    
-    if parameters['one_timestamp']:
-        log = log[['caseid', 'task', 'end_timestamp']]
-        log = log.rename(columns={'end_timestamp':'timestamp'})
-    else:
-        log = log[['caseid', 'task', 'start_timestamp']]
-        log = log.rename(columns={'start_timestamp':'timestamp'})
-    tasks_alias = create_alias(log)
-    assign_alias = lambda x: tasks_alias[x['task']]
-    log['alias'] = log.apply(assign_alias, axis=1)
+def discover_concurrency(log, tasks_alias):
     seq_flows = reformat_events(log)
     freqs = count_freq(seq_flows)
     # Create footprint matrix
@@ -41,7 +29,7 @@ def discover_concurrency(log, parameters):
         elif footprint_matrix[relation] == Rel.FOLLOWS:
             footprint_matrix[relation] = Rel.PARALLEL
             footprint_matrix[(relation[1],relation[0])] = Rel.PARALLEL
-    [print(k, v, sep=': ') for k, v in footprint_matrix.items()]
+    return footprint_matrix
 
 def count_freq(seq_flows):
     freqs = dict()
@@ -69,18 +57,3 @@ def reformat_events(log_df):
         temp_data.append(serie)
     return temp_data
 
-def create_alias(log):
-    """Creates char aliases for a categorical attributes.
-    Args:
-        quantity (int): number of aliases to create.
-    Returns:
-        dict: alias for a categorical attributes.
-    """
-    tasks = log.task.unique()
-    quantity = len(tasks)
-    # characters = [chr(i) for i in range(0, quantity)]
-    aliases = random.sample(string.ascii_letters, quantity)
-    alias = dict()
-    for i in range(0, quantity):
-        alias[tasks[i]] = aliases[i]
-    return alias
