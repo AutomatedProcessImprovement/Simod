@@ -13,7 +13,7 @@ class Rel(Enum):
     NOT_CONNECTED = 3
     PARALLEL = 4
 
-def discover_concurrency(log, tasks_alias):
+def discover_concurrency(log, tasks_alias, look_for_loops=False):
     seq_flows = reformat_events(log)
     freqs = count_freq(seq_flows)
     # Create footprint matrix
@@ -29,6 +29,13 @@ def discover_concurrency(log, tasks_alias):
         elif footprint_matrix[relation] == Rel.FOLLOWS:
             footprint_matrix[relation] = Rel.PARALLEL
             footprint_matrix[(relation[1],relation[0])] = Rel.PARALLEL
+            
+    if look_for_loops:
+        for seq in seq_flows:
+            for i in range(0, len(seq)-2, 2):
+                if seq[i] == seq[i + 2]:
+                    footprint_matrix[(seq[i], seq[i+1])] = Rel.PRECEDES
+                    footprint_matrix[(seq[i+1], seq[i])] = Rel.PRECEDES
     return footprint_matrix
 
 def count_freq(seq_flows):
