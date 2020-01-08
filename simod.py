@@ -6,7 +6,6 @@ Created on Thu Mar 28 10:56:25 2019
 """
 import os
 import subprocess
-from shutil import copyfile
 
 import pandas as pd
 import numpy as np
@@ -29,32 +28,31 @@ from extraction import log_replayer as rpl
 # =============================================================================
 # Single execution
 # =============================================================================
-
-def single_exec(settings):
-    """Main aplication method"""
+def pipe_line_execution(settings):
+    if settings['exec_mode'] == 'optimizer':
+        # Paths redefinition
+        settings['output'] = os.path.join('outputs', sup.folder_id())
+        if settings['alg_manag'] == 'repairment':
+            settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
+            settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
     # Output folder creation
     if not os.path.exists(settings['output']):
         os.makedirs(settings['output'])
         os.makedirs(os.path.join(settings['output'], 'sim_data'))
-    # copyfile(os.path.join(settings['input'], settings['file']),
-    #          os.path.join(settings['output'], settings['file']))
     # Event log reading
     log = lr.LogReader(os.path.join(settings['input'], settings['file']), 
-                       settings['read_options'])
+                        settings['read_options'])
     # Create customized event-log for the external tools
     file_name = settings['file'].split('.')[0]
-    xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'), settings['read_options'])
-    
+    xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'),
+                        settings['read_options'])
     # Execution steps
     mining_structure(settings)
-    bpmn = br.BpmnReader(os.path.join(settings['output'], file_name+'.bpmn'))
+    bpmn = br.BpmnReader(os.path.join(settings['output'],
+                                      settings['file'].split('.')[0]+'.bpmn'))
     process_graph = gph.create_process_structure(bpmn)
 
     # Evaluate alignment
-    # TODO: modify trace repair to allow one ts
-    # for x in log.get_traces(settings['read_options']):
-    #     if x[0]['caseid'] == 'Case113':
-    #         [print(y) for y in x]
     chk.evaluate_alignment(process_graph, log, settings)
 
     print("-- Mining Simulation Parameters --")
@@ -64,76 +62,6 @@ def single_exec(settings):
                           os.path.join(settings['output'],
                                       settings['file'].split('.')[0]+'.bpmn'),
                           parameters)
-    response = list()
-    # status = 'ok'
-    sim_values = list()
-    if settings['simulation']:
-#        if settings['analysis']:
-        process_stats = pd.DataFrame.from_records(process_stats)
-        for rep in range(settings['repetitions']):
-            print("Experiment #" + str(rep + 1))
-            # try:
-            simulate(settings, rep)
-    #         process_stats = process_stats.append(measure_stats(settings,
-    #                                                             bpmn, rep),
-    #                                               ignore_index=True,
-    #                                               sort=False)
-    #         sim_values.append(gen.mesurement(process_stats, settings, rep))
-    #         # except:
-    #             print('fail')
-    #             status = 'fail'
-    #             break
-    # data = {'alg_manag': settings['alg_manag'],
-    #         'epsilon': settings['epsilon'],
-    #         'eta': settings['eta'],
-    #         'output': settings['output']
-    #         }
-
-    # if status == 'ok':
-    #     loss = (1 - np.mean([x['act_norm'] for x in sim_values]))
-    #     if loss < 0:
-    #         response.append({**{'loss': loss, 'status': 'fail'}, **data})
-    #     else:
-    #         response.append({**{'loss': loss, 'status': status}, **data})
-    # else:
-    #     response.append({**{'loss': 1, 'status': status}, **data})
-
-    # return response
-
-# =============================================================================
-# Hyper-optimaizer execution
-# =============================================================================
-
-def objective(settings):
-    """Main aplication method"""
-    # Output folder creation
-    if not os.path.exists(settings['output']):
-        os.makedirs(settings['output'])
-        os.makedirs(os.path.join(settings['output'], 'sim_data'))
-    # Copy event-log to output folder
-    copyfile(os.path.join(settings['input'], settings['file']),
-             os.path.join(settings['output'], settings['file']))
-    # Event log reading
-    log = lr.LogReader(os.path.join(settings['output'], settings['file']),
-                       settings['timeformat'])
-    # Execution steps
-    mining_structure(settings, settings['epsilon'], settings['eta'])
-    bpmn = br.BpmnReader(os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'))
-    process_graph = gph.create_process_structure(bpmn)
-
-    # Evaluate alignment
-    chk.evaluate_alignment(process_graph, log, settings)
-
-    print("-- Mining Simulation Parameters --")
-    parameters, process_stats = par.extract_parameters(log, bpmn, process_graph)
-    xml.print_parameters(os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'),
-                         os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'),
-                         parameters)
-    response = dict()
-    measurements = list()
     status = STATUS_OK
     sim_values = list()
     process_stats = pd.DataFrame.from_records(process_stats)
@@ -141,38 +69,62 @@ def objective(settings):
         print("Experiment #" + str(rep + 1))
         try:
             simulate(settings, rep)
-            process_stats = process_stats.append(measure_stats(settings,
-                                                               bpmn, rep),
-                                                 ignore_index=True,
-                                                 sort=False)
+            process_stats = process_stats.append(measure_stats(settings, bpmn, rep),
+                                                  ignore_index=True,
+                                                  sort=False)
             sim_values.append(gen.mesurement(process_stats, settings, rep))
-        except:
+        except Exception as e:
+            print(e)
             status = STATUS_FAIL
             break
 
-    data = {'alg_manag': settings['alg_manag'],
-            'epsilon': settings['epsilon'],
-            'eta': settings['eta'],
-            'output': settings['output']
-            }
-    if status == STATUS_OK:
-        loss = (1 - np.mean([x['act_norm'] for x in sim_values]))
-        if loss < 0:
-            response = {'loss': loss, 'params': settings, 'status': STATUS_FAIL}
-            measurements.append({**{'loss': loss, 'status': STATUS_FAIL}, **data})
+    response, measurements = define_response(status, sim_values, settings)
+    
+    if settings['exec_mode'] == 'optimizer':
+        if os.path.getsize(os.path.join('outputs', settings['temp_file'])) > 0:
+            sup.create_csv_file(measurements, os.path.join('outputs', settings['temp_file']),mode='a')
         else:
-            response = {'loss': loss, 'params': settings, 'status': status}
-            measurements.append({**{'loss': loss, 'status': status}, **data})
+            sup.create_csv_file_header(measurements, os.path.join('outputs', settings['temp_file']))
     else:
-        response = {'params': settings, 'status': status}
-        measurements.append({**{'loss': 1, 'status': status}, **data})
-   
-    if os.path.getsize(os.path.join('outputs', settings['temp_file'])) > 0:
-        sup.create_csv_file(measurements, os.path.join('outputs', settings['temp_file']),mode='a')
-    else:
-        sup.create_csv_file_header(measurements, os.path.join('outputs', settings['temp_file']))
+        print('------ Final results ------')
+        [print(k, v, sep=': ') for k, v in response.items()]
+
     return response
 
+def define_response(status, sim_values, settings):
+    response = dict()
+    measurements = list()
+    data = {
+        'alg_manag': settings['alg_manag'], 'epsilon': settings['epsilon'],
+        'eta': settings['eta'], 'output': settings['output']
+        }
+    if settings['exec_mode'] == 'optimizer':
+        if status == STATUS_OK:
+            loss = (1 - np.mean([x['act_norm'] for x in sim_values]))
+            if loss < 0:
+                response = {'loss': loss, 'params': settings, 'status': STATUS_FAIL}
+                measurements.append({**{'similarity': 1 - loss, 'status': STATUS_FAIL}, **data})
+            else:
+                response = {'loss': loss, 'params': settings, 'status': status}
+                measurements.append({**{'similarity': 1 - loss, 'status': status}, **data})
+        else:
+            response = {'params': settings, 'status': status}
+            measurements.append({**{'similarity': 0, 'status': status}, **data})
+    else:
+        if status == STATUS_OK:
+            similarity = (np.mean([x['act_norm'] for x in sim_values]))
+            if similarity > 0:
+                response = {**{'similarity': similarity, 'status': STATUS_FAIL}, **data}
+            else:
+                response = {**{'similarity': similarity, 'status': status}, **data}
+        else:
+            response = {**{'similarity': 0, 'status': status}, **data}
+    return response, measurements
+    
+
+# =============================================================================
+# Hyperparameter-optimizer execution
+# =============================================================================
 
 def hyper_execution(settings, args):
     """Execute splitminer for bpmn structure mining."""
@@ -184,20 +136,10 @@ def hyper_execution(settings, args):
     ## Trials object to track progress
     bayes_trials = Trials()
     ## Optimize
-    best = fmin(fn=objective, space=space, algo=tpe.suggest,
+    best = fmin(fn=pipe_line_execution, space=space, algo=tpe.suggest,
                 max_evals=args['max_eval'], trials=bayes_trials, show_progressbar=False)
     
-    measurements = list()
-    for res in bayes_trials.results:
-        measurements.append({
-            'loss': res['loss'],
-            'alg_manag': res['params']['alg_manag'],
-            'epsilon': res['params']['epsilon'],
-            'eta': res['params']['eta'],
-            'status': res['status'],
-            'output': res['params']['output']
-            })
-    return best, measurements
+    print(best)
 
 # =============================================================================
 # External tools calling
@@ -236,7 +178,7 @@ def simulate(settings, rep):
     subprocess.call(args)
 
 def measure_stats(settings, bpmn, rep):
-    """Executes BIMP Simulations.
+    """Reads the simulation results stats
     Args:
         settings (dict): Path to jar and file names
         rep (int): repetition number
@@ -251,9 +193,7 @@ def measure_stats(settings, bpmn, rep):
     temp = lr.LogReader(os.path.join(m_settings['output'], 'sim_data',
                                      m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'), m_settings['read_options'])
     process_graph = gph.create_process_structure(bpmn)
-    _, _, temp_stats = rpl.replay(process_graph, temp, source='simulation', run_num=rep + 1)
+    _, _, temp_stats = rpl.replay(process_graph, temp, settings, source='simulation', run_num=rep + 1)
     temp_stats = pd.DataFrame.from_records(temp_stats)
-    # role = lambda x: x['resource']
-    # temp_stats['role'] = temp_stats.apply(role, axis=1)
     temp_stats['role'] = temp_stats['resource']
     return temp_stats

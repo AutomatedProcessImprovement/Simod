@@ -14,7 +14,6 @@ from support_modules import support as sup
 # =============================================================================
 # Main function
 # =============================================================================
-#TODO: revisar parametros generados antes y despues de la actualizacion
 def main(argv):
     settings = dict()
     args = dict()
@@ -23,27 +22,29 @@ def main(argv):
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
     settings['exec_mode'] = 'single'
-#   Parameters setting manual fixed or catched by console for batch operations
+    # Parameters setting manual fixed or catched by console for batch operations
     if not argv:
     #   Event-log filename    
         settings['file'] = 'PurchasingExample.xes.gz'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
-            # Splittminer settings [0..1]   
+            # Splitminer settings [0..1]   
             settings['epsilon'] = 0.5
             settings['eta'] = 0.3
             # 'removal', 'replacement', 'repairment'
             settings['alg_manag'] = 'repairment'
             # Processing time definition method: 'manual', 'automatic', 'semi-automatic', 'apx'
-            settings['pdef_method'] = 'semi-automatic'
+            settings['pdef_method'] = 'automatic'
             # Single Execution
-            sim.single_exec(settings)
+            # sim.single_exec(settings)
+            sim.pipe_line_execution(settings)
         else:
-            args['epsilon'] = [0.3, 0.7]
-            args['eta'] = [0.3, 0.7]
+            args['epsilon'] = [0.0, 1.0]
+            args['eta'] = [0.0, 1.0]
             args['max_eval'] = 2
-            settings['temp_file'] = sup.folder_id()
+            settings['temp_file'] = sup.file_id(prefix='OP_')
+            settings['pdef_method'] = 'automatic'
             # Execute optimizer
             if not os.path.exists(os.path.join('outputs', settings['temp_file'])):
                 open(os.path.join('outputs', settings['temp_file']), 'w').close()

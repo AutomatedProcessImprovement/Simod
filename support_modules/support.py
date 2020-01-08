@@ -11,6 +11,10 @@ import platform as pl
 
 def folder_id():
     return datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')
+
+def file_id(prefix='',extension='.csv'):
+    return prefix+datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')+extension
+
 #generate unique bimp element ids
 def gen_id():
     return "qbp_" + str(uuid.uuid4())

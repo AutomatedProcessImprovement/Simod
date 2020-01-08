@@ -70,16 +70,13 @@ def mine_processing_time(process_stats, process_graph, settings):
                                         how='left')
     return elements_data
 
-
-
    
 def define_distributions_manually(process_stats, process_graph, settings):
     if settings['pdef_method'] == 'semi-automatic':
-        elements_data = mine_processing_time(process_stats, process_graph, settings)
+        elements_data = mine_processing_time(process_stats, process_graph, settings).sort_values(by='name')
         elements_data = elements_data.to_dict('records')
     else:
         elements_data = default_values(process_stats, process_graph)
-    print(elements_data)
     root = tk.Tk()
     a = me.MainWindow(root, elements_data)
     root.mainloop()
@@ -95,7 +92,7 @@ def default_values(process_stats, process_graph):
     elements_data = list()
     tasks = list(filter(lambda x: process_graph.node[x]['type']=='task' , list(nx.nodes(process_graph))))
     tasks = [process_graph.node[x]['name'] for x in tasks]
-    default_record = {'type':'FIXED', 'mean':3600,'arg1':3600, 'arg2':3600}
+    default_record = {'type':'EXPONENTIAL', 'mean':3600,'arg1':0, 'arg2':0}
     for task in tasks:
         elements_data.append({**{'id':sup.gen_id(),'name':task},**default_record})
     elements_data = pd.DataFrame(elements_data)
@@ -104,7 +101,7 @@ def default_values(process_stats, process_graph):
     model_data = model_data[model_data.type=='task'].rename(columns={'id': 'elementid'})
     elements_data = elements_data.merge(model_data[['name','elementid']],
                                         on='name',
-                                        how='left')
+                                        how='left').sort_values(by='name')
     return elements_data.to_dict('records')
 
 

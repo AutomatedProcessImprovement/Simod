@@ -1,34 +1,52 @@
+# %% test
+import pandas as pd
+import json
+
+
+# %% load values
+with open('C:/Users/manuel.chavez/Documents/Repository/Simod/test_settings.json') as file:
+    settings = json.load(file)
+    file.close()
+data = pd.read_csv('C:/Users/manuel.chavez/Documents/Repository/Simod/test_dataframe.csv')
+rep = 1
+
+#%%
 import numpy as np
 import random
 import os
 from operator import itemgetter
-from support_modules import support as sup
-
-#import matplotlib.pyplot as plt
-
+#%%
+import support as sup
+import alpha_oracle as ao
+from alpha_oracle import Rel
+#%%
 def mesurement(data, settings, rep, ramp_io_perc = 0.2):
+    # loading and filtering all data
     filtered_data = data[(data.source=='log') | ((data.source=='simulation') & (data.run_num==(rep + 1)))]
     filtered_data = filtered_data.reset_index()
     filtered_data = scaling_data(filtered_data)
+    log = filtered_data[data.source=='log']
     filtered_data = filtered_data.to_dict('records')
+    # Create alias and alpha concurrency oracle
     alias = create_task_alias(filtered_data, ['task','role'])
+    # Alpha
+    alpha_concurrency = ao.AlphaOracle(log, alias, settings, True)
     
+    # Reformat data to compare
     log_data = reformat_events(list(filter(lambda x: x['source']=='log', filtered_data)),
                                alias, ['task','role'])
     simulation_data = reformat_events(list(filter(lambda x: x['source']=='simulation'
                                                   and x['run_num']==(rep + 1), filtered_data)),
                                alias, ['task','role'])
+    # Ramp i/o percentage
     num_traces = int(len(simulation_data) * ramp_io_perc)
     simulation_data = simulation_data[num_traces:-num_traces]
     temp_log_data = random.sample(log_data, len(simulation_data))
-    
+    # similarity measurement and matching
+    sim_data = measure_distance(temp_log_data, simulation_data, alpha_concurrency.oracle)
+    # Printing and returning objects
     similarity = dict()
-    similarity['run_num'] = (rep + 1)
-#    similarity['lognorm'] = np.mean([x['sim_score'] for x in 
-#                                   measure_distance(log_data, simulation_data, 'proc_lognorm')])
-#    similarity['norm'] = np.mean([x['sim_score'] for x in 
-#                                   measure_distance(log_data, simulation_data, 'proc_norm')])
-    sim_data = measure_distance(temp_log_data, simulation_data, 'proc_act_norm')
+    similarity['run_num'] = (rep + 1)   
     for x in sim_data: x['run_num'] = (rep + 1)
     similarity['act_norm'] = np.mean([x['sim_score'] for x in sim_data])
     print_measures(settings, sim_data)   
@@ -49,30 +67,67 @@ def print_measures(settings, measurements):
                                                 'similarity_measures.csv')))
 
 
-def measure_distance(log_data, simulation_data, scale_method):
+# def measure_distance(log_data, simulation_data, scale_method):
+#     similarity = list()
+#     temp_log_data = log_data.copy()
+#     for sim_instance in simulation_data:
+#         comp_sec = dict(
+#                 log_trace=sim_instance['profile'],
+#                 proc_log_trace=sim_instance['proc_act_norm'],
+#                 wait_log_trace=sim_instance['wait_act_norm'],
+#                 sim_trace=temp_log_data[0]['profile'],
+#                 proc_sim_trace=temp_log_data[0]['proc_act_norm'],
+#                 wait_sim_trace=temp_log_data[0]['wait_act_norm']
+#                 )
+#         min_dist = damerau_levenshtein_distance(comp_sec)
+#         min_index = 0
+#         for i in range(0,len(temp_log_data)):
+#             comp_sec = dict(
+#                     log_trace=sim_instance['profile'],
+#                     proc_log_trace=sim_instance['proc_act_norm'],
+#                     wait_log_trace=sim_instance['wait_act_norm'],
+#                     sim_trace=temp_log_data[i]['profile'],
+#                     proc_sim_trace=temp_log_data[i]['proc_act_norm'],
+#                     wait_sim_trace=temp_log_data[i]['wait_act_norm']
+#                     )
+#             sim = damerau_levenshtein_distance(comp_sec)
+#             if min_dist > sim:
+#                 min_dist = sim
+#                 min_index = i
+#         length=np.max([len(sim_instance['profile']), len(temp_log_data[min_index]['profile'])])        
+#         similarity.append(dict(caseid=sim_instance['caseid'],
+#                                sim_order=sim_instance['profile'],
+#                                log_order=temp_log_data[min_index]['profile'],
+#                                sim_score=(1-(min_dist/length))))
+#         del temp_log_data[min_index]
+#     return similarity
+
+def measure_distance(log_data, simulation_data, alpha_concurrency):
     similarity = list()
     temp_log_data = log_data.copy()
     for sim_instance in simulation_data:
-        comp_sec = dict(
-                log_trace=sim_instance['profile'],
-                proc_log_trace=sim_instance['proc_act_norm'],
-                wait_log_trace=sim_instance['wait_act_norm'],
-                sim_trace=temp_log_data[0]['profile'],
-                proc_sim_trace=temp_log_data[0]['proc_act_norm'],
-                wait_sim_trace=temp_log_data[0]['wait_act_norm']
-                )
-        min_dist = damerau_levenshtein_distance(comp_sec)
+        comp_sec = dict()
+        comp_sec['seqs'] = dict()
+        comp_sec['seqs']['s1'] = temp_log_data[0]['profile'],
+        comp_sec['seqs']['s2'] = sim_instance['proc_act_norm'],
+        comp_sec['times'] = dict()
+        comp_sec['times']['p1'] = temp_log_data[0]['proc_act_norm'],
+        comp_sec['times']['p2'] = sim_instance['proc_act_norm'],
+        comp_sec['times']['w1'] = temp_log_data[0]['wait_act_norm']
+        comp_sec['times']['w2'] = sim_instance['wait_act_norm'],
+        min_dist = timed_string_distance_alpha(comp_sec, alpha_concurrency)
         min_index = 0
         for i in range(0,len(temp_log_data)):
-            comp_sec = dict(
-                    log_trace=sim_instance['profile'],
-                    proc_log_trace=sim_instance['proc_act_norm'],
-                    wait_log_trace=sim_instance['wait_act_norm'],
-                    sim_trace=temp_log_data[i]['profile'],
-                    proc_sim_trace=temp_log_data[i]['proc_act_norm'],
-                    wait_sim_trace=temp_log_data[i]['wait_act_norm']
-                    )
-            sim = damerau_levenshtein_distance(comp_sec)
+            comp_sec = dict()
+            comp_sec['seqs'] = dict()
+            comp_sec['seqs']['s1'] = temp_log_data[i]['profile'],
+            comp_sec['seqs']['s2'] = sim_instance['proc_act_norm'],
+            comp_sec['times'] = dict()
+            comp_sec['times']['p1'] = temp_log_data[i]['proc_act_norm'],
+            comp_sec['times']['p2'] = sim_instance['proc_act_norm'],
+            comp_sec['times']['w1'] = temp_log_data[i]['wait_act_norm']
+            comp_sec['times']['w2'] = sim_instance['wait_act_norm'],
+            sim = timed_string_distance_alpha(comp_sec, alpha_concurrency)
             if min_dist > sim:
                 min_dist = sim
                 min_index = i
@@ -83,6 +138,7 @@ def measure_distance(log_data, simulation_data, scale_method):
                                sim_score=(1-(min_dist/length))))
         del temp_log_data[min_index]
     return similarity
+
 
 def create_task_alias(df, features):
     subsec_set = set()
@@ -109,39 +165,6 @@ def scaling_data(data):
     data['wait_act_norm'] = data.apply(wait_act_norm, axis=1)
     return data
 
-#def scaling_data(data):
-#    #--------------
-#    max_proc = np.max(data.processing_time)
-#    scale = lambda x: x['processing_time']/max_proc
-#    data['proc_max'] = data.apply(scale, axis=1)
-#    #--------------
-#    try:
-#        logit = lambda x: math.log1p(x['processing_time'])
-#        data['proc_log'] = data.apply(logit, axis=1)
-#        max_proc = np.max(data.proc_log)
-#        norm = lambda x: x['proc_log']/max_proc
-#        data['proc_lognorm'] = data.apply(norm, axis=1)
-#    except Exception as e:
-#        print(str(e))
-#    #--------------
-#    max_proc = np.max(data.processing_time)
-#    min_proc = np.min(data.processing_time)
-#    norm = lambda x: (x['processing_time'] - min_proc) / (max_proc - min_proc)
-#    data['proc_norm'] = data.apply(norm, axis=1)
-#    #--------------
-#    summary = data.groupby(['task']).agg({'processing_time': ['mean', 'max', 'min'] }).to_dict('index')
-#    act_norm = lambda x: (x['processing_time'] - summary[x['task']][('processing_time','min')])/(summary[x['task']][('processing_time','max')] - summary[x['task']][('processing_time','min')])
-#    act_norm = lambda x: x['processing_time'] / summary[x['task']][('processing_time','max')] if summary[x['task']][('processing_time','max')] >0 else 0
-#    data['proc_act_norm'] = data.apply(act_norm, axis=1)
-#    #--------------
-#    fig, axes = plt.subplots(nrows=1, ncols=4)
-#    data.proc_max.plot.hist(bins=12, alpha=0.5, ax=axes[0])
-#    data.proc_lognorm.plot.hist(bins=12, alpha=0.5, ax=axes[1])
-#    data.proc_norm.plot.hist(bins=12, alpha=0.5, ax=axes[2])
-#    data.proc_act_norm.plot.hist(bins=12, alpha=0.5, ax=axes[3])
-#    plt.show()
-#    return data
-
 def reformat_events(data, alias, features):
     # Add alias
     if isinstance(features, list):
@@ -167,17 +190,52 @@ def reformat_events(data, alias, features):
     return sorted(temp_data, key=itemgetter('start_time'))
 
 
-def damerau_levenshtein_distance(comp_sec):
+# def damerau_levenshtein_distance(comp_sec):
+#     """
+#     Compute the Damerau-Levenshtein distance between two given
+#     strings (s1 and s2)
+#     """
+#     s1 = comp_sec['log_trace']
+#     s2 = comp_sec['sim_trace']
+#     p1 = comp_sec['proc_log_trace']
+#     p2 = comp_sec['proc_sim_trace']
+#     w1 = comp_sec['wait_log_trace']
+#     w2 = comp_sec['wait_sim_trace']
+#     d = {}
+#     lenstr1 = len(s1)
+#     lenstr2 = len(s2)
+#     for i in range(-1,lenstr1+1):
+#         d[(i,-1)] = i+1
+#     for j in range(-1,lenstr2+1):
+#         d[(-1,j)] = j+1
+#     for i in range(0, lenstr1):
+#         for j in range(0, lenstr2):
+#             if s1[i] == s2[j]:
+#                 t1 = p1[i] + w1[i]
+#                 if t1 > 0:
+#                     b1 = (p1[i]/t1)
+#                     b2 = (w1[i]/t1)
+#                     cost = (b1*abs(p2[j]-p1[i])) + (b2*abs(w2[j]-w1[i]))
+#                 else:
+#                     cost = 0
+#             else:
+#                 cost = 1
+#             d[(i,j)] = min(
+#                            d[(i-1,j)] + 1, # deletion
+#                            d[(i,j-1)] + 1, # insertion
+#                            d[(i-1,j-1)] + cost, # substitution
+#                           )
+#             if i and j and s1[i]==s2[j-1] and s1[i-1] == s2[j]:
+#                 d[(i,j)] = min (d[(i,j)], d[i-2,j-2] + cost) # transposition
+#     return d[lenstr1-1,lenstr2-1]
+    
+def timed_string_distance_alpha(comp_sec, alpha_concurrency):
     """
     Compute the Damerau-Levenshtein distance between two given
     strings (s1 and s2)
     """
-    s1 = comp_sec['log_trace']
-    s2 = comp_sec['sim_trace']
-    p1 = comp_sec['proc_log_trace']
-    p2 = comp_sec['proc_sim_trace']
-    w1 = comp_sec['wait_log_trace']
-    w2 = comp_sec['wait_sim_trace']
+    s1 = comp_sec['seqs']['s1']
+    s2 = comp_sec['seqs']['s2']
     d = {}
     lenstr1 = len(s1)
     lenstr2 = len(s2)
@@ -188,13 +246,7 @@ def damerau_levenshtein_distance(comp_sec):
     for i in range(0, lenstr1):
         for j in range(0, lenstr2):
             if s1[i] == s2[j]:
-                t1 = p1[i] + w1[i]
-                if t1 > 0:
-                    b1 = (p1[i]/t1)
-                    b2 = (w1[i]/t1)
-                    cost = (b1*abs(p2[j]-p1[i])) + (b2*abs(w2[j]-w1[i]))
-                else:
-                    cost = 0
+                cost = calculate_cost(comp_sec['times'], i, j)
             else:
                 cost = 1
             d[(i,j)] = min(
@@ -203,5 +255,28 @@ def damerau_levenshtein_distance(comp_sec):
                            d[(i-1,j-1)] + cost, # substitution
                           )
             if i and j and s1[i]==s2[j-1] and s1[i-1] == s2[j]:
-                d[(i,j)] = min (d[(i,j)], d[i-2,j-2] + cost) # transposition
+                if alpha_concurrency[(s1[i], s2[j])] == Rel.PARALLEL:
+                    cost = calculate_cost(comp_sec['times'], i, j-1)
+                d[(i,j)] = min(d[(i,j)], d[i-2,j-2] + cost) # transposition
     return d[lenstr1-1,lenstr2-1]
+
+def calculate_cost(times, s1_idx, s2_idx):
+    p1 = times['p1']
+    p2 = times['p2']
+    w1 = times['w1']
+    w2 = times['w2']
+   
+    t1 = p1[s1_idx] + w1[s1_idx]
+    if t1 > 0:
+        b1 = (p1[s1_idx]/t1)
+        cost = (b1*abs(p2[s2_idx]-p1[s1_idx])) + ((1 - b1)*abs(w2[s2_idx]-w1[s1_idx]))
+    else:
+        cost = 0
+    return cost
+
+
+# =============================================================================
+# Test kernel
+# =============================================================================
+    #%% Call 
+mesurement(data, settings, rep)

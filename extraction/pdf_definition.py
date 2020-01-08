@@ -19,7 +19,7 @@ def get_task_distribution(data_serie, bins=200):
         dname = 'fixed'
         dparams = dict(mean=0,arg1=0, arg2=0)
     else:
-        # if all the values of the serie are equal is an automatic activity with fixed distribution
+        # If all the values of the serie are equal is an automatic activity with fixed distribution
         if np.min(data_serie)==np.max(data_serie):
             dname = 'fixed'
             dparams = dict(mean=int(np.min(data_serie)),arg1=0, arg2=0)
