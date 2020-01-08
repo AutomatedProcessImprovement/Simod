@@ -4,17 +4,18 @@ import json
 
 
 # %% load values
-with open('C:/Users/manuel.chavez/Documents/Repository/Simod/test_settings.json') as file:
+with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/test_settings.json') as file:
     settings = json.load(file)
     file.close()
-data = pd.read_csv('C:/Users/manuel.chavez/Documents/Repository/Simod/test_dataframe.csv')
-rep = 1
+data = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/test_dataframe.csv')
+rep = 0
 
 #%%
 import numpy as np
 import random
 import os
 from operator import itemgetter
+from scipy.optimize import linear_sum_assignment
 #%%
 import support as sup
 import alpha_oracle as ao
@@ -28,28 +29,36 @@ def mesurement(data, settings, rep, ramp_io_perc = 0.2):
     log = filtered_data[data.source=='log']
     filtered_data = filtered_data.to_dict('records')
     # Create alias and alpha concurrency oracle
-    alias = create_task_alias(filtered_data, ['task','role'])
+    # alias = create_task_alias(filtered_data, ['task','role'])
+    alias = create_task_alias(filtered_data, 'task')
     # Alpha
     alpha_concurrency = ao.AlphaOracle(log, alias, settings, True)
     
     # Reformat data to compare
+    # log_data = reformat_events(list(filter(lambda x: x['source']=='log', filtered_data)),
+    #                            alias, ['task','role'])
+    # simulation_data = reformat_events(list(filter(lambda x: x['source']=='simulation'
+    #                                               and x['run_num']==(rep + 1), filtered_data)),
+    #                            alias, ['task','role'])
     log_data = reformat_events(list(filter(lambda x: x['source']=='log', filtered_data)),
-                               alias, ['task','role'])
+                               alias, 'task')
     simulation_data = reformat_events(list(filter(lambda x: x['source']=='simulation'
                                                   and x['run_num']==(rep + 1), filtered_data)),
-                               alias, ['task','role'])
+                               alias, 'task')
     # Ramp i/o percentage
     num_traces = int(len(simulation_data) * ramp_io_perc)
     simulation_data = simulation_data[num_traces:-num_traces]
     temp_log_data = random.sample(log_data, len(simulation_data))
     # similarity measurement and matching
-    sim_data = measure_distance(temp_log_data, simulation_data, alpha_concurrency.oracle)
+    sim_data = create_cost_matrix(temp_log_data, simulation_data, alpha_concurrency.oracle)
+    # sim_data = measure_distance(temp_log_data, simulation_data, alpha_concurrency.oracle)
     # Printing and returning objects
     similarity = dict()
     similarity['run_num'] = (rep + 1)   
     for x in sim_data: x['run_num'] = (rep + 1)
     similarity['act_norm'] = np.mean([x['sim_score'] for x in sim_data])
-    print_measures(settings, sim_data)   
+    # print_measures(settings, sim_data)
+    print(similarity)
     return similarity
 
 def print_measures(settings, measurements):
@@ -102,43 +111,73 @@ def print_measures(settings, measurements):
 #         del temp_log_data[min_index]
 #     return similarity
 
+# def measure_distance(log_data, simulation_data, alpha_concurrency):
+#     similarity = list()
+#     temp_log_data = log_data.copy()
+#     for sim_instance in simulation_data:
+#         comp_sec = dict()
+#         comp_sec['seqs'] = dict()
+#         comp_sec['seqs']['s1'] = temp_log_data[0]['profile'],
+#         comp_sec['seqs']['s2'] = sim_instance['proc_act_norm'],
+#         comp_sec['times'] = dict()
+#         comp_sec['times']['p1'] = temp_log_data[0]['proc_act_norm'],
+#         comp_sec['times']['p2'] = sim_instance['proc_act_norm'],
+#         comp_sec['times']['w1'] = temp_log_data[0]['wait_act_norm']
+#         comp_sec['times']['w2'] = sim_instance['wait_act_norm'],
+#         min_dist = timed_string_distance_alpha(comp_sec, alpha_concurrency)
+#         min_index = 0
+#         for i in range(0,len(temp_log_data)):
+#             comp_sec = dict()
+#             comp_sec['seqs'] = dict()
+#             comp_sec['seqs']['s1'] = temp_log_data[i]['profile'],
+#             comp_sec['seqs']['s2'] = sim_instance['proc_act_norm'],
+#             comp_sec['times'] = dict()
+#             comp_sec['times']['p1'] = temp_log_data[i]['proc_act_norm'],
+#             comp_sec['times']['p2'] = sim_instance['proc_act_norm'],
+#             comp_sec['times']['w1'] = temp_log_data[i]['wait_act_norm']
+#             comp_sec['times']['w2'] = sim_instance['wait_act_norm'],
+#             sim = timed_string_distance_alpha(comp_sec, alpha_concurrency)
+#             if min_dist > sim:
+#                 min_dist = sim
+#                 min_index = i
+#         length=np.max([len(sim_instance['profile']), len(temp_log_data[min_index]['profile'])])        
+#         similarity.append(dict(caseid=sim_instance['caseid'],
+#                                sim_order=sim_instance['profile'],
+#                                log_order=temp_log_data[min_index]['profile'],
+#                                sim_score=(1-(min_dist/length))))
+#         del temp_log_data[min_index]
+#     return similarity
+
 def measure_distance(log_data, simulation_data, alpha_concurrency):
     similarity = list()
-    temp_log_data = log_data.copy()
-    for sim_instance in simulation_data:
-        comp_sec = dict()
-        comp_sec['seqs'] = dict()
-        comp_sec['seqs']['s1'] = temp_log_data[0]['profile'],
-        comp_sec['seqs']['s2'] = sim_instance['proc_act_norm'],
-        comp_sec['times'] = dict()
-        comp_sec['times']['p1'] = temp_log_data[0]['proc_act_norm'],
-        comp_sec['times']['p2'] = sim_instance['proc_act_norm'],
-        comp_sec['times']['w1'] = temp_log_data[0]['wait_act_norm']
-        comp_sec['times']['w2'] = sim_instance['wait_act_norm'],
-        min_dist = timed_string_distance_alpha(comp_sec, alpha_concurrency)
-        min_index = 0
-        for i in range(0,len(temp_log_data)):
+    cost_matrix = list()
+    # Create cost matrix
+    # TODO: see https://stackoverflow.com/questions/23939136/fast-python-matrix-creation-and-iteration
+    for log_trace in log_data:
+        trace_costs = list()
+        for sim_trace in simulation_data:
             comp_sec = dict()
             comp_sec['seqs'] = dict()
-            comp_sec['seqs']['s1'] = temp_log_data[i]['profile'],
-            comp_sec['seqs']['s2'] = sim_instance['proc_act_norm'],
+            comp_sec['seqs']['s1'] = sim_trace ['profile']
+            comp_sec['seqs']['s2'] = log_trace['profile']
             comp_sec['times'] = dict()
-            comp_sec['times']['p1'] = temp_log_data[i]['proc_act_norm'],
-            comp_sec['times']['p2'] = sim_instance['proc_act_norm'],
-            comp_sec['times']['w1'] = temp_log_data[i]['wait_act_norm']
-            comp_sec['times']['w2'] = sim_instance['wait_act_norm'],
-            sim = timed_string_distance_alpha(comp_sec, alpha_concurrency)
-            if min_dist > sim:
-                min_dist = sim
-                min_index = i
-        length=np.max([len(sim_instance['profile']), len(temp_log_data[min_index]['profile'])])        
-        similarity.append(dict(caseid=sim_instance['caseid'],
-                               sim_order=sim_instance['profile'],
-                               log_order=temp_log_data[min_index]['profile'],
-                               sim_score=(1-(min_dist/length))))
-        del temp_log_data[min_index]
+            comp_sec['times']['p1'] = sim_trace['proc_act_norm']
+            comp_sec['times']['p2'] = log_trace['proc_act_norm']
+            comp_sec['times']['w1'] = sim_trace['wait_act_norm']
+            comp_sec['times']['w2'] = log_trace['wait_act_norm']
+            length=np.max([len(comp_sec['seqs']['s1']), len(comp_sec['seqs']['s2'])])
+            distance = timed_string_distance_alpha(comp_sec, alpha_concurrency)/length
+            trace_costs.append(distance)
+        cost_matrix.append(trace_costs)
+    # Matching using the hungarian algorithm
+    row_ind, col_ind = linear_sum_assignment(np.array(cost_matrix))
+    # Create response
+    for idx, idy in zip(row_ind, col_ind):
+        similarity.append(dict(caseid=simulation_data[idx]['caseid'],
+                            sim_order=simulation_data[idx]['profile'],
+                            log_order=log_data[idy]['profile'],
+                            sim_score=(1-(cost_matrix[idx][idy]))))
     return similarity
-
 
 def create_task_alias(df, features):
     subsec_set = set()

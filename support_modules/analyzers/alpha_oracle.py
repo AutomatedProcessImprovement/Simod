@@ -21,7 +21,6 @@ class AlphaOracle(object):
         """constructor"""
         self.log = log
         self.tasks_alias = tasks_alias
-        print(tasks_alias)
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.look_for_loops = look_for_loops
         self.oracle = self.discover_concurrency()
