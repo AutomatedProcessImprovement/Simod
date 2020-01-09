@@ -17,11 +17,11 @@ class AlphaOracle(object):
     """
 	This class provides the alpha concurrency oracle information
 	"""
-    def __init__(self, log, tasks_alias, settings, look_for_loops=False):
+    def __init__(self, log, tasks_alias, one_timestamp, look_for_loops=False):
         """constructor"""
         self.log = log
         self.tasks_alias = tasks_alias
-        self.one_timestamp = settings['read_options']['one_timestamp']
+        self.one_timestamp = one_timestamp
         self.look_for_loops = look_for_loops
         self.oracle = self.discover_concurrency()
         
@@ -68,8 +68,10 @@ class AlphaOracle(object):
             list: lists of activities.
         """
         temp_data = list()
+        temp_df = self.log.copy()
         alias = lambda x: self.tasks_alias[x['task']]
-        self.log['alias'] = self.log.apply(alias, axis=1)
+        temp_df['alias'] = temp_df.apply(alias, axis=1)
+        self.log = temp_df
         log_df = self.log.to_dict('records')
         if self.one_timestamp:
             log_df = sorted(log_df, key=lambda x: (x['caseid'], x['end_timestamp']))
