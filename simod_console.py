@@ -20,8 +20,8 @@ def main(argv):
     # Similarity btw the resources profile execution (Song e.t. all)
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
-    # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'single'
+    # Exec mode 'single', 'optimizer', 'tasks_optimizer'
+    settings['exec_mode'] = 'tasks_optimizer'
     # Parameters setting manual fixed or catched by console for batch operations
     if not argv:
     #   Event-log filename    
@@ -34,12 +34,12 @@ def main(argv):
             settings['eta'] = 0.3
             # 'removal', 'replacement', 'repairment'
             settings['alg_manag'] = 'repairment'
-            # Processing time definition method: 'manual', 'automatic', 'semi-automatic', 'apx'
-            settings['pdef_method'] = 'automatic'
+            # Processing time definition method: 'manual', 'automatic', 'semi-automatic'
+            settings['pdef_method'] = 'manual'
             # Single Execution
             # sim.single_exec(settings)
             sim.pipe_line_execution(settings)
-        else:
+        elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
             args['max_eval'] = 2
@@ -49,6 +49,20 @@ def main(argv):
             if not os.path.exists(os.path.join('outputs', settings['temp_file'])):
                 open(os.path.join('outputs', settings['temp_file']), 'w').close()
                 sim.hyper_execution(settings, args)
+        elif settings['exec_mode'] == 'tasks_optimizer':
+            # Splitminer settings [0..1]   
+            settings['epsilon'] = 0.5
+            settings['eta'] = 0.3
+            # 'removal', 'replacement', 'repairment'
+            settings['alg_manag'] = 'repairment'
+            # Processing time definition method: 'apx'
+            settings['pdef_method'] = 'apx'
+            args['max_eval'] = 2
+            settings['temp_file'] = sup.file_id(prefix='TS_')
+            # Execute optimizer
+            if not os.path.exists(os.path.join('outputs', settings['temp_file'])):
+                open(os.path.join('outputs', settings['temp_file']), 'w').close()
+                sim.task_hyper_execution(settings, args)
     else:
 #       Catch parameters by console
         try:
@@ -88,7 +102,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names':column_names,
-                                'one_timestamp': False,
+                                'one_timestamp': True,
                                 'reorder':False,
                                 'filter_d_attrib':True,
                                 'ns_include':True}
