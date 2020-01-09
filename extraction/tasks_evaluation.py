@@ -4,28 +4,47 @@ Created on Thu Jan  2 11:17:33 2020
 
 @author: Manuel Camargo
 """
+#%%
 import pandas as pd
 import tkinter as tk
 import networkx as nx
 
+import pdf_definition as pdf
+import manual_edition_ui as me
 
-from extraction import pdf_definition as pdf
-from extraction import manual_edition_ui as me
+import support as sup
+#%%
+import json
+from networkx.readwrite import json_graph
+# from extraction import pdf_definition as pdf
+# from extraction import manual_edition_ui as me
 
-from support_modules import support as sup
+# from support_modules import support as sup
+# %% load values
+with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/settings.json') as file:
+    settings = json.load(file)
+    file.close()
+data = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/process_stats.csv')
+roles = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/resource.csv')
+with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/graph.json') as file:
+    graph_data = json.load(file)
+    file.close()
+graph = json_graph.node_link_graph(graph_data)
 
+#%%
 def evaluate_tasks(process_graph, process_stats, resource_pool, settings):
     elements_data = list()
     # processing time discovery method
     if settings['pdef_method'] == 'automatic':
         elements_data = mine_processing_time(process_stats, process_graph, settings)
-        # TODO: Add manual edition for single execution
     if settings['pdef_method'] in ['manual', 'semi-automatic']:
         elements_data = define_distributions_manually(process_stats, process_graph, settings)
-
+    if settings['pdef_method'] == 'apx':
+        elements_data = match_predefined_time(process_graph, settings)
     # Resource association
+    print(resource_pool)
     elements_data = associate_resource(elements_data, process_stats, resource_pool)
-    # print(elements_data[['name', 'type', 'mean', 'arg1', 'arg2']])
+    print(elements_data[['name', 'type', 'mean', 'arg1', 'arg2', 'resource']])
     elements_data = elements_data.to_dict('records')
     return elements_data
 
@@ -43,16 +62,16 @@ def mine_processing_time(process_stats, process_graph, settings):
     Dataframe
         Activities processing time.
     """
-    # TODO: check if all the tasks have distribution and time associated
     elements_data = list()
     # tasks = process_stats.task.unique()
-    tasks = list(filter(lambda x: process_graph.node[x]['type']=='task' , list(nx.nodes(process_graph))))
+    tasks = list(filter(lambda x: process_graph.node[x]['type'] == 'task',
+                        list(nx.nodes(process_graph))))
     tasks = [process_graph.node[x]['name'] for x in tasks]
     for task in tasks:
         if settings['read_options']['one_timestamp']:
-            task_processing = process_stats[process_stats.task==task]['duration'].tolist() 
+            task_processing = process_stats[process_stats.task==task]['duration'].tolist()
         else:
-            task_processing = process_stats[process_stats.task==task]['processing_time'].tolist() 
+            task_processing = process_stats[process_stats.task==task]['processing_time'].tolist()
         dist = pdf.get_task_distribution(task_processing)
         elements_data.append(
             dict(id=sup.gen_id(),
@@ -64,16 +83,43 @@ def mine_processing_time(process_stats, process_graph, settings):
     elements_data = pd.DataFrame(elements_data)
     model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
     model_data = model_data[model_data.type=='task'].rename(columns={'id': 'elementid'})
-    
+
     elements_data = elements_data.merge(model_data[['name','elementid']],
                                         on='name',
                                         how='left')
     return elements_data
 
-   
+
+def match_predefined_time(process_graph, settings):
+    elements_data = list()
+    # TODO: Unir esta lista con la que ya cargue de settings
+    tasks = list(filter(lambda x: process_graph.node[x]['type'] == 'task',
+                        list(nx.nodes(process_graph))))
+    tasks = [process_graph.node[x]['name'] for x in tasks]
+    ###
+    default_record = {'type': 'EXPONENTIAL', 'mean': 0, 'arg2': 0}
+    for task, value in settings['tasks'].items():
+        record = {**{'id': sup.gen_id(), 'name': task, 'arg1': value},
+                  **default_record}
+        elements_data.append(record)
+
+    elements_data = pd.DataFrame(elements_data)
+    model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()),
+                                        orient='index')
+    # model_data = (model_data[model_data.type == 'task']
+    #                                      .rename(columns={'id': 'elementid'}))
+    # TODO: Quitar esto!!!!
+    model_data['elementid'] = model_data.index
+    elements_data = elements_data.merge(model_data[['name', 'elementid']],
+                                        on='name',
+                                        how='left').sort_values(by='name')
+    return elements_data
+
+
 def define_distributions_manually(process_stats, process_graph, settings):
     if settings['pdef_method'] == 'semi-automatic':
-        elements_data = mine_processing_time(process_stats, process_graph, settings).sort_values(by='name')
+        elements_data = mine_processing_time(process_stats, process_graph,
+                                             settings).sort_values(by='name')
         elements_data = elements_data.to_dict('records')
     else:
         elements_data = default_values(process_stats, process_graph)
@@ -82,21 +128,21 @@ def define_distributions_manually(process_stats, process_graph, settings):
     root.mainloop()
     new_elements = pd.DataFrame(a.new_elements)
     elements_data = pd.DataFrame(elements_data)
-    elements_data = new_elements.merge(elements_data[['id','name','elementid']],
-                                        on='id',
-                                        how='left')
+    elements_data = new_elements.merge(elements_data[['id', 'name', 'elementid']],
+                                       on='id',
+                                       how='left')
     return elements_data
-            
+
 
 def default_values(process_stats, process_graph):
     elements_data = list()
     tasks = list(filter(lambda x: process_graph.node[x]['type']=='task' , list(nx.nodes(process_graph))))
     tasks = [process_graph.node[x]['name'] for x in tasks]
-    default_record = {'type':'EXPONENTIAL', 'mean':3600,'arg1':0, 'arg2':0}
+    default_record = {'type':'EXPONENTIAL', 'mean':0,'arg1':3600, 'arg2':0}
     for task in tasks:
         elements_data.append({**{'id':sup.gen_id(),'name':task},**default_record})
     elements_data = pd.DataFrame(elements_data)
-    
+
     model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
     model_data = model_data[model_data.type=='task'].rename(columns={'id': 'elementid'})
     elements_data = elements_data.merge(model_data[['name','elementid']],
@@ -124,3 +170,5 @@ def associate_resource(elements_data, process_stats, resource_pool):
                                         right_on='task',
                                         how='left').drop(columns=['task'])
     return elements_data
+#%%
+evaluate_tasks(graph, data, roles, settings)

@@ -26,7 +26,7 @@ def main(argv):
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
     settings['exec_mode'] = 'tasks_optimizer'
-    # Parameters setting manual fixed or catched by console for batch operations
+    # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
         settings['file'] = 'PurchasingExample.xes.gz'
@@ -38,7 +38,8 @@ def main(argv):
             settings['eta'] = 0.3
             # 'removal', 'replacement', 'repairment'
             settings['alg_manag'] = 'repairment'
-            # Processing time definition method: 'manual', 'automatic', 'semi-automatic'
+            # Processing time definition method:
+            # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'manual'
             # Single Execution
             # sim.single_exec(settings)
@@ -66,8 +67,10 @@ def main(argv):
             args['max_eval'] = 2
             settings['temp_file'] = sup.file_id(prefix='TS_')
             # Execute optimizer
-            if not os.path.exists(os.path.join('outputs', settings['temp_file'])):
-                open(os.path.join('outputs', settings['temp_file']), 'w').close()
+            if not os.path.exists(os.path.join('outputs',
+                                               settings['temp_file'])):
+                open(os.path.join('outputs',
+                                  settings['temp_file']), 'w').close()
                 sim.task_hyper_execution(settings, args)
     else:
         # Catch parameters by console
@@ -111,7 +114,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
-                                'one_timestamp': False,
+                                'one_timestamp': True,
                                 'reorder': False,
                                 'filter_d_attrib': True,
                                 'ns_include': True}

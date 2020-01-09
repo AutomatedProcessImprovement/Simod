@@ -34,31 +34,35 @@ def pipe_line_execution(settings):
         # Paths redefinition
         settings['output'] = os.path.join('outputs', sup.folder_id())
         if settings['alg_manag'] == 'repairment':
-            settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
-            settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
+            settings['aligninfo'] = os.path.join(
+                                                 settings['output'],
+                                                 'CaseTypeAlignmentResults.csv'
+                                                 )
+            settings['aligntype'] = os.path.join(settings['output'],
+                                                 'AlignmentStatistics.csv')
     # Output folder creation
     if not os.path.exists(settings['output']):
         os.makedirs(settings['output'])
         os.makedirs(os.path.join(settings['output'], 'sim_data'))
-    [print(k,v) for k, v in settings.items()]
+    [print(k, v) for k, v in settings.items()]
     # Event log reading
-    # log = lr.LogReader(os.path.join(settings['input'], settings['file']), 
-    #                     settings['read_options'])
-    # # Create customized event-log for the external tools
-    # file_name = settings['file'].split('.')[0]
-    # xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'),
-    #                     settings['read_options'])
-    # # Execution steps
-    # mining_structure(settings)
-    # bpmn = br.BpmnReader(os.path.join(settings['output'],
-    #                                   settings['file'].split('.')[0]+'.bpmn'))
-    # process_graph = gph.create_process_structure(bpmn)
+    log = lr.LogReader(os.path.join(settings['input'], settings['file']), 
+                        settings['read_options'])
+    # Create customized event-log for the external tools
+    file_name = settings['file'].split('.')[0]
+    xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'),
+                        settings['read_options'])
+    # Execution steps
+    mining_structure(settings)
+    bpmn = br.BpmnReader(os.path.join(settings['output'],
+                                      settings['file'].split('.')[0]+'.bpmn'))
+    process_graph = gph.create_process_structure(bpmn)
 
-    # # Evaluate alignment
-    # chk.evaluate_alignment(process_graph, log, settings)
+    # Evaluate alignment
+    chk.evaluate_alignment(process_graph, log, settings)
 
-    # print("-- Mining Simulation Parameters --")
-    # parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
+    print("-- Mining Simulation Parameters --")
+    parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
     # xml.print_parameters(os.path.join(settings['output'],
     #                                   settings['file'].split('.')[0]+'.bpmn'),
     #                       os.path.join(settings['output'],
