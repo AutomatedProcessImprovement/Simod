@@ -78,7 +78,7 @@ def pipe_line_execution(settings):
                                                  ignore_index=True,
                                                  sort=False)
             evaluation = sim.SimilarityEvaluator(process_stats, settings,
-                                                 rep, metric='dl_mae')
+                                                 rep, metric='tsd')
             sim_values.append(evaluation.similarity)
         except Exception as e:
             print(e)

@@ -4,7 +4,6 @@ Created on Fri Jan 10 17:28:46 2020
 
 @author: manuel.chavez
 """
-
 import pandas as pd
 import tkinter as tk
 import networkx as nx
@@ -40,22 +39,26 @@ class TaskEvaluator(object):
         if self.pdef_method == 'automatic':
             elements_data = self.mine_processing_time()
         if self.pdef_method in ['manual', 'semi-automatic']:
-            elements_data = self.define_distributions_manually(elements_data)
+            elements_data = self.define_distributions_manually()
         if self.pdef_method == 'apx':
-            elements_data = self.match_predefined_time(elements_data)
+            elements_data = self.match_predefined_time()
         # Resource association
         elements_data = self.associate_resource(elements_data)
         elements_data = elements_data.to_dict('records')
-        print(elements_data)
         return elements_data
 
     def mine_processing_time(self):
         elements_data = list()
         for task in self.tasks:
             if self.one_timestamp:
-                task_processing = self.process_stats[self.process_stats.task == task]['duration'].tolist()
+                task_processing = (
+                    self.process_stats[
+                        self.process_stats.task == task]['duration'].tolist())
             else:
-                task_processing = self.process_stats[self.process_stats.task == task]['processing_time'].tolist()
+                task_processing = (
+                    self.process_stats[
+                        self.process_stats.task == task]['processing_time']
+                    .tolist())
             dist = pdf.get_task_distribution(task_processing)
             elements_data.append(
                 dict(id=sup.gen_id(),
@@ -65,9 +68,8 @@ class TaskEvaluator(object):
                      arg1=str(dist['dparams']['arg1']),
                      arg2=str(dist['dparams']['arg2'])))
         elements_data = pd.DataFrame(elements_data)
-        elements_data = elements_data.merge(self.model_data[['name','elementid']],
-                                            on='name',
-                                            how='left')
+        elements_data = elements_data.merge(
+            self.model_data[['name', 'elementid']], on='name', how='left')
         return elements_data
 
     def match_predefined_time(self):
@@ -83,10 +85,11 @@ class TaskEvaluator(object):
         # Check If there is tasks with not predefined time
         pdef_tasks = list(self.pdef_values.keys())
         not_included = [task for task in self.tasks if task not in pdef_tasks]
-        default_record = {'type':'EXPONENTIAL', 'mean':'0','arg1':'3600', 'arg2':'0'}
-        print(not_included)
+        default_record = {'type': 'EXPONENTIAL', 'mean': '0',
+                          'arg1': '3600', 'arg2': '0'}
         for task in not_included:
-            elements_data.append({**{'id':sup.gen_id(), 'name':task},**default_record})
+            elements_data.append({**{'id': sup.gen_id(), 'name': task},
+                                  **default_record})
         elements_data = pd.DataFrame(elements_data)
         # Matching with model info
         elements_data = elements_data.merge(self.model_data[['name', 'elementid']],
@@ -105,6 +108,7 @@ class TaskEvaluator(object):
         root.mainloop()
         new_elements = pd.DataFrame(a.new_elements)
         elements_data = pd.DataFrame(elements_data)
+
         elements_data = new_elements.merge(
             elements_data[['id', 'name', 'elementid']], on='id', how='left')
         return elements_data
@@ -117,6 +121,7 @@ class TaskEvaluator(object):
             elements_data.append({**{'id': sup.gen_id(), 'name': task},
                                   **default_record})
         elements_data = pd.DataFrame(elements_data)
+        
         elements_data = elements_data.merge(self.model_data[['name', 'elementid']],
                                             on='name',
                                             how='left').sort_values(by='name')

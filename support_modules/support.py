@@ -150,15 +150,27 @@ def save_graph(graph, output_file):
 # # end = timer()
 # # print(end - start)
 
+# #%%
 # import pandas as pd
 # import json
+# from networkx.readwrite import json_graph
 
-# with open('C:/Users/manuel.chavez/Documents/Repository/Simod/one_settings.json') as file:
+# with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/settings.json') as file:
 #     settings = json.load(file)
 #     file.close()
-# data = pd.read_csv('C:/Users/manuel.chavez/Documents/Repository/Simod/one_dataframe.csv')
+    
+# settings['pdef_method'] = 'apx'
+    
+# with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/graph.json') as file:
+#     gdata = json.load(file)
+#     file.close()
+
+# G = json_graph.node_link_graph(gdata)
+
+# rpool = data = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/resource.csv')
+
+# data = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/process_stats.csv')
 # data['end_timestamp'] =  pd.to_datetime(data['end_timestamp'], format=settings['read_options']['timeformat'])
 # # log['start_timestamp'] =  pd.to_datetime(log['start_timestamp'], format=parameters['timeformat'])
-
 # data = data.drop(columns='Unnamed: 0')
-# rep = 0
+# #%%
