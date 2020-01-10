@@ -68,12 +68,12 @@ def xml_template(arrival_rate, time_table, resource_pool, elements_data, sequenc
 				ELEMENT(
 					DURATION(
 						TIMEUNIT("seconds"),
-						type=e['type'],mean=e['mean'],arg1=e['arg1'],arg2=e['arg2']
+						type=e['type'], mean=e['mean'], arg1=e['arg1'], arg2=e['arg2']
 					),
 					RESOURCESIDS(
 						RESOURCESID(str(e['resource']))
 					),
-					id=e['id'],elementId=e['elementid']
+					id=e['id'], elementId=e['elementid']
 				) for e in elements_data
 			]
 		),

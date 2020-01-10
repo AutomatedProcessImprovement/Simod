@@ -5,8 +5,7 @@ import pandas as pd
 import scipy.stats as st
 import numpy as np
 
-# from support_modules import support as sup
-import support as sup
+from support_modules import support as sup
 
 
 def get_task_distribution(data_serie, bins=200):

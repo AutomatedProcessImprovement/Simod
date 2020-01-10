@@ -6,7 +6,7 @@ from extraction import interarrival_definition as arr
 from extraction import gateways_probabilities as gt
 from extraction import role_discovery as rl
 from extraction import schedule_tables as sch
-# from extraction import tasks_evaluation as te
+from extraction import tasks_evaluation as te
 
 
 import pandas as pd
@@ -40,13 +40,13 @@ def extract_parameters(log, bpmn, process_graph, settings):
         sequences = gt.define_probabilities(process_graph, bpmn, log, 1)
         #-------------------------------------------------------------------
         # Tasks id information
-        sup.save_graph(process_graph, 'graph.json')
-        sup.create_json(settings, 'settings.json')
-        process_stats.to_csv('process_stats.csv')
-        pd.DataFrame.from_records(resource_pool).to_csv('resource.csv')
-        # elements_data = te.evaluate_tasks(process_graph, process_stats, resource_pool, settings)
+        # sup.save_graph(process_graph, 'graph.json')
+        # sup.create_json(settings, 'settings.json')
+        # process_stats.to_csv('process_stats.csv')
+        # pd.DataFrame.from_records(resource_pool).to_csv('resource.csv')
+        elements_data = te.evaluate_tasks(process_graph, process_stats, resource_pool, settings)
         
-        # parameters = dict(arrival_rate=arrival_rate_bimp, time_table=time_table, resource_pool=resource_pool,
-        #                       elements_data=elements_data, sequences=sequences, instances=len(log.get_traces(settings['read_options'])),
-        #                         bpmnId=bpmnId)
+        parameters = dict(arrival_rate=arrival_rate_bimp, time_table=time_table, resource_pool=resource_pool,
+                              elements_data=elements_data, sequences=sequences, instances=len(log.get_traces(settings['read_options'])),
+                                bpmnId=bpmnId)
         return parameters, process_stats

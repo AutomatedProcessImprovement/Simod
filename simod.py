@@ -44,9 +44,8 @@ def pipe_line_execution(settings):
     if not os.path.exists(settings['output']):
         os.makedirs(settings['output'])
         os.makedirs(os.path.join(settings['output'], 'sim_data'))
-    [print(k, v) for k, v in settings.items()]
     # Event log reading
-    log = lr.LogReader(os.path.join(settings['input'], settings['file']), 
+    log = lr.LogReader(os.path.join(settings['input'], settings['file']),
                         settings['read_options'])
     # Create customized event-log for the external tools
     file_name = settings['file'].split('.')[0]
@@ -63,42 +62,40 @@ def pipe_line_execution(settings):
 
     print("-- Mining Simulation Parameters --")
     parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
-    # xml.print_parameters(os.path.join(settings['output'],
-    #                                   settings['file'].split('.')[0]+'.bpmn'),
-    #                       os.path.join(settings['output'],
-    #                                   settings['file'].split('.')[0]+'.bpmn'),
-    #                       parameters)
-    # status = STATUS_OK
-    # sim_values = list()
-    # process_stats = pd.DataFrame.from_records(process_stats)
-    # for rep in range(settings['repetitions']):
-    #     print("Experiment #" + str(rep + 1))
-    #     try:
-    #         simulate(settings, rep)
-    #         process_stats = process_stats.append(measure_stats(settings, bpmn, rep),
-    #                                               ignore_index=True,
-    #                                               sort=False)
-            
-    #         # process_stats.to_csv('one_dataframe.csv')
-    #         # sup.create_json(settings, 'one_settings.json')
-    #         evaluation = sim.SimilarityEvaluator(process_stats, settings, rep)            
-    #         sim_values.append(evaluation.similarity)
-    #     except Exception as e:
-    #         print(e)
-    #         status = STATUS_FAIL
-    #         break
+    xml.print_parameters(os.path.join(settings['output'],
+                                      settings['file'].split('.')[0]+'.bpmn'),
+                          os.path.join(settings['output'],
+                                      settings['file'].split('.')[0]+'.bpmn'),
+                          parameters)
+    status = STATUS_OK
+    sim_values = list()
+    process_stats = pd.DataFrame.from_records(process_stats)
+    for rep in range(settings['repetitions']):
+        print("Experiment #" + str(rep + 1))
+        try:
+            simulate(settings, rep)
+            process_stats = process_stats.append(read_stats(settings, bpmn, rep),
+                                                 ignore_index=True,
+                                                 sort=False)
+            evaluation = sim.SimilarityEvaluator(process_stats, settings,
+                                                 rep, metric='dl_mae')
+            sim_values.append(evaluation.similarity)
+        except Exception as e:
+            print(e)
+            status = STATUS_FAIL
+            break
 
-    # response, measurements = define_response(status, sim_values, settings)
-    
-    # if settings['exec_mode'] == 'optimizer':
-    #     if os.path.getsize(os.path.join('outputs', settings['temp_file'])) > 0:
-    #         sup.create_csv_file(measurements, os.path.join('outputs', settings['temp_file']),mode='a')
-    #     else:
-    #         sup.create_csv_file_header(measurements, os.path.join('outputs', settings['temp_file']))
-    # else:
-    #     print('------ Final results ------')
-    #     [print(k, v, sep=': ') for k, v in response.items()]
-    response = {'loss': 0.5, 'status': STATUS_OK}
+    response, measurements = define_response(status, sim_values, settings)
+
+    if settings['exec_mode'] == 'optimizer':
+        if os.path.getsize(os.path.join('outputs', settings['temp_file'])) > 0:
+            sup.create_csv_file(measurements, os.path.join('outputs', settings['temp_file']),mode='a')
+        else:
+            sup.create_csv_file_header(measurements, os.path.join('outputs', settings['temp_file']))
+    else:
+        print('------ Final results ------')
+        [print(k, v, sep=': ') for k, v in response.items()]
+    # response = {'loss': 0.5, 'status': STATUS_OK}
     return response
 
 def define_response(status, sim_values, settings):
@@ -130,7 +127,7 @@ def define_response(status, sim_values, settings):
         else:
             response = {**{'similarity': 0, 'status': status}, **data}
     return response, measurements
-    
+
 
 # =============================================================================
 # Hyperparameter-optimizer execution
@@ -148,9 +145,9 @@ def hyper_execution(settings, args):
     ## Optimize
     best = fmin(fn=pipe_line_execution, space=space, algo=tpe.suggest,
                 max_evals=args['max_eval'], trials=bayes_trials, show_progressbar=False)
-    
+
     print(best)
-    
+
 # =============================================================================
 # Hyperparameter-optimizer execution
 # =============================================================================
@@ -169,6 +166,8 @@ def task_hyper_execution(settings, args):
     for task in act_stats:
         space['tasks'][task['task']] = hp.uniform(task['task'], task['min'], task['max'])
     space = {**space, **settings}
+    # [print(k, v) for k, v in settings.items()]
+
     # TODO: define evaluation metric maybe in relation with cycletime
 
     ## Trials object to track progress
@@ -193,7 +192,7 @@ def mining_structure(settings):
     print(" -- Mining Process Structure --")
     # Event log file_name
     file_name = settings['file'].split('.')[0]
-    input_route = os.path.join(settings['output'], file_name+'.xes') 
+    input_route = os.path.join(settings['output'], file_name+'.xes')
     # Mining structure definition
     args = ['java', '-jar', settings['miner_path'],
             str(settings['epsilon']), str(settings['eta']), input_route,
@@ -215,7 +214,7 @@ def simulate(settings, rep):
                          settings['file'].split('.')[0]+'_'+str(rep+1)+'.csv')]
     subprocess.call(args)
 
-def measure_stats(settings, bpmn, rep):
+def read_stats(settings, bpmn, rep):
     """Reads the simulation results stats
     Args:
         settings (dict): Path to jar and file names
@@ -245,7 +244,7 @@ def mine_max_enabling(settings):
         os.makedirs(settings['output'])
         os.makedirs(os.path.join(settings['output'], 'sim_data'))
     # Event log reading
-    log = lr.LogReader(os.path.join(settings['input'], settings['file']), 
+    log = lr.LogReader(os.path.join(settings['input'], settings['file']),
                         settings['read_options'])
     # Create customized event-log for the external tools
     file_name = settings['file'].split('.')[0]

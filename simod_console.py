@@ -25,7 +25,7 @@ def main(argv):
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'tasks_optimizer'
+    settings['exec_mode'] = 'single'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename

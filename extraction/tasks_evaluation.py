@@ -4,34 +4,17 @@ Created on Thu Jan  2 11:17:33 2020
 
 @author: Manuel Camargo
 """
-#%%
+
 import pandas as pd
 import tkinter as tk
 import networkx as nx
 
-import pdf_definition as pdf
-import manual_edition_ui as me
+from extraction import pdf_definition as pdf
+from extraction import manual_edition_ui as me
 
-import support as sup
-#%%
-import json
-from networkx.readwrite import json_graph
-# from extraction import pdf_definition as pdf
-# from extraction import manual_edition_ui as me
+from support_modules import support as sup
 
-# from support_modules import support as sup
-# %% load values
-with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/settings.json') as file:
-    settings = json.load(file)
-    file.close()
-data = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/process_stats.csv')
-roles = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/resource.csv')
-with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/graph.json') as file:
-    graph_data = json.load(file)
-    file.close()
-graph = json_graph.node_link_graph(graph_data)
 
-#%%
 def evaluate_tasks(process_graph, process_stats, resource_pool, settings):
     elements_data = list()
     # processing time discovery method
@@ -42,26 +25,12 @@ def evaluate_tasks(process_graph, process_stats, resource_pool, settings):
     if settings['pdef_method'] == 'apx':
         elements_data = match_predefined_time(process_graph, settings)
     # Resource association
-    print(resource_pool)
     elements_data = associate_resource(elements_data, process_stats, resource_pool)
-    print(elements_data[['name', 'type', 'mean', 'arg1', 'arg2', 'resource']])
     elements_data = elements_data.to_dict('records')
+    print(elements_data)
     return elements_data
 
 def mine_processing_time(process_stats, process_graph, settings):
-    """
-    This method extracts the activities processing time from the statistics
-
-    Parameters
-    ----------
-    process_stats : Dataframe
-    settings : dict
-
-    Returns
-    -------
-    Dataframe
-        Activities processing time.
-    """
     elements_data = list()
     # tasks = process_stats.task.unique()
     tasks = list(filter(lambda x: process_graph.node[x]['type'] == 'task',
@@ -92,24 +61,33 @@ def mine_processing_time(process_stats, process_graph, settings):
 
 def match_predefined_time(process_graph, settings):
     elements_data = list()
-    # TODO: Unir esta lista con la que ya cargue de settings
-    tasks = list(filter(lambda x: process_graph.node[x]['type'] == 'task',
-                        list(nx.nodes(process_graph))))
-    tasks = [process_graph.node[x]['name'] for x in tasks]
-    ###
-    default_record = {'type': 'EXPONENTIAL', 'mean': 0, 'arg2': 0}
+    settings['tasks'].pop('Analyze Purchase Requisition', None)
+    print(settings['tasks'])
+    # Predefined tasks records creation
+    default_record = {'type': 'EXPONENTIAL', 'mean': '0', 'arg2': '0'}
     for task, value in settings['tasks'].items():
-        record = {**{'id': sup.gen_id(), 'name': task, 'arg1': value},
+        record = {**{'id': sup.gen_id(), 'name': str(task), 'arg1': str(value)},
                   **default_record}
         elements_data.append(record)
 
+    # Check If there is tasks with not predefined time 
+    graph_tasks = list(filter(lambda x: process_graph.node[x]['type'] == 'task',
+                        list(nx.nodes(process_graph))))
+    graph_tasks = [process_graph.node[x]['name'] for x in graph_tasks]
+    predef_tasks = list(settings['tasks'].keys())
+    not_included = [task for task in graph_tasks if task not in predef_tasks]
+    default_record = {'type':'EXPONENTIAL', 'mean':'0','arg1':'3600', 'arg2':'0'}
+    print(not_included)
+    for task in not_included:
+        elements_data.append({**{'id':sup.gen_id(), 'name':task},**default_record})
     elements_data = pd.DataFrame(elements_data)
+    # Matching with model info
     model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()),
                                         orient='index')
-    # model_data = (model_data[model_data.type == 'task']
-    #                                      .rename(columns={'id': 'elementid'}))
+    model_data = (model_data[model_data.type == 'task']
+                                          .rename(columns={'id': 'elementid'}))
     # TODO: Quitar esto!!!!
-    model_data['elementid'] = model_data.index
+    # model_data['elementid'] = model_data.index
     elements_data = elements_data.merge(model_data[['name', 'elementid']],
                                         on='name',
                                         how='left').sort_values(by='name')
@@ -136,11 +114,11 @@ def define_distributions_manually(process_stats, process_graph, settings):
 
 def default_values(process_stats, process_graph):
     elements_data = list()
-    tasks = list(filter(lambda x: process_graph.node[x]['type']=='task' , list(nx.nodes(process_graph))))
+    tasks = list(filter(lambda x: process_graph.node[x]['type']=='task', list(nx.nodes(process_graph))))
     tasks = [process_graph.node[x]['name'] for x in tasks]
-    default_record = {'type':'EXPONENTIAL', 'mean':0,'arg1':3600, 'arg2':0}
+    default_record = {'type':'EXPONENTIAL', 'mean':'0','arg1':'3600', 'arg2':'0'}
     for task in tasks:
-        elements_data.append({**{'id':sup.gen_id(),'name':task},**default_record})
+        elements_data.append({**{'id':sup.gen_id(), 'name':task},**default_record})
     elements_data = pd.DataFrame(elements_data)
 
     model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
@@ -170,5 +148,3 @@ def associate_resource(elements_data, process_stats, resource_pool):
                                         right_on='task',
                                         how='left').drop(columns=['task'])
     return elements_data
-#%%
-evaluate_tasks(graph, data, roles, settings)

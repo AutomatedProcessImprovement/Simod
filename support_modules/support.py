@@ -144,3 +144,21 @@ def save_graph(graph, output_file):
     with open(output_file, 'w') as f:
         f.write(json.dumps(data))
         f.close()
+
+# from timeit import default_timer as timer
+# # start = timer()
+# # end = timer()
+# # print(end - start)
+
+# import pandas as pd
+# import json
+
+# with open('C:/Users/manuel.chavez/Documents/Repository/Simod/one_settings.json') as file:
+#     settings = json.load(file)
+#     file.close()
+# data = pd.read_csv('C:/Users/manuel.chavez/Documents/Repository/Simod/one_dataframe.csv')
+# data['end_timestamp'] =  pd.to_datetime(data['end_timestamp'], format=settings['read_options']['timeformat'])
+# # log['start_timestamp'] =  pd.to_datetime(log['start_timestamp'], format=parameters['timeformat'])
+
+# data = data.drop(columns='Unnamed: 0')
+# rep = 0
