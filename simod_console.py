@@ -17,8 +17,6 @@ from support_modules import support as sup
 
 
 def main(argv):
-    # TODO: https://stats.stackexchange.com/questions/798/calculating-optimal-number-of-bins-in-a-histogram
-    # Revisar como determinar de forma automatica el numero de bins, esto puede ayudar a ajustar mas rapido y mejor los datos
     settings = dict()
     args = dict()
     # Similarity btw the resources profile execution (Song e.t. all)
@@ -40,7 +38,7 @@ def main(argv):
             settings['alg_manag'] = 'repairment'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
-            settings['pdef_method'] = 'manual'
+            settings['pdef_method'] = 'automatic'
             # Single Execution
             # sim.single_exec(settings)
             sim.pipe_line_execution(settings)
@@ -114,7 +112,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
-                                'one_timestamp': True,
+                                'one_timestamp': False,
                                 'reorder': False,
                                 'filter_d_attrib': True,
                                 'ns_include': True}

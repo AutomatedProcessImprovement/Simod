@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from support_modules import support as sup
 from extraction import log_replayer as rpl
-from extraction import pdf_definition as pdf
+from extraction import pdf_finder as pdf
 from extraction import interarrival_definition as arr
 from extraction import gateways_probabilities as gt
 from extraction import role_discovery as rl
@@ -33,17 +32,13 @@ def extract_parameters(log, bpmn, process_graph, settings):
         #-------------------------------------------------------------------
         # Determination of first tasks for calculate the arrival rate
         inter_arrival_times = arr.define_interarrival_tasks(process_graph, conformed_traces, settings)
-        arrival_rate_bimp = (pdf.get_task_distribution(inter_arrival_times, 50))
+        arrival_rate_bimp = (pdf.DistributionFinder(inter_arrival_times).distribution)
         arrival_rate_bimp['startEventId'] = startEventId
         #-------------------------------------------------------------------
         # Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
         sequences = gt.define_probabilities(process_graph, bpmn, log, 1)
         #-------------------------------------------------------------------
         # Tasks id information
-        # sup.save_graph(process_graph, 'graph.json')
-        # sup.create_json(settings, 'settings.json')
-        # process_stats.to_csv('process_stats.csv')
-        # pd.DataFrame.from_records(resource_pool).to_csv('resource.csv')
         elements_data = te.TaskEvaluator(process_graph,
                                          process_stats,
                                          resource_pool,
