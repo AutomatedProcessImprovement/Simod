@@ -28,6 +28,7 @@ def normalize_probabilities(process_graph,gateways):
         for path in gateway['targets']:
             probabilities.append(path['probability'])
         probabilities = sup.round_preserve(probabilities,1)
+        probabilities = sup.avoid_zero_prob(probabilities)
         for i in range(0, len(probabilities)):
             gateway['targets'][i]['probability'] = probabilities[i]
     return gateways

@@ -1,56 +1,64 @@
 # -*- coding: utf-8 -*-
 import networkx as nx
+import pandas as pd
 from support_modules import support as sup
 
 from collections import OrderedDict
 
 def replay(process_graph, traces):
+    start_tasks_list, end_tasks_list = find_start_finish_tasks(process_graph)
     subsec_set = create_subsec_set(process_graph)
     parallel_gt_exec = parallel_execution_list(process_graph)
     not_conformant_traces = list()
     conformant_traces=list()
     for index in range(0,len(traces)):
         trace = traces[index]
-        temp_gt_exec = parallel_gt_exec
-        cursor = list()
         current_node = find_task_node(process_graph,trace[0]['task'])
-        cursor.append(current_node)
-        removal_allowed = True
-        is_conformant = True
-        for i in range(1, len(trace)):
-            next_node = find_task_node(process_graph,trace[i]['task'])
-            # If loop management
-            if next_node == cursor[-1]:
-                process_graph.node[next_node]['executions'] += 1
-            else:
-                try:
-                    cursor, prev_node = update_cursor(next_node, process_graph, cursor)
-                except:
-                    is_conformant = False
-                    break
-                for element in reversed(cursor[:-1]):
-                    # Process AND
-                    if process_graph.node[element]['type'] == 'gate3':
-                        gate = [d for d in temp_gt_exec if d['nod_num'] == element][0]
-                        gate.update(dict(executed= gate['executed'] + 1))
-                        if gate['executed'] < gate['num_paths']:
-                            removal_allowed = False
+        last_node = find_task_node(process_graph,trace[-1]['task'])
+        # Check if is a complete trace 
+        if (current_node in start_tasks_list) and (last_node in end_tasks_list):
+            temp_gt_exec = parallel_gt_exec
+            cursor = list()
+            cursor.append(current_node)
+            removal_allowed = True
+            is_conformant = True
+            for i in range(1, len(trace)):
+                next_node = find_task_node(process_graph,trace[i]['task'])
+                # If loop management
+                if next_node == cursor[-1]:
+                    process_graph.node[next_node]['executions'] += 1
+                else:
+                    try:
+                        cursor, prev_node = update_cursor(next_node, process_graph, cursor)
+                    except:
+                        is_conformant = False
+                        break
+                    for element in reversed(cursor[:-1]):
+                        # Process AND
+                        if process_graph.node[element]['type'] == 'gate3':
+                            gate = [d for d in temp_gt_exec if d['nod_num'] == element][0]
+                            gate.update(dict(executed= gate['executed'] + 1))
+                            if gate['executed'] < gate['num_paths']:
+                                removal_allowed = False
+                            else:
+                                removal_allowed = True
+                                cursor.remove(element)
+                        # Process Task
+                        elif process_graph.node[element]['type'] == 'task':
+                            if (element,next_node) in subsec_set:
+                                if removal_allowed:
+                                    cursor.remove(element)
+                        # Process other
                         else:
-                            removal_allowed = True
-                            cursor.remove(element)
-                    # Process Task
-                    elif process_graph.node[element]['type'] == 'task':
-                        if (element,next_node) in subsec_set:
                             if removal_allowed:
                                 cursor.remove(element)
-                    # Process other
-                    else:
-                        if removal_allowed:
-                            cursor.remove(element)
-        if not is_conformant:
-            not_conformant_traces.append(trace)
+            if not is_conformant:
+                not_conformant_traces.append(trace)
+            else:
+                conformant_traces.append(trace)
         else:
-            conformant_traces.append(trace)
+            # If it is not a complete trace
+            not_conformant_traces.append(trace)
         sup.print_progress(((index / (len(traces)-1))* 100),'Replaying process traces ')
     sup.print_done_task()
     return conformant_traces, not_conformant_traces
@@ -96,7 +104,7 @@ def find_next_tasks(process_graph, num):
             tasks_list.append([node])
         else:
             tasks_list.append(find_next_tasks(process_graph, node))
-    return 	tasks_list
+    return tasks_list
 
 def find_task_node(process_graph,task_name):
     resp = list(filter(lambda x: process_graph.node[x]['name'] == task_name ,process_graph.nodes))
@@ -105,3 +113,11 @@ def find_task_node(process_graph,task_name):
     else:
         raise Exception('Task not found on bpmn structure...')
     return resp
+    
+def find_start_finish_tasks(process_graph):
+    process_graph_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
+    start_node = process_graph_data[process_graph_data.type=='start'].index.tolist()[0]
+    end_node = process_graph_data[process_graph_data.type=='end'].index.tolist()[0]
+    start_tasks_list = sup.reduce_list(find_next_tasks(process_graph, start_node))
+    end_tasks_list = sup.reduce_list(find_next_tasks(process_graph.reverse(copy=True), end_node))
+    return start_tasks_list, end_tasks_list

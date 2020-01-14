@@ -9,10 +9,10 @@ from operator import itemgetter
 import jellyfish as jf
 import numpy as np
 
-def replacement(conformant, not_conformant, log):
+def replacement(conformant, not_conformant, log, settings):
     alias = create_task_alias(log.data)
-    similarity = measure_distance(reformat_events(not_conformant, alias),
-                                  reformat_events(conformant, alias))
+    similarity = measure_distance(reformat_events(not_conformant, alias, settings),
+                                  reformat_events(conformant, alias, settings))
     conformant_reformated = list()
     for trace in conformant:
         conformant_reformated.extend(trace)
@@ -20,15 +20,16 @@ def replacement(conformant, not_conformant, log):
     for similar in similarity:
         trace = list(filter(lambda x: x['caseid']==similar['sim_caseid'], conformant_reformated))
         for event in trace:
-            similar_traces.append({
-                    'caseid':similar['caseid']+'R',
-                    'task': event['task'],
-                    'start_timestamp': event['start_timestamp'],
-                    'end_timestamp': event['end_timestamp'],
-                    'event_type': event['event_type'], 
+            new_event = {
+                    'caseid':str(similar['caseid'])+'R',
+                    'task': event['task'],                    
                     'user': event['user'], 
-                    'alias': event['alias']
-                    })
+                    'alias': event['alias'],
+                    'end_timestamp': event['end_timestamp']                    
+                    }
+            if not settings['read_options']['one_timestamp']:
+                new_event['start_timestamp'] = event['start_timestamp']
+            similar_traces.append(new_event)
     conformant_reformated.extend(similar_traces)
     return conformant_reformated
 
@@ -62,13 +63,16 @@ def create_task_alias(df):
         alias[variables[i]] = aliases[i]
     return alias
 
-def reformat_events(data, alias):
+def reformat_events(data, alias, settings):
+    order_key = 'end_timestamp'
+    if not settings['read_options']['one_timestamp']:
+        order_key = 'start_timestamp'        
     temp_data = list()
     for case in data:
         temp_dict= dict(caseid=case[0]['caseid'], profile='')
         [x.update(dict(alias=alias[x['task']])) for x in case]
         for i in range(0, len(case)):
             temp_dict['profile'] = temp_dict['profile'] + case[i]['alias']
-        temp_dict['start_time'] = case[0]['start_timestamp']
+        temp_dict['timestamp'] = case[0][order_key]
         temp_data.append(temp_dict)
-    return sorted(temp_data, key=itemgetter('start_time'))
+    return sorted(temp_data, key=itemgetter('timestamp'))

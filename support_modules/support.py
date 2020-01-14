@@ -7,10 +7,14 @@ import csv
 import uuid
 import json
 import platform as pl
-
+from networkx.readwrite import json_graph
 
 def folder_id():
     return datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')
+
+def file_id(prefix='',extension='.csv'):
+    return prefix+datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')+extension
+
 #generate unique bimp element ids
 def gen_id():
     return "qbp_" + str(uuid.uuid4())
@@ -87,17 +91,32 @@ def create_csv_file_header(index, output_file, mode='w'):
 def create_json(dictionary, output_file):
     with open(output_file, 'w') as f:
          f.write(json.dumps(dictionary))
+         f.close()
+
          
-# rounding lists values preserving the sum values
+
 def round_preserve(l,expected_sum):
+    '''
+    rounding lists values preserving the sum values
+    '''
     actual_sum = sum(l)
-    difference = round(expected_sum - actual_sum,2)
+    difference = round(expected_sum - actual_sum, 2)
     if difference > 0.00:
         idx= l.index(min(l))
     else:
         idx= l.index(max(l))
     l[idx] +=difference
     return l
+
+
+def avoid_zero_prob(l):
+    if len(l) == 2:
+        if l[0] == 0.00:
+            l = [0.01, 0.99]
+        elif l[1]==0:
+            l = [0.99, 0.01]
+    return l
+
 
 def create_symetric_list(width, length):
     positions = list()
@@ -107,12 +126,51 @@ def create_symetric_list(width, length):
     [numbers.append(x - a) for x in positions]
     return numbers
 
+
 def zero_to_nan(values):
     """Replace every 0 with 'nan' and return a copy."""
-    return [float('nan') if x==0 else x for x in values]
+    return [float('nan') if x == 0 else x for x in values]
+
 
 def copy(source, destiny):
     if pl.system().lower() == 'windows':
         os.system('copy "' + source + '" "' + destiny + '"')
     else:
         os.system('cp "' + source + '" "' + destiny + '"')
+
+
+def save_graph(graph, output_file):
+    data = json_graph.node_link_data(graph)
+    with open(output_file, 'w') as f:
+        f.write(json.dumps(data))
+        f.close()
+
+# from timeit import default_timer as timer
+# # start = timer()
+# # end = timer()
+# # print(end - start)
+
+# #%%
+# import pandas as pd
+# import json
+# from networkx.readwrite import json_graph
+
+# with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/settings.json') as file:
+#     settings = json.load(file)
+#     file.close()
+    
+# settings['pdef_method'] = 'apx'
+    
+# with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/graph.json') as file:
+#     gdata = json.load(file)
+#     file.close()
+
+# G = json_graph.node_link_graph(gdata)
+
+# rpool = data = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/resource.csv')
+
+# data = pd.read_csv('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/process_stats.csv')
+# data['end_timestamp'] =  pd.to_datetime(data['end_timestamp'], format=settings['read_options']['timeformat'])
+# # log['start_timestamp'] =  pd.to_datetime(log['start_timestamp'], format=parameters['timeformat'])
+# data = data.drop(columns='Unnamed: 0')
+# #%%

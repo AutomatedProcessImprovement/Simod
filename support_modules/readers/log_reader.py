@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-import csv
 import datetime
 import xml.etree.ElementTree as ET
 import gzip
 import zipfile as zf
 import os
+import pandas as pd
 from operator import itemgetter
-
 
 from support_modules import support as sup
 
@@ -15,12 +14,10 @@ class LogReader(object):
     """
 	This class reads and parse the elements of a given process log in format .xes or .csv
 	"""
-
-    def __init__(self, input, timeformat, ns_include=True, one_timestamp=False):
+    def __init__(self, input, parameters):
         """constructor"""
         self.input = input
-        self.data, self.raw_data = self.load_data_from_file(timeformat, ns_include, one_timestamp)
-
+        self.data, self.raw_data = self.load_data_from_file(parameters)
 
     # Support Method
     def define_ftype(self):
@@ -38,7 +35,7 @@ class LogReader(object):
         return filename,file_extension
 
     # Decompress .gz files
-    def decompress_file_gzip(self,filename, outFileName):
+    def decompress_file_gzip(self, filename, outFileName):
         inFile = gzip.open(filename, 'rb')
         outFile = open(outFileName,'wb')
         outFile.write(inFile.read())
@@ -55,24 +52,24 @@ class LogReader(object):
         return outfilename, fileExtension
 
     # Reading methods
-    def load_data_from_file(self, timeformat, ns_include, one_timestamp):
+    def load_data_from_file(self, parameters):
         """reads all the data from the log depending the extension of the file"""
         temp_data = list()
         filename, file_extension = self.define_ftype()
         if file_extension == '.xes':
-            temp_data, raw_data = self.get_xes_events_data(filename,timeformat, ns_include, one_timestamp)
+            temp_data, raw_data = self.get_xes_events_data(filename, parameters)
         elif file_extension == '.csv':
-            temp_data, raw_data = self.get_csv_events_data(timeformat)
+            temp_data, raw_data = self.get_csv_events_data(parameters)
         elif file_extension == '.mxml':
-            temp_data, raw_data = self.get_mxml_events_data(filename,timeformat)
+            temp_data, raw_data = self.get_mxml_events_data(filename, parameters)
         return temp_data, raw_data
 
-    def get_xes_events_data(self, filename,timeformat, ns_include, one_timestamp):
+    def get_xes_events_data(self, filename, parameters):
         """reads and parse all the events information from a xes file"""
         temp_data = list()
         tree = ET.parse(filename)
         root = tree.getroot()
-        if ns_include:
+        if parameters['ns_include']:
             ns = {'xes': root.tag.split('}')[0].strip('{')}
             tags = dict(trace='xes:trace',string='xes:string',event='xes:event',date='xes:date')
         else:
@@ -91,7 +88,6 @@ class LogReader(object):
                 task = ''
                 user = ''
                 event_type = ''
-                complete_timestamp = ''
                 for string in event.findall(tags['string'], ns):
                     if string.attrib['key'] == 'concept:name':
                         task = string.attrib['value']                        
@@ -99,49 +95,47 @@ class LogReader(object):
                         user = string.attrib['value']
                     if string.attrib['key'] == 'lifecycle:transition':
                         event_type = string.attrib['value'].lower()
-                    if string.attrib['key'] == 'Complete_Timestamp':
-                        complete_timestamp = string.attrib['value']
-                        if complete_timestamp != 'End':
-                            complete_timestamp = datetime.datetime.strptime(complete_timestamp, timeformat)
                 timestamp = ''
                 for date in event.findall(tags['date'], ns):
                     if date.attrib['key'] == 'time:timestamp':
                         timestamp = date.attrib['value']
                         try:
-                            timestamp = datetime.datetime.strptime(timestamp[:-6], timeformat)
+                            timestamp = datetime.datetime.strptime(timestamp[:-6], parameters['timeformat'])
                         except ValueError:
-                            timestamp = datetime.datetime.strptime(timestamp, timeformat)
-                if not (task == '0' or task == '-1'):
-                    temp_data.append(
-                        dict(caseid=caseid, task=task, event_type=event_type, user=user, start_timestamp=timestamp,
-                             end_timestamp=complete_timestamp))
+                            timestamp = datetime.datetime.strptime(timestamp, parameters['timeformat'])
+                if  task not in ['0','-1','Start','End','start','end']:
+                    temp_data.append(dict(caseid=caseid, task=task, event_type=event_type, user=user, timestamp=timestamp))
             i += 1
         raw_data = temp_data
-        temp_data = self.reorder_xes(temp_data, one_timestamp)
+        temp_data = self.reorder_xes(temp_data, parameters)
         sup.print_done_task()
         return temp_data, raw_data
 
-    def reorder_xes(self, temp_data, one_timestamp):
+    def reorder_xes(self, temp_data, parameters):
         """this method joints the duplicated events on the .xes log"""
+        temp_data = pd.DataFrame(temp_data)
         ordered_event_log = list()
-        if one_timestamp:
-            ordered_event_log = list(filter(lambda x: x['event_type'] == 'complete', temp_data))
-            for event in ordered_event_log:
-                event['end_timestamp'] = event['start_timestamp']
+        if parameters['one_timestamp']:
+            parameters['column_names']['Complete Timestamp']='end_timestamp'
+            temp_data = temp_data[temp_data.event_type=='complete']
+            ordered_event_log = temp_data.rename(columns={'timestamp':'end_timestamp'})
+            ordered_event_log = ordered_event_log.drop(columns='event_type')
+            ordered_event_log = ordered_event_log.to_dict('records')
         else:
-            events = list(filter(lambda x: (x['event_type'] == 'start' or x['event_type'] == 'complete'), temp_data))
-            cases = list({x['caseid'] for x in events})
+            parameters['column_names']['Start Timestamp']='start_timestamp'
+            parameters['column_names']['Complete Timestamp']='end_timestamp'
+            cases = temp_data.caseid.unique()
             for case in cases:
-                start_events = sorted(list(filter(lambda x: x['event_type'] == 'start' and x['caseid'] == case, events)), key=lambda x:x['start_timestamp'])
-                finish_events = sorted(list(filter(lambda x: x['event_type'] == 'complete' and x['caseid'] == case, events)), key=lambda x:x['start_timestamp'])
+                start_events = temp_data[(temp_data.event_type=='start') & (temp_data.caseid==case)].sort_values(by='timestamp', ascending=True).to_dict('records')
+                finish_events = temp_data[(temp_data.event_type=='complete') & (temp_data.caseid==case)].sort_values(by='timestamp', ascending=True).to_dict('records')
                 if len(start_events) == len(finish_events):
                     temp_trace = list()
                     for i, _ in enumerate(start_events):
                         match = False
                         for j, _ in enumerate(finish_events):
                             if start_events[i]['task'] == finish_events[j]['task']:
-                                temp_trace.append(dict(caseid=case, task=start_events[i]['task'], event_type=start_events[i]['task'],
-                                     user=start_events[i]['user'], start_timestamp=start_events[i]['start_timestamp'], end_timestamp=finish_events[j]['start_timestamp']))
+                                temp_trace.append(dict(caseid=case, task=start_events[i]['task'], user=start_events[i]['user'],
+                                                       start_timestamp=start_events[i]['timestamp'], end_timestamp=finish_events[j]['timestamp']))
                                 match = True
                                 break
                         if match:
@@ -150,7 +144,7 @@ class LogReader(object):
                         ordered_event_log.extend(temp_trace)
         return ordered_event_log
 
-    def get_mxml_events_data(self, filename,timeformat):
+    def get_mxml_events_data(self, filename, parameters):
         """read and parse all the events information from a MXML file"""
         temp_data = list()
         tree = ET.parse(filename)
@@ -161,11 +155,13 @@ class LogReader(object):
         for procIns in procInstas:
             sup.print_progress(((i / (len(procInstas) - 1)) * 100), 'Reading log traces ')
             caseid = procIns.get('id')
+								   
             auditTrail = procIns.findall('AuditTrailEntry')
             for trail in auditTrail:
                 task = ''
                 user = ''
                 event_type = ''
+							  
                 timestamp = ''
                 attributes = trail.find('Data').findall('Attribute')
                 for attr in attributes:
@@ -175,9 +171,11 @@ class LogReader(object):
                         event_type = attr.text
                     if (attr.get('name') == 'org:resource'):
                         user = attr.text
+																	   
                 event_type = trail.find('EventType').text
                 timestamp = trail.find('Timestamp').text
-                timestamp = datetime.datetime.strptime(trail.find('Timestamp').text[:-6], timeformat)
+														  
+                timestamp = datetime.datetime.strptime(trail.find('Timestamp').text[:-6], parameters['timeformat'])
                 temp_data.append(
                     dict(caseid=caseid, task=task, event_type=event_type, user=user, start_timestamp=timestamp,
                          end_timestamp=timestamp))
@@ -198,48 +196,41 @@ class LogReader(object):
                              user=x['user'], start_timestamp=x['start_timestamp'], end_timestamp=y['start_timestamp']))
         return data
 
-#    def get_csv_events_data(self, log_columns_numbers, timeformat):
-#        """reads and parse all the events information from a csv file"""
-#        flength = sup.file_size(self.input)
-#        i = 0
-#        temp_data = list()
-#        with open(self.input, 'r') as csvfile:
-#            filereader = csv.reader(csvfile, delimiter=',', quotechar='"')
-#            next(filereader, None)  # skip the headers
-#            for row in filereader:
-#                sup.print_progress(((i / (flength - 1)) * 100), 'Reading log traces ')
-#                timestamp = ''
-#                complete_timestamp = ''
-#                if row[log_columns_numbers[1]] != 'End':
-#                    timestamp = datetime.datetime.strptime(row[log_columns_numbers[4]], timeformat)
-#                    complete_timestamp = datetime.datetime.strptime(row[log_columns_numbers[5]], timeformat)
-#                temp_data.append(dict(caseid=row[log_columns_numbers[0]], task=row[log_columns_numbers[1]],
-#                                      event_type=row[log_columns_numbers[2]], user=row[log_columns_numbers[3]],
-#                                      start_timestamp=timestamp, end_timestamp=complete_timestamp))
-#                i += 1
-#        return temp_data, temp_data
-
-    def get_csv_events_data(self, timeformat):
-        """reads and parse all the events information from a csv file"""
-        flength = sup.file_size(self.input)
-        i = 0
-        temp_data = list()
-        with open(self.input, 'r') as csvfile:
-            filereader = csv.DictReader(csvfile, delimiter=',')
-            for row in filereader:
-                sup.print_progress(((i / (flength - 1)) * 100), 'Reading log traces ')
-                timestamp = ''
-                complete_timestamp = ''
-                if row['task'] != 'End':
-                    timestamp = datetime.datetime.strptime(row['start_timestamp'], timeformat)
-                    complete_timestamp = datetime.datetime.strptime(row['end_timestamp'], timeformat)
-                temp_data.append(dict(caseid=row['caseid'], task=row['task'],
-                                      event_type=row['task'], user=row['resource'],
-                                      start_timestamp=timestamp, end_timestamp=complete_timestamp))
-                i += 1
-            csvfile.close()
-        return temp_data, temp_data
-
+    def get_csv_events_data(self, parameters):
+        """reads and parse all the events information from a csv file
+            Args:
+                parameters (dict): parameters for reading the log.
+                   - timeformat: timeformat of the log,
+                   - column_names (dict): column names matching,
+                   - one_timestamp (bool): True if event log has one timestamp,
+                   - reorder (bool): True if the event log require reordering        
+        """
+        sup.print_performed_task('Reading log traces ')
+        log = pd.read_csv(self.input)
+        if parameters['one_timestamp']:
+            parameters['column_names']['Complete Timestamp']='end_timestamp'
+            log = log.rename(columns=parameters['column_names'])
+            log = log.astype({'caseid': object})
+            log = log[(log.task!='Start') & (log.task!='End')].reset_index(drop=True)
+            if parameters['filter_d_attrib']:
+                log = log[['caseid', 'task', 'user', 'end_timestamp']]
+            log['end_timestamp'] =  pd.to_datetime(log['end_timestamp'], format=parameters['timeformat'])
+        else:
+            parameters['column_names']['Start Timestamp']='start_timestamp'
+            parameters['column_names']['Complete Timestamp']='end_timestamp'
+            log = log.rename(columns=parameters['column_names'])
+            log = log.astype({'caseid': object})
+            log = log[(log.task!='Start') & (log.task!='End')].reset_index(drop=True)
+            if parameters['filter_d_attrib']:
+                log = log[['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']]
+            log['start_timestamp'] =  pd.to_datetime(log['start_timestamp'], format=parameters['timeformat'])
+            log['end_timestamp'] =  pd.to_datetime(log['end_timestamp'], format=parameters['timeformat'])
+        temp_data = log.to_dict('records')
+        raw_data = temp_data.copy()
+        if parameters['reorder']:
+            temp_data = self.reorder_xes(temp_data, parameters['one_timestamp'])
+        sup.print_done_task()
+        return temp_data, raw_data
 
     # TODO manejo de excepciones
     def find_first_task(self):
@@ -254,28 +245,30 @@ class LogReader(object):
         first_task_names = list(set(first_task_names))
         return first_task_names
 
-    def get_traces(self):
+    def get_traces(self, parameters):
         """returns the data splitted by caseid and ordered by start_timestamp"""
-        cases = list()
-        for c in self.data: cases.append(c['caseid'])
-        cases = sorted(list(set(cases)))
+        cases = list(set([x['caseid'] for x in self.data]))
         traces = list()
         for case in cases:
-            # trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('start_timestamp'))
-            trace = list(filter(lambda x: (x['caseid'] == case), self.data))
+            if parameters['one_timestamp']:
+                trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('end_timestamp'))
+            else:
+                trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('start_timestamp'))
+            # trace = list(filter(lambda x: (x['caseid'] == case), self.data))
             traces.append(trace)
         return traces
 
     def get_raw_traces(self):
         """returns the raw data splitted by caseid and ordered by start_timestamp"""
-        cases = list()
-        for c in self.raw_data: cases.append(c['caseid'])
-        cases = sorted(list(set(cases)))
+        cases = list(set([c['caseid'] for c in self.raw_data]))
         traces = list()
         for case in cases:
-            trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('start_timestamp'))
+            trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('timestamp'))
             traces.append(trace)
+            # trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.raw_data)), key=itemgetter('start_timestamp'))
+            # traces.append(trace)
         return traces
+
 
     def read_resource_task(self,task,roles):
         """returns the resource that performs a task"""
