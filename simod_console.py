@@ -23,29 +23,31 @@ def main(argv):
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'single'
+    settings['exec_mode'] = 'optimizer'
+    # Similarity metric 'tsd', 'dl_mae'
+    settings['sim_metric'] = 'tsd'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes.gz'
+        settings['file'] = 'ConsultaDataMining201618.xes.gz'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # Splitminer settings [0..1]
-            settings['epsilon'] = 0.5
-            settings['eta'] = 0.3
+            settings['epsilon'] = 0.97
+            settings['eta'] = 0.55
             # 'removal', 'replacement', 'repairment'
-            settings['alg_manag'] = 'repairment'
+            settings['alg_manag'] = 'removal'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
-            settings['pdef_method'] = 'automatic'
+            settings['pdef_method'] = 'semi-automatic'
             # Single Execution
             # sim.single_exec(settings)
             sim.pipe_line_execution(settings)
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 2
+            args['max_eval'] = 50
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer
@@ -56,13 +58,13 @@ def main(argv):
                 sim.hyper_execution(settings, args)
         elif settings['exec_mode'] == 'tasks_optimizer':
             # Splitminer settings [0..1]
-            settings['epsilon'] = 0.5
-            settings['eta'] = 0.3
+            settings['epsilon'] = 0.97
+            settings['eta'] = 0.55
             # 'removal', 'replacement', 'repairment'
-            settings['alg_manag'] = 'repairment'
+            settings['alg_manag'] = 'removal'
             # Processing time definition method: 'apx'
             settings['pdef_method'] = 'apx'
-            args['max_eval'] = 2
+            args['max_eval'] = 50
             settings['temp_file'] = sup.file_id(prefix='TS_')
             # Execute optimizer
             if not os.path.exists(os.path.join('outputs',

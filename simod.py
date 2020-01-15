@@ -78,7 +78,7 @@ def pipe_line_execution(settings):
                                                  ignore_index=True,
                                                  sort=False)
             evaluation = sim.SimilarityEvaluator(process_stats, settings,
-                                                 rep, metric='dl_mae')
+                                                 rep, metric=settings['sim_metric'])
             sim_values.append(evaluation.similarity)
         except Exception as e:
             print(e)
@@ -109,26 +109,30 @@ def define_response(status, sim_values, settings):
             'eta': settings['eta'], 'output': settings['output']
             }
     if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
+        similarity = 0
+        response['params'] = settings
         if status == STATUS_OK:
-            loss = (1 - np.mean([x['act_norm'] for x in sim_values]))
-            if loss < 0:
-                response = {'loss': loss, 'params': settings, 'status': STATUS_FAIL}
-                measurements.append({**{'similarity': 1 - loss, 'status': STATUS_FAIL}, **data})
-            else:
-                response = {'loss': loss, 'params': settings, 'status': status}
-                measurements.append({**{'similarity': 1 - loss, 'status': status}, **data})
+            similarity = np.mean([x['act_norm'] for x in sim_values])
+            loss = 1 - similarity
+            response['loss'] = loss
+            response['status'] = status if loss > 0 else STATUS_FAIL
         else:
-            response = {'params': settings, 'status': status}
-            measurements.append({**{'similarity': 0, 'status': status}, **data})
+            response['status'] = status
+        measurements.append({
+            **{'similarity': similarity,
+               'status': response['status']},
+            **data})
     else:
         if status == STATUS_OK:
-            similarity = (np.mean([x['act_norm'] for x in sim_values]))
-            if similarity < 0:
-                response = {**{'similarity': similarity, 'status': STATUS_FAIL}, **data}
-            else:
-                response = {**{'similarity': similarity, 'status': status}, **data}
+            similarity = np.mean([x['act_norm'] for x in sim_values])
+            response['similarity'] = similarity
+            response['params'] = settings
+            response['status'] = status if similarity > 0 else STATUS_FAIL
+            response = {**response, **data}
         else:
-            response = {**{'similarity': 0, 'status': status}, **data}
+            response['similarity'] = 0
+            response['status'] = status
+            response = {**response, **data}
     return response, measurements
 
 
