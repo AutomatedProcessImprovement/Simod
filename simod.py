@@ -78,7 +78,7 @@ def pipe_line_execution(settings):
                                                  ignore_index=True,
                                                  sort=False)
             evaluation = sim.SimilarityEvaluator(process_stats, settings,
-                                                 rep, metric='tsd')
+                                                 rep, metric='dl_mae')
             sim_values.append(evaluation.similarity)
         except Exception as e:
             print(e)
@@ -87,7 +87,7 @@ def pipe_line_execution(settings):
 
     response, measurements = define_response(status, sim_values, settings)
 
-    if settings['exec_mode'] == 'optimizer':
+    if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
         if os.path.getsize(os.path.join('outputs', settings['temp_file'])) > 0:
             sup.create_csv_file(measurements, os.path.join('outputs', settings['temp_file']),mode='a')
         else:
@@ -101,11 +101,14 @@ def pipe_line_execution(settings):
 def define_response(status, sim_values, settings):
     response = dict()
     measurements = list()
-    data = {
-        'alg_manag': settings['alg_manag'], 'epsilon': settings['epsilon'],
-        'eta': settings['eta'], 'output': settings['output']
-        }
-    if settings['exec_mode'] == 'optimizer':
+    if settings['exec_mode'] == 'tasks_optimizer':
+        data = settings['tasks']
+    else:
+        data = {
+            'alg_manag': settings['alg_manag'], 'epsilon': settings['epsilon'],
+            'eta': settings['eta'], 'output': settings['output']
+            }
+    if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
         if status == STATUS_OK:
             loss = (1 - np.mean([x['act_norm'] for x in sim_values]))
             if loss < 0:
@@ -164,7 +167,10 @@ def task_hyper_execution(settings, args):
     space = dict()
     space['tasks'] = dict()
     for task in act_stats:
-        space['tasks'][task['task']] = hp.uniform(task['task'], task['min'], task['max'])
+        # Assumption just the 1/3 percent of the enabling time was taking assuming an 8 hours calendar (Time warp)
+        mean = task['mean']*0.4
+        # As min and max values I restrict the variation to a 50% less and in excess not the minimum and maximum 
+        space['tasks'][task['task']] = hp.uniform(task['task'], mean-(mean*0.5), mean+(mean*0.5))
     space = {**space, **settings}
     # [print(k, v) for k, v in settings.items()]
 
