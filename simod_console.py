@@ -23,13 +23,13 @@ def main(argv):
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'optimizer'
-    # Similarity metric 'tsd', 'dl_mae'
-    settings['sim_metric'] = 'tsd'
+    settings['exec_mode'] = 'single'
+    # Similarity metric 'tsd', 'dl_mae', 'tsd_min'
+    settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'ConsultaDataMining201618.xes.gz'
+        settings['file'] = 'PurchasingExample.xes.gz'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':

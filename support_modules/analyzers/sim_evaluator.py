@@ -52,7 +52,8 @@ class SimilarityEvaluator():
 
     def mesurement(self):
         """
-        Measures the distance of two event-logs with with tsd or dl and mae distance
+        Measures the distance of two event-logs
+        with with tsd or dl and mae distance
 
         Returns
         -------
@@ -70,7 +71,9 @@ class SimilarityEvaluator():
         sampled_log_data = random.sample(log_data, len(simulation_data))
         # similarity measurement and matching
         if self.metric == 'tsd':
-            distance = self.tsd_distance(sampled_log_data, simulation_data)
+            distance = self.tsd_metric(sampled_log_data, simulation_data)
+        if self.metric == 'tsd_min':
+            distance = self.tsd_min_pattern(sampled_log_data, simulation_data)
         else:
             distance = self.dl_mae_distance(sampled_log_data, simulation_data)
         return distance
@@ -89,7 +92,7 @@ class SimilarityEvaluator():
 # Timed string distance
 # =============================================================================
 
-    def tsd_distance(self, log_data, simulation_data):
+    def tsd_metric(self, log_data, simulation_data):
         """
         Timed string distance calculation
 
@@ -114,8 +117,8 @@ class SimilarityEvaluator():
                                                            log_data, i, j)
                 length = np.max([len(comp_sec['seqs']['s_1']),
                                  len(comp_sec['seqs']['s_2'])])
-                distance = self.timed_string_distance_alpha(comp_sec,
-                                                            self.alpha_concurrency.oracle)/length
+                distance = self.tsd_alpha(comp_sec,
+                                          self.alpha_concurrency.oracle)/length
                 cost_matrix[i][j] = distance
         # end = timer()
         # print(end - start)
@@ -127,6 +130,30 @@ class SimilarityEvaluator():
                                    sim_order=simulation_data[idx]['profile'],
                                    log_order=log_data[idy]['profile'],
                                    sim_score=(1-(cost_matrix[idx][idy]))))
+        return similarity
+
+    def tsd_min_pattern(self, log_data, simulation_data):
+        similarity = list()
+        temp_log_data = log_data.copy()
+        for i in range(0, len(simulation_data)):
+            comp_sec = self.create_comparison_elements(simulation_data,
+                                                       temp_log_data, i, 0)
+            min_dist = self.tsd_alpha(comp_sec, self.alpha_concurrency.oracle)
+            min_idx = 0
+            for j in range(1, len(temp_log_data)):
+                comp_sec = self.create_comparison_elements(simulation_data,
+                                                           temp_log_data, i, j)
+                sim = self.tsd_alpha(comp_sec, self.alpha_concurrency.oracle)
+                if min_dist > sim:
+                    min_dist = sim
+                    min_idx = j
+            length = np.max([len(simulation_data[i]['profile']),
+                             len(temp_log_data[min_idx]['profile'])])
+            similarity.append(dict(caseid=simulation_data[i]['caseid'],
+                                   sim_order=simulation_data[i]['profile'],
+                                   log_order=temp_log_data[min_idx]['profile'],
+                                   sim_score=(1-(min_dist/length))))
+            del temp_log_data[min_idx]
         return similarity
 
     def create_comparison_elements(self, serie1, serie2, id1, id2):
@@ -160,7 +187,7 @@ class SimilarityEvaluator():
             comp_sec['times']['w_2'] = serie2[id2]['wait_act_norm']
         return comp_sec
 
-    def timed_string_distance_alpha(self, comp_sec, alpha_concurrency):
+    def tsd_alpha(self, comp_sec, alpha_concurrency):
         """
         Compute the Damerau-Levenshtein distance between two given
         strings (s_1 and s_2)
@@ -325,24 +352,21 @@ class SimilarityEvaluator():
         mae = np.mean(np.abs(cicle_time_s1 - cicle_time_s2))
         return d_l, mae
 
-
 # =============================================================================
 # Support methods
 # =============================================================================
 
     def create_task_alias(self, features):
         """
-
+        Create string alias for tasks names or tuples of tasks-roles names
 
         Parameters
         ----------
-        features : TYPE
-            DESCRIPTION.
+        features : list
 
         Returns
         -------
-        alias : TYPE
-            DESCRIPTION.
+        alias : alias dictionary
 
         """
         data = self.data.to_dict('records')
@@ -401,7 +425,8 @@ class SimilarityEvaluator():
         """
         # Update alias
         if isinstance(features, list):
-            [x.update(dict(alias=self.alias[(x[features[0]], x[features[1]])])) for x in data]
+            [x.update(dict(alias=self.alias[(x[features[0]],
+                                             x[features[1]])])) for x in data]
         else:
             [x.update(dict(alias=self.alias[x[features]])) for x in data]
         temp_data = list()
@@ -430,41 +455,3 @@ class SimilarityEvaluator():
             temp_data.append(temp_dict)
         return sorted(temp_data, key=itemgetter('start_time'))
 
-    # def damerau_levenshtein_distance(comp_sec):
-    #     """
-    #     Compute the Damerau-Levenshtein distance between two given
-    #     strings (s_1 and s_2)
-    #     """
-    #     s_1 = comp_sec['log_trace']
-    #     s_2 = comp_sec['sim_trace']
-    #     p_1 = comp_sec['proc_log_trace']
-    #     p_2 = comp_sec['proc_sim_trace']
-    #     w_1 = comp_sec['wait_log_trace']
-    #     w_2 = comp_sec['wait_sim_trace']
-    #     d = {}
-    #     lenstr1 = len(s_1)
-    #     lenstr2 = len(s_2)
-    #     for i in range(-1,lenstr1+1):
-    #         d[(i,-1)] = i+1
-    #     for j in range(-1,lenstr2+1):
-    #         d[(-1,j)] = j+1
-    #     for i in range(0, lenstr1):
-    #         for j in range(0, lenstr2):
-    #             if s_1[i] == s_2[j]:
-    #                 t_1 = p_1[i] + w_1[i]
-    #                 if t_1 > 0:
-    #                     b_1 = (p_1[i]/t_1)
-    #                     b2 = (w_1[i]/t_1)
-    #                     cost = (b_1*abs(p_2[j]-p_1[i])) + (b2*abs(w_2[j]-w_1[i]))
-    #                 else:
-    #                     cost = 0
-    #             else:
-    #                 cost = 1
-    #             d[(i,j)] = min(
-    #                            d[(i-1,j)] + 1, # deletion
-    #                            d[(i,j-1)] + 1, # insertion
-    #                            d[(i-1,j-1)] + cost, # substitution
-    #                           )
-    #             if i and j and s_1[i]==s_2[j-1] and s_1[i-1] == s_2[j]:
-    #                 d[(i,j)] = min (d[(i,j)], d[i-2,j-2] + cost) # transposition
-    #     return d[lenstr1-1,lenstr2-1]
