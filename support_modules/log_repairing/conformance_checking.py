@@ -19,7 +19,7 @@ def evaluate_alignment(process_graph, log, settings):
     print_stats(log, conformant, traces)
     if settings['alg_manag'] == 'replacement':
         log.set_data(rep.replacement(conformant, not_conformant, log, settings))
-    elif settings['alg_manag'] == 'repairment':
+    elif settings['alg_manag'] == 'repair':
         log.set_data(tal.align_traces(log, settings))
     elif settings['alg_manag'] == 'removal':
         ref_conformant = list()

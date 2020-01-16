@@ -25,24 +25,25 @@ def main(argv):
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
     settings['exec_mode'] = 'single'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min'
-    settings['sim_metric'] = 'tsd_min'
+    settings['sim_metric'] = 'tsd'
     # Parameters settled manually or catched by console for batch operations
+    # TODO: The csv two timestamps allignment is not working due a ordering key issue in the log class
+    # TODO: Alignment is not working for the ConsultaEventLog seems to be a memory issue 
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes.gz'
+        settings['file'] = 'Production.xes'
         settings['repetitions'] = 1
-        settings['simulation'] = True
+        settings['simulation'] = False
         if settings['exec_mode'] == 'single':
             # Splitminer settings [0..1]
-            settings['epsilon'] = 0.97
-            settings['eta'] = 0.55
-            # 'removal', 'replacement', 'repairment'
-            settings['alg_manag'] = 'removal'
+            settings['epsilon'] = 0.9
+            settings['eta'] = 0.7
+            # 'removal', 'replacement', 'repair'
+            settings['alg_manag'] = 'repair'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'semi-automatic'
             # Single Execution
-            # sim.single_exec(settings)
             sim.pipe_line_execution(settings)
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
@@ -60,7 +61,7 @@ def main(argv):
             # Splitminer settings [0..1]
             settings['epsilon'] = 0.97
             settings['eta'] = 0.55
-            # 'removal', 'replacement', 'repairment'
+            # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'removal'
             # Processing time definition method: 'apx'
             settings['pdef_method'] = 'apx'

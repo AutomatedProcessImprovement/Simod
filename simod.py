@@ -33,7 +33,7 @@ def pipe_line_execution(settings):
     if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
         # Paths redefinition
         settings['output'] = os.path.join('outputs', sup.folder_id())
-        if settings['alg_manag'] == 'repairment':
+        if settings['alg_manag'] == 'repair':
             settings['aligninfo'] = os.path.join(
                                                  settings['output'],
                                                  'CaseTypeAlignmentResults.csv'
@@ -145,7 +145,7 @@ def hyper_execution(settings, args):
     space = {**{'epsilon': hp.uniform('epsilon', args['epsilon'][0], args['epsilon'][1]),
              'eta': hp.uniform('eta', args['eta'][0], args['eta'][1]),
              'alg_manag': hp.choice('alg_manag', ['replacement',
-                                                  'repairment',
+                                                  'repair',
                                                   'removal'])}, **settings}
     ## Trials object to track progress
     bayes_trials = Trials()

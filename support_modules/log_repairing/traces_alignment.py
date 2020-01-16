@@ -53,9 +53,10 @@ def process_trace(trace, optimal_alignments, traces_alignments, one_timestamp):
                 j += 1
             # If the Log needs an extra task, create the start and complet event with time 0 and user AUTO
             elif movement_type =='MREAL':
-                if i == 0:
-                    time = aligned_trace[i]['end_timestamp'] if one_timestamp else aligned_trace[i]['timestamp']
+                if i == 0  or not aligned_trace:
+                    time = trace[i]['end_timestamp'] if one_timestamp else trace[i]['timestamp']
                 else:
+                    if aligned_trace == []: print(caseid)                   
                     time = aligned_trace[-1]['end_timestamp'] if one_timestamp else aligned_trace[-1]['timestamp']
                     time += datetime.timedelta(microseconds=1)
                 new_event = {'caseid':caseid, 'task':optimal_alignment[i]['task_name'], 'user':'AUTO'}
