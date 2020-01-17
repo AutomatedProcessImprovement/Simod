@@ -25,24 +25,24 @@ def main(argv):
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
     settings['exec_mode'] = 'single'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min'
-    settings['sim_metric'] = 'tsd'
+    settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
-    # TODO: The csv two timestamps allignment is not working due a ordering key issue in the log class
-    # TODO: Alignment is not working for the ConsultaEventLog seems to be a memory issue 
+    # TODO: Check the replay to fix the start and end tasks
+    # TODO: Reformat traces alignment to become a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.xes'
+        settings['file'] = 'ConsultaDataMining201618.csv'
         settings['repetitions'] = 1
         settings['simulation'] = False
         if settings['exec_mode'] == 'single':
             # Splitminer settings [0..1]
-            settings['epsilon'] = 0.9
+            settings['epsilon'] = 0.7
             settings['eta'] = 0.7
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'repair'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
-            settings['pdef_method'] = 'semi-automatic'
+            settings['pdef_method'] = 'automatic'
             # Single Execution
             sim.pipe_line_execution(settings)
         elif settings['exec_mode'] == 'optimizer':
@@ -115,8 +115,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
-                                'one_timestamp': False,
-                                'reorder': False,
+                                'one_timestamp': True,
                                 'filter_d_attrib': True,
                                 'ns_include': True}
     # Folders structure

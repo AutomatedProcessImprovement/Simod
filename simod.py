@@ -46,11 +46,9 @@ def pipe_line_execution(settings):
         os.makedirs(os.path.join(settings['output'], 'sim_data'))
     # Event log reading
     log = lr.LogReader(os.path.join(settings['input'], settings['file']),
-                        settings['read_options'])
+                       settings['read_options'])
     # Create customized event-log for the external tools
-    file_name = settings['file'].split('.')[0]
-    xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'),
-                        settings['read_options'])
+    xes.XesWriter(log, settings)
     # Execution steps
     mining_structure(settings)
     bpmn = br.BpmnReader(os.path.join(settings['output'],
@@ -60,42 +58,42 @@ def pipe_line_execution(settings):
     # Evaluate alignment
     chk.evaluate_alignment(process_graph, log, settings)
 
-    print("-- Mining Simulation Parameters --")
-    parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
-    xml.print_parameters(os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'),
-                          os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'),
-                          parameters)
-    status = STATUS_OK
-    sim_values = list()
-    process_stats = pd.DataFrame.from_records(process_stats)
-    for rep in range(settings['repetitions']):
-        print("Experiment #" + str(rep + 1))
-        try:
-            simulate(settings, rep)
-            process_stats = process_stats.append(read_stats(settings, bpmn, rep),
-                                                 ignore_index=True,
-                                                 sort=False)
-            evaluation = sim.SimilarityEvaluator(process_stats, settings,
-                                                 rep, metric=settings['sim_metric'])
-            sim_values.append(evaluation.similarity)
-        except Exception as e:
-            print(e)
-            status = STATUS_FAIL
-            break
+    # print("-- Mining Simulation Parameters --")
+    # parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
+    # xml.print_parameters(os.path.join(settings['output'],
+    #                                   settings['file'].split('.')[0]+'.bpmn'),
+    #                       os.path.join(settings['output'],
+    #                                   settings['file'].split('.')[0]+'.bpmn'),
+    #                       parameters)
+    # status = STATUS_OK
+    # sim_values = list()
+    # process_stats = pd.DataFrame.from_records(process_stats)
+    # for rep in range(settings['repetitions']):
+    #     print("Experiment #" + str(rep + 1))
+    #     try:
+    #         simulate(settings, rep)
+    #         process_stats = process_stats.append(read_stats(settings, bpmn, rep),
+    #                                               ignore_index=True,
+    #                                               sort=False)
+    #         evaluation = sim.SimilarityEvaluator(process_stats, settings,
+    #                                               rep, metric=settings['sim_metric'])
+    #         sim_values.append(evaluation.similarity)
+    #     except Exception as e:
+    #         print(e)
+    #         status = STATUS_FAIL
+    #         break
 
-    response, measurements = define_response(status, sim_values, settings)
+    # response, measurements = define_response(status, sim_values, settings)
 
-    if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
-        if os.path.getsize(os.path.join('outputs', settings['temp_file'])) > 0:
-            sup.create_csv_file(measurements, os.path.join('outputs', settings['temp_file']),mode='a')
-        else:
-            sup.create_csv_file_header(measurements, os.path.join('outputs', settings['temp_file']))
-    else:
-        print('------ Final results ------')
-        [print(k, v, sep=': ') for k, v in response.items()]
-    # response = {'loss': 0.5, 'status': STATUS_OK}
+    # if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
+    #     if os.path.getsize(os.path.join('outputs', settings['temp_file'])) > 0:
+    #         sup.create_csv_file(measurements, os.path.join('outputs', settings['temp_file']),mode='a')
+    #     else:
+    #         sup.create_csv_file_header(measurements, os.path.join('outputs', settings['temp_file']))
+    # else:
+    #     print('------ Final results ------')
+    #     [print(k, v, sep=': ') for k, v in response.items()]
+    response = {'loss': 0.5, 'status': STATUS_OK}
     return response
 
 def define_response(status, sim_values, settings):

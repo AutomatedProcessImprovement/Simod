@@ -12,25 +12,25 @@ def align_traces(log, settings):
     optimal_alignments = read_alignment_info(settings['aligninfo'])
     traces_alignments = traces_alignment_type(settings['aligntype'])
     if settings['read_options']['one_timestamp']:
-        traces = log.get_traces(settings['read_options'])
+        traces = log.get_traces()
     else:
         traces = log.get_raw_traces()
     aligned_traces = list()
     i = 0
     size = len(traces)
     for trace in traces:
-        # try:
-        # Alignment of each trace
-        aligned_trace = process_trace(trace, optimal_alignments, traces_alignments, settings['read_options']['one_timestamp'])
-        if settings['read_options']['one_timestamp']:
-            aligned_traces.extend(sorted(aligned_trace, key=itemgetter('end_timestamp')))
-        else:
-            # completeness check and reformating
-            aligned_trace = trace_verification(aligned_trace, trace)        
-            if aligned_trace:
-                aligned_traces.extend(aligned_trace)
-        # except Exception as e:
-        #     print(str(e))
+        try:
+            # Alignment of each trace
+            aligned_trace = process_trace(trace, optimal_alignments, traces_alignments, settings['read_options']['one_timestamp'])
+            if settings['read_options']['one_timestamp']:
+                aligned_traces.extend(sorted(aligned_trace, key=itemgetter('end_timestamp')))
+            else:
+                # completeness check and reformating
+                aligned_trace = trace_verification(aligned_trace, trace)        
+                if aligned_trace:
+                    aligned_traces.extend(aligned_trace)
+        except Exception as e:
+            next
         sup.print_progress(((i / (size-1))* 100),'Aligning log traces with model ')
         i += 1
     sup.print_done_task()
@@ -54,6 +54,7 @@ def process_trace(trace, optimal_alignments, traces_alignments, one_timestamp):
             # If the Log needs an extra task, create the start and complet event with time 0 and user AUTO
             elif movement_type =='MREAL':
                 if i == 0  or not aligned_trace:
+                    print(trace[i])
                     time = trace[i]['end_timestamp'] if one_timestamp else trace[i]['timestamp']
                 else:
                     if aligned_trace == []: print(caseid)                   

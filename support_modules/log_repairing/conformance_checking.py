@@ -13,7 +13,7 @@ from support_modules import support as sup
 
 
 def evaluate_alignment(process_graph, log, settings):
-    traces = log.get_traces(settings['read_options'])
+    traces = log.get_traces()
     conformant, not_conformant = rpl.replay(process_graph, traces)
     #------conformance percentage before repair------------------
     print_stats(log, conformant, traces)
@@ -27,7 +27,7 @@ def evaluate_alignment(process_graph, log, settings):
             ref_conformant.extend(trace)
         log.set_data(ref_conformant)
     #------conformance percentage after repair------------------
-    conformant, not_conformant = rpl.replay(process_graph, log.get_traces(settings['read_options']))
+    conformant, not_conformant = rpl.replay(process_graph, log.get_traces())
     print_stats(log, conformant, traces)
         
 def print_stats(log, conformant, traces):
