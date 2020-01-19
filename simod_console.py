@@ -115,7 +115,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
-                                'one_timestamp': True,
+                                'one_timestamp': False,
                                 'filter_d_attrib': True,
                                 'ns_include': True}
     # Folders structure

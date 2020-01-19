@@ -4,6 +4,8 @@ import xml.etree.ElementTree as ET
 import gzip
 import zipfile as zf
 import os
+import itertools as it
+
 import pandas as pd
 from operator import itemgetter
 
@@ -70,6 +72,7 @@ class LogReader(object):
         i = 0
         sup.print_performed_task('Reading log traces ')
         for trace in traces:
+            temp_trace = list()
             caseid = ''
             for string in trace.findall(tags['string'], ns):
                 if string.attrib['key'] == 'concept:name':
@@ -95,12 +98,16 @@ class LogReader(object):
                         except ValueError:
                             timestamp = datetime.datetime.strptime(
                                 timestamp, self.timeformat)
+                # By default remove Start and End events but  will be added to standardize
                 if task not in ['0', '-1', 'Start', 'End', 'start', 'end']:
-                    temp_data.append(dict(caseid=caseid,
-                                          task=task,
-                                          event_type=event_type,
-                                          user=user,
-                                          timestamp=timestamp))
+                    if (not self.one_timestamp) or (self.one_timestamp and event_type == 'complete'):
+                        temp_trace.append(dict(caseid=caseid,
+                                              task=task,
+                                              event_type=event_type,
+                                              user=user,
+                                              timestamp=timestamp))
+            if temp_trace: temp_trace = self.append_xes_start_end(temp_trace)
+            temp_data.extend(temp_trace)
             i += 1
         self.raw_data = temp_data
         self.data = self.reorder_xes(temp_data)
@@ -113,7 +120,7 @@ class LogReader(object):
         temp_data = pd.DataFrame(temp_data)
         ordered_event_log = list()
         if self.one_timestamp:
-            self.column_names['Complete Timestamp'] = ' end_timestamp'
+            self.column_names['Complete Timestamp'] = 'end_timestamp'
             temp_data = temp_data[temp_data.event_type == 'complete']
             ordered_event_log = temp_data.rename(
                 columns={'timestamp': 'end_timestamp'})
@@ -152,6 +159,29 @@ class LogReader(object):
                         ordered_event_log.extend(temp_trace)
         return ordered_event_log
 
+    def append_xes_start_end(self, trace):
+        for event in ['Start', 'End']:
+            idx = 0 if event == 'Start' else -1
+            complete_ev = dict()
+            complete_ev['caseid'] = trace[idx]['caseid']
+            complete_ev['task'] = event
+            complete_ev['event_type'] = 'complete'
+            complete_ev['user'] = event
+            complete_ev['timestamp'] = trace[idx]['timestamp']
+            if event == 'Start':
+                trace.insert(0, complete_ev)
+                if not self.one_timestamp:
+                    start_ev = complete_ev.copy()
+                    start_ev['event_type'] = 'start'
+                    trace.insert(0, start_ev)
+            else:
+                trace.append(complete_ev)
+                if not self.one_timestamp:
+                    start_ev = complete_ev.copy()
+                    start_ev['event_type'] = 'start'
+                    trace.insert(-1, start_ev)
+        return trace
+
 # =============================================================================
 # csv methods
 # =============================================================================
@@ -185,8 +215,8 @@ class LogReader(object):
                                                     format=self.timeformat)
             log['end_timestamp'] = pd.to_datetime(log['end_timestamp'],
                                                   format=self.timeformat)
-        temp_data = log.to_dict('records')
-        self.data = temp_data
+        self.data = log.to_dict('records')
+        self.append_csv_start_end()
         self.split_event_transitions()
         sup.print_done_task()
 
@@ -211,6 +241,30 @@ class LogReader(object):
                 temp_raw.append(start_event)
                 temp_raw.append(complete_event)
         self.raw_data = temp_raw
+
+    def append_csv_start_end(self):
+        new_data = list()
+        data = sorted(self.data, key=lambda x: x['caseid'])
+        for key, group in it.groupby(data, key=lambda x: x['caseid']):
+            trace = list(group)
+            for new_event in ['Start', 'End']:
+                idx = 0 if new_event == 'Start' else -1
+                t_key = 'end_timestamp'
+                if not self.one_timestamp and new_event == 'Start':
+                    t_key = 'start_timestamp'
+                temp_event = dict()
+                temp_event['caseid'] = trace[idx]['caseid']
+                temp_event['task'] = new_event
+                temp_event['user'] = new_event
+                temp_event['end_timestamp'] = trace[idx][t_key]
+                if not self.one_timestamp:
+                    temp_event['start_timestamp'] = trace[idx][t_key]
+                if new_event == 'Start':
+                    trace.insert(0, temp_event)
+                else:
+                    trace.append(temp_event)
+            new_data.extend(trace)
+        self.data = new_data
 
 # =============================================================================
 # Accesssor methods

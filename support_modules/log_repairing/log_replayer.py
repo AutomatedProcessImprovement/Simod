@@ -5,17 +5,20 @@ from support_modules import support as sup
 
 from collections import OrderedDict
 
+
 def replay(process_graph, traces):
     start_tasks_list, end_tasks_list = find_start_finish_tasks(process_graph)
+    print(process_graph.node[start_tasks_list[0]]['name'])
+    print(traces[0])
     subsec_set = create_subsec_set(process_graph)
     parallel_gt_exec = parallel_execution_list(process_graph)
     not_conformant_traces = list()
-    conformant_traces=list()
-    for index in range(0,len(traces)):
+    conformant_traces = list()
+    for index in range(0, len(traces)):
         trace = traces[index]
-        current_node = find_task_node(process_graph,trace[0]['task'])
-        last_node = find_task_node(process_graph,trace[-1]['task'])
-        # Check if is a complete trace 
+        current_node = find_task_node(process_graph, trace[0]['task'])
+        last_node = find_task_node(process_graph, trace[-1]['task'])
+        # Check if is a complete trace
         if (current_node in start_tasks_list) and (last_node in end_tasks_list):
             temp_gt_exec = parallel_gt_exec
             cursor = list()
@@ -113,7 +116,7 @@ def find_task_node(process_graph,task_name):
     else:
         raise Exception('Task not found on bpmn structure...')
     return resp
-    
+
 def find_start_finish_tasks(process_graph):
     process_graph_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
     start_node = process_graph_data[process_graph_data.type=='start'].index.tolist()[0]

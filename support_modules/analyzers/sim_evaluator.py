@@ -384,6 +384,7 @@ class SimilarityEvaluator():
             alias[variables[i]] = aliases[i]
         return alias
 
+# TODO: update this method with something more standard
     def scaling_data(self, data):
         """
 

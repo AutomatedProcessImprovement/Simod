@@ -13,10 +13,12 @@ from opyenxes.factory.XFactory import XFactory
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 
+
 class XesWriter(object):
     """
-	This class writes a process log in .xes format 
-	"""
+    This class writes a process log in .xes format
+    """
+
     def __init__(self, log, settings):
         """constructor"""
         self.log = log
@@ -24,7 +26,7 @@ class XesWriter(object):
         self.column_names = settings['read_options']['column_names']
         self.output_file = os.path.join(settings['output'],
                                         settings['file'].split('.')[0]+'.xes')
-        
+
         self.create_xes_file()
 
     def create_xes_file(self):
@@ -35,8 +37,6 @@ class XesWriter(object):
             sort_key = ('end_timestamp'
                         if self.one_timestamp else 'start_timestamp')
             csv_trace = sorted(list(group), key=lambda x: x[sort_key])
-            csv_trace = self.append_start_end(csv_trace, 'Start')
-            csv_trace = self.append_start_end(csv_trace, 'End')
             events = list()
             for line in csv_trace:
                 events.extend(self.convert_line_in_event(csv_mapping, line))
@@ -48,26 +48,11 @@ class XesWriter(object):
                 trace.append(event)
             log.append(trace)
             # log.set_info(classifier, info)
-    
+
         # Save log in xes format
         with open(self.output_file, "w") as file:
             XesXmlSerializer().serialize(log, file)
-    
-    def append_start_end(self, trace, event_type):
-        idx = 0 if event_type == 'Start' else -1
-        new_event = dict()
-        new_event['caseid'] = trace[idx]['caseid']
-        new_event['task'] = event_type
-        new_event['user'] = event_type
-        new_event['end_timestamp'] = trace[idx]['end_timestamp']
-        if not self.one_timestamp:
-            new_event['start_timestamp'] = trace[idx]['start_timestamp']
-        if event_type == 'Start':
-            trace.insert(0, new_event)
-        else:
-            trace.append(new_event)
-        return trace
-    
+
     def convert_line_in_event(self, csv_mapping, event):
         """
         Parameters
@@ -107,7 +92,7 @@ class XesWriter(object):
                         "time:timestamp", attr_value, extension=None)
                     attribute_map[attribute.get_key()] = attribute
                     attribute2 = XFactory.create_attribute_literal(
-                        'lifecycle:transition', 
+                        'lifecycle:transition',
                         transition['value'],
                         extension=xlc)
                     attribute_map[attribute2.get_key()] = attribute2
