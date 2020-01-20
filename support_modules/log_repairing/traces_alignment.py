@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
 import datetime
-import pandas as pd
 from support_modules import support as sup
 from operator import itemgetter
 import subprocess
@@ -21,7 +20,7 @@ def align_traces(log, settings, not_conformant):
     else:
         traces = log.get_raw_traces()
 
-    nc_caseid = [92102]
+    # nc_caseid = [92102]
     traces = list(filter(lambda x: x[0]['caseid'] in nc_caseid, traces))
     aligned_traces = list()
     i = 0
@@ -29,25 +28,25 @@ def align_traces(log, settings, not_conformant):
     for trace in traces:
         # Remove Start and End events
         trace = [x for x in trace if x['task'] not in ['Start', 'End']]
-        # try:
-        # Alignment of each trace
-
-        aligned_trace = process_trace(trace, optimal_alignments,
-                                      traces_alignments,
-                                      settings['read_options']['one_timestamp'])
-        if settings['read_options']['one_timestamp']:
-            aligned_trace = sorted(aligned_trace, key=itemgetter('end_timestamp'))
-            aligned_trace = append_start_end(aligned_trace, settings['read_options']['one_timestamp'])
-            aligned_traces.extend(aligned_trace)
-        else:
-            # completeness check and reformating
-            aligned_trace = trace_verification(aligned_trace, trace)
-            if aligned_trace:
+        try:
+            # Alignment of each trace
+    
+            aligned_trace = process_trace(trace, optimal_alignments,
+                                          traces_alignments,
+                                          settings['read_options']['one_timestamp'])
+            if settings['read_options']['one_timestamp']:
+                aligned_trace = sorted(aligned_trace, key=itemgetter('end_timestamp'))
                 aligned_trace = append_start_end(aligned_trace, settings['read_options']['one_timestamp'])
                 aligned_traces.extend(aligned_trace)
-        # except Exception as e:
-        #     next
-        # sup.print_progress(((i / (size-1))* 100), 'Aligning log traces with model ')
+            else:
+                # completeness check and reformating
+                aligned_trace = trace_verification(aligned_trace, trace)
+                if aligned_trace:
+                    aligned_trace = append_start_end(aligned_trace, settings['read_options']['one_timestamp'])
+                    aligned_traces.extend(aligned_trace)
+        except Exception as e:
+            next
+        sup.print_progress(((i / (size-1))* 100), 'Aligning log traces with model ')
         i += 1
     sup.print_done_task()
     return aligned_traces
@@ -61,22 +60,17 @@ def process_trace(raw_trace, optimal_alignments, traces_alignments, one_timestam
     if 0 < alignment_data['fitness'] < 1:
         optimal_alignment = list(filter(lambda x: alignment_data['trace_type'] == x['trace_type'], optimal_alignments))[0]['optimal_alignment']
         optimal_alignment = [x for x in optimal_alignment if x['task_name'] not in ['Start', 'End']]
-        [print(x) for x in optimal_alignment]
-        print('raw_trace-----')
-        [print(x) for x in raw_trace]
         j = 0
         for i in range(0,len(optimal_alignment)):
             movement_type = optimal_alignment[i]['movement_type']
             # If the Model and the log are aligned copy the raw value
             if movement_type =='LMGOOD':
                 aligned_trace.append(raw_trace[j])
-                print('LMGOOD', aligned_trace, sep=' ')
                 j += 1
             # If the Log needs an extra task, create the start and complet event with time 0 and user AUTO
             elif movement_type =='MREAL':
-                print('MREAL')
                 if i == 0 or not aligned_trace:
-                    time = raw_trace[j]['end_timestamp'] if one_timestamp else raw_trace[j]['timestamp']
+                    time = raw_trace[0]['end_timestamp'] if one_timestamp else raw_trace[0]['timestamp']
                 else:
                     time = aligned_trace[-1]['end_timestamp'] if one_timestamp else aligned_trace[-1]['timestamp']
                     time += datetime.timedelta(microseconds=1)

@@ -33,7 +33,7 @@ def main(argv):
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'ConsultaDataMining201618.csv'
+        settings['file'] = 'ConsultaDataMining201618.xes'
         settings['repetitions'] = 1
         settings['simulation'] = False
         if settings['exec_mode'] == 'single':

@@ -15,7 +15,6 @@ from support_modules import support as sup
 def evaluate_alignment(process_graph, log, settings):
     traces = log.get_traces()
     conformant, not_conformant = rpl.replay(process_graph, traces)
-    print(not_conformant)
     # ------conformance percentage before repair------------------
     print_stats(log, conformant, traces)
     if settings['alg_manag'] == 'replacement':
