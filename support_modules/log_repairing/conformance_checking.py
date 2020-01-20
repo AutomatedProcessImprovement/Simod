@@ -15,6 +15,7 @@ from support_modules import support as sup
 def evaluate_alignment(process_graph, log, settings):
     traces = log.get_traces()
     conformant, not_conformant = rpl.replay(process_graph, traces)
+    print(not_conformant)
     # ------conformance percentage before repair------------------
     print_stats(log, conformant, traces)
     if settings['alg_manag'] == 'replacement':
@@ -23,14 +24,20 @@ def evaluate_alignment(process_graph, log, settings):
                                      log,
                                      settings))
     elif settings['alg_manag'] == 'repair':
-        log.set_data(tal.align_traces(log, settings))
+        repaired_event_log = list()
+        [repaired_event_log.extend(x) for x in conformant]
+        realigned_traces = tal.align_traces(log, settings, not_conformant)
+        repaired_event_log.extend(realigned_traces)
+        log.set_data(repaired_event_log)
+
     elif settings['alg_manag'] == 'removal':
         ref_conformant = list()
         for trace in conformant:
             ref_conformant.extend(trace)
         log.set_data(ref_conformant)
     # ------conformance percentage after repair------------------
-    conformant, not_conformant = rpl.replay(process_graph, log.get_traces())
+    aligned_traces = log.get_traces()
+    conformant, not_conformant = rpl.replay(process_graph, aligned_traces)
     print_stats(log, conformant, traces)
 
 

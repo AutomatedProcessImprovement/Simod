@@ -1,95 +1,122 @@
 # -*- coding: utf-8 -*-
 import re
 import datetime
+import pandas as pd
 from support_modules import support as sup
 from operator import itemgetter
 import subprocess
 import os
 
-def align_traces(log, settings):
+
+def align_traces(log, settings, not_conformant):
     """this method is the kernel of the alignment process"""
     evaluate_alignment(settings)
     optimal_alignments = read_alignment_info(settings['aligninfo'])
     traces_alignments = traces_alignment_type(settings['aligntype'])
+
+    nc_caseid = list(set([x[0]['caseid'] for x in not_conformant]))
+
     if settings['read_options']['one_timestamp']:
         traces = log.get_traces()
     else:
         traces = log.get_raw_traces()
+
+    nc_caseid = [92102]
+    traces = list(filter(lambda x: x[0]['caseid'] in nc_caseid, traces))
     aligned_traces = list()
     i = 0
     size = len(traces)
     for trace in traces:
-        try:
-            # Alignment of each trace
-            aligned_trace = process_trace(trace, optimal_alignments, traces_alignments, settings['read_options']['one_timestamp'])
-            if settings['read_options']['one_timestamp']:
-                aligned_traces.extend(sorted(aligned_trace, key=itemgetter('end_timestamp')))
-            else:
-                # completeness check and reformating
-                aligned_trace = trace_verification(aligned_trace, trace)        
-                if aligned_trace:
-                    aligned_traces.extend(aligned_trace)
-        except Exception as e:
-            next
-        sup.print_progress(((i / (size-1))* 100),'Aligning log traces with model ')
+        # Remove Start and End events
+        trace = [x for x in trace if x['task'] not in ['Start', 'End']]
+        # try:
+        # Alignment of each trace
+
+        aligned_trace = process_trace(trace, optimal_alignments,
+                                      traces_alignments,
+                                      settings['read_options']['one_timestamp'])
+        if settings['read_options']['one_timestamp']:
+            aligned_trace = sorted(aligned_trace, key=itemgetter('end_timestamp'))
+            aligned_trace = append_start_end(aligned_trace, settings['read_options']['one_timestamp'])
+            aligned_traces.extend(aligned_trace)
+        else:
+            # completeness check and reformating
+            aligned_trace = trace_verification(aligned_trace, trace)
+            if aligned_trace:
+                aligned_trace = append_start_end(aligned_trace, settings['read_options']['one_timestamp'])
+                aligned_traces.extend(aligned_trace)
+        # except Exception as e:
+        #     next
+        # sup.print_progress(((i / (size-1))* 100), 'Aligning log traces with model ')
         i += 1
     sup.print_done_task()
     return aligned_traces
 
-def process_trace(trace, optimal_alignments, traces_alignments, one_timestamp):
+def process_trace(raw_trace, optimal_alignments, traces_alignments, one_timestamp):
     """this method performs the alignment of each trace according with the data optimal alignment"""
-    caseid = trace[0]['caseid']
-    alignment_data = list(filter(lambda x: x['caseid'] == caseid, traces_alignments))[0]
+    caseid = raw_trace[0]['caseid']
+    alignment_data = list(filter(lambda x: x['caseid'] == str(caseid), traces_alignments))[0]
     aligned_trace = list()
     # If fitness is 1 all the trace es aligned
-    if alignment_data['fitness'] < 1 and alignment_data['fitness'] > 0:
+    if 0 < alignment_data['fitness'] < 1:
         optimal_alignment = list(filter(lambda x: alignment_data['trace_type'] == x['trace_type'], optimal_alignments))[0]['optimal_alignment']
+        optimal_alignment = [x for x in optimal_alignment if x['task_name'] not in ['Start', 'End']]
+        [print(x) for x in optimal_alignment]
+        print('raw_trace-----')
+        [print(x) for x in raw_trace]
         j = 0
         for i in range(0,len(optimal_alignment)):
             movement_type = optimal_alignment[i]['movement_type']
             # If the Model and the log are aligned copy the raw value
             if movement_type =='LMGOOD':
-                aligned_trace.append(trace[j])
+                aligned_trace.append(raw_trace[j])
+                print('LMGOOD', aligned_trace, sep=' ')
                 j += 1
             # If the Log needs an extra task, create the start and complet event with time 0 and user AUTO
             elif movement_type =='MREAL':
-                if i == 0  or not aligned_trace:
-                    print(trace[i])
-                    time = trace[i]['end_timestamp'] if one_timestamp else trace[i]['timestamp']
+                print('MREAL')
+                if i == 0 or not aligned_trace:
+                    time = raw_trace[j]['end_timestamp'] if one_timestamp else raw_trace[j]['timestamp']
                 else:
-                    if aligned_trace == []: print(caseid)                   
                     time = aligned_trace[-1]['end_timestamp'] if one_timestamp else aligned_trace[-1]['timestamp']
                     time += datetime.timedelta(microseconds=1)
                 new_event = {'caseid':caseid, 'task':optimal_alignment[i]['task_name'], 'user':'AUTO'}
-                if one_timestamp: 
+                if one_timestamp:
                     new_event['end_timestamp'] = time
                 else:
                     new_event['timestamp'] = time
                     new_event['event_type'] = 'complete'
                 aligned_trace.append(new_event)
                 if not one_timestamp:
-                    aligned_trace.append(dict(caseid=caseid, task=optimal_alignment[i]['task_name'], event_type='start', user='AUTO', timestamp=time))
+                    aligned_trace.append(dict(caseid=caseid,
+                                              task=optimal_alignment[i]['task_name'],
+                                              event_type='start',
+                                              user='AUTO',
+                                              timestamp=time))
             # If the event appears in the Log but not in the model delete the event from the trace
             elif movement_type =='L':
                 j += 1
     elif alignment_data['fitness'] == 1:
-        aligned_trace=trace
+        aligned_trace=raw_trace
     return aligned_trace
 
 def trace_verification(aligned_trace, trace):
-    """this method performs the completeness check, error correction and joints the start and complete events"""
+    """
+    This method performs the completeness check,
+    error correction and joints the start and complete events
+    """
     tasks = list({x['task'] for x in aligned_trace})
     start_list = list(filter(lambda x: x['event_type'] == 'start', aligned_trace))
     complete_list = list(filter(lambda x: x['event_type'] == 'complete', aligned_trace))
     new_trace = list()
-    missalignment = False    
+    missalignment = False
     for task in tasks:
         missalignment = False
         start_events = sorted(list(filter(lambda x: x['task'] == task, start_list)), key=itemgetter('timestamp'))
         complete_events = sorted(list(filter(lambda x: x['task'] == task, complete_list)), key=itemgetter('timestamp'))
         if(len(start_events) == len(complete_events)):
             for i, _ in enumerate(start_events):
-                new_trace.append(dict(caseid=start_events[i]['caseid'], 
+                new_trace.append(dict(caseid=start_events[i]['caseid'],
                                  task=start_events[i]['task'],
                                  user=start_events[i]['user'],
                                  start_timestamp=start_events[i]['timestamp'],
@@ -102,6 +129,28 @@ def trace_verification(aligned_trace, trace):
     else:
         new_trace = list()
     return new_trace
+
+def append_start_end(trace, one_timestamp):
+    for new_event in ['Start', 'End']:
+        idx = 0 if new_event == 'Start' else -1
+        t_key = 'end_timestamp'
+        if not one_timestamp and new_event == 'Start':
+            t_key = 'start_timestamp'
+        temp_event = dict()
+        temp_event['caseid'] = trace[idx]['caseid']
+        temp_event['task'] = new_event
+        temp_event['user'] = new_event
+        time = trace[idx][t_key] + datetime.timedelta(microseconds=1)
+        if new_event == 'Start':
+            time = trace[idx][t_key] - datetime.timedelta(microseconds=1)
+        temp_event['end_timestamp'] = time
+        if not one_timestamp:
+            temp_event['start_timestamp'] = time
+        if new_event == 'Start':
+            trace.insert(0, temp_event)
+        else:
+            trace.append(temp_event)
+    return trace
 
 # =============================================================================
 # External tool calling

@@ -98,15 +98,18 @@ class LogReader(object):
                         except ValueError:
                             timestamp = datetime.datetime.strptime(
                                 timestamp, self.timeformat)
-                # By default remove Start and End events but  will be added to standardize
+                # By default remove Start and End events
+                # but will be added to standardize
                 if task not in ['0', '-1', 'Start', 'End', 'start', 'end']:
-                    if (not self.one_timestamp) or (self.one_timestamp and event_type == 'complete'):
+                    if ((not self.one_timestamp) or
+                        (self.one_timestamp and event_type == 'complete')):
                         temp_trace.append(dict(caseid=caseid,
-                                              task=task,
-                                              event_type=event_type,
-                                              user=user,
-                                              timestamp=timestamp))
-            if temp_trace: temp_trace = self.append_xes_start_end(temp_trace)
+                                               task=task,
+                                               event_type=event_type,
+                                               user=user,
+                                               timestamp=timestamp))
+            if temp_trace:
+                temp_trace = self.append_xes_start_end(temp_trace)
             temp_data.extend(temp_trace)
             i += 1
         self.raw_data = temp_data

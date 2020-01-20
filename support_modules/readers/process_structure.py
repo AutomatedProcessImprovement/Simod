@@ -47,26 +47,28 @@ def load_process_structure(bpmn):
     # Loading data
     start = bpmn.get_start_event_info()
     tasks = bpmn.get_tasks_info()
-    print(tasks)
     ex_gates = bpmn.get_ex_gates_info()
     inc_gates = bpmn.get_inc_gates_info()
     para_gates = bpmn.get_para_gates_info()
     end = bpmn.get_end_event_info()
     timer_events = bpmn.get_timer_events_info()
-    total_elements = (len(start) + len(tasks) + len(ex_gates) + len(inc_gates) + len(para_gates) + len(end) + len(timer_events))
+    # total_elements = (len(start) + len(tasks) + len(ex_gates) + len(inc_gates) + len(para_gates) + len(end) + len(timer_events))
+    total_elements = (len(tasks) + len(ex_gates) + len(inc_gates) + len(para_gates) + len(timer_events))
     #Adding nodes
-    index = create_nodes(g,total_elements,0,start,'start','start_name','start_id')
-    index = create_nodes(g,total_elements,index,list(filter(lambda x: x['task_name']!='End',tasks)),'task','task_name','task_id')
-    index = create_nodes(g,total_elements,index,list(filter(lambda x: x['task_name']=='End',tasks)),'end','task_name','task_id')
-    index = create_nodes(g,total_elements,index,list(filter(lambda x: x['gate_dir']=='Diverging',ex_gates)),'gate','gate_name','gate_id')
-    index = create_nodes(g,total_elements,index,list(filter(lambda x: x['gate_dir']=='Converging',ex_gates)),'gate2','gate_name','gate_id')
-    index = create_nodes(g,total_elements,index,inc_gates,'gate2','gate_name','gate_id')
-    index = create_nodes(g,total_elements,index,para_gates,'gate3','gate_name','gate_id')
-    index = create_nodes(g,total_elements,index,end,'end','end_name','end_id')
-    index = create_nodes(g,total_elements,index,timer_events,'timer','timer_name','timer_id')
+    # index = create_nodes(g,total_elements,0,start,'start','start_name','start_id')
+    index = create_nodes(g, total_elements, 0, list(filter(lambda x: x['task_name']=='Start',tasks)),'start','task_name','task_id')
+    index = create_nodes(g, total_elements, index, list(filter(lambda x: x['task_name'] not in ['Start', 'End'],tasks)),'task','task_name','task_id')
+    index = create_nodes(g, total_elements, index, list(filter(lambda x: x['task_name']=='End',tasks)),'end','task_name','task_id')
+    index = create_nodes(g, total_elements, index, list(filter(lambda x: x['gate_dir']=='Diverging',ex_gates)),'gate','gate_name','gate_id')
+    index = create_nodes(g, total_elements, index, list(filter(lambda x: x['gate_dir']=='Converging',ex_gates)),'gate2','gate_name','gate_id')
+    index = create_nodes(g, total_elements, index, inc_gates,'gate2','gate_name','gate_id')
+    index = create_nodes(g, total_elements, index, para_gates,'gate3','gate_name','gate_id')
+    # index = create_nodes(g, total_elements, index, end,'end','end_name','end_id')
+    index = create_nodes(g, total_elements, index, timer_events,'timer','timer_name','timer_id')
     # Add edges
     for edge in bpmn.get_edges_info():
-        g.add_edge(find_node_num(g,edge['source']) ,find_node_num(g,edge['target']))
+        if edge['source'] != start[0]['start_id'] and edge['target'] != end[0]['end_id']:
+            g.add_edge(find_node_num(g, edge['source']) ,find_node_num(g, edge['target']))
     # Define #of in_paths for paralell gateways_probabilities
     para_gates = list(filter(lambda x: g.node[x]['type'] =='gate3',nx.nodes(g)))
     for x in para_gates:
