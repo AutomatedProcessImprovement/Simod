@@ -93,7 +93,6 @@ def pipe_line_execution(settings):
     else:
         print('------ Final results ------')
         [print(k, v, sep=': ') for k, v in response.items() if k != 'params']
-    # response = {'loss': 0.5, 'status': STATUS_OK}
     return response
 
 def define_response(status, sim_values, settings):

@@ -29,7 +29,6 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     # TODO: Reformat process structure to become a class
     # TODO: Transform replay into a class
-    # TODO: Restructure role discovery
     if not argv:
         # Event-log filename
         settings['file'] = 'PurchasingExample.xes'
@@ -40,7 +39,7 @@ def main(argv):
             settings['epsilon'] = 0.7
             settings['eta'] = 0.7
             # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'repair'
+            settings['alg_manag'] = 'removal'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'automatic'
