@@ -27,12 +27,12 @@ def main(argv):
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min'
     settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
-    # TODO: Check the replay to fix the start and end tasks
     # TODO: Reformat process structure to become a class
     # TODO: Transform replay into a class
+    # TODO: Restructure role discovery
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.csv'
+        settings['file'] = 'PurchasingExample.xes'
         settings['repetitions'] = 1
         settings['simulation'] = False
         if settings['exec_mode'] == 'single':

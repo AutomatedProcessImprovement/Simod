@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from support_modules import support as sup
 from operator import itemgetter
 import random
-
+import pandas as pd
 
 # == support
 def random_color(size):
@@ -18,7 +18,7 @@ def find_index(dictionary, value):
     finish = False
     i = 0
     resp = -1
-    while i<len(dictionary) and not finish:
+    while i < len(dictionary) and not finish:
         if dictionary[i]['data']==value:
             resp = dictionary[i]['index']
             finish = True
@@ -88,20 +88,13 @@ def role_definition(sub_graphs,users):
     return records, resource_table
 # --kernel--
 
+
 def role_discovery(data, drawing, sim_percentage):
-    tasks = list(set(list(map(lambda x: x[0], data))))
-    try:
-        tasks.remove('Start')
-    except Exception:
-        pass
-    tasks = [dict(index=i,data=tasks[i]) for i in range(0,len(tasks))]
-    users = list(set(list(map(lambda x: x[1], data))))
-    try:
-        users.remove('Start')
-    except Exception:
-        pass
-    users = [dict(index=i,data=users[i]) for i in range(0,len(users))]
-    data_transform = list(map(lambda x: [find_index(tasks, x[0]),find_index(users, x[1])], data ))
+    tasks = data.task.unique()
+    users = data.user.unique()
+    users = [dict(index=i, data=users[i]) for i in range(0, len(users))]
+    data = data.to_dict('records')
+    data_transform = list(map(lambda x: [find_index(tasks, x['task']), find_index(users, x['user'])], data))
     unique = list(set(tuple(i) for i in data_transform))
     unique = [list(i) for i in unique]
     # [print(uni) for uni in users]
@@ -133,42 +126,8 @@ def role_discovery(data, drawing, sim_percentage):
     sup.print_done_task()
     return roles
 
-
-def read_roles_from_columns(raw_data, filtered_data, separator):
-    records = list()
-    role_list= list()
-    pool_list= list()
-    raw_splited= list()
-    for row in raw_data:
-        temp = row.split(separator)
-        if temp[0] != 'End':
-            raw_splited.append(dict(role=temp[1],resource=temp[0]))
-    for row in filtered_data:
-        temp = row.split(separator)
-        if temp[0] != 'End':
-            pool_list.append(dict(role=temp[1],resource=temp[0]))
-            role_list.append(temp[1])
-    role_list = list(set(role_list))
-    for role in role_list:
-        members = list(filter(lambda person: person['role'] == role, pool_list))
-        members = list(map(lambda x: x['resource'],members))
-        quantity = len(members)
-        #freq = len(list(filter(lambda person: person['role'] == role, raw_splited)))
-        records.append(dict(role=role,quantity =quantity,members=members))
-    return records
-
-
-def read_resource_pool(log, separator=None, drawing=False, sim_percentage=0.7):
-    if separator == None:
-        filtered_list = list()
-        for row in log.data:
-            if row['task'] != 'End' and row['user'] != 'AUTO':
-                filtered_list.append([row['task'],row['user']])
-        return role_discovery(filtered_list, drawing, sim_percentage)
-    else:
-        raw_list = list()
-        filtered_list = list()
-        for row in log.data:
-            raw_list.append(row['user'])
-        filtered_list = list(set(raw_list))
-        return read_roles_from_columns(raw_list, filtered_list, separator)
+def read_resource_pool(log, drawing=False, sim_percentage=0.7):
+    filtered_list = pd.DataFrame(log.data)[['task', 'user']]
+    filtered_list = filtered_list[~filtered_list.task.isin(['Start', 'End'])]
+    filtered_list = filtered_list[filtered_list.user != 'AUTO']
+    return role_discovery(filtered_list, drawing, sim_percentage)

@@ -4,31 +4,8 @@ import itertools
 from datetime import datetime
 
 
-# def analize_schedules(roles, log):
-#     log_data = log.data
-#     # resources = sorted(list(set([x['user'] for x in log_data])))
-#     resource_schedule = list()
-#     for rol in roles:
-#         for resource in rol['members']:
-#             events_resource = list(filter(lambda x: x['user']==resource, log_data))
-#             start_days = sorted(list(set([x['start_timestamp'].date() for x in events_resource])))
-#             for start_day in start_days:
-#                 try:
-#                     min_timestamp_day = min(list(filter(lambda x: x['start_timestamp'].date()==start_day, events_resource)),
-#                     key=itemgetter('start_timestamp'))['start_timestamp']
-#                     max_timestamp_day = max(list(filter(lambda x: x['end_timestamp'].date()==start_day, events_resource)),
-#                     key=itemgetter('end_timestamp'))['end_timestamp']
-#                     min_hour=min_timestamp_day.time()
-#                     max_hour=max_timestamp_day.time()
-#                     duration=(max_timestamp_day-min_timestamp_day).total_seconds()
-#                     if duration > 0.0:
-#                         resource_schedule.append(dict(resource=resource,rol=rol['role'],day=start_day, min=min_hour, dur=duration))
-#                 except:
-#                     pass
-#         # print(np.mean([x['dur'] for x in resource_schedule])/3600)
-#         sup.create_csv_file_header(resource_schedule, 'schedule.csv')
-
 def analize_schedules(resource_table, log, default=False, dtype=None):
+    resource_table.append({'role': 'SYSTEM', 'resource': 'AUTO'})    
     resource_pool = list()
     if default:
         time_table, resource_table = create_timetables(resource_table, dtype=dtype)
@@ -36,8 +13,9 @@ def analize_schedules(resource_table, log, default=False, dtype=None):
         for key, group in itertools.groupby(data, key=lambda x:x['role']):
             values = list(group)
             group_resources = [x['resource'] for x in values]
+            r_pool_size = str(len(group_resources)) if key != 'SYSTEM' else '20'
             resource_pool.append(
-                dict(id=sup.gen_id(), name=key, total_amount=str(len(group_resources)), costxhour="20",
+                dict(id=sup.gen_id(), name=key, total_amount=r_pool_size, costxhour="20",
                      timetable_id="QBP_DEFAULT_TIMETABLE"))
         resource_pool[0]['id'] = 'QBP_DEFAULT_RESOURCE'
     else:

@@ -51,6 +51,7 @@ class TaskEvaluator():
         # Resource association
         elements_data = self.associate_resource(elements_data)
         elements_data = elements_data.to_dict('records')
+        elements_data = self.add_start_end_info(elements_data)
         return elements_data
 
     def mine_processing_time(self):
@@ -166,6 +167,31 @@ class TaskEvaluator():
                                             how='left').sort_values(by='name')
         return elements_data.to_dict('records')
 
+    def add_start_end_info(self, elements_data):
+        # records creation
+        temp_elements_data = list()
+        default_record = {'type': 'FIXED',
+                          'mean': '0', 'arg1': '0', 'arg2': '0'}
+        for task in ['Start', 'End']:
+            temp_elements_data.append({**{'id': sup.gen_id(), 'name': task},
+                                       **default_record})
+        temp_elements_data = pd.DataFrame(temp_elements_data)
+
+        temp_elements_data = temp_elements_data.merge(
+            self.model_data[['name', 'elementid']],
+            on='name',
+            how='left').sort_values(by='name')
+        temp_elements_data['r_name'] = 'SYSTEM'
+        # resource id addition
+        resource_id = (pd.DataFrame.from_dict(self.resource_pool)[['id', 'name']]
+                       .rename(columns={'id': 'resource', 'name': 'r_name'}))
+        temp_elements_data = (temp_elements_data.merge(
+            resource_id, on='r_name', how='left').drop(columns=['r_name']))
+        # Appening to the elements data
+        temp_elements_data = temp_elements_data.to_dict('records')
+        elements_data.extend(temp_elements_data)
+        return elements_data
+
     def associate_resource(self, elements_data):
         """
         Merge the resource information with the task data
@@ -231,6 +257,6 @@ class TaskEvaluator():
         """
         model_data = pd.DataFrame.from_dict(
             dict(process_graph.nodes.data()), orient='index')
-        model_data = model_data[model_data.type == 'task'].rename(
-            columns={'id': 'elementid'})
+        model_data = (model_data[model_data.type.isin(['task', 'start', 'end'])]
+                      .rename(columns={'id': 'elementid'}))
         return model_data

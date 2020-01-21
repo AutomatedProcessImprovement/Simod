@@ -14,11 +14,11 @@ def replay(process_graph, log, settings, source='log', run_num=0):
     not_conformant_traces = list()
     conformant_traces=list()
     process_stats=list()
-    traces = log.get_traces(settings['read_options'])
+    traces = log.get_traces()
     
     for index in range(0,len(traces)):
         trace_times = list()
-        trace = traces[index]
+        trace = traces[index][1:-1] # Take out start and end event
         current_node = find_task_node(process_graph,trace[0]['task'])
         last_node = find_task_node(process_graph,trace[-1]['task'])
         if (current_node in start_tasks_list) and (last_node in end_tasks_list):
@@ -70,7 +70,7 @@ def replay(process_graph, log, settings, source='log', run_num=0):
             if not is_conformant:
                 not_conformant_traces.extend(trace)
             else:
-                conformant_traces.extend(trace)
+                conformant_traces.extend(traces[index]) # Append the original one
                 process_stats.extend(trace_times)
         else:
             # If it is not a complete trace
