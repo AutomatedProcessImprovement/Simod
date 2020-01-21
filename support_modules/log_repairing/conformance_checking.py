@@ -25,8 +25,8 @@ def evaluate_alignment(process_graph, log, settings):
     elif settings['alg_manag'] == 'repair':
         repaired_event_log = list()
         [repaired_event_log.extend(x) for x in conformant]
-        realigned_traces = tal.align_traces(log, settings, not_conformant)
-        repaired_event_log.extend(realigned_traces)
+        trace_aligner = tal.TracesAligner(log, not_conformant, settings)
+        repaired_event_log.extend(trace_aligner.aligned_traces)
         log.set_data(repaired_event_log)
 
     elif settings['alg_manag'] == 'removal':

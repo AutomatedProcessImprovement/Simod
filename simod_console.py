@@ -29,11 +29,10 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     # TODO: Check the replay to fix the start and end tasks
     # TODO: Reformat process structure to become a class
-    # TODO: Reformat traces alignment to become a class
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'ConsultaDataMining201618.xes'
+        settings['file'] = 'Production.csv'
         settings['repetitions'] = 1
         settings['simulation'] = False
         if settings['exec_mode'] == 'single':
