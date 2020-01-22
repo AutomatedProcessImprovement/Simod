@@ -27,7 +27,7 @@ def main(argv):
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min'
     settings['sim_metric'] = 'tsd'
     # Parameters settled manually or catched by console for batch operations
-    # TODO: Reformat process structure to become a class
+    # TODO: Refactoring process structure to become a class
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
@@ -36,8 +36,8 @@ def main(argv):
         settings['simulation'] = False
         if settings['exec_mode'] == 'single':
             # Splitminer settings [0..1]
-            settings['epsilon'] = 0.7
-            settings['eta'] = 0.7
+            settings['epsilon'] = 0.459067429839266
+            settings['eta'] = 0.258890506879495
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'removal'
             # Processing time definition method:
@@ -59,8 +59,8 @@ def main(argv):
                 sim.hyper_execution(settings, args)
         elif settings['exec_mode'] == 'tasks_optimizer':
             # Splitminer settings [0..1]
-            settings['epsilon'] = 0.97
-            settings['eta'] = 0.55
+            settings['epsilon'] = 0.459067429839266
+            settings['eta'] = 0.258890506879495
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'removal'
             # Processing time definition method: 'apx'
