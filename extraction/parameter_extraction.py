@@ -17,8 +17,7 @@ def extract_parameters(log, bpmn, process_graph, settings):
         # Creation of process graph
         # -------------------------------------------------------------------
         # Analysing resource pool LV917 or 247
-        # roles, resource_table = rl.read_resource_pool(log, drawing=False,
-        #                                               sim_threshold=settings['rp_similarity'])
+
         res_analyzer = rl.ResourcePoolAnalyser(log, sim_threshold=settings['rp_similarity'])
         roles = res_analyzer.roles
         resource_table = res_analyzer.resource_table
@@ -52,5 +51,4 @@ def extract_parameters(log, bpmn, process_graph, settings):
                           sequences=sequences,
                           instances=len(log.get_traces()),
                           bpmnId=bpmnId)
-        return dict(), list()
-        # return parameters, process_stats
+        return parameters, process_stats
