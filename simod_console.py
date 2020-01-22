@@ -29,7 +29,6 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     # TODO: Refactoring process structure to become a class
     # TODO: Transform replay into a class
-    # TODO: Refactoring role discovery
     if not argv:
         # Event-log filename
         settings['file'] = 'PurchasingExample.xes'
