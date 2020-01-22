@@ -60,6 +60,7 @@ def pipe_line_execution(settings):
 
     print("-- Mining Simulation Parameters --")
     parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
+    print(parameters)
     xml.print_parameters(os.path.join(settings['output'],
                                       settings['file'].split('.')[0]+'.bpmn'),
                           os.path.join(settings['output'],
@@ -254,9 +255,10 @@ def mine_max_enabling(settings):
     log = lr.LogReader(os.path.join(settings['input'], settings['file']),
                         settings['read_options'])
     # Create customized event-log for the external tools
-    file_name = settings['file'].split('.')[0]
-    xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'),
-                        settings['read_options'])
+    # file_name = settings['file'].split('.')[0]
+    # xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'),
+    #                     settings['read_options'])
+    xes.XesWriter(log, settings)
     # Execution steps
     mining_structure(settings)
     bpmn = br.BpmnReader(os.path.join(settings['output'],

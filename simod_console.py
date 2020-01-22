@@ -23,15 +23,15 @@ def main(argv):
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'tasks_optimizer'
+    settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min'
-    settings['sim_metric'] = 'dl_mae'
+    settings['sim_metric'] = 'tsd'
     # Parameters settled manually or catched by console for batch operations
     # TODO: Refactoring process structure to become a class
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes'
+        settings['file'] = 'ConsultaDataMining201618.xes'
         settings['repetitions'] = 1
         settings['simulation'] = False
         if settings['exec_mode'] == 'single':
@@ -48,7 +48,7 @@ def main(argv):
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 50
+            args['max_eval'] = 100
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer
