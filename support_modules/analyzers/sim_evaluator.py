@@ -27,7 +27,7 @@ class SimilarityEvaluator():
         self.output = settings['output']
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.rep_num = rep + 1
-        # posible metrics tsd, dl_mae
+        # posible metrics tsd, dl_mae, tsd_min
         self.metric = metric
         self.ramp_io_perc = 0.2
 
@@ -47,8 +47,8 @@ class SimilarityEvaluator():
 
         self.measures = self.mesurement()
         self.similarity = {'run_num': rep + 1}
-        self.similarity['act_norm'] = np.mean([x['sim_score']
-                                               for x in self.measures])
+        self.similarity['sim_val'] = np.mean(
+            [x['sim_score'] for x in self.measures])
 
     def mesurement(self):
         """
@@ -72,8 +72,10 @@ class SimilarityEvaluator():
         # similarity measurement and matching
         if self.metric == 'tsd':
             distance = self.tsd_metric(sampled_log_data, simulation_data)
-        if self.metric == 'tsd_min':
+        elif self.metric == 'tsd_min':
             distance = self.tsd_min_pattern(sampled_log_data, simulation_data)
+        elif self.metric == 'mae':
+            distance = self.mae_metric(sampled_log_data, simulation_data)
         else:
             distance = self.dl_mae_distance(sampled_log_data, simulation_data)
         return distance
@@ -107,12 +109,12 @@ class SimilarityEvaluator():
 
         """
         similarity = list()
-        matrix_len = len(log_data)
-        cost_matrix = [[0 for c in range(matrix_len)] for r in range(matrix_len)]
+        mx_len = len(log_data)
+        cost_matrix = [[0 for c in range(mx_len)] for r in range(mx_len)]
         # Create cost matrix
         # start = timer()
-        for i in range(0, matrix_len):
-            for j in range(0, matrix_len):
+        for i in range(0, mx_len):
+            for j in range(0, mx_len):
                 comp_sec = self.create_comparison_elements(simulation_data,
                                                            log_data, i, j)
                 length = np.max([len(comp_sec['seqs']['s_1']),
@@ -231,22 +233,17 @@ class SimilarityEvaluator():
 
     def calculate_cost(self, times, s1_idx, s2_idx):
         """
-
+        Takes two events and calculates the penalization based on mae distance
 
         Parameters
         ----------
-        times : TYPE
-            DESCRIPTION.
-        s1_idx : TYPE
-            DESCRIPTION.
-        s2_idx : TYPE
-            DESCRIPTION.
+        times : dict with lists of times
+        s1_idx : integer
+        s2_idx : integer
 
         Returns
         -------
-        cost : TYPE
-            DESCRIPTION.
-
+        cost : float
         """
         if self.one_timestamp:
             p_1 = times['p_1']
@@ -287,16 +284,17 @@ class SimilarityEvaluator():
 
         """
         similarity = list()
-        matrix_len = len(log_data)
-        dl_matrix = [[0 for c in range(matrix_len)] for r in range(matrix_len)]
-        mae_matrix = [[0 for c in range(matrix_len)] for r in range(matrix_len)]
+        mx_len = len(log_data)
+        dl_matrix = [[0 for c in range(mx_len)] for r in range(mx_len)]
+        mae_matrix = [[0 for c in range(mx_len)] for r in range(mx_len)]
         # Create cost matrix
         # start = timer()
-        for i in range(0, matrix_len):
-            for j in range(0, matrix_len):
-                d_l, mae = self.calculate_distances(simulation_data, log_data, i, j)
+        for i in range(0, mx_len):
+            for j in range(0, mx_len):
+                d_l, ae = self.calculate_distances(
+                    simulation_data, log_data, i, j)
                 dl_matrix[i][j] = d_l
-                mae_matrix[i][j] = mae
+                mae_matrix[i][j] = ae
         # end = timer()
         # print(end - start)
         dl_matrix = np.array(dl_matrix)
@@ -325,32 +323,75 @@ class SimilarityEvaluator():
 
         Parameters
         ----------
-        serie1 : TYPE
+        serie1 : list
+        serie2 : list
+        id1 : index of the list 1
+        id2 : index of the list 2
+
+        Returns
+        -------
+        dl : float value
+        ae : absolute error value
+        """
+        length = np.max([len(serie1[id1]['profile']),
+                         len(serie2[id2]['profile'])])
+        d_l = jf.damerau_levenshtein_distance(
+            ''.join(serie1[id1]['profile']),
+            ''.join(serie2[id2]['profile']))/length
+
+        cicle_time_s1 = (
+            serie1[id1]['end_time'] - serie1[id1]['start_time']).total_seconds()
+        cicle_time_s2 = (
+            serie2[id2]['end_time'] - serie2[id2]['start_time']).total_seconds()
+        ae = np.abs(cicle_time_s1 - cicle_time_s2)
+        return d_l, ae
+
+# =============================================================================
+# mae distance
+# =============================================================================
+
+    def mae_metric(self, log_data, simulation_data):
+        """
+        Calculates the mae metric and
+
+        Parameters
+        ----------
+        log_data : TYPE
             DESCRIPTION.
-        serie2 : TYPE
-            DESCRIPTION.
-        id1 : TYPE
-            DESCRIPTION.
-        id2 : TYPE
+        simulation_data : TYPE
             DESCRIPTION.
 
         Returns
         -------
-        dl : TYPE
-            DESCRIPTION.
-        mae : TYPE
+        similarity : TYPE
             DESCRIPTION.
 
         """
-        length = np.max([len(serie1[id1]['profile']),
-                         len(serie2[id2]['profile'])])
-        d_l = jf.damerau_levenshtein_distance(''.join(serie1[id1]['profile']),
-                                              ''.join(serie2[id2]['profile']))/length
-
-        cicle_time_s1 = (serie1[id1]['end_time'] - serie1[id1]['start_time']).total_seconds()
-        cicle_time_s2 = (serie2[id2]['end_time'] - serie2[id2]['start_time']).total_seconds()
-        mae = np.mean(np.abs(cicle_time_s1 - cicle_time_s2))
-        return d_l, mae
+        similarity = list()
+        mx_len = len(log_data)
+        ae_matrix = [[0 for c in range(mx_len)] for r in range(mx_len)]
+        # Create cost matrix
+        # start = timer()
+        for i in range(0, mx_len):
+            for j in range(0, mx_len):
+                cicle_time_s1 = (simulation_data[i]['end_time'] -
+                                 simulation_data[i]['start_time']).total_seconds()
+                cicle_time_s2 = (log_data[j]['end_time'] -
+                                 log_data[j]['start_time']).total_seconds()
+                ae = np.abs(cicle_time_s1 - cicle_time_s2)
+                ae_matrix[i][j] = ae
+        # end = timer()
+        # print(end - start)
+        ae_matrix = np.array(ae_matrix)
+        # Matching using the hungarian algorithm
+        row_ind, col_ind = linear_sum_assignment(np.array(ae_matrix))
+        # Create response
+        for idx, idy in zip(row_ind, col_ind):
+            similarity.append(dict(caseid=simulation_data[idx]['caseid'],
+                                   sim_order=simulation_data[idx]['profile'],
+                                   log_order=log_data[idy]['profile'],
+                                   sim_score=(ae_matrix[idx][idy])))
+        return similarity
 
 # =============================================================================
 # Support methods
@@ -384,34 +425,34 @@ class SimilarityEvaluator():
             alias[variables[i]] = aliases[i]
         return alias
 
-# TODO: update this method with something more standard
     def scaling_data(self, data):
         """
-
+        Scales times values activity based
 
         Parameters
         ----------
-        data : TYPE
-            DESCRIPTION.
+        data : dataframe
 
         Returns
         -------
-        data : TYPE
-            DESCRIPTION.
+        data : dataframe with normalized times
 
         """
+        np.seterr(divide='ignore')
         if self.one_timestamp:
-            summary = data.groupby(['task']).agg(
-                {'duration': ['mean', 'max', 'min']}).to_dict('index')
-            dur_act_norm = (lambda x: x['duration'] / summary[x['task']][('duration', 'max')] if summary[x['task']][('duration', 'max')] > 0 else 0)
+            summ = data.groupby(['task'])['duration'].max().to_dict()
+            dur_act_norm = (lambda x: x['duration']/summ[x['task']]
+                            if summ[x['task']] > 0 else 0)
             data['dur_act_norm'] = data.apply(dur_act_norm, axis=1)
         else:
-            summary = data.groupby(['task']).agg({'processing_time': ['mean', 'max', 'min']}).to_dict('index')
-            proc_act_norm = lambda x: x['processing_time'] / summary[x['task']][('processing_time', 'max')] if summary[x['task']][('processing_time', 'max')] > 0 else 0
+            summ = data.groupby(['task'])['processing_time'].max().to_dict()
+            proc_act_norm = (lambda x: x['processing_time']/summ[x['task']]
+                             if summ[x['task']] > 0 else 0)
             data['proc_act_norm'] = data.apply(proc_act_norm, axis=1)
-            #---
-            summary = data.groupby(['task']).agg({'waiting_time': ['mean', 'max', 'min']}).to_dict('index')
-            wait_act_norm = lambda x: x['waiting_time'] / summary[x['task']][('waiting_time', 'max')] if summary[x['task']][('waiting_time', 'max')] > 0 else 0
+            # ---
+            summ = data.groupby(['task'])['waiting_time'].max().to_dict()
+            wait_act_norm = (lambda x: x['waiting_time']/summ[x['task']]
+                             if summ[x['task']] > 0 else 0)
             data['wait_act_norm'] = data.apply(wait_act_norm, axis=1)
         return data
 
@@ -455,4 +496,3 @@ class SimilarityEvaluator():
                          **temp_dict}
             temp_data.append(temp_dict)
         return sorted(temp_data, key=itemgetter('start_time'))
-

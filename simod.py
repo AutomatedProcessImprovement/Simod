@@ -56,16 +56,22 @@ def pipe_line_execution(settings):
     process_graph = gph.create_process_structure(bpmn)
 
     # Evaluate alignment
-    chk.evaluate_alignment(process_graph, log, settings)
+    try:
+        chk.evaluate_alignment(process_graph, log, settings)
+    except Exception as e:
+        print(e)
+        status = STATUS_FAIL
 
     print("-- Mining Simulation Parameters --")
-    parameters, process_stats = par.extract_parameters(log, bpmn, process_graph, settings)
-    print(parameters)
+    parameters, process_stats = par.extract_parameters(log,
+                                                       bpmn,
+                                                       process_graph,
+                                                       settings)
     xml.print_parameters(os.path.join(settings['output'],
                                       settings['file'].split('.')[0]+'.bpmn'),
-                          os.path.join(settings['output'],
+                         os.path.join(settings['output'],
                                       settings['file'].split('.')[0]+'.bpmn'),
-                          parameters)
+                         parameters)
     status = STATUS_OK
     sim_values = list()
     process_stats = pd.DataFrame.from_records(process_stats)
@@ -73,11 +79,14 @@ def pipe_line_execution(settings):
         print("Experiment #" + str(rep + 1))
         try:
             simulate(settings, rep)
-            process_stats = process_stats.append(read_stats(settings, bpmn, rep),
-                                                  ignore_index=True,
-                                                  sort=False)
-            evaluation = sim.SimilarityEvaluator(process_stats, settings,
-                                                  rep, metric=settings['sim_metric'])
+            process_stats = process_stats.append(
+                read_stats(settings, bpmn, rep),
+                ignore_index=True,
+                sort=False)
+            evaluation = sim.SimilarityEvaluator(process_stats,
+                                                 settings,
+                                                 rep,
+                                                 metric=settings['sim_metric'])
             sim_values.append(evaluation.similarity)
         except Exception as e:
             print(e)
@@ -110,7 +119,7 @@ def define_response(status, sim_values, settings):
         similarity = 0
         response['params'] = settings
         if status == STATUS_OK:
-            similarity = np.mean([x['act_norm'] for x in sim_values])
+            similarity = np.mean([x['sim_val'] for x in sim_values])
             loss = 1 - similarity
             response['loss'] = loss
             response['status'] = status if loss > 0 else STATUS_FAIL
@@ -122,7 +131,7 @@ def define_response(status, sim_values, settings):
             **data})
     else:
         if status == STATUS_OK:
-            similarity = np.mean([x['act_norm'] for x in sim_values])
+            similarity = np.mean([x['sim_val'] for x in sim_values])
             response['similarity'] = similarity
             response['params'] = settings
             response['status'] = status if similarity > 0 else STATUS_FAIL
@@ -175,8 +184,6 @@ def task_hyper_execution(settings, args):
         space['tasks'][task['task']] = hp.uniform(task['task'], mean-(mean*0.5), mean+(mean*0.5))
     space = {**space, **settings}
     # [print(k, v) for k, v in settings.items()]
-
-    # TODO: define evaluation metric maybe in relation with cycletime
 
     ## Trials object to track progress
     bayes_trials = Trials()

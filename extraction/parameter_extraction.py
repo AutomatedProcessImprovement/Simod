@@ -17,7 +17,6 @@ def extract_parameters(log, bpmn, process_graph, settings):
         # Creation of process graph
         # -------------------------------------------------------------------
         # Analysing resource pool LV917 or 247
-
         res_analyzer = rl.ResourcePoolAnalyser(log, sim_threshold=settings['rp_similarity'])
         roles = res_analyzer.roles
         resource_table = res_analyzer.resource_table
@@ -40,9 +39,9 @@ def extract_parameters(log, bpmn, process_graph, settings):
         # -------------------------------------------------------------------
         # Tasks id information
         elements_data = te.TaskEvaluator(process_graph,
-                                          process_stats,
-                                          resource_pool,
-                                          settings).elements_data
+                                         process_stats,
+                                         resource_pool,
+                                         settings).elements_data
 
         parameters = dict(arrival_rate=arrival_rate_bimp,
                           time_table=time_table,
