@@ -23,7 +23,7 @@ def main(argv):
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'single'
+    settings['exec_mode'] = 'tasks_optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', mae
     settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
@@ -63,9 +63,9 @@ def main(argv):
             settings['eta'] = 0.258890506879495
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'removal'
-            # Processing time definition method: 'apx'
-            settings['pdef_method'] = 'apx'
-            args['max_eval'] = 50
+            # Processing time definition method: 'apx' or 'apx_percentage'
+            settings['pdef_method'] = 'apx_percentage'
+            args['max_eval'] = 5
             settings['temp_file'] = sup.file_id(prefix='TS_')
             # Execute optimizer
             if not os.path.exists(os.path.join('outputs',
@@ -115,7 +115,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
-                                'one_timestamp': False,
+                                'one_timestamp': True,
                                 'filter_d_attrib': True,
                                 'ns_include': True}
     # Folders structure
