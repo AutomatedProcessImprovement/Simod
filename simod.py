@@ -30,68 +30,74 @@ from extraction import log_replayer as rpl
 # Single execution
 # =============================================================================
 def pipe_line_execution(settings):
+    status = STATUS_OK
     if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
         # Paths redefinition
         settings['output'] = os.path.join('outputs', sup.folder_id())
         if settings['alg_manag'] == 'repair':
-            settings['aligninfo'] = os.path.join(
-                                                 settings['output'],
-                                                 'CaseTypeAlignmentResults.csv'
-                                                 )
-            settings['aligntype'] = os.path.join(settings['output'],
-                                                 'AlignmentStatistics.csv')
+            try:
+                settings['aligninfo'] = os.path.join(
+                                                     settings['output'],
+                                                     'CaseTypeAlignmentResults.csv'
+                                                     )
+                settings['aligntype'] = os.path.join(settings['output'],
+                                                     'AlignmentStatistics.csv')
+            except Exception as e:
+                print(e)
+                status = STATUS_FAIL
     # Output folder creation
-    if not os.path.exists(settings['output']):
-        os.makedirs(settings['output'])
-        os.makedirs(os.path.join(settings['output'], 'sim_data'))
-    # Event log reading
-    log = lr.LogReader(os.path.join(settings['input'], settings['file']),
-                       settings['read_options'])
-    # Create customized event-log for the external tools
-    xes.XesWriter(log, settings)
-    # Execution steps
-    mining_structure(settings)
-    bpmn = br.BpmnReader(os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'))
-    process_graph = gph.create_process_structure(bpmn)
-
-    # Evaluate alignment
-    try:
-        chk.evaluate_alignment(process_graph, log, settings)
-    except Exception as e:
-        print(e)
-        status = STATUS_FAIL
-
-    print("-- Mining Simulation Parameters --")
-    parameters, process_stats = par.extract_parameters(log,
-                                                       bpmn,
-                                                       process_graph,
-                                                       settings)
-    xml.print_parameters(os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'),
-                         os.path.join(settings['output'],
-                                      settings['file'].split('.')[0]+'.bpmn'),
-                         parameters)
-    status = STATUS_OK
-    sim_values = list()
-    process_stats = pd.DataFrame.from_records(process_stats)
-    for rep in range(settings['repetitions']):
-        print("Experiment #" + str(rep + 1))
+    if status == STATUS_OK:
+        if not os.path.exists(settings['output']):
+            os.makedirs(settings['output'])
+            os.makedirs(os.path.join(settings['output'], 'sim_data'))
+        # Event log reading
+        log = lr.LogReader(os.path.join(settings['input'], settings['file']),
+                           settings['read_options'])
+        # Create customized event-log for the external tools
+        xes.XesWriter(log, settings)
+        # Execution steps
+        mining_structure(settings)
+        bpmn = br.BpmnReader(os.path.join(settings['output'],
+                                          settings['file'].split('.')[0]+'.bpmn'))
+        process_graph = gph.create_process_structure(bpmn)
+    
+        # Evaluate alignment
         try:
-            simulate(settings, rep)
-            process_stats = process_stats.append(
-                read_stats(settings, bpmn, rep),
-                ignore_index=True,
-                sort=False)
-            evaluation = sim.SimilarityEvaluator(process_stats,
-                                                 settings,
-                                                 rep,
-                                                 metric=settings['sim_metric'])
-            sim_values.append(evaluation.similarity)
+            chk.evaluate_alignment(process_graph, log, settings)
         except Exception as e:
             print(e)
             status = STATUS_FAIL
-            break
+
+    sim_values = list()
+    if status == STATUS_OK:
+        print("-- Mining Simulation Parameters --")
+        parameters, process_stats = par.extract_parameters(log,
+                                                           bpmn,
+                                                           process_graph,
+                                                           settings)
+        xml.print_parameters(os.path.join(settings['output'],
+                                          settings['file'].split('.')[0]+'.bpmn'),
+                             os.path.join(settings['output'],
+                                          settings['file'].split('.')[0]+'.bpmn'),
+                             parameters)
+        process_stats = pd.DataFrame.from_records(process_stats)
+        for rep in range(settings['repetitions']):
+            print("Experiment #" + str(rep + 1))
+            try:
+                simulate(settings, rep)
+                process_stats = process_stats.append(
+                    read_stats(settings, bpmn, rep),
+                    ignore_index=True,
+                    sort=False)
+                evaluation = sim.SimilarityEvaluator(process_stats,
+                                                     settings,
+                                                     rep,
+                                                     metric=settings['sim_metric'])
+                sim_values.append(evaluation.similarity)
+            except Exception as e:
+                print(e)
+                status = STATUS_FAIL
+                break
 
     response, measurements = define_response(status, sim_values, settings)
 
@@ -179,9 +185,11 @@ def task_hyper_execution(settings, args):
     space['tasks'] = dict()
     for task in act_stats:
         # Assumption just the 1/3 percent of the enabling time was taking assuming an 8 hours calendar (Time warp)
-        mean = task['mean']*0.4
-        # As min and max values I restrict the variation to a 50% less and in excess not the minimum and maximum 
-        space['tasks'][task['task']] = hp.uniform(task['task'], mean-(mean*0.5), mean+(mean*0.5))
+        # maximum = task['min']*1.5
+        # space['tasks'][task['task']] = hp.uniform(task['task'], task['min'], task['min']*1.80)
+        var = task['mean'] * 0.4
+        # As min and max values I restrict the variation to a 40% less and in excess not the minimum and maximum 
+        space['tasks'][task['task']] = hp.uniform(task['task'], task['mean']-var, task['mean']+var)
     space = {**space, **settings}
     # [print(k, v) for k, v in settings.items()]
 
