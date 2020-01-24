@@ -25,11 +25,22 @@ class TaskEvaluator():
         self.model_data = self.get_model_data(process_graph)
         self.process_stats = process_stats
         self.resource_pool = resource_pool
+
         self.pdef_method = settings['pdef_method']
-        self.pdef_values = (settings['tasks']
-                            if settings['pdef_method'] == 'apx' else dict())
+        self.pdef_values = dict()
+        self.load_pdef_values(settings)
+
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.elements_data = self.evaluate_tasks()
+
+    def load_pdef_values(self, settings):
+        if self.pdef_method == 'apx':
+            self.pdef_values = settings['tasks']
+        elif self.pdef_method == 'apx_percentage':
+            # Iterator
+            for task in self.tasks:
+                self.pdef_values[task] = (settings['percentage'][task] *
+                                          settings['enabling_times'][task])
 
     def evaluate_tasks(self):
         """
@@ -46,7 +57,7 @@ class TaskEvaluator():
             elements_data = self.mine_processing_time()
         if self.pdef_method in ['manual', 'semi-automatic']:
             elements_data = self.define_distributions_manually()
-        if self.pdef_method == 'apx':
+        if self.pdef_method in ['apx', 'apx_percentage']:
             elements_data = self.match_predefined_time()
         # Resource association
         elements_data = self.associate_resource(elements_data)

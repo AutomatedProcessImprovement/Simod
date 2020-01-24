@@ -62,10 +62,10 @@ def main(argv):
             settings['epsilon'] = 0.284143325437484
             settings['eta'] = 0.987998779416604
             # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'repair'
-            # Processing time definition method: 'apx'
-            settings['pdef_method'] = 'apx'
-            args['max_eval'] = 30
+            settings['alg_manag'] = 'removal'
+            # Processing time definition method: 'apx' or 'apx_percentage'
+            settings['pdef_method'] = 'apx_percentage'
+            args['max_eval'] = 5
             settings['temp_file'] = sup.file_id(prefix='TS_')
             # Execute optimizer
             if not os.path.exists(os.path.join('outputs',

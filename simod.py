@@ -60,7 +60,7 @@ def pipe_line_execution(settings):
         bpmn = br.BpmnReader(os.path.join(settings['output'],
                                           settings['file'].split('.')[0]+'.bpmn'))
         process_graph = gph.create_process_structure(bpmn)
-    
+
         # Evaluate alignment
         try:
             chk.evaluate_alignment(process_graph, log, settings)
@@ -111,11 +111,19 @@ def pipe_line_execution(settings):
         [print(k, v, sep=': ') for k, v in response.items() if k != 'params']
     return response
 
+
 def define_response(status, sim_values, settings):
     response = dict()
     measurements = list()
     if settings['exec_mode'] == 'tasks_optimizer':
-        data = settings['tasks']
+        if settings['pdef_method'] == 'apx':
+            data = settings['tasks']
+        else:
+            data = dict()
+            for task in settings['percentage'].keys():
+                data[task+'_p'] = settings['percentage'][task]
+                data[task] = (settings['percentage'][task] *
+                              settings['enabling_times'][task])
     else:
         data = {
             'alg_manag': settings['alg_manag'], 'epsilon': settings['epsilon'],
@@ -156,10 +164,10 @@ def define_response(status, sim_values, settings):
 def hyper_execution(settings, args):
     """Execute splitminer for bpmn structure mining."""
     space = {**{'epsilon': hp.uniform('epsilon', args['epsilon'][0], args['epsilon'][1]),
-             'eta': hp.uniform('eta', args['eta'][0], args['eta'][1]),
-             'alg_manag': hp.choice('alg_manag', ['replacement',
-                                                  'repair',
-                                                  'removal'])}, **settings}
+                'eta': hp.uniform('eta', args['eta'][0], args['eta'][1]),
+                'alg_manag': hp.choice('alg_manag', ['replacement',
+                                                     'repair',
+                                                     'removal'])}, **settings}
     ## Trials object to track progress
     bayes_trials = Trials()
     ## Optimize
@@ -172,6 +180,7 @@ def hyper_execution(settings, args):
 # Hyperparameter-optimizer execution
 # =============================================================================
 
+
 def task_hyper_execution(settings, args):
     """Execute splitminer for bpmn structure mining."""
     # TODO: define initial enablig_times
@@ -182,22 +191,34 @@ def task_hyper_execution(settings, args):
     # hp.normal(label, mu, sigma)
     # hp.uniform(label, min, max)
     space = dict()
-    space['tasks'] = dict()
-    for task in act_stats:
-        # Assumption just the 1/3 percent of the enabling time was taking assuming an 8 hours calendar (Time warp)
-        # maximum = task['min']*1.5
-        # space['tasks'][task['task']] = hp.uniform(task['task'], task['min'], task['min']*1.80)
-        var = task['mean'] * 0.4
-        # As min and max values I restrict the variation to a 40% less and in excess not the minimum and maximum 
-        space['tasks'][task['task']] = hp.uniform(task['task'], task['mean']-var, task['mean']+var)
+    if settings['pdef_method'] == 'apx':
+        space['tasks'] = dict()
+        for task in act_stats:
+            mean = task['mean'] * 0.4
+            # As min and max values I restrict the variation to
+            # a 50% less and in excess not the minimum and maximum
+            space['tasks'][task['task']] = hp.uniform(
+                task['task'],
+                mean-(mean*0.5),
+                mean+(mean*0.5))
+    elif settings['pdef_method'] == 'apx_percentage':
+        space['percentage'] = dict()
+        settings['enabling_times'] = dict()
+        for task in act_stats:
+            settings['enabling_times'][task['task']] = task['mean']
+            # If percentage, just define a value btw 0 and 1
+            space['percentage'][task['task']] = hp.uniform(task['task'], 0, 1)
+
     space = {**space, **settings}
     # [print(k, v) for k, v in settings.items()]
 
-    ## Trials object to track progress
+    # Trials object to track progress
     bayes_trials = Trials()
-    ## Optimize
+    # Optimize
     best = fmin(fn=pipe_line_execution, space=space, algo=tpe.suggest,
-                max_evals=args['max_eval'], trials=bayes_trials, show_progressbar=False)
+                max_evals=args['max_eval'],
+                trials=bayes_trials,
+                show_progressbar=False)
     print(best)
 
 
@@ -290,4 +311,3 @@ def calculate_activities_stats(temp_stats):
     activities_table.columns = activities_table.columns.droplevel(0)
     activities_table = activities_table.rename(index=str, columns={'': 'task'})
     return activities_table
-
