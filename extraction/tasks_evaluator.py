@@ -38,7 +38,7 @@ class TaskEvaluator():
             self.pdef_values = settings['tasks']
         elif self.pdef_method == 'apx_percentage':
             # Iterator
-            for task in self.tasks:
+            for task in settings['percentage'].keys():
                 self.pdef_values[task] = (settings['percentage'][task] *
                                           settings['enabling_times'][task])
 
