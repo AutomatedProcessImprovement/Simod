@@ -66,6 +66,39 @@ class TaskEvaluator():
         elements_data = self.add_start_end_info(elements_data)
         return elements_data
 
+    # def mine_processing_time(self):
+    #     """
+    #     Performs the mining of activities durations from data
+
+    #     Returns
+    #     -------
+    #     elements_data : Dataframe
+
+    #     """
+    #     elements_data = list()
+    #     for task in self.tasks:
+    #         if self.one_timestamp:
+    #             task_processing = (
+    #                 self.process_stats[
+    #                     self.process_stats.task == task]['duration'].tolist())
+    #         else:
+    #             task_processing = (
+    #                 self.process_stats[
+    #                     self.process_stats.task == task]['processing_time']
+    #                 .tolist())
+    #         dist = pdf.DistributionFinder(task_processing).distribution
+    #         elements_data.append(
+    #             dict(id=sup.gen_id(),
+    #                  type=dist['dname'],
+    #                  name=task,
+    #                  mean=str(dist['dparams']['mean']),
+    #                  arg1=str(dist['dparams']['arg1']),
+    #                  arg2=str(dist['dparams']['arg2'])))
+    #     elements_data = pd.DataFrame(elements_data)
+    #     elements_data = elements_data.merge(
+    #         self.model_data[['name', 'elementid']], on='name', how='left')
+    #     return elements_data
+
     def mine_processing_time(self):
         """
         Performs the mining of activities durations from data
@@ -77,7 +110,7 @@ class TaskEvaluator():
         """
         elements_data = list()
 # ======Debug==================================================================
-#         mean_times = list() 
+        times = list()
 # =============================================================================
         for task in self.tasks:
             if self.one_timestamp:
@@ -90,13 +123,23 @@ class TaskEvaluator():
                         self.process_stats.task == task]['processing_time']
                     .tolist())
 # ======Debug==================================================================
-#                 try:
-#                     mean_times.append({'task': task,
-#                                        'min':np.min(task_processing),
-#                                        'max':np.max(task_processing),
-#                                        'mean':np.mean(task_processing)})
-#                 except:
-#                     mean_times.append({'task': task, 'min':0, 'max':0, 'mean':0})
+                task_waiting = (
+                    self.process_stats[
+                        self.process_stats.task == task]['waiting_time']
+                    .tolist())
+                try:
+                    times.append({'task': task,
+                                  'min_proc': np.min(task_processing),
+                                  'max_proc': np.max(task_processing),
+                                  'mean_proc': np.mean(task_processing),
+                                  'min_wait': np.min(task_waiting),
+                                  'max_wait': np.max(task_waiting),
+                                  'mean_wait': np.mean(task_waiting)})
+                except:
+                    times.append({'task': task, 'min_proc': 0,
+                                  'max_proc': 0, 'mean_proc': 0,
+                                  'min_wait': 0, 'max_wait': 0,
+                                  'mean_wait': 0})
 # =============================================================================
             dist = pdf.DistributionFinder(task_processing).distribution
             elements_data.append(
@@ -107,8 +150,8 @@ class TaskEvaluator():
                      arg1=str(dist['dparams']['arg1']),
                      arg2=str(dist['dparams']['arg2'])))
 # ======Debug==================================================================
-#         mean_times = pd.DataFrame(mean_times)
-#         mean_times.to_csv('processing_time.csv')
+        times = pd.DataFrame(times)
+        times.to_csv('times_xactivity.csv')
 # =============================================================================
         elements_data = pd.DataFrame(elements_data)
         elements_data = elements_data.merge(
@@ -138,7 +181,7 @@ class TaskEvaluator():
         pdef_tasks = list(self.pdef_values.keys())
         not_included = [task for task in self.tasks if task not in pdef_tasks]
         default_record = {'type': 'EXPONENTIAL', 'mean': '0',
-                          'arg1': '3600', 'arg2': '0'}
+                          'arg1': '60', 'arg2': '0'}
         for task in not_included:
             elements_data.append({**{'id': sup.gen_id(), 'name': task},
                                   **default_record})

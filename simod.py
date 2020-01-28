@@ -183,13 +183,31 @@ def hyper_execution(settings, args):
 
 def task_hyper_execution(settings, args):
     """Execute splitminer for bpmn structure mining."""
-    # TODO: define initial enablig_times
+    # Define initial enablig_times
     stats = mine_max_enabling(settings)
     act_stats = calculate_activities_stats(stats)
     act_stats = act_stats.to_dict('records')
-    # TODO: define search_space
+    # Exclusion of automatic tasks
+    automatic = list()
+    if settings['file'] == 'ConsultaDataMining201618.xes':
+        automatic = ['Notificacion estudiante cancelacion soli',
+                     'Traer informacion estudiante - banner',
+                     'Transferir Creditos',
+                     'Transferir creditos homologables']
+        third_party = ['Radicar Solicitud Homologacion']
+    elif settings['file'] == 'PurchasingExample.xes':
+        automatic = ['Approve Purchase Order for payment',
+                     "Authorize Supplier's Invoice payment",
+                     'Choose best option',
+                     'Release Purchase Order',
+                     'Send Invoice']
+        third_party = ['Settle Conditions With Supplier',
+                       'Settle Dispute With Supplier']
+    # Automatic tasks removal
+    act_stats = [x for x in act_stats if x['task'] not in automatic]
     # hp.normal(label, mu, sigma)
     # hp.uniform(label, min, max)
+    # Define search_space
     space = dict()
     if settings['pdef_method'] == 'apx':
         space['tasks'] = dict()
@@ -207,7 +225,12 @@ def task_hyper_execution(settings, args):
         for task in act_stats:
             settings['enabling_times'][task['task']] = task['mean']
             # If percentage, just define a value btw 0 and 1
-            space['percentage'][task['task']] = hp.uniform(task['task'], 0, 1)
+            if task['task'] not in third_party:
+                space['percentage'][task['task']] = hp.uniform(
+                    task['task'], 0, 1)
+            else:
+                space['percentage'][task['task']] = hp.uniform(
+                    task['task'], 0.9, 1)
 
     space = {**space, **settings}
     # [print(k, v) for k, v in settings.items()]
