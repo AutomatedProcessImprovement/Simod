@@ -272,7 +272,7 @@ def read_stats(settings, bpmn, rep):
     m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
     m_settings['read_options']['column_names'] = column_names
     temp = lr.LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                     m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'), m_settings['read_options'])
+                                     m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),m_settings['read_options'])
     process_graph = gph.create_process_structure(bpmn)
     _, _, temp_stats = rpl.replay(process_graph, temp, settings, source='simulation', run_num=rep + 1)
     temp_stats = pd.DataFrame.from_records(temp_stats)
@@ -291,9 +291,6 @@ def mine_max_enabling(settings):
     log = lr.LogReader(os.path.join(settings['input'], settings['file']),
                         settings['read_options'])
     # Create customized event-log for the external tools
-    # file_name = settings['file'].split('.')[0]
-    # xes.create_xes_file(log, os.path.join(settings['output'], file_name+'.xes'),
-    #                     settings['read_options'])
     xes.XesWriter(log, settings)
     # Execution steps
     mining_structure(settings)
@@ -302,12 +299,14 @@ def mine_max_enabling(settings):
     process_graph = gph.create_process_structure(bpmn)
 
     _, _, temp_stats = rpl.replay(process_graph, log, settings, source='apx')
-    # if os.path.exists(settings['output']):
-    #     os.remove(settings['output'])
     return pd.DataFrame(temp_stats)
 
+
 def calculate_activities_stats(temp_stats):
-    activities_table = temp_stats[['duration','task']].groupby(['task']).agg(['min','max','mean','std']).reset_index()
+    activities_table = (temp_stats[['duration', 'task']]
+                        .groupby(['task'])
+                        .agg(['min', 'max', 'mean', 'std'])
+                        .reset_index())
     activities_table.columns = activities_table.columns.droplevel(0)
     activities_table = activities_table.rename(index=str, columns={'': 'task'})
     return activities_table
