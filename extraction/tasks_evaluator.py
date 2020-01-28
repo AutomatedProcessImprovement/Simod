@@ -7,6 +7,7 @@ Created on Fri Jan 10 17:28:46 2020
 import tkinter as tk
 import pandas as pd
 import networkx as nx
+import numpy as np
 
 from extraction import pdf_finder as pdf
 from extraction import manual_edition_ui as me
@@ -38,7 +39,7 @@ class TaskEvaluator():
             self.pdef_values = settings['tasks']
         elif self.pdef_method == 'apx_percentage':
             # Iterator
-            for task in self.tasks:
+            for task in settings['percentage'].keys():
                 self.pdef_values[task] = (settings['percentage'][task] *
                                           settings['enabling_times'][task])
 
@@ -75,6 +76,9 @@ class TaskEvaluator():
 
         """
         elements_data = list()
+# ======Debug==================================================================
+#         mean_times = list() 
+# =============================================================================
         for task in self.tasks:
             if self.one_timestamp:
                 task_processing = (
@@ -85,6 +89,15 @@ class TaskEvaluator():
                     self.process_stats[
                         self.process_stats.task == task]['processing_time']
                     .tolist())
+# ======Debug==================================================================
+#                 try:
+#                     mean_times.append({'task': task,
+#                                        'min':np.min(task_processing),
+#                                        'max':np.max(task_processing),
+#                                        'mean':np.mean(task_processing)})
+#                 except:
+#                     mean_times.append({'task': task, 'min':0, 'max':0, 'mean':0})
+# =============================================================================
             dist = pdf.DistributionFinder(task_processing).distribution
             elements_data.append(
                 dict(id=sup.gen_id(),
@@ -93,6 +106,10 @@ class TaskEvaluator():
                      mean=str(dist['dparams']['mean']),
                      arg1=str(dist['dparams']['arg1']),
                      arg2=str(dist['dparams']['arg2'])))
+# ======Debug==================================================================
+#         mean_times = pd.DataFrame(mean_times)
+#         mean_times.to_csv('processing_time.csv')
+# =============================================================================
         elements_data = pd.DataFrame(elements_data)
         elements_data = elements_data.merge(
             self.model_data[['name', 'elementid']], on='name', how='left')
