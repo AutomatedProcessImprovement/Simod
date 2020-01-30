@@ -134,7 +134,7 @@ def define_response(status, sim_values, settings):
         response['params'] = settings
         if status == STATUS_OK:
             similarity = np.mean([x['sim_val'] for x in sim_values])
-            loss = 1 - similarity
+            loss = (1 - similarity) if settings['sim_metric'] != 'mae' else similarity
             response['loss'] = loss
             response['status'] = status if loss > 0 else STATUS_FAIL
         else:
