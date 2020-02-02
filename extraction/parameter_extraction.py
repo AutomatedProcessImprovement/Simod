@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from extraction import log_replayer as rpl
-from extraction import pdf_finder as pdf
 from extraction import interarrival_definition as arr
 from extraction import gateways_probabilities as gt
 from extraction import role_discovery as rl
@@ -8,7 +7,6 @@ from extraction import schedule_tables as sch
 from extraction import tasks_evaluator as te
 
 import pandas as pd
-
 
 def extract_parameters(log, bpmn, process_graph, settings):
     if bpmn and log:
@@ -31,8 +29,9 @@ def extract_parameters(log, bpmn, process_graph, settings):
         process_stats = process_stats.merge(resource_table, on='resource', how='left')
         # -------------------------------------------------------------------
         # Determination of first tasks for calculate the arrival rate
-        inter_arrival_times = arr.define_interarrival_tasks(process_graph, conformed_traces, settings)
-        arrival_rate_bimp = (pdf.DistributionFinder(inter_arrival_times).distribution)
+        inter_evaluator = arr.InterArrivalEvaluator(process_graph,
+                                                    conformed_traces, settings)
+        arrival_rate_bimp = inter_evaluator.dist
         arrival_rate_bimp['startEventId'] = startEventId
         # Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
         sequences = gt.define_probabilities(process_graph, bpmn, log, 1)

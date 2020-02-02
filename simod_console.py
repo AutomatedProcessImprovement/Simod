@@ -23,15 +23,15 @@ def main(argv):
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'tasks_optimizer'
-    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', mae
-    settings['sim_metric'] = 'dl_mae'
+    settings['exec_mode'] = 'single'
+    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
+    settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
     # TODO: Refactoring process structure to become a class
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'ConsultaDataMining201618.xes'
+        settings['file'] = 'PurchasingExample.xes'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
@@ -42,7 +42,7 @@ def main(argv):
             settings['alg_manag'] = 'repair'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
-            settings['pdef_method'] = 'automatic'
+            settings['pdef_method'] = 'semi-automatic'
             # Single Execution
             sim.pipe_line_execution(settings)
         elif settings['exec_mode'] == 'optimizer':
@@ -115,7 +115,7 @@ def define_general_settings(settings):
     # Event-log reading options
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
-                                'one_timestamp': True,
+                                'one_timestamp': False,
                                 'filter_d_attrib': True,
                                 'ns_include': True}
     # Folders structure
