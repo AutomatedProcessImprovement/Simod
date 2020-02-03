@@ -34,7 +34,7 @@ def extract_parameters(log, bpmn, process_graph, settings):
         arrival_rate_bimp = inter_evaluator.dist
         arrival_rate_bimp['startEventId'] = startEventId
         # Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
-        sequences = gt.define_probabilities(process_graph, bpmn, log, 1)
+        sequences = gt.define_probabilities(process_graph, bpmn, log, 3)
         # -------------------------------------------------------------------
         # Tasks id information
         elements_data = te.TaskEvaluator(process_graph,

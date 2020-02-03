@@ -66,39 +66,6 @@ class TaskEvaluator():
         elements_data = self.add_start_end_info(elements_data)
         return elements_data
 
-    # def mine_processing_time(self):
-    #     """
-    #     Performs the mining of activities durations from data
-
-    #     Returns
-    #     -------
-    #     elements_data : Dataframe
-
-    #     """
-    #     elements_data = list()
-    #     for task in self.tasks:
-    #         if self.one_timestamp:
-    #             task_processing = (
-    #                 self.process_stats[
-    #                     self.process_stats.task == task]['duration'].tolist())
-    #         else:
-    #             task_processing = (
-    #                 self.process_stats[
-    #                     self.process_stats.task == task]['processing_time']
-    #                 .tolist())
-    #         dist = pdf.DistributionFinder(task_processing).distribution
-    #         elements_data.append(
-    #             dict(id=sup.gen_id(),
-    #                  type=dist['dname'],
-    #                  name=task,
-    #                  mean=str(dist['dparams']['mean']),
-    #                  arg1=str(dist['dparams']['arg1']),
-    #                  arg2=str(dist['dparams']['arg2'])))
-    #     elements_data = pd.DataFrame(elements_data)
-    #     elements_data = elements_data.merge(
-    #         self.model_data[['name', 'elementid']], on='name', how='left')
-    #     return elements_data
-
     def mine_processing_time(self):
         """
         Performs the mining of activities durations from data
@@ -109,50 +76,18 @@ class TaskEvaluator():
 
         """
         elements_data = list()
-# ======Debug==================================================================
-        times = list()
-# =============================================================================
         for task in self.tasks:
-            if self.one_timestamp:
-                task_processing = (
-                    self.process_stats[
-                        self.process_stats.task == task]['duration'].tolist())
-            else:
-                task_processing = (
-                    self.process_stats[
-                        self.process_stats.task == task]['processing_time']
-                    .tolist())
-# ======Debug==================================================================
-                task_waiting = (
-                    self.process_stats[
-                        self.process_stats.task == task]['waiting_time']
-                    .tolist())
-                try:
-                    times.append({'task': task,
-                                  'min_proc': np.min(task_processing),
-                                  'max_proc': np.max(task_processing),
-                                  'mean_proc': np.mean(task_processing),
-                                  'min_wait': np.min(task_waiting),
-                                  'max_wait': np.max(task_waiting),
-                                  'mean_wait': np.mean(task_waiting)})
-                except:
-                    times.append({'task': task, 'min_proc': 0,
-                                  'max_proc': 0, 'mean_proc': 0,
-                                  'min_wait': 0, 'max_wait': 0,
-                                  'mean_wait': 0})
-# =============================================================================
+            s_key = 'duration' if self.one_timestamp else 'processing_time'
+            task_processing = (
+                self.process_stats[
+                    self.process_stats.task == task][s_key].tolist())
             dist = pdf.DistributionFinder(task_processing).distribution
-            elements_data.append(
-                dict(id=sup.gen_id(),
-                     type=dist['dname'],
-                     name=task,
-                     mean=str(dist['dparams']['mean']),
-                     arg1=str(dist['dparams']['arg1']),
-                     arg2=str(dist['dparams']['arg2'])))
-# ======Debug==================================================================
-        times = pd.DataFrame(times)
-        times.to_csv('times_xactivity.csv')
-# =============================================================================
+            elements_data.append({'id': sup.gen_id(),
+                                  'type': dist['dname'],
+                                  'name': task,
+                                  'mean': str(dist['dparams']['mean']),
+                                  'arg1': str(dist['dparams']['arg1']),
+                                  'arg2': str(dist['dparams']['arg2'])})
         elements_data = pd.DataFrame(elements_data)
         elements_data = elements_data.merge(
             self.model_data[['name', 'elementid']], on='name', how='left')
@@ -218,24 +153,30 @@ class TaskEvaluator():
 
     def default_values(self):
         """
-        Define default values for the tasks list
-
+        Performs the mining of activities durations from data
         Returns
         -------
-        Dataframe
-
+        elements_data : Dataframe
         """
         elements_data = list()
-        default_record = {'type': 'EXPONENTIAL',
-                          'mean': '0', 'arg1': '3600', 'arg2': '0'}
         for task in self.tasks:
-            elements_data.append({**{'id': sup.gen_id(), 'name': task},
-                                  **default_record})
+            s_key = 'duration' if self.one_timestamp else 'processing_time'
+            task_processing = (
+                self.process_stats[
+                    self.process_stats.task == task][s_key].tolist())
+            try:
+                mean_time = np.mean(task_processing) if task_processing else 0
+            except:
+                mean_time = 0
+            elements_data.append({'id': sup.gen_id(),
+                                  'type': 'EXPONENTIAL',
+                                  'name': task,
+                                  'mean': str(0),
+                                  'arg1': str(np.round(mean_time, 2)),
+                                  'arg2': str(0)})
         elements_data = pd.DataFrame(elements_data)
-
-        elements_data = elements_data.merge(self.model_data[['name', 'elementid']],
-                                            on='name',
-                                            how='left').sort_values(by='name')
+        elements_data = elements_data.merge(
+            self.model_data[['name', 'elementid']], on='name', how='left')
         return elements_data.to_dict('records')
 
     def add_start_end_info(self, elements_data):

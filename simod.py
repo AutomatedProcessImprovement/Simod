@@ -109,6 +109,10 @@ def pipe_line_execution(settings):
     else:
         print('------ Final results ------')
         [print(k, v, sep=': ') for k, v in response.items() if k != 'params']
+        response.pop('params', None)
+        sup.create_csv_file_header([response],
+                                   os.path.join('outputs',
+                                                settings['temp_file']))
     return response
 
 
@@ -305,6 +309,8 @@ def read_stats(settings, bpmn, rep):
 # =============================================================================
 # Tasks optizer methods definition
 # =============================================================================
+
+
 def mine_max_enabling(settings):
     # Output folder creation
     if not os.path.exists(settings['output']):
@@ -312,7 +318,7 @@ def mine_max_enabling(settings):
         os.makedirs(os.path.join(settings['output'], 'sim_data'))
     # Event log reading
     log = lr.LogReader(os.path.join(settings['input'], settings['file']),
-                        settings['read_options'])
+                       settings['read_options'])
     # Create customized event-log for the external tools
     xes.XesWriter(log, settings)
     # Execution steps

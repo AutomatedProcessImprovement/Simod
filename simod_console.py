@@ -23,32 +23,34 @@ def main(argv):
     settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'single'
+    settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
-    settings['sim_metric'] = 'tsd_min'
+    settings['sim_metric'] = 'tsd'
     # Parameters settled manually or catched by console for batch operations
     # TODO: Refactoring process structure to become a class
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes'
+        settings['file'] = 'Production.xes'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
-            # Splitminer settings [0..1]
-            settings['epsilon'] = 0.284143325437484
-            settings['eta'] = 0.987998779416604
+            # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
+            settings['epsilon'] = 0.1
+            settings['eta'] = 0.4
             # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'repair'
+            settings['alg_manag'] = 'removal'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
-            settings['pdef_method'] = 'semi-automatic'
+            settings['pdef_method'] = 'automatic'
+            # temporal file for results
+            settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
             sim.pipe_line_execution(settings)
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 36
+            args['max_eval'] = 10
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer
