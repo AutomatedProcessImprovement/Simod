@@ -193,14 +193,10 @@ class SimilarityEvaluator():
         """
         Compute the Damerau-Levenshtein distance between two given
         strings (s_1 and s_2)
-
         Parameters
         ----------
-        comp_sec : TYPE
-            DESCRIPTION.
-        alpha_concurrency : TYPE
-            DESCRIPTION.
-
+        comp_sec : dict
+        alpha_concurrency : dict
         Returns
         -------
         Float
@@ -268,19 +264,16 @@ class SimilarityEvaluator():
 # =============================================================================
     def dl_mae_distance(self, log_data, simulation_data):
         """
-
+        similarity score
 
         Parameters
         ----------
-        log_data : TYPE
-            DESCRIPTION.
-        simulation_data : TYPE
-            DESCRIPTION.
+        log_data : list of events
+        simulation_data : list simulation event log
 
         Returns
         -------
-        similarity : TYPE
-            DESCRIPTION.
+        similarity : float
 
         """
         similarity = list()
@@ -438,23 +431,24 @@ class SimilarityEvaluator():
         data : dataframe with normalized times
 
         """
+        df_modif = data.copy()
         np.seterr(divide='ignore')
         if self.one_timestamp:
             summ = data.groupby(['task'])['duration'].max().to_dict()
             dur_act_norm = (lambda x: x['duration']/summ[x['task']]
                             if summ[x['task']] > 0 else 0)
-            data['dur_act_norm'] = data.apply(dur_act_norm, axis=1)
+            df_modif['dur_act_norm'] = df_modif.apply(dur_act_norm, axis=1)
         else:
             summ = data.groupby(['task'])['processing_time'].max().to_dict()
             proc_act_norm = (lambda x: x['processing_time']/summ[x['task']]
                              if summ[x['task']] > 0 else 0)
-            data['proc_act_norm'] = data.apply(proc_act_norm, axis=1)
+            df_modif['proc_act_norm'] = df_modif.apply(proc_act_norm, axis=1)
             # ---
             summ = data.groupby(['task'])['waiting_time'].max().to_dict()
             wait_act_norm = (lambda x: x['waiting_time']/summ[x['task']]
                              if summ[x['task']] > 0 else 0)
-            data['wait_act_norm'] = data.apply(wait_act_norm, axis=1)
-        return data
+            df_modif['wait_act_norm'] = df_modif.apply(wait_act_norm, axis=1)
+        return df_modif
 
     def reformat_events(self, data, features):
         """Creates series of activities, roles and relative times per trace.

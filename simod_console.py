@@ -19,8 +19,6 @@ from support_modules import support as sup
 def main(argv):
     settings = dict()
     args = dict()
-    # Similarity btw the resources profile execution (Song e.t. all)
-    settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
     settings['exec_mode'] = 'optimizer'
@@ -32,9 +30,11 @@ def main(argv):
     if not argv:
         # Event-log filename
         settings['file'] = 'Production.xes'
-        settings['repetitions'] = 1
+        settings['repetitions'] = 2
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
+            # Similarity btw the resources profile execution (Song e.t. all)
+            settings['rp_similarity'] = 0.5
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
             settings['epsilon'] = 0.1
             settings['eta'] = 0.4
@@ -50,7 +50,10 @@ def main(argv):
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 10
+            args['max_eval'] = 1
+            # Similarity btw the resources profile execution (Song e.t. all)
+            args['rp_similarity'] = [0.5, 0.9]
+            args['gate_management'] = ['discovery', 'random', 'equiprobable']
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer
@@ -60,6 +63,8 @@ def main(argv):
                                   settings['temp_file']), 'w').close()
                 sim.hyper_execution(settings, args)
         elif settings['exec_mode'] == 'tasks_optimizer':
+            # Similarity btw the resources profile execution (Song e.t. all)
+            settings['rp_similarity'] = 0.5
             # Splitminer settings [0..1]
             settings['epsilon'] = 0.284143325437484
             settings['eta'] = 0.987998779416604

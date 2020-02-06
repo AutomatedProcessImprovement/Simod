@@ -4,12 +4,12 @@ import numpy as np
 
 def define_probabilities(process_graph,bpmn,log, type):
     # Analisys of gateways probabilities
-    if (type==1):
-        gateways = analize_gateways(process_graph,log)
-    elif(type==2):
-        gateways = analize_gateways_random(process_graph,log)
-    elif(type==3):
-        gateways = analize_gateways_equi(process_graph,log)
+    if (type=='discovery'):
+        gateways = analize_gateways(process_graph, log)
+    elif(type=='random'):
+        gateways = analize_gateways_random(process_graph, log)
+    elif(type=='equiprobable'):
+        gateways = analize_gateways_equi(process_graph, log)
     # Creating response list
     response = list()
     gateways=normalize_probabilities(process_graph,gateways)

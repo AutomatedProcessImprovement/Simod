@@ -129,10 +129,12 @@ def define_response(status, sim_values, settings):
                 data[task] = (settings['percentage'][task] *
                               settings['enabling_times'][task])
     else:
-        data = {
-            'alg_manag': settings['alg_manag'], 'epsilon': settings['epsilon'],
-            'eta': settings['eta'], 'output': settings['output']
-            }
+        data = {'alg_manag': settings['alg_manag'],
+                'epsilon': settings['epsilon'],
+                'eta': settings['eta'], 
+                'rp_similarity': settings['rp_similarity'],
+                'gate_management': settings['gate_management'],
+                'output': settings['output']}
     if settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
         similarity = 0
         response['params'] = settings
@@ -143,10 +145,11 @@ def define_response(status, sim_values, settings):
             response['status'] = status if loss > 0 else STATUS_FAIL
         else:
             response['status'] = status
-        measurements.append({
-            **{'similarity': similarity,
-               'status': response['status']},
-            **data})
+        for sim in sim_values:
+            measurements.append({
+                **{'similarity': sim['sim_val'],
+                   'status': response['status']},
+                **data})
     else:
         if status == STATUS_OK:
             similarity = np.mean([x['sim_val'] for x in sim_values])
@@ -167,11 +170,22 @@ def define_response(status, sim_values, settings):
 
 def hyper_execution(settings, args):
     """Execute splitminer for bpmn structure mining."""
-    space = {**{'epsilon': hp.uniform('epsilon', args['epsilon'][0], args['epsilon'][1]),
-                'eta': hp.uniform('eta', args['eta'][0], args['eta'][1]),
-                'alg_manag': hp.choice('alg_manag', ['replacement',
-                                                     'repair',
-                                                     'removal'])}, **settings}
+    space = {**{'epsilon': hp.uniform('epsilon',
+                                      args['epsilon'][0],
+                                      args['epsilon'][1]),
+                'eta': hp.uniform('eta',
+                                  args['eta'][0],
+                                  args['eta'][1]),
+                'alg_manag': hp.choice('alg_manag',
+                                       ['replacement',
+                                        'repair',
+                                        'removal']),
+                'rp_similarity': hp.uniform('rp_similarity',
+                                            args['rp_similarity'][0],
+                                            args['rp_similarity'][1]),
+                'gate_management': hp.choice('gate_management',
+                                             args['gate_management'])},
+             **settings}
     ## Trials object to track progress
     bayes_trials = Trials()
     ## Optimize

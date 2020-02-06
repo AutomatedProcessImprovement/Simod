@@ -8,6 +8,7 @@ from extraction import tasks_evaluator as te
 
 import pandas as pd
 
+
 def extract_parameters(log, bpmn, process_graph, settings):
     if bpmn and log:
         bpmnId = bpmn.getProcessId()
@@ -15,18 +16,22 @@ def extract_parameters(log, bpmn, process_graph, settings):
         # Creation of process graph
         # -------------------------------------------------------------------
         # Analysing resource pool LV917 or 247
-        res_analyzer = rl.ResourcePoolAnalyser(log, sim_threshold=settings['rp_similarity'])
-        roles = res_analyzer.roles
+        res_analyzer = rl.ResourcePoolAnalyser(
+            log, sim_threshold=settings['rp_similarity'])
+        # roles = res_analyzer.roles
         resource_table = res_analyzer.resource_table
-        resource_pool, time_table, resource_table = sch.analize_schedules(resource_table, log, True, '247')
+        resource_pool, time_table, resource_table = sch.analize_schedules(
+            resource_table, log, True, '247')
         # -------------------------------------------------------------------
         # Process replaying
-        conformed_traces, not_conformed_traces, process_stats = rpl.replay(process_graph, log, settings)
+        conformed_traces, not_conformed_traces, process_stats = rpl.replay(
+            process_graph, log, settings)
         process_stats = pd.DataFrame.from_records(process_stats)
         # -------------------------------------------------------------------
         # Adding role to process stats
         resource_table = pd.DataFrame.from_records(resource_table)
-        process_stats = process_stats.merge(resource_table, on='resource', how='left')
+        process_stats = process_stats.merge(
+            resource_table, on='resource', how='left')
         # -------------------------------------------------------------------
         # Determination of first tasks for calculate the arrival rate
         inter_evaluator = arr.InterArrivalEvaluator(process_graph,
@@ -34,7 +39,9 @@ def extract_parameters(log, bpmn, process_graph, settings):
         arrival_rate_bimp = inter_evaluator.dist
         arrival_rate_bimp['startEventId'] = startEventId
         # Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
-        sequences = gt.define_probabilities(process_graph, bpmn, log, 3)
+        sequences = gt.define_probabilities(process_graph,
+                                            bpmn,
+                                            log, settings['gate_management'])
         # -------------------------------------------------------------------
         # Tasks id information
         elements_data = te.TaskEvaluator(process_graph,
