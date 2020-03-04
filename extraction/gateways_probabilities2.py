@@ -7,7 +7,8 @@ Created on Wed Mar  4 10:56:37 2020
 
 # -*- coding: utf-8 -*-
 #%%
-from support_modules import support as sup
+# from support_modules import support as sup
+import support as sup
 import numpy as np
 
 #%% Methods
@@ -159,13 +160,13 @@ import networkx as nx
 from networkx.readwrite import json_graph
 #%%
    
-with open('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/process_graph.json') as file:
+with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/process_graph.json') as file:
     gdata = json.load(file)
     file.close()
 
 process_graph = json_graph.node_link_graph(gdata)
 
-with open('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/id.json') as file:
+with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/id.json') as file:
     id_data = json.load(file)
     file.close()
 id_data = {int(k):v for k, v in id_data.items()}
