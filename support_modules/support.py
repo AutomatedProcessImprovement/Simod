@@ -95,7 +95,7 @@ def create_json(dictionary, output_file):
 
          
 
-def round_preserve(l,expected_sum):
+def round_preserve(l, expected_sum):
     '''
     rounding lists values preserving the sum values
     '''

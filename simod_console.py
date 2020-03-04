@@ -21,18 +21,19 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'optimizer'
+    settings['exec_mode'] = 'single'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
-    settings['sim_metric'] = 'tsd'
+    settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
     # TODO: Refactoring process structure to become a class
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.xes'
-        settings['repetitions'] = 2
+        settings['file'] = 'PurchasingExample.xes'
+        settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
+            settings['gate_management'] = 'discovery'
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.5
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
