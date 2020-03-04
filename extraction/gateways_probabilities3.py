@@ -74,21 +74,10 @@ class GatewaysEvaluator():
         for node in self.process_graph.nodes:
             outs = list()
             if self.process_graph.node[node]['type']=='gate':
-                # r = self.process_graph.reverse(copy=True)
-                # # gate path
-                # paths = list(r.neighbors(node))
-                # # Each path can have multiple target tasks
-                # task_paths = self.extract_target_tasks(r, node)
-                # in_paths = [sup.reduce_list(path) for path in task_paths]
-                # ins = list()
-                    
-                # ins = [dict(in_tasks=y, in_node= x) for x,y in zip(paths, in_paths)]
-            
                 # Targets
                 paths = list(self.process_graph.neighbors(node))
                 task_paths = self.extract_target_tasks(self.process_graph, node)
                 task_paths = [sup.reduce_list(path) for path in task_paths]
-                # outs = [dict(out_tasks=y, out_node= x, ocurrences=0, probability=0) for x,y in zip(paths, out_paths)]
                 for path, tasks in zip(paths, task_paths):
                     for task in tasks:
                         outs.append((node, path, task))
@@ -112,7 +101,8 @@ class GatewaysEvaluator():
             probabilities = group.probability.tolist()
             probabilities = sup.round_preserve(probabilities, 1)
             probabilities = sup.avoid_zero_prob(probabilities)
-            print(probabilities)
+            for i in range(0, len(probabilities)):
+                print(group.probability.iat[i])
         print(nodes_list)
         return nodes_list
     
