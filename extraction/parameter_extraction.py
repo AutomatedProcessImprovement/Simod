@@ -7,13 +7,12 @@ from extraction import schedule_tables as sch
 from extraction import tasks_evaluator as te
 
 import pandas as pd
-
+from support_modules import support as sup
 
 def extract_parameters(log, bpmn, process_graph, settings):
     if bpmn and log:
         bpmnId = bpmn.getProcessId()
         startEventId = bpmn.getStartEventId()
-        # Creation of process graph
         # -------------------------------------------------------------------
         # Analysing resource pool LV917 or 247
         res_analyzer = rl.ResourcePoolAnalyser(
@@ -26,6 +25,12 @@ def extract_parameters(log, bpmn, process_graph, settings):
         resource_table = ttcreator.resource_table
         # -------------------------------------------------------------------
         # Process replaying
+        model_data = pd.DataFrame.from_dict(
+            dict(process_graph.nodes.data()), orient='index')[['id']]
+        sup.create_json(model_data.to_dict('index'), 'id.csv')
+        sup.save_graph(process_graph, 'process_graph.json')
+        sup.create_csv_file_header(log.data, 'log_data.csv')
+        sup.create_json(settings, 'settings.json')
         conformed_traces, not_conformed_traces, process_stats = rpl.replay(
             process_graph, log, settings)
         process_stats = pd.DataFrame.from_records(process_stats)
