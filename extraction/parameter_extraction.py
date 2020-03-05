@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 from extraction import log_replayer as rpl
 from extraction import interarrival_definition as arr
-# from extraction import gateways_probabilities2 as gt
+from extraction import gateways_probabilities as gt
 from extraction import role_discovery as rl
 from extraction import schedule_tables as sch
 from extraction import tasks_evaluator as te
 
 import pandas as pd
-from support_modules import support as sup
 
 
 def extract_parameters(log, bpmn, process_graph, settings):
@@ -40,15 +39,12 @@ def extract_parameters(log, bpmn, process_graph, settings):
         arrival_rate_bimp = inter_evaluator.dist
         arrival_rate_bimp['startEventId'] = startEventId
         # Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
-        # sequences = gt.define_probabilities(process_graph,
-        #                                     bpmn,
-        #                                     log, settings['gate_management'])
-        model_data = pd.DataFrame.from_dict(
-            dict(process_graph.nodes.data()), orient='index')[['id']]
-        sup.create_json(model_data.to_dict('index'), 'id.csv')
-        # sequences = gt.define_probabilities(process_graph,
-        #                                     settings['gate_management'])
-        # print(sequences)
+        gevaluator = gt.GatewaysEvaluator(process_graph,
+                                          settings['gate_management'])
+        sequences = gevaluator.probabilities
+        for x in sequences:
+            x['elementid'] = bpmn.find_sequence_id(x['gatewayid'],
+                                                   x['out_path_id'])
         # -------------------------------------------------------------------
         # Tasks id information
         elements_data = te.TaskEvaluator(process_graph,
