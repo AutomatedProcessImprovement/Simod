@@ -17,6 +17,9 @@ class LogReplayer():
 
     def __init__(self, process_graph, log, settings, source='log', run_num=0):
         """constructor"""
+        self.source = source
+        self.run_num = run_num
+        self.one_timestamp = settings['read_options']['one_timestamp']
         self.process_graph = process_graph
         self.g_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()),
                                              orient='index')
@@ -29,159 +32,179 @@ class LogReplayer():
 
         self.parallel_gt_exec = list()
         self.parallel_execution_list()
-    #     not_conformant_traces = list()
-    #     conformant_traces=list()
-    #     process_stats=list()
-    #     traces = log.get_traces()
 
-    # def replay(process_graph, log, settings, source='log', run_num=0):
-    #     start_tasks_list, end_tasks_list = find_start_finish_tasks(process_graph)
-    #     subsec_set = create_subsec_set(process_graph)
-    #     parallel_gt_exec = parallel_execution_list(process_graph)
-    #     not_conformant_traces = list()
-    #     conformant_traces=list()
-    #     process_stats=list()
-    #     traces = log.get_traces()
+        self.not_conformant_traces = list()
+        self.conformant_traces = list()
+        self.process_stats = list()
+        self.traces = log.get_traces()
 
-    #     for index in range(0,len(traces)):
-    #         trace_times = list()
-    #         trace = traces[index][1:-1] # Take out start and end event
-    #         current_node = self.find_task_node(process_graph, trace[0]['task'])
-    #         last_node = find_task_node(process_graph,trace[-1]['task'])
-    #         if (current_node in start_tasks_list) and (last_node in end_tasks_list):
-    #             temp_gt_exec = parallel_gt_exec
-    #             cursor = list()
-    #             cursor.append(current_node)
-    #             removal_allowed = True
-    #             is_conformant = True
-    #             #----time recording------
-    #             trace_times = save_record(trace_times, trace, 0, settings['read_options']['one_timestamp'])
-    #             #------------------------
-    #             for i in range(1, len(trace)):
-    #                 next_node = find_task_node(process_graph,trace[i]['task'])
-    #                 # If loop management
-    #                 if next_node == cursor[-1]:
-    #                     prev_record = find_previous_record(trace_times, process_graph.node[next_node]['name'])
-    #                     trace_times = save_record(trace_times, trace, i, settings['read_options']['one_timestamp'], prev_record)
-    #                     process_graph.node[next_node]['executions'] += 1
-    #                 else:
-    #                     try:
-    #                         cursor, prev_node = update_cursor(next_node, process_graph, cursor)
-    #                         #----time recording------
-    #                         prev_record = find_previous_record(trace_times, process_graph.node[prev_node]['name'])
-    #                         trace_times = save_record(trace_times, trace, i, settings['read_options']['one_timestamp'], prev_record)
-    #                         process_graph.node[next_node]['executions'] += 1
-    #                         #------------------------
-    #                     except:
-    #                         is_conformant = False
-    #                         break
-    #                     for element in reversed(cursor[:-1]):
-    #                         # Process AND
-    #                         if process_graph.node[element]['type'] == 'gate3':
-    #                             gate = [d for d in temp_gt_exec if d['nod_num'] == element][0]
-    #                             gate.update(dict(executed= gate['executed'] + 1))
-    #                             if gate['executed'] < gate['num_paths']:
-    #                                 removal_allowed = False
-    #                             else:
-    #                                 removal_allowed = True
-    #                                 cursor.remove(element)
-    #                         # Process Task
-    #                         elif process_graph.node[element]['type'] == 'task':
-    #                             if (element,next_node) in subsec_set:
-    #                                 if removal_allowed:
-    #                                     cursor.remove(element)
-    #                         # Process other
-    #                         else:
-    #                             if removal_allowed:
-    #                                 cursor.remove(element)
-    #             if not is_conformant:
-    #                 not_conformant_traces.extend(trace)
-    #             else:
-    #                 conformant_traces.extend(traces[index]) # Append the original one
-    #                 process_stats.extend(trace_times)
-    #         else:
-    #             # If it is not a complete trace
-    #             not_conformant_traces.append(trace)
-    #         sup.print_progress(((index / (len(traces)-1))* 100),'Replaying process traces ')
-    #     #------Filtering records and calculate stats---
-    #     process_stats = list(filter(lambda x: x['task'] != 'Start' and x['task'] != 'End' and x['resource'] != 'AUTO', process_stats))
-    #     process_stats = calculate_process_metrics(process_stats, settings['read_options']['one_timestamp'])
-    #     [x.update(dict(source=source, run_num=run_num)) for x in process_stats]
-    #     #----------------------------------------------
-    #     sup.print_done_task()
-    #     return conformant_traces, not_conformant_traces, process_stats
+        self.replay()
 
-    # def update_cursor(nnode,process_graph,cursor):
-    #     tasks = list(filter(lambda x: process_graph.node[x]['type']=='task',cursor))
-    #     shortest_path = list()
-    #     prev_node = 0
-    #     for pnode in reversed(tasks):
-    #         try:
-    #             shortest_path = list(nx.shortest_path(process_graph, pnode, nnode))[1:]
-    #             prev_node = pnode
-    #             break
-    #         except nx.NetworkXNoPath:
-    #             pass
-    #     if len(list(filter(lambda x: process_graph.node[x]['type']=='task',shortest_path))) > 1:
-    #         raise Exception('Incoherent path')
-    #     ap_list = cursor + shortest_path
-    #     # Preserve order and leave only new
-    #     cursor = list(OrderedDict.fromkeys(ap_list))
-    #     return cursor, prev_node
+    def replay(self):
+        for index in range(0, len(self.traces)):
+            trace_times = list()
+            trace = self.traces[index][1:-1]  # remove start and end event
+            current_node = self.find_task_node(self.process_graph,
+                                               trace[0]['task'])
+            last_node = self.find_task_node(self.process_graph,
+                                            trace[-1]['task'])
+            if current_node not in self.start_tasks_list:
+                self.not_conformant_traces.append(trace)
+                next
+            if last_node not in self.end_tasks_list:
+                self.not_conformant_traces.append(trace)
+                next
+            temp_gt_exec = self.parallel_gt_exec
+            cursor = [current_node]
+            removal_allowed = True
+            is_conformant = True
+            # ----time recording------
+            trace_times = self.save_record(trace_times, trace, 0)
+            # ------------------------
+            for i in range(1, len(trace)):
+                next_node = self.find_task_node(self.process_graph,
+                                                trace[i]['task'])
+                # If loop management
+                if next_node == cursor[-1]:
+                    prev_record = self.find_previous_record(
+                        trace_times,
+                        self.process_graph.node[next_node]['name'])
+                    trace_times = self.save_record(trace_times,
+                                                   trace,
+                                                   i,
+                                                   prev_record)
+                    self.process_graph.node[next_node]['executions'] += 1
+                else:
+                    try:
+                        cursor, prev_node = self.update_cursor(
+                            next_node, process_graph, cursor)
+                        # ----time recording------
+                        prev_record = self.find_previous_record(
+                            trace_times,
+                            self.process_graph.node[prev_node]['name'])
+                        trace_times = self.save_record(trace_times,
+                                                       trace,
+                                                       i,
+                                                       prev_record)
+                        self.process_graph.node[next_node]['executions'] += 1
+                        # ------------------------
+                    except:
+                        is_conformant = False
+                        break
+                    for element in reversed(cursor[:-1]):
+                        # TODO ejecutar una sola vez self.process_graph.node[element]['type']
+                        # Process AND
+                        if self.process_graph.node[element]['type'] == 'gate3':
+                            gate = [d for d in temp_gt_exec if d['nod_num'] == element][0]
+                            gate.update({'executed': gate['executed'] + 1})
+                            if gate['executed'] < gate['num_paths']:
+                                removal_allowed = False
+                            else:
+                                removal_allowed = True
+                                cursor.remove(element)
+                        # Process Task
+                        elif self.process_graph.node[element]['type'] == 'task':
+                            if (element, next_node) in self.subsec_set:
+                                if removal_allowed:
+                                    cursor.remove(element)
+                        # Process other
+                        else:
+                            if removal_allowed:
+                                cursor.remove(element)
+            if not is_conformant:
+                self.not_conformant_traces.extend(trace)
+            else:
+                # Append the original one
+                self.conformant_traces.extend(self.traces[index])
+                self.process_stats.extend(trace_times)
+            sup.print_progress(((index / (len(self.traces) - 1)) * 100),
+                               'Replaying process traces ')
+        # ------Filtering records and calculate stats---
+        self.process_stats = list(filter(lambda x: x['task'] not in ['Start', 'End'] and x['resource'] != 'AUTO', self.process_stats))
+        self.process_stats = self.calculate_process_metrics(
+            self.process_stats, self.one_timestamp)
+        [x.update(dict(source=self.source, run_num=self.run_num)) for x in self.process_stats]
+        # ----------------------------------------------
+        sup.print_done_task()
 
-    # # =============================================================================
-    # # Time recording
-    # # =============================================================================
+    @staticmethod
+    def update_cursor(nnode, process_graph, cursor):
+        tasks = list(filter(
+            lambda x: process_graph.node[x]['type'] == 'task', cursor))
+        shortest_path = list()
+        prev_node = 0
+        for pnode in reversed(tasks):
+            try:
+                shortest_path = list(nx.shortest_path(process_graph,
+                                                      pnode,
+                                                      nnode))[1:]
+                prev_node = pnode
+                break
+            except nx.NetworkXNoPath:
+                pass
+        if len(list(filter(lambda x: process_graph.node[x]['type'] == 'task',
+                           shortest_path))) > 1:
+            raise Exception('Incoherent path')
+        ap_list = cursor + shortest_path
+        # Preserve order and leave only new
+        cursor = list(OrderedDict.fromkeys(ap_list))
+        return cursor, prev_node
 
-    # def save_record(trace_times, trace, i, one_timestamp, prev_record=dict()):
-    #     record = create_record(trace, i, one_timestamp, prev_record)
-    #     if record['resource'] != 'AUTO':
-    #         trace_times.append(record)
-    #     return trace_times
+    # =============================================================================
+    # Time recording
+    # =============================================================================
 
+    def save_record(self, trace_times, trace, i, prev_record=dict()):
+        record = self.create_record(trace, i, self.one_timestamp, prev_record)
+        if record['resource'] != 'AUTO':
+            trace_times.append(record)
+        return trace_times
 
-    # def create_record(trace, index, one_timestamp, last_event=dict()):
-    #     if not bool(last_event):
-    #         enabling_time = trace[index]['end_timestamp']
-    #     else:
-    #         enabling_time = last_event['end_timestamp']
-    #     record= {'caseid':trace[index]['caseid'],
-    #              'task':trace[index]['task'],
-    #              'end_timestamp':trace[index]['end_timestamp'],
-    #              'enable_timestamp':enabling_time,
-    #              'resource':trace[index]['user']}
-    #     if not one_timestamp:
-    #         record['start_timestamp'] = trace[index]['start_timestamp']
-    #     return record
+    @staticmethod
+    def create_record(trace, index, one_timestamp, last_event=dict()):
+        if not bool(last_event):
+            enabling_time = trace[index]['end_timestamp']
+        else:
+            enabling_time = last_event['end_timestamp']
+        record = {'caseid': trace[index]['caseid'],
+                  'task': trace[index]['task'],
+                  'end_timestamp': trace[index]['end_timestamp'],
+                  'enable_timestamp': enabling_time,
+                  'resource': trace[index]['user']}
+        if not one_timestamp:
+            record['start_timestamp'] = trace[index]['start_timestamp']
+        return record
 
-    # def find_previous_record(trace_times, task):
-    #     event = dict()
-    #     for x in trace_times[::-1]:
-    #         if task == x['task']:
-    #             event = x
-    #             break
-    #     return event
+    @staticmethod
+    def find_previous_record(trace_times, task):
+        event = dict()
+        for x in trace_times[::-1]:
+            if task == x['task']:
+                event = x
+                break
+        return event
 
-    # def calculate_process_metrics(process_stats, one_timestamp):
-    #     for record in process_stats:
-    #         if one_timestamp:
-    #             record['duration']=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
-    #         else:
-    #             duration=(record['end_timestamp']-record['start_timestamp']).total_seconds()
-    #             waiting=(record['start_timestamp']-record['enable_timestamp']).total_seconds()
-    #             multitasking=0
-    #             #TODO check resourse for multi_tasking
-    #             if waiting<0:
-    #                 waiting=0
-    #                 if record['end_timestamp'] > record['enable_timestamp']:
-    #                     duration=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
-    #                     multitasking=(record['enable_timestamp']-record['start_timestamp']).total_seconds()
-    #                 else:
-    #                     multitasking = duration
-    #             record['processing_time'] = duration
-    #             record['waiting_time'] = waiting
-    #             record['multitasking'] = multitasking
-    #     return process_stats
+    @staticmethod
+    def calculate_process_metrics(process_stats, one_timestamp):
+        for record in process_stats:
+            if one_timestamp:
+                record['duration']=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
+            else:
+                duration=(record['end_timestamp']-record['start_timestamp']).total_seconds()
+                waiting=(record['start_timestamp']-record['enable_timestamp']).total_seconds()
+                multitasking=0
+                #TODO check resourse for multi_tasking
+                if waiting<0:
+                    waiting=0
+                    if record['end_timestamp'] > record['enable_timestamp']:
+                        duration=(record['end_timestamp']-record['enable_timestamp']).total_seconds()
+                        multitasking=(record['enable_timestamp']-record['start_timestamp']).total_seconds()
+                    else:
+                        multitasking = duration
+                record['processing_time'] = duration
+                record['waiting_time'] = waiting
+                record['multitasking'] = multitasking
+        return process_stats
 
     def find_start_finish_tasks(self) -> None:
         g_data = self.g_data.copy()
@@ -238,7 +261,7 @@ class LogReplayer():
 
 
 #%%
-route = 'C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/'
+route = 'C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/'
 
 with open(route + 'process_graph.json') as file:
     gdata = json.load(file)
@@ -259,4 +282,5 @@ with open(route + 'settings.json') as file:
 log = lr.LogReader(os.path.join(route, settings['input'], settings['file']),
                    settings['read_options'])
 
-LogReplayer(process_graph, log, settings)
+replayer = LogReplayer(process_graph, log, settings)
+print(replayer.process_stats)
