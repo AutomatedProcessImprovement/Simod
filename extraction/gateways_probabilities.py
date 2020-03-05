@@ -15,7 +15,8 @@ from support_modules import support as sup
 
 class GatewaysEvaluator():
     """
-        This class evaluates the tasks durations and associates resources to it
+        This class evaluates the gateways' probabilities according with
+        an spcified method defined by the user
      """
 
     def __init__(self, process_graph, method):
@@ -27,7 +28,7 @@ class GatewaysEvaluator():
 
     def define_probabilities(self) -> None:
         """
-        Defines the gateways probabilities according with an spcified method
+        Defines the gateways' probabilities according with an spcified method
 
         """
         sup.print_performed_task('Analysing gateways` probabilities')

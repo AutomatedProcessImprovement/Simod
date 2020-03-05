@@ -17,11 +17,13 @@ def extract_parameters(log, bpmn, process_graph, settings):
         # -------------------------------------------------------------------
         # Analysing resource pool LV917 or 247
         res_analyzer = rl.ResourcePoolAnalyser(
-            log, sim_threshold=settings['rp_similarity'])
-        # roles = res_analyzer.roles
-        resource_table = res_analyzer.resource_table
-        resource_pool, time_table, resource_table = sch.analize_schedules(
-            resource_table, log, True, '247')
+            log,
+            sim_threshold=settings['rp_similarity'])
+
+        ttcreator = sch.TimeTablesCreator(res_analyzer.resource_table, '247')
+        resource_pool = ttcreator.resource_pool
+        time_table = ttcreator.time_table
+        resource_table = ttcreator.resource_table
         # -------------------------------------------------------------------
         # Process replaying
         conformed_traces, not_conformed_traces, process_stats = rpl.replay(
