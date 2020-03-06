@@ -315,8 +315,8 @@ def read_stats(settings, bpmn, rep):
     temp = lr.LogReader(os.path.join(m_settings['output'], 'sim_data',
                                      m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),m_settings['read_options'])
     process_graph = gph.create_process_structure(bpmn)
-    _, _, temp_stats = rpl.replay(process_graph, temp, settings, source='simulation', run_num=rep + 1)
-    temp_stats = pd.DataFrame.from_records(temp_stats)
+    results_replayer = rpl.LogReplayer(process_graph, temp, settings, source='simulation', run_num=rep + 1)
+    temp_stats = results_replayer.process_stats
     temp_stats['role'] = temp_stats['resource']
     return temp_stats
 

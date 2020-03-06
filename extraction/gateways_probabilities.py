@@ -114,17 +114,17 @@ class GatewaysEvaluator():
         # Add task execution count
         executions = lambda x: self.process_graph.node[x['t_task']]['executions']
         nodes_list['executions'] = nodes_list.apply(executions, axis=1)
-
         # Aggregate path executions
         nodes_list = (nodes_list.groupby(by=['gate', 't_path'])['executions']
                       .sum()
                       .reset_index())
         # Calculate probabilities
-        total_ocurrences = (nodes_list.groupby(by=['gate'])['executions']
-                            .sum().to_dict())
-        rate = lambda x: round(
-            np.divide(x['executions'], total_ocurrences[x['gate']]), 2)
-        nodes_list['prob'] = nodes_list.apply(rate, axis=1)
+        t_ocurrences = (nodes_list.groupby(by=['gate'])['executions']
+                        .sum().to_dict())
+        with np.errstate(divide='ignore', invalid='ignore'):
+            rate = lambda x: round(
+                np.divide(x['executions'], t_ocurrences[x['gate']]), 2)
+            nodes_list['prob'] = nodes_list.apply(rate, axis=1)
         return nodes_list
 
     def analize_gateways_random(self) -> pd.DataFrame:

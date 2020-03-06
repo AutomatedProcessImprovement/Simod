@@ -29,7 +29,7 @@ def main(argv):
     # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes'
+        settings['file'] = 'Production.xes'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
