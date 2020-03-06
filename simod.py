@@ -71,15 +71,15 @@ def pipe_line_execution(settings):
     sim_values = list()
     if status == STATUS_OK:
         print("-- Mining Simulation Parameters --")
-        parameters, process_stats = par.extract_parameters(log,
-                                                           bpmn,
-                                                           process_graph,
-                                                           settings)
+        p_extractor = par.ParameterMiner(log, bpmn, process_graph, settings)
+        p_extractor.extract_parameters()
+        process_stats = p_extractor.process_stats
+
         xml.print_parameters(os.path.join(settings['output'],
                                           settings['file'].split('.')[0]+'.bpmn'),
                              os.path.join(settings['output'],
                                           settings['file'].split('.')[0]+'.bpmn'),
-                             parameters)
+                             p_extractor.parameters)
         process_stats = pd.DataFrame.from_records(process_stats)
         for rep in range(settings['repetitions']):
             print("Experiment #" + str(rep + 1))
@@ -131,7 +131,7 @@ def define_response(status, sim_values, settings):
     else:
         data = {'alg_manag': settings['alg_manag'],
                 'epsilon': settings['epsilon'],
-                'eta': settings['eta'], 
+                'eta': settings['eta'],
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
