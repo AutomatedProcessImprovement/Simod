@@ -26,7 +26,6 @@ def main(argv):
     settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
     # TODO: Refactoring process structure to become a class
-    # TODO: Transform replay into a class
     if not argv:
         # Event-log filename
         settings['file'] = 'Production.xes'
