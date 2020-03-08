@@ -7,7 +7,7 @@ Created on Wed Oct 23 21:25:10 2019
 import os
 import sys
 import getopt
-import simod as sim
+import simod1 as sim
 
 from support_modules import support as sup
 
@@ -32,7 +32,8 @@ def main(argv):
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
-            settings['gate_management'] = 'discovery'
+            # gateways probabilities 'discovery', 'random', 'equiprobable'
+            settings['gate_management'] = 'equiprobable'
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.5
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
@@ -46,7 +47,9 @@ def main(argv):
             # temporal file for results
             settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
-            sim.pipe_line_execution(settings)
+            # sim.pipe_line_execution(settings)
+            simod = sim.Simod(settings)
+            simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
