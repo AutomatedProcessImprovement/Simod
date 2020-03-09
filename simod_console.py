@@ -20,16 +20,15 @@ def main(argv):
     settings = dict()
     args = dict()
     settings = define_general_settings(settings)
-    # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'single'
+    # Exec mode 'single', 'optimizer'
+    settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
     settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
-    # TODO: Refactoring process structure to become a class
     if not argv:
         # Event-log filename
         settings['file'] = 'Production.xes'
-        settings['repetitions'] = 1
+        settings['repetitions'] = 2
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
@@ -47,13 +46,12 @@ def main(argv):
             # temporal file for results
             settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
-            # sim.pipe_line_execution(settings)
             simod = sim.Simod(settings)
             simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 1
+            args['max_eval'] = 3
             # Similarity btw the resources profile execution (Song e.t. all)
             args['rp_similarity'] = [0.5, 0.9]
             args['gate_management'] = ['discovery', 'random', 'equiprobable']
@@ -64,25 +62,9 @@ def main(argv):
                                                settings['temp_file'])):
                 open(os.path.join('outputs',
                                   settings['temp_file']), 'w').close()
-                sim.hyper_execution(settings, args)
-        elif settings['exec_mode'] == 'tasks_optimizer':
-            # Similarity btw the resources profile execution (Song e.t. all)
-            settings['rp_similarity'] = 0.5
-            # Splitminer settings [0..1]
-            settings['epsilon'] = 0.284143325437484
-            settings['eta'] = 0.987998779416604
-            # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'removal'
-            # Processing time definition method: 'apx' or 'apx_percentage'
-            settings['pdef_method'] = 'apx_percentage'
-            args['max_eval'] = 5
-            settings['temp_file'] = sup.file_id(prefix='TS_')
-            # Execute optimizer
-            if not os.path.exists(os.path.join('outputs',
-                                               settings['temp_file'])):
-                open(os.path.join('outputs',
-                                  settings['temp_file']), 'w').close()
-                sim.task_hyper_execution(settings, args)
+                # sim.hyper_execution(settings, args)
+                optimizer = sim.DiscoveryOptimizer(settings, args)
+                optimizer.execute_trials()
     else:
         # Catch parameters by console
         try:
