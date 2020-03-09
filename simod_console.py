@@ -7,7 +7,7 @@ Created on Wed Oct 23 21:25:10 2019
 import os
 import sys
 import getopt
-import simod1 as sim
+import simod as sim
 
 from support_modules import support as sup
 
