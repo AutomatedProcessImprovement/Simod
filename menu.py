@@ -62,7 +62,7 @@ epsilon = widgets.VBox([widgets.Label('Parallelism threshold (epsilon):', layout
                          sl_epsilon], layout={'align_items':'stretch'})
 
 sl_alg_manag = widgets.Dropdown(
-       options=['removal', 'replacement', 'repairment'],
+       options=['removal', 'replacement', 'repair'],
        value='removal',
        layout={'width':'95%'},
        disabled=True)
@@ -249,10 +249,10 @@ def update_graph(df):
     fig = plt.figure(figsize=(10,5))
     ax = fig.add_subplot(111, projection='3d')
     ax.clear()
-    s1 = df[ df.alg_manag == 'repairment']
+    s1 = df[ df.alg_manag == 'repair']
     s2 = df[ df.alg_manag == 'replacement']
     s3 = df[ df.alg_manag == 'removal']
-    ax.scatter(s1.epsilon, s1.eta, s1.similarity, c='blue', label='repairment')
+    ax.scatter(s1.epsilon, s1.eta, s1.similarity, c='blue', label='repair')
     ax.scatter(s2.epsilon, s2.eta, s2.similarity, c='red', label='replacement')
     ax.scatter(s3.epsilon, s3.eta, s3.similarity, c='green', label='removal')
     ax.set_xlabel('epsilon')

@@ -7,7 +7,7 @@ Created on Wed Oct 23 21:25:10 2019
 import os
 import sys
 import getopt
-import simod as sim
+import simod1 as sim
 
 from support_modules import support as sup
 
@@ -19,33 +19,42 @@ from support_modules import support as sup
 def main(argv):
     settings = dict()
     args = dict()
-    # Similarity btw the resources profile execution (Song e.t. all)
-    settings['rp_similarity'] = 0.5
     settings = define_general_settings(settings)
-    # Exec mode 'single', 'optimizer', 'tasks_optimizer'
-    settings['exec_mode'] = 'single'
+    # Exec mode 'single', 'optimizer'
+    settings['exec_mode'] = 'optimizer'
+    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
+    settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes.gz'
-        settings['repetitions'] = 1
+        settings['file'] = 'Production.xes'
+        settings['repetitions'] = 2
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
-            # Splitminer settings [0..1]
-            settings['epsilon'] = 0.5
-            settings['eta'] = 0.3
-            # 'removal', 'replacement', 'repairment'
-            settings['alg_manag'] = 'repairment'
+            # gateways probabilities 'discovery', 'random', 'equiprobable'
+            settings['gate_management'] = 'equiprobable'
+            # Similarity btw the resources profile execution (Song e.t. all)
+            settings['rp_similarity'] = 0.5
+            # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
+            settings['epsilon'] = 0.1
+            settings['eta'] = 0.4
+            # 'removal', 'replacement', 'repair'
+            settings['alg_manag'] = 'removal'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'automatic'
+            # temporal file for results
+            settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
-            # sim.single_exec(settings)
-            sim.pipe_line_execution(settings)
+            simod = sim.Simod(settings)
+            simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 2
+            args['max_eval'] = 3
+            # Similarity btw the resources profile execution (Song e.t. all)
+            args['rp_similarity'] = [0.5, 0.9]
+            args['gate_management'] = ['discovery', 'random', 'equiprobable']
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer
@@ -53,23 +62,9 @@ def main(argv):
                                                settings['temp_file'])):
                 open(os.path.join('outputs',
                                   settings['temp_file']), 'w').close()
-                sim.hyper_execution(settings, args)
-        elif settings['exec_mode'] == 'tasks_optimizer':
-            # Splitminer settings [0..1]
-            settings['epsilon'] = 0.5
-            settings['eta'] = 0.3
-            # 'removal', 'replacement', 'repairment'
-            settings['alg_manag'] = 'repairment'
-            # Processing time definition method: 'apx'
-            settings['pdef_method'] = 'apx'
-            args['max_eval'] = 2
-            settings['temp_file'] = sup.file_id(prefix='TS_')
-            # Execute optimizer
-            if not os.path.exists(os.path.join('outputs',
-                                               settings['temp_file'])):
-                open(os.path.join('outputs',
-                                  settings['temp_file']), 'w').close()
-                sim.task_hyper_execution(settings, args)
+                # sim.hyper_execution(settings, args)
+                optimizer = sim.DiscoveryOptimizer(settings, args)
+                optimizer.execute_trials()
     else:
         # Catch parameters by console
         try:
@@ -113,7 +108,6 @@ def define_general_settings(settings):
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
                                 'one_timestamp': False,
-                                'reorder': False,
                                 'filter_d_attrib': True,
                                 'ns_include': True}
     # Folders structure

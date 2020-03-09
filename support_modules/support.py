@@ -95,7 +95,7 @@ def create_json(dictionary, output_file):
 
          
 
-def round_preserve(l,expected_sum):
+def round_preserve(l, expected_sum):
     '''
     rounding lists values preserving the sum values
     '''
@@ -174,3 +174,9 @@ def save_graph(graph, output_file):
 # # log['start_timestamp'] =  pd.to_datetime(log['start_timestamp'], format=parameters['timeformat'])
 # data = data.drop(columns='Unnamed: 0')
 # #%%
+# model_data = pd.DataFrame.from_dict(
+#     dict(process_graph.nodes.data()), orient='index')[['id']]
+# sup.create_json(model_data.to_dict('index'), 'id.csv')
+# sup.save_graph(process_graph, 'process_graph.json')
+# sup.create_csv_file_header(log.data, 'log_data.csv')
+# sup.create_json(settings, 'settings.json')

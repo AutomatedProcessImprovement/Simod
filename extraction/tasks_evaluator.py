@@ -7,9 +7,10 @@ Created on Fri Jan 10 17:28:46 2020
 import tkinter as tk
 import pandas as pd
 import networkx as nx
+import numpy as np
 
 from extraction import pdf_finder as pdf
-from extraction import manual_edition_ui as me
+from extraction.user_interface import manual_edition_ui as me
 
 from support_modules import support as sup
 
@@ -25,11 +26,22 @@ class TaskEvaluator():
         self.model_data = self.get_model_data(process_graph)
         self.process_stats = process_stats
         self.resource_pool = resource_pool
+
         self.pdef_method = settings['pdef_method']
-        self.pdef_values = (settings['tasks']
-                            if settings['pdef_method'] == 'apx' else dict())
+        self.pdef_values = dict()
+        self.load_pdef_values(settings)
+
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.elements_data = self.evaluate_tasks()
+
+    def load_pdef_values(self, settings):
+        if self.pdef_method == 'apx':
+            self.pdef_values = settings['tasks']
+        elif self.pdef_method == 'apx_percentage':
+            # Iterator
+            for task in settings['percentage'].keys():
+                self.pdef_values[task] = (settings['percentage'][task] *
+                                          settings['enabling_times'][task])
 
     def evaluate_tasks(self):
         """
@@ -46,11 +58,12 @@ class TaskEvaluator():
             elements_data = self.mine_processing_time()
         if self.pdef_method in ['manual', 'semi-automatic']:
             elements_data = self.define_distributions_manually()
-        if self.pdef_method == 'apx':
+        if self.pdef_method in ['apx', 'apx_percentage']:
             elements_data = self.match_predefined_time()
         # Resource association
         elements_data = self.associate_resource(elements_data)
         elements_data = elements_data.to_dict('records')
+        elements_data = self.add_start_end_info(elements_data)
         return elements_data
 
     def mine_processing_time(self):
@@ -64,23 +77,17 @@ class TaskEvaluator():
         """
         elements_data = list()
         for task in self.tasks:
-            if self.one_timestamp:
-                task_processing = (
-                    self.process_stats[
-                        self.process_stats.task == task]['duration'].tolist())
-            else:
-                task_processing = (
-                    self.process_stats[
-                        self.process_stats.task == task]['processing_time']
-                    .tolist())
+            s_key = 'duration' if self.one_timestamp else 'processing_time'
+            task_processing = (
+                self.process_stats[
+                    self.process_stats.task == task][s_key].tolist())
             dist = pdf.DistributionFinder(task_processing).distribution
-            elements_data.append(
-                dict(id=sup.gen_id(),
-                     type=dist['dname'],
-                     name=task,
-                     mean=str(dist['dparams']['mean']),
-                     arg1=str(dist['dparams']['arg1']),
-                     arg2=str(dist['dparams']['arg2'])))
+            elements_data.append({'id': sup.gen_id(),
+                                  'type': dist['dname'],
+                                  'name': task,
+                                  'mean': str(dist['dparams']['mean']),
+                                  'arg1': str(dist['dparams']['arg1']),
+                                  'arg2': str(dist['dparams']['arg2'])})
         elements_data = pd.DataFrame(elements_data)
         elements_data = elements_data.merge(
             self.model_data[['name', 'elementid']], on='name', how='left')
@@ -109,7 +116,7 @@ class TaskEvaluator():
         pdef_tasks = list(self.pdef_values.keys())
         not_included = [task for task in self.tasks if task not in pdef_tasks]
         default_record = {'type': 'EXPONENTIAL', 'mean': '0',
-                          'arg1': '3600', 'arg2': '0'}
+                          'arg1': '60', 'arg2': '0'}
         for task in not_included:
             elements_data.append({**{'id': sup.gen_id(), 'name': task},
                                   **default_record})
@@ -146,25 +153,56 @@ class TaskEvaluator():
 
     def default_values(self):
         """
-        Define default values for the tasks list
-
+        Performs the mining of activities durations from data
         Returns
         -------
-        Dataframe
-
+        elements_data : Dataframe
         """
         elements_data = list()
-        default_record = {'type': 'EXPONENTIAL',
-                          'mean': '0', 'arg1': '3600', 'arg2': '0'}
         for task in self.tasks:
-            elements_data.append({**{'id': sup.gen_id(), 'name': task},
-                                  **default_record})
+            s_key = 'duration' if self.one_timestamp else 'processing_time'
+            task_processing = (
+                self.process_stats[
+                    self.process_stats.task == task][s_key].tolist())
+            try:
+                mean_time = np.mean(task_processing) if task_processing else 0
+            except:
+                mean_time = 0
+            elements_data.append({'id': sup.gen_id(),
+                                  'type': 'EXPONENTIAL',
+                                  'name': task,
+                                  'mean': str(0),
+                                  'arg1': str(np.round(mean_time, 2)),
+                                  'arg2': str(0)})
         elements_data = pd.DataFrame(elements_data)
-
-        elements_data = elements_data.merge(self.model_data[['name', 'elementid']],
-                                            on='name',
-                                            how='left').sort_values(by='name')
+        elements_data = elements_data.merge(
+            self.model_data[['name', 'elementid']], on='name', how='left')
         return elements_data.to_dict('records')
+
+    def add_start_end_info(self, elements_data):
+        # records creation
+        temp_elements_data = list()
+        default_record = {'type': 'FIXED',
+                          'mean': '0', 'arg1': '0', 'arg2': '0'}
+        for task in ['Start', 'End']:
+            temp_elements_data.append({**{'id': sup.gen_id(), 'name': task},
+                                       **default_record})
+        temp_elements_data = pd.DataFrame(temp_elements_data)
+
+        temp_elements_data = temp_elements_data.merge(
+            self.model_data[['name', 'elementid']],
+            on='name',
+            how='left').sort_values(by='name')
+        temp_elements_data['r_name'] = 'SYSTEM'
+        # resource id addition
+        resource_id = (pd.DataFrame.from_dict(self.resource_pool)[['id', 'name']]
+                       .rename(columns={'id': 'resource', 'name': 'r_name'}))
+        temp_elements_data = (temp_elements_data.merge(
+            resource_id, on='r_name', how='left').drop(columns=['r_name']))
+        # Appening to the elements data
+        temp_elements_data = temp_elements_data.to_dict('records')
+        elements_data.extend(temp_elements_data)
+        return elements_data
 
     def associate_resource(self, elements_data):
         """
@@ -231,6 +269,6 @@ class TaskEvaluator():
         """
         model_data = pd.DataFrame.from_dict(
             dict(process_graph.nodes.data()), orient='index')
-        model_data = model_data[model_data.type == 'task'].rename(
-            columns={'id': 'elementid'})
+        model_data = (model_data[model_data.type.isin(['task', 'start', 'end'])]
+                      .rename(columns={'id': 'elementid'}))
         return model_data
