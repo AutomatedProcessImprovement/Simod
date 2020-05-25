@@ -39,6 +39,8 @@ Once created the environment you can open the file Simod.ipynb using Jupyter, an
 
 Once all the parameters are settled It is time to start the execution and wait for the results.
 
+***Note: Following changes made in March 2020, there may be some issues when running Simod with the graphical interface from the Jupyter notebook. You can run the tool in a more versatile way by running the simod_console.py file using an IDE like Spyder. In this file, you can define all the hyperparameters for manual tuning (single execution) or you can use the hyper-optimizer. In future updates, I hope to release a new version with a fixed graphical interface.***
+
 ## Authors
 
 * **Manuel Camargo**
