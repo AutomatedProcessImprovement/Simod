@@ -51,8 +51,9 @@ def get_time_obj(date, timeformat):
 #reduce list of lists with no repetitions
 def reduce_list(input):
     text = str(input).replace('[', '').replace(']', '')
+    text = [x for x in text.split(',') if x != ' ']
     temp_list = list()
-    for number in text.split(','):
+    for number in text:
         temp_list.append(int(number))
     return list(set(temp_list))
 

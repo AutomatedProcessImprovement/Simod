@@ -7,9 +7,11 @@ Created on Thu Mar 28 10:56:25 2019
 import os
 import subprocess
 import types
+import itertools
 
 import pandas as pd
 import numpy as np
+from operator import itemgetter
 
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
@@ -38,6 +40,7 @@ class Simod():
         self.settings = settings
 
         self.log = types.SimpleNamespace()
+        self.log_test = types.SimpleNamespace()
         self.bpmn = types.SimpleNamespace()
         self.process_graph = types.SimpleNamespace()
 
@@ -50,12 +53,13 @@ class Simod():
         if self.status == STATUS_OK:
             self.read_inputs()
             self.evaluate_alignment()
-            # TODO raise exception
+        else:
+            raise NotImplementedError('Reading or alignment error')
         if self.status == STATUS_OK:
             self.extract_parameters()
-            self.simulate()
-            # TODO raise exception
-            self.mannage_results()
+            # self.simulate()
+        #     # TODO raise exception
+        #     self.mannage_results()
 
     def temp_path_redef(self) -> None:
         # Paths redefinition
@@ -81,6 +85,9 @@ class Simod():
         self.log = lr.LogReader(os.path.join(self.settings['input'],
                                              self.settings['file']),
                                 self.settings['read_options'])
+        # Time splitting
+        self.split_timeline(0.3,
+                            self.settings['read_options']['one_timestamp'])
         # Create customized event-log for the external tools
         xes.XesWriter(self.log, self.settings)
         # Execution steps
@@ -205,6 +212,56 @@ class Simod():
                 response['status'] = status
                 response = {**response, **data}
         return response, measurements
+    
+    def split_timeline(self, percentage: float, one_timestamp: bool) -> None:
+        """
+        Split an event log dataframe to peform split-validation
+
+        Parameters
+        ----------
+        percentage : float, validation percentage.
+        one_timestamp : bool, Support only one timestamp.
+        """
+        # log = self.log.data.to_dict('records')
+        log = sorted(self.log.data, key=lambda x: x['caseid'])
+        for key, group in itertools.groupby(log, key=lambda x: x['caseid']):
+            events = list(group)
+            events = sorted(events, key=itemgetter('end_timestamp'))
+            length = len(events)
+            for i in range(0, len(events)):
+                events[i]['pos_trace'] = i + 1
+                events[i]['trace_len'] = length
+        log = pd.DataFrame.from_dict(log)
+        log.sort_values(by='end_timestamp', ascending=False, inplace=True)
+
+        num_events = int(np.round(len(log)*percentage))
+
+        df_test = log.iloc[:num_events]
+        df_train = log.iloc[num_events:]
+
+        # Incomplete final traces
+        df_train = df_train.sort_values(by=['caseid','pos_trace'], ascending=True)
+        inc_traces = pd.DataFrame(df_train.groupby('caseid')
+                                  .last()
+                                  .reset_index())
+        inc_traces = inc_traces[inc_traces.pos_trace != inc_traces.trace_len]
+        inc_traces = inc_traces['caseid'].to_list()
+        
+        # Drop incomplete traces
+        df_test = df_test[~df_test.caseid.isin(inc_traces)]
+        df_test = df_test.drop(columns=['trace_len','pos_trace'])
+
+        df_train = df_train[~df_train.caseid.isin(inc_traces)]
+        df_train = df_train.drop(columns=['trace_len','pos_trace'])
+        
+        key = 'end_timestamp' if one_timestamp else 'start_timestamp'
+        self.log_test = (df_test
+                         .sort_values(key, ascending=True)
+                         .reset_index(drop=True).to_dict('records'))
+        self.log.set_data(df_train
+                          .sort_values(key, ascending=True)
+                          .reset_index(drop=True).to_dict('records'))
+
 
 # =============================================================================
 # External tools calling

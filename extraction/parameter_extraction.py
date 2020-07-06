@@ -39,6 +39,7 @@ class ParameterMiner():
         self.mine_interarrival()
         self.mine_gateways_probabilities()
         self.process_tasks()
+        # TODO: Num of test partition
         self.parameters['instances'] = len(self.log.get_traces())
 
     def replay_process(self) -> None:
