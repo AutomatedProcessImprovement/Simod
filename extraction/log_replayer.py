@@ -35,7 +35,7 @@ class LogReplayer():
         self.not_conformant_traces = list()
         self.conformant_traces = list()
         self.process_stats = list()
-        self.traces = log.get_traces()
+        self.traces = log
 
         self.replay()
 
@@ -287,5 +287,6 @@ class LogReplayer():
         if len(resp) > 0:
             resp = resp[0]
         else:
+            print(task_name)
             raise Exception('Task not found on bpmn structure...')
         return resp

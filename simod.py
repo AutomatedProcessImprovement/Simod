@@ -57,9 +57,9 @@ class Simod():
             raise NotImplementedError('Reading or alignment error')
         if self.status == STATUS_OK:
             self.extract_parameters()
-            # self.simulate()
-        #     # TODO raise exception
-        #     self.mannage_results()
+            self.simulate()
+            # TODO raise exception
+            self.mannage_results()
 
     def temp_path_redef(self) -> None:
         # Paths redefinition
@@ -86,7 +86,7 @@ class Simod():
                                              self.settings['file']),
                                 self.settings['read_options'])
         # Time splitting
-        self.split_timeline(0.3,
+        self.split_timeline(0.2,
                             self.settings['read_options']['one_timestamp'])
         # Create customized event-log for the external tools
         xes.XesWriter(self.log, self.settings)
@@ -96,6 +96,16 @@ class Simod():
             self.settings['output'],
             self.settings['file'].split('.')[0]+'.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
+        # Replaying test partition
+        print("-- Reading test partition --")
+        test_replayer = rpl.LogReplayer(
+            self.process_graph,
+            self.get_traces(self.log_test,
+                            self.settings['read_options']['one_timestamp']),
+            self.settings)
+        self.process_stats = test_replayer.process_stats
+        self.process_stats = pd.DataFrame.from_records(self.process_stats)
+        self.log_test = test_replayer.conformant_traces
 
     def evaluate_alignment(self) -> None:
         """
@@ -116,8 +126,8 @@ class Simod():
                                          self.bpmn,
                                          self.process_graph,
                                          self.settings)
-        p_extractor.extract_parameters()
-        self.process_stats = p_extractor.process_stats
+        num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
+        p_extractor.extract_parameters(num_inst)
         # print parameters in xml bimp format
         xml.print_parameters(os.path.join(
             self.settings['output'],
@@ -125,7 +135,6 @@ class Simod():
             os.path.join(self.settings['output'],
                          self.settings['file'].split('.')[0]+'.bpmn'),
             p_extractor.parameters)
-        self.process_stats = pd.DataFrame.from_records(self.process_stats)
 
     def simulate(self) -> None:
         for rep in range(self.settings['repetitions']):
@@ -261,7 +270,21 @@ class Simod():
         self.log.set_data(df_train
                           .sort_values(key, ascending=True)
                           .reset_index(drop=True).to_dict('records'))
-
+    
+    @staticmethod
+    def get_traces(data, one_timestamp):
+        """
+        returns the data splitted by caseid and ordered by start_timestamp
+        """
+        cases = list(set([x['caseid'] for x in data]))
+        traces = list()
+        for case in cases:
+            order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
+            trace = sorted(
+                list(filter(lambda x: (x['caseid'] == case), data)),
+                key=itemgetter(order_key))
+            traces.append(trace)
+        return traces
 
 # =============================================================================
 # External tools calling
@@ -321,7 +344,7 @@ class Simod():
             m_settings['read_options'])
         process_graph = gph.create_process_structure(bpmn)
         results_replayer = rpl.LogReplayer(process_graph,
-                                           temp,
+                                           temp.get_traces(),
                                            settings,
                                            source='simulation',
                                            run_num=rep + 1)
