@@ -47,26 +47,32 @@ class LogReplayer():
             t_times = list()
             trace = self.traces[index][1:-1]  # remove start and end event
             # Check if is a complete trace
-            current_node = self.find_task_node(self.model,
-                                               trace[0]['task'])
-            last_node = self.find_task_node(self.model,
-                                            trace[-1]['task'])
-            if current_node not in self.start_tasks_list:
+            is_conformant = True
+            curr_node, last_node = 0, 0
+            try:
+                curr_node = self.find_task_node(self.model, trace[0]['task'])
+                last_node = self.find_task_node(self.model, trace[-1]['task'])
+            except:
+                is_conformant = False
+            if curr_node not in self.start_tasks_list or not is_conformant:
                 self.not_conformant_traces.append(trace)
                 continue
-            if last_node not in self.end_tasks_list:
+            if last_node not in self.end_tasks_list or not is_conformant:
                 self.not_conformant_traces.append(trace)
                 continue
             # Initialize
             temp_gt_exec = self.parallel_gt_exec
-            cursor = [current_node]
+            cursor = [curr_node]
             remove = True
-            is_conformant = True
             # ----time recording------
             t_times = self.save_record(t_times, trace, 0)
             # ------------------------
             for i in range(1, len(trace)):
-                nnode = self.find_task_node(self.model, trace[i]['task'])
+                try:
+                    nnode = self.find_task_node(self.model, trace[i]['task'])
+                except:
+                    is_conformant = False
+                    break
                 # If loop management
                 if nnode == cursor[-1]:
                     t_times = self.save_record(t_times, trace, i, nnode)
@@ -107,8 +113,11 @@ class LogReplayer():
                 self.not_conformant_traces.extend(trace)
             sup.print_progress(((index / (len(self.traces) - 1)) * 100),
                                'Replaying process traces ')
-        self.calculate_process_metrics()
-        sup.print_done_task()
+        sup.print_done_task()            
+        if len(self.conformant_traces) > 0:
+            self.calculate_process_metrics()
+        else:
+            raise AssertionError('Model not valid for testing')
 
     @staticmethod
     def update_cursor(nnode: int, model: iter, cursor: list) -> (list, int):
@@ -287,6 +296,5 @@ class LogReplayer():
         if len(resp) > 0:
             resp = resp[0]
         else:
-            print(task_name)
             raise Exception('Task not found on bpmn structure...')
         return resp

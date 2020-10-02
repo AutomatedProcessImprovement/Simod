@@ -29,6 +29,7 @@ class ParameterMiner():
         self.process_stats = list()
         self.parameters = dict()
         self.conformant_traces = list()
+        self.resource_table = pd.DataFrame()
 
     def extract_parameters(self, num_inst) -> None:
         """
@@ -67,6 +68,7 @@ class ParameterMiner():
         self.process_stats = self.process_stats.merge(resource_table,
                                                       on='resource',
                                                       how='left')
+        self.resource_table = resource_table
 
     def mine_interarrival(self) -> None:
         """

@@ -23,11 +23,11 @@ def main(argv):
     # Exec mode 'single', 'optimizer'
     settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
-    settings['sim_metric'] = 'tsd_min'
+    settings['sim_metric'] = 'tsd'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.xes'
+        settings['file'] = 'Production_training.csv'
         settings['repetitions'] = 2
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
@@ -39,7 +39,7 @@ def main(argv):
             settings['epsilon'] = 0.1
             settings['eta'] = 0.4
             # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'removal'
+            settings['alg_manag'] = 'repair'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'automatic'

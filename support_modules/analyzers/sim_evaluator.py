@@ -112,7 +112,6 @@ class SimilarityEvaluator():
         mx_len = len(log_data)
         cost_matrix = [[0 for c in range(mx_len)] for r in range(mx_len)]
         # Create cost matrix
-        # start = timer()
         for i in range(0, mx_len):
             for j in range(0, mx_len):
                 comp_sec = self.create_comparison_elements(simulation_data,
@@ -122,8 +121,6 @@ class SimilarityEvaluator():
                 distance = self.tsd_alpha(comp_sec,
                                           self.alpha_concurrency.oracle)/length
                 cost_matrix[i][j] = distance
-        # end = timer()
-        # print(end - start)
         # Matching using the hungarian algorithm
         row_ind, col_ind = linear_sum_assignment(np.array(cost_matrix))
         # Create response
