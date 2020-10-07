@@ -27,7 +27,7 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production_training.csv'
+        settings['file'] = 'Production.csv'
         settings['repetitions'] = 2
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':

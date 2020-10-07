@@ -180,29 +180,27 @@ class Simod():
         self.response, measurements = self.define_response(self.status,
                                                            self.sim_values,
                                                            self.settings)
-
-        if measurements:
-            if self.settings['exec_mode'] in ['optimizer']:
-                if os.path.getsize(os.path.join('outputs',
-                                                self.settings['temp_file'])) > 0:
-                    sup.create_csv_file(measurements,
-                                        os.path.join('outputs',
-                                                     self.settings['temp_file']),
-                                        mode='a')
-                else:
-                    sup.create_csv_file_header(measurements,
-                                               os.path.join(
-                                                   'outputs',
-                                                   self.settings['temp_file']))
+        if self.settings['exec_mode'] in ['optimizer'] and measurements:
+            if os.path.getsize(os.path.join('outputs',
+                                            self.settings['temp_file'])) > 0:
+                sup.create_csv_file(measurements,
+                                    os.path.join('outputs',
+                                                 self.settings['temp_file']),
+                                    mode='a')
             else:
-                print('------ Final results ------')
-                [print(k, v, sep=': ') for k, v in self.response.items()
-                 if k != 'params']
-                self.response.pop('params', None)
-                sup.create_csv_file_header([self.response],
+                sup.create_csv_file_header(measurements,
                                            os.path.join(
                                                'outputs',
                                                self.settings['temp_file']))
+        elif self.settings['exec_mode'] == 'single':
+            print('------ Final results ------')
+            [print(k, v, sep=': ') for k, v in self.response.items()
+             if k != 'params']
+            self.response.pop('params', None)
+            sup.create_csv_file_header([self.response],
+                                       os.path.join(
+                                           'outputs',
+                                           self.settings['temp_file']))
 
     @staticmethod
     def define_response(status, sim_values, settings):
@@ -223,12 +221,15 @@ class Simod():
                         else similarity)
                 response['loss'] = loss
                 response['status'] = status if loss > 0 else STATUS_FAIL
+                for sim_val in sim_values:
+                    measurements.append({
+                        **{'similarity': sim_val['sim_val'],
+                            'status': response['status']},
+                        **data})
             else:
                 response['status'] = status
-            for sim_val in sim_values:
                 measurements.append({
-                    **{'similarity': sim_val['sim_val'],
-                        'status': response['status']},
+                    **{'similarity': 0, 'status': response['status']},
                     **data})
         else:
             if status == STATUS_OK:
@@ -435,11 +436,13 @@ class DiscoveryOptimizer():
             simod.execute_pipeline(self.settings['exec_mode'])
             return simod.response
         # Optimize
+        
         best = fmin(fn=exec_simod,
                     space=self.space,
                     algo=tpe.suggest,
                     max_evals=self.args['max_eval'],
                     trials=self.bayes_trials,
                     show_progressbar=False)
-        print(best)
+        print('------ Final results ------')
+        [print(k, v) for k, v in best.items()]
 
