@@ -29,8 +29,9 @@ class ParameterMiner():
         self.process_stats = list()
         self.parameters = dict()
         self.conformant_traces = list()
+        self.resource_table = pd.DataFrame()
 
-    def extract_parameters(self) -> None:
+    def extract_parameters(self, num_inst) -> None:
         """
         main method for parameters extraction
         """
@@ -39,13 +40,15 @@ class ParameterMiner():
         self.mine_interarrival()
         self.mine_gateways_probabilities()
         self.process_tasks()
-        self.parameters['instances'] = len(self.log.get_traces())
+        # TODO: Num of test partition
+        self.parameters['instances'] = num_inst
 
     def replay_process(self) -> None:
         """
         Process replaying
         """
-        replayer = rpl.LogReplayer(self.process_graph, self.log, self.settings)
+        replayer = rpl.LogReplayer(self.process_graph, self.log.get_traces(),
+                                   self.settings)
         self.process_stats = replayer.process_stats
         self.conformant_traces = replayer.conformant_traces
 
@@ -65,6 +68,7 @@ class ParameterMiner():
         self.process_stats = self.process_stats.merge(resource_table,
                                                       on='resource',
                                                       how='left')
+        self.resource_table = resource_table
 
     def mine_interarrival(self) -> None:
         """

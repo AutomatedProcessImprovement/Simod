@@ -2,6 +2,8 @@
 import tkinter as tk
 import pandas as pd
 from support_modules import support as sup
+import itertools
+
 
 from extraction import pdf_finder as pdf
 from extraction.user_interface import dist_manual_edition_ui as me
@@ -70,7 +72,7 @@ class InterArrivalEvaluator():
                 inter_arrival_times.append(delta)
         return inter_arrival_times
 
-    def analize_first_tasks(self, process_graph):
+    def analize_first_tasks(self, process_graph) -> list():
         """
         Extracts the first tasks of the process
 
@@ -83,70 +85,21 @@ class InterArrivalEvaluator():
         list of tasks
 
         """
-        tasks_list = list()
-        for node in process_graph.nodes:
-            if process_graph.node[node]['type']=='task':
-                tasks_list.append(
-                    self.find_tasks_predecesors(process_graph,node))
-        in_tasks = list()
-        i=0
-        for task in tasks_list:
-            sup.print_progress(((i / (len(tasks_list)-1))* 100),
-                               'Defining inter-arrival rate ')
-            for path in task['sources']:
-                for in_task in path['in_tasks']:
-                    if process_graph.node[in_task]['type']=='start':
-                        in_tasks.append(
-                            process_graph.node[task['task']]['name'])
-            i+=1
-        return list(set(in_tasks))
-
-
-    def find_tasks_predecesors(self, process_graph, num):
-        """
-        Support method for finding task predecesors
-
-        Parameters
-        ----------
-        process_graph : Networkx di-graph
-        num : num node int
-
-        Returns
-        -------
-        dict of task and predecesors
-
-        """
-        # Sources
-        r = process_graph.reverse(copy=True)
-        paths = list(r.neighbors(num))
-        task_paths = self.extract_target_tasks(r, num)
-        in_paths = [sup.reduce_list(path) for path in task_paths]
-        ins = [dict(in_tasks=y, in_node= x) for x,y in zip(paths, in_paths)]
-        return dict(task=num,sources=ins)
-
-
-    def extract_target_tasks(self, process_graph, num):
-        """
-        Support method for extract target tasks
-
-        Parameters
-        ----------
-        process_graph : Networkx di-graph
-        num : num node int
-
-        Returns
-        -------
-        tasks_list : list of tasks 
-
-        """
-        tasks_list=list()
-        for node in process_graph.neighbors(num):
-            if process_graph.node[node]['type'] in ['task', 'start', 'end']:
-                tasks_list.append([node])
-            else:
-                tasks_list.append(
-                    self.extract_target_tasks(process_graph, node))
-        return tasks_list
+        temp_process_graph = process_graph.copy()
+        for node in list(temp_process_graph.nodes):
+            if process_graph.node[node]['type'] not in ['start', 'end', 'task']:
+                preds = list(temp_process_graph.predecessors(node))
+                succs = list(temp_process_graph.successors(node))
+                temp_process_graph.add_edges_from(
+                    list(itertools.product(preds, succs)))
+                temp_process_graph.remove_node(node)    
+        graph_data = (pd.DataFrame.from_dict(
+            dict(temp_process_graph.nodes.data()), orient='index'))
+        start = graph_data[graph_data.type.isin(['start'])]
+        start = start.index.tolist()[0]  # start node id 
+        in_tasks = [temp_process_graph.node[x]['name']
+                    for x in temp_process_graph.successors(start)]
+        return in_tasks
 
     def define_distributions_manually(self, dist):
         """
