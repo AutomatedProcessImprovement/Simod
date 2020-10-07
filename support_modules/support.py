@@ -8,6 +8,8 @@ import uuid
 import json
 import platform as pl
 from networkx.readwrite import json_graph
+import time
+
 
 def folder_id():
     return datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')
@@ -51,8 +53,9 @@ def get_time_obj(date, timeformat):
 #reduce list of lists with no repetitions
 def reduce_list(input):
     text = str(input).replace('[', '').replace(']', '')
+    text = [x for x in text.split(',') if x != ' ']
     temp_list = list()
-    for number in text.split(','):
+    for number in text:
         temp_list.append(int(number))
     return list(set(temp_list))
 
@@ -144,6 +147,32 @@ def save_graph(graph, output_file):
     with open(output_file, 'w') as f:
         f.write(json.dumps(data))
         f.close()
+
+def timeit(method) -> dict:
+    """
+    Decorator to measure execution times of methods
+
+    Parameters
+    ----------
+    method : Any method.
+
+    Returns
+    -------
+    dict : execution time record
+
+    """
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            print('%r  %2.2f ms' % \
+                  (method.__name__, (te - ts) * 1000))
+        return result
+    return timed
 
 # from timeit import default_timer as timer
 # # start = timer()

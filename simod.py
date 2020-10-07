@@ -7,14 +7,18 @@ Created on Thu Mar 28 10:56:25 2019
 import os
 import subprocess
 import types
+import itertools
+import copy
 
 import pandas as pd
 import numpy as np
+from operator import itemgetter
 
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 
 from support_modules import support as sup
+from support_modules.support import timeit
 from support_modules.readers import log_reader as lr
 from support_modules.readers import bpmn_reader as br
 from support_modules.readers import process_structure as gph
@@ -38,6 +42,8 @@ class Simod():
         self.settings = settings
 
         self.log = types.SimpleNamespace()
+        self.log_train = types.SimpleNamespace()
+        self.log_test = types.SimpleNamespace()
         self.bpmn = types.SimpleNamespace()
         self.process_graph = types.SimpleNamespace()
 
@@ -45,17 +51,21 @@ class Simod():
         self.response = dict()
 
     def execute_pipeline(self, mode) -> None:
-        if mode in ['optimizer', 'tasks_optimizer']:
+        exec_times = dict()
+        if mode in ['optimizer']:
             self.temp_path_redef()
         if self.status == STATUS_OK:
-            self.read_inputs()
-            self.evaluate_alignment()
-            # TODO raise exception
+            self.read_inputs(log_time=exec_times)
         if self.status == STATUS_OK:
-            self.extract_parameters()
-            self.simulate()
-            # TODO raise exception
-            self.mannage_results()
+            self.evaluate_alignment(log_time=exec_times)
+        if self.status == STATUS_OK:
+            self.extract_parameters(log_time=exec_times)
+        if self.status == STATUS_OK:
+            self.simulate(log_time=exec_times)
+        self.mannage_results()
+        if self.status == STATUS_OK:
+            self.save_times(exec_times, self.settings)
+        print("-- End of trial --")
 
     def temp_path_redef(self) -> None:
         # Paths redefinition
@@ -72,7 +82,8 @@ class Simod():
                 print(e)
                 self.status = STATUS_FAIL
 
-    def read_inputs(self) -> None:
+    @timeit
+    def read_inputs(self, **kwargs) -> None:
         # Output folder creation
         if not os.path.exists(self.settings['output']):
             os.makedirs(self.settings['output'])
@@ -81,6 +92,9 @@ class Simod():
         self.log = lr.LogReader(os.path.join(self.settings['input'],
                                              self.settings['file']),
                                 self.settings['read_options'])
+        # Time splitting 80-20
+        self.split_timeline(0.2,
+                            self.settings['read_options']['one_timestamp'])
         # Create customized event-log for the external tools
         xes.XesWriter(self.log, self.settings)
         # Execution steps
@@ -89,28 +103,50 @@ class Simod():
             self.settings['output'],
             self.settings['file'].split('.')[0]+'.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
+        # Replaying test partition
+        print("-- Reading test partition --")
+        try:
+            test_replayer = rpl.LogReplayer(
+                self.process_graph,
+                self.get_traces(self.log_test,
+                                self.settings['read_options']['one_timestamp']),
+                self.settings)
+            self.process_stats = test_replayer.process_stats
+            self.process_stats = pd.DataFrame.from_records(self.process_stats)
+            self.log_test = test_replayer.conformant_traces
+        except AssertionError as e:
+            print(e)
+            self.status = STATUS_FAIL
+            print("-- End of trial --")
+            
 
-    def evaluate_alignment(self) -> None:
+    @timeit
+    def evaluate_alignment(self, **kwargs) -> None:
         """
         Evaluate alignment
         """
         # Evaluate alignment
         try:
             chk.evaluate_alignment(self.process_graph,
-                                   self.log,
+                                   self.log_train,
                                    self.settings)
         except Exception as e:
             print(e)
             self.status = STATUS_FAIL
 
-    def extract_parameters(self) -> None:
+    @timeit
+    def extract_parameters(self, **kwargs) -> None:
         print("-- Mining Simulation Parameters --")
-        p_extractor = par.ParameterMiner(self.log,
+        p_extractor = par.ParameterMiner(self.log_train,
                                          self.bpmn,
                                          self.process_graph,
                                          self.settings)
-        p_extractor.extract_parameters()
-        self.process_stats = p_extractor.process_stats
+        num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
+        p_extractor.extract_parameters(num_inst)
+        self.process_stats = self.process_stats.merge(
+            p_extractor.resource_table[['resource', 'role']],
+            on='resource',
+            how='left')
         # print parameters in xml bimp format
         xml.print_parameters(os.path.join(
             self.settings['output'],
@@ -118,9 +154,9 @@ class Simod():
             os.path.join(self.settings['output'],
                          self.settings['file'].split('.')[0]+'.bpmn'),
             p_extractor.parameters)
-        self.process_stats = pd.DataFrame.from_records(self.process_stats)
 
-    def simulate(self) -> None:
+    @timeit
+    def simulate(self, **kwargs) -> None:
         for rep in range(self.settings['repetitions']):
             print("Experiment #" + str(rep + 1))
             try:
@@ -144,8 +180,7 @@ class Simod():
         self.response, measurements = self.define_response(self.status,
                                                            self.sim_values,
                                                            self.settings)
-
-        if self.settings['exec_mode'] in ['optimizer', 'tasks_optimizer']:
+        if self.settings['exec_mode'] in ['optimizer'] and measurements:
             if os.path.getsize(os.path.join('outputs',
                                             self.settings['temp_file'])) > 0:
                 sup.create_csv_file(measurements,
@@ -157,7 +192,7 @@ class Simod():
                                            os.path.join(
                                                'outputs',
                                                self.settings['temp_file']))
-        else:
+        elif self.settings['exec_mode'] == 'single':
             print('------ Final results ------')
             [print(k, v, sep=': ') for k, v in self.response.items()
              if k != 'params']
@@ -186,12 +221,15 @@ class Simod():
                         else similarity)
                 response['loss'] = loss
                 response['status'] = status if loss > 0 else STATUS_FAIL
+                for sim_val in sim_values:
+                    measurements.append({
+                        **{'similarity': sim_val['sim_val'],
+                            'status': response['status']},
+                        **data})
             else:
                 response['status'] = status
-            for sim_val in sim_values:
                 measurements.append({
-                    **{'similarity': sim_val['sim_val'],
-                        'status': response['status']},
+                    **{'similarity': 0, 'status': response['status']},
                     **data})
         else:
             if status == STATUS_OK:
@@ -205,6 +243,86 @@ class Simod():
                 response['status'] = status
                 response = {**response, **data}
         return response, measurements
+
+    @staticmethod
+    def save_times(times, settings):
+        times = [{**{'output': settings['output']}, **times}]
+        log_file = os.path.join('outputs', 'execution_times.csv')
+        if not os.path.exists(log_file):
+                open(log_file, 'w').close()
+        if os.path.getsize(log_file) > 0:
+            sup.create_csv_file(times, log_file, mode='a')
+        else:
+            sup.create_csv_file_header(times, log_file)
+
+# =============================================================================
+# Support methods
+# =============================================================================
+    def split_timeline(self, percentage: float, one_timestamp: bool) -> None:
+        """
+        Split an event log dataframe to peform split-validation
+
+        Parameters
+        ----------
+        percentage : float, validation percentage.
+        one_timestamp : bool, Support only one timestamp.
+        """
+        # log = self.log.data.to_dict('records')
+        self.log_train = copy.deepcopy(self.log)
+        log = sorted(self.log_train.data, key=lambda x: x['caseid'])
+        for key, group in itertools.groupby(log, key=lambda x: x['caseid']):
+            events = list(group)
+            events = sorted(events, key=itemgetter('end_timestamp'))
+            length = len(events)
+            for i in range(0, len(events)):
+                events[i]['pos_trace'] = i + 1
+                events[i]['trace_len'] = length
+        log = pd.DataFrame.from_dict(log)
+        log.sort_values(by='end_timestamp', ascending=False, inplace=True)
+
+        num_events = int(np.round(len(log)*percentage))
+
+        df_test = log.iloc[:num_events]
+        df_train = log.iloc[num_events:]
+
+        # Incomplete final traces
+        df_train = df_train.sort_values(by=['caseid', 'pos_trace'],
+                                        ascending=True)
+        inc_traces = pd.DataFrame(df_train.groupby('caseid')
+                                  .last()
+                                  .reset_index())
+        inc_traces = inc_traces[inc_traces.pos_trace != inc_traces.trace_len]
+        inc_traces = inc_traces['caseid'].to_list()
+
+        # Drop incomplete traces
+        df_test = df_test[~df_test.caseid.isin(inc_traces)]
+        df_test = df_test.drop(columns=['trace_len', 'pos_trace'])
+
+        df_train = df_train[~df_train.caseid.isin(inc_traces)]
+        df_train = df_train.drop(columns=['trace_len', 'pos_trace'])
+
+        key = 'end_timestamp' if one_timestamp else 'start_timestamp'
+        self.log_test = (df_test
+                         .sort_values(key, ascending=True)
+                         .reset_index(drop=True).to_dict('records'))
+        self.log_train.set_data(df_train
+                                .sort_values(key, ascending=True)
+                            .reset_index(drop=True).to_dict('records'))
+
+    @staticmethod
+    def get_traces(data, one_timestamp):
+        """
+        returns the data splitted by caseid and ordered by start_timestamp
+        """
+        cases = list(set([x['caseid'] for x in data]))
+        traces = list()
+        for case in cases:
+            order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
+            trace = sorted(
+                list(filter(lambda x: (x['caseid'] == case), data)),
+                key=itemgetter(order_key))
+            traces.append(trace)
+        return traces
 
 # =============================================================================
 # External tools calling
@@ -264,7 +382,7 @@ class Simod():
             m_settings['read_options'])
         process_graph = gph.create_process_structure(bpmn)
         results_replayer = rpl.LogReplayer(process_graph,
-                                           temp,
+                                           temp.get_traces(),
                                            settings,
                                            source='simulation',
                                            run_num=rep + 1)
@@ -318,11 +436,13 @@ class DiscoveryOptimizer():
             simod.execute_pipeline(self.settings['exec_mode'])
             return simod.response
         # Optimize
+        
         best = fmin(fn=exec_simod,
                     space=self.space,
                     algo=tpe.suggest,
                     max_evals=self.args['max_eval'],
                     trials=self.bayes_trials,
                     show_progressbar=False)
-        print(best)
+        print('------ Final results ------')
+        [print(k, v) for k, v in best.items()]
 
