@@ -13,6 +13,8 @@ from extraction import schedule_tables as sch
 from extraction import tasks_evaluator as te
 
 import pandas as pd
+import itertools
+from support_modules import support as sup
 
 
 class ParameterMiner():
@@ -60,11 +62,14 @@ class ParameterMiner():
             self.log,
             sim_threshold=self.settings['rp_similarity'])
 
-        ttcreator = sch.TimeTablesCreator(res_analyzer.resource_table, '247')
-        self.parameters['resource_pool'] = ttcreator.resource_pool
+        ttcreator = sch.TimeTablesCreator(self.settings)
+        ttcreator.create_timetables(self.settings['calendar_method'])
+        resource_pool = self.create_resource_pool(res_analyzer.resource_table,
+                                                  ttcreator.time_table_name)
+        self.parameters['resource_pool'] = resource_pool
         self.parameters['time_table'] = ttcreator.time_table
         # Adding role to process stats
-        resource_table = pd.DataFrame.from_records(ttcreator.resource_table)
+        resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
         self.process_stats = self.process_stats.merge(resource_table,
                                                       on='resource',
                                                       how='left')
@@ -100,3 +105,24 @@ class ParameterMiner():
                                       self.parameters['resource_pool'],
                                       self.settings)
         self.parameters['elements_data'] = tevaluator.elements_data
+        
+    # TODO: move to xml bimp writter 
+    @staticmethod       
+    def create_resource_pool(resource_table, table_name) -> list():
+        """
+        Creates resource pools and associate them the default timetable
+        in BIMP format
+        """
+        resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM',
+                              'total_amount': '20', 'costxhour': '20',
+                              'timetable_id': table_name}]
+        data = sorted(resource_table, key=lambda x: x['role'])
+        for key, group in itertools.groupby(data, key=lambda x: x['role']):
+            res_group = [x['resource'] for x in list(group)]
+            r_pool_size = str(len(res_group))
+            resource_pool.append({'id': sup.gen_id(),
+                                  'name': key,
+                                  'total_amount': r_pool_size,
+                                  'costxhour': '20',
+                                  'timetable_id': table_name})
+        return resource_pool

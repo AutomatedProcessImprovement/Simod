@@ -1,7 +1,11 @@
+#%%
 # -*- coding: utf-8 -*-
+import os
+import subprocess
+from lxml import etree
+from lxml.builder import ElementMaker # lxml only !
+import datetime
 from support_modules import support as sup
-import itertools
-from datetime import datetime
 
 
 class TimeTablesCreator():
@@ -10,62 +14,109 @@ class TimeTablesCreator():
         to the resource pools
      '''
 
-    def __init__(self, resource_table, dtype=None):
+    def __init__(self, settings):
         '''constructor'''
-        self.dtype = dtype
+        self.settings = settings
 
-        self.resource_table = resource_table
-        self.time_table = list()
-        self.create_timetables()
 
-        self.resource_pool = list()
+    def create_timetables(self, calendar_method):
+        creator = self._get_creator(calendar_method)
+        sup.print_performed_task('Mining calendars')
+        return creator()
 
-        self.analize_schedules()
+    def _get_creator(self, calendar_method):
+        if calendar_method == 'default':
+            return self._default_creator
+        elif calendar_method == 'discovery':
+            return self._discovery_creator
+        else:
+            raise ValueError(calendar_method)
 
-    def create_timetables(self) -> None:
+    def _default_creator(self) -> None:
         """
         Creates predefined timetables for BIMP simulator
         """
-        if self.dtype == 'LV917':
-            self.time_table.append({'id_t': 'QBP_DEFAULT_TIMETABLE',
+        time_table = list()
+        if self.settings['dtype'] == 'LV917':
+            time_table.append({'id_t': 'QBP_DEFAULT_TIMETABLE',
                                     'default': 'true',
                                     'name': 'Default',
                                     'from_t': '09:00:00.000+00:00',
                                     'to_t': '17:00:00.000+00:00',
                                     'from_w': 'MONDAY',
                                     'to_w': 'FRIDAY'})
-            schedule = {'work_days': [1, 1, 1, 1, 1, 0, 0],
-                        'start_hour': datetime(1900, 1, 1, 9, 0, 0),
-                        'end_hour': datetime(1900, 1, 1, 17, 0, 0)}
-        elif self.dtype == '247':
-            self.time_table.append({'id_t': 'QBP_DEFAULT_TIMETABLE',
+        elif self.settings['dtype'] == '247':
+            time_table.append({'id_t': 'QBP_DEFAULT_TIMETABLE',
                                     'default': 'true',
                                     'name': '24/7',
                                     'from_t': '00:00:00.000+00:00',
                                     'to_t': '23:59:59.999+00:00',
                                     'from_w': 'MONDAY',
                                     'to_w': 'SUNDAY'})
-            schedule = {'work_days': [1, 1, 1, 1, 1, 1, 1],
-                        'start_hour': datetime(1900, 1, 1, 0, 0, 0),
-                        'end_hour': datetime(1900, 1, 1, 23, 59, 59)}
-        # Add default schedule to resources
-        self.resource_table.append({'role': 'SYSTEM', 'resource': 'AUTO'})
-        for x in self.resource_table:
-            x['schedule'] = schedule
+        if self.settings['simulator'] == 'bimp':
+            time_table = self._print_xml_bimp(time_table)
+        self.time_table = time_table
+        self.time_table_name = 'QBP_DEFAULT_TIMETABLE'
+        sup.print_done_task()
+    
+    def _discovery_creator(self) -> None:
+        """Executes BIMP Simulations.
+        Args:
+            settings (dict): Path to jar and file names
+            rep (int): repetition number
+        """
+        args = ['java', '-jar', self.settings['calender_path'],
+                os.path.join(self.settings['input'], self.settings['file']),
+                str(self.settings['support']), str(self.settings['confidence'])]
+        process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+        found = False
+        xml = ['<qbp:timetables xmlns:qbp="http://www.qbp-simulator.com/Schema201212">']
+        for line in process.stdout.decode('utf-8').splitlines():
+            if 'BIMP Calendar' in line:
+                found = False if found else True
+            if found and not 'BIMP Calendar' in line:
+                xml.append(line.strip())
+        xml.append('</qbp:timetables>')
+        xml = etree.fromstring(''.join(xml).strip())
+        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        # Fix timestamp format
+        rules = (xml.find('qbp:timetable', namespaces=ns)
+                 .find('qbp:rules', namespaces=ns)
+                 .findall('qbp:rule', namespaces=ns))
+        for rule in rules:
+           rule.attrib['fromTime'] = (
+               datetime.datetime.strptime(rule.attrib['fromTime'], "%H:%M")
+               .strftime("%H:%M:%S.000+00:00"))
+           rule.attrib['toTime'] = (
+               datetime.datetime.strptime(rule.attrib['toTime'], "%H:%M")
+               .strftime("%H:%M:%S.000+00:00"))
+        # Sava values
+        self.time_table = xml
+        self.time_table_name = (xml.find(
+            'qbp:timetable', namespaces=ns).attrib['id'])
+        sup.print_done_task()
 
-    def analize_schedules(self) -> None:
-        """
-        Creates resource pools and associate them the default timetable
-        in BIMP format
-        """
-        data = sorted(self.resource_table, key=lambda x: x['role'])
-        for key, group in itertools.groupby(data, key=lambda x: x['role']):
-            res_group = [x['resource'] for x in list(group)]
-            r_pool_size = str(len(res_group)) if key != 'SYSTEM' else '20'
-            self.resource_pool.append({'id': sup.gen_id(),
-                                       'name': key,
-                                       'total_amount': r_pool_size,
-                                       'costxhour': '20',
-                                       'timetable_id': 'QBP_DEFAULT_TIMETABLE'}
-                                      )
-        self.resource_pool[0]['id'] = 'QBP_DEFAULT_RESOURCE'
+    @staticmethod
+    def _print_xml_bimp(time_table) -> str:
+        E = ElementMaker(namespace='http://www.qbp-simulator.com/Schema201212',
+                         nsmap={'qbp':
+                                "http://www.qbp-simulator.com/Schema201212"})
+        TIMETABLES = E.timetables
+        TIMETABLE = E.timetable
+        RULES = E.rules
+        RULE = E.rule
+        my_doc = TIMETABLES(
+			*[
+				TIMETABLE(
+					RULES(
+                        RULE(fromTime=table['from_t'],
+                             toTime=table['to_t'],
+                             fromWeekDay=table['from_w'],
+                             toWeekDay=table['to_w'])),
+                    id=table['id_t'],
+                    default=table['default'],
+                    name=table['name']
+				) for table in time_table
+			]
+		)
+        return my_doc

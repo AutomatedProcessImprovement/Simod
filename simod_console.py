@@ -21,14 +21,14 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'optimizer'
+    settings['exec_mode'] = 'single'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
-    settings['sim_metric'] = 'tsd'
+    settings['sim_metric'] = 'tsd_min'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.csv'
-        settings['repetitions'] = 2
+        settings['file'] = 'PurchasingExample.xes'
+        settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
@@ -39,10 +39,18 @@ def main(argv):
             settings['epsilon'] = 0.1
             settings['eta'] = 0.4
             # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'repair'
+            settings['alg_manag'] = 'removal'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'automatic'
+            # Calendar parameters
+            # calendar methods 'default', 'discovery'
+            settings['calendar_method'] = 'discovery' 
+            if settings['calendar_method'] == 'default':
+                settings['dtype'] = '247'  # 'LV917', '247'
+            else:
+                settings['support'] = 0.5  # [0..1]
+                settings['confidence'] = 70  # [50..85]
             # temporal file for results
             settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
@@ -127,6 +135,10 @@ def define_general_settings(settings):
                                          'CaseTypeAlignmentResults.csv')
     settings['aligntype'] = os.path.join(settings['output'],
                                          'AlignmentStatistics.csv')
+    settings['calender_path'] = os.path.join('external_tools',
+                                             'calenderimp',
+                                             'CalenderImp.jar')
+    settings['simulator'] = 'bimp'
     return settings
 
 
