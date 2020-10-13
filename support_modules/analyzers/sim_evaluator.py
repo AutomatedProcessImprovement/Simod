@@ -3,7 +3,7 @@ Created on Fri Jan 10 11:40:46 2020
 
 @author: Manuel Camargo
 """
-#%%
+##%%
 import random
 import os
 import itertools
@@ -13,14 +13,22 @@ import jellyfish as jf
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
+# import scipy
+from scipy.stats import wasserstein_distance
+
+
 from support_modules import support as sup
 from support_modules.analyzers import alpha_oracle as ao
 from support_modules.analyzers.alpha_oracle import Rel
 
-import pandas as pd
-import json
+# import support as sup
+# import alpha_oracle as ao
+# from alpha_oracle import Rel
 
-#%%
+import pandas as pd
+# import json
+
+##%%
 
 class SimilarityEvaluator():
     """
@@ -398,35 +406,54 @@ class SimilarityEvaluator():
         similarity = list()
         window = 1
         # hist_range = [0, int((window * 3600))]
-        day_hour = lambda x: x['timestamp'].hour
-        log_data['hour'] = log_data.apply(day_hour, axis=1)
-        simulation_data['hour'] = simulation_data.apply(day_hour, axis=1)
-        date = lambda x: x['timestamp'].date()
-        log_data['date'] = log_data.apply(date, axis=1)
-        simulation_data['date'] = simulation_data.apply(date, axis=1)
-        # create time windows
-        i = 0
-        daily_windows = dict()
-        for x in range(24):
-            if x % window == 0:
-                i += 1
-            daily_windows[x] = i
-        log_data = log_data.merge(
-            pd.DataFrame.from_dict(
-                daily_windows, orient='index').rename_axis('hour'),
-            on='hour',
-            how='left').rename(columns={0: 'window'})
-        simulation_data = simulation_data.merge(
-            pd.DataFrame.from_dict(
-                daily_windows, orient='index').rename_axis('hour'),
-            on='hour',
-            how='left').rename(columns={0: 'window'})
-        print(log_data)
-        print(simulation_data)
-        similarity.append(dict(caseid=0,
-                               sim_order=0,
-                               log_order=0,
-                               sim_score=0))
+        log_data = pd.DataFrame(log_data)
+        simulation_data = pd.DataFrame(simulation_data)
+
+        def split_date_time(dataframe, feature, source):
+            day_hour = lambda x: x[feature].hour
+            dataframe['hour'] = dataframe.apply(day_hour, axis=1)
+            date = lambda x: x[feature].date()
+            dataframe['date'] = dataframe.apply(date, axis=1)
+            # create time windows
+            i = 0
+            daily_windows = dict()
+            for x in range(24):
+                if x % window == 0:
+                    i += 1
+                daily_windows[x] = i
+            dataframe = dataframe.merge(
+                pd.DataFrame.from_dict(
+                    daily_windows, orient='index').rename_axis('hour'),
+                on='hour',
+                how='left').rename(columns={0: 'window'})
+            dataframe = dataframe[[feature, 'date', 'window']]
+            dataframe.rename(columns={feature: 'timestamp'}, inplace=True)
+            dataframe['source'] = source
+            return dataframe
+        data = split_date_time(log_data, 'start_time', 'log')
+        data = data.append(
+            split_date_time(log_data, 'end_time', 'log'), ignore_index=True)
+        data = data.append(
+            split_date_time(simulation_data, 'start_time', 'sim'), ignore_index=True)
+        data = data.append(
+            split_date_time(simulation_data, 'end_time', 'sim'), ignore_index=True)
+        similarity = list()
+        for key, group in data.groupby(['window']):
+            w_df = group.copy()
+            w_df = w_df.reset_index()
+            basetime = w_df.timestamp.min().floor(freq ='H')
+            diftime = lambda x: (x['timestamp'] - basetime).total_seconds()
+            w_df['rel_time'] = w_df.apply(diftime, axis=1)
+            log_hist = np.histogram(w_df[w_df.source=='log'].rel_time, density=True)
+            sim_hist = np.histogram(w_df[w_df.source=='sim'].rel_time, density=True)
+            if np.isnan(np.sum(log_hist[0])) or np.isnan(np.sum(sim_hist[0])):
+                similarity.append({'window': key,
+                                   'sim_score': 0})
+            else:
+                similarity.append(
+                    {'window': key,
+                     'sim_score': (1 - wasserstein_distance(log_hist[0],
+                                                       sim_hist[0]))})
         return similarity
 
 
@@ -534,18 +561,18 @@ class SimilarityEvaluator():
                          **temp_dict}
             temp_data.append(temp_dict)
         return sorted(temp_data, key=itemgetter('start_time'))
-#%%
-
-with open('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/settings.json') as file:
-    settings = json.load(file)
-    file.close()
+# #
+# with open('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/settings.json') as file:
+#     settings = json.load(file)
+#     file.close()
     
-data = pd.read_csv('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/process_stats.csv')
-data['end_timestamp'] =  pd.to_datetime(data['end_timestamp'], format=settings['read_options']['timeformat'])
-data['start_timestamp'] =  pd.to_datetime(data['start_timestamp'], format=settings['read_options']['timeformat'])
-evaluation = SimilarityEvaluator(
-    data,
-    settings,
-    0,
-    metric='log-emd')
-print(evaluation.similarity)
+# data = pd.read_csv('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/process_stats.csv')
+# data['end_timestamp'] =  pd.to_datetime(data['end_timestamp'], format=settings['read_options']['timeformat'])
+# data['start_timestamp'] =  pd.to_datetime(data['start_timestamp'], format=settings['read_options']['timeformat'])
+# evaluation = SimilarityEvaluator(
+#     data,
+#     settings,
+#     0,
+#     metric='log-emd')
+#     # metric='tsd')
+# print(evaluation.similarity)

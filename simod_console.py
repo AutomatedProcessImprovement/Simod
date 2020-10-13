@@ -22,12 +22,12 @@ def main(argv):
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
     settings['exec_mode'] = 'single'
-    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
-    settings['sim_metric'] = 'tsd_min'
+    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae', 'log-emd'
+    settings['sim_metric'] = 'log-emd'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes'
+        settings['file'] = 'Production.xes'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
@@ -45,7 +45,7 @@ def main(argv):
             settings['pdef_method'] = 'automatic'
             # Calendar parameters
             # calendar methods 'default', 'discovery'
-            settings['calendar_method'] = 'discovery'
+            settings['calendar_method'] = 'default'
             if settings['calendar_method'] == 'default':
                 settings['dtype'] = '247'  # 'LV917', '247'
             else:
