@@ -3,6 +3,7 @@ Created on Fri Jan 10 11:40:46 2020
 
 @author: Manuel Camargo
 """
+#%%
 import random
 import os
 import itertools
@@ -16,6 +17,10 @@ from support_modules import support as sup
 from support_modules.analyzers import alpha_oracle as ao
 from support_modules.analyzers.alpha_oracle import Rel
 
+import pandas as pd
+import json
+
+#%%
 
 class SimilarityEvaluator():
     """
@@ -487,3 +492,18 @@ class SimilarityEvaluator():
                          **temp_dict}
             temp_data.append(temp_dict)
         return sorted(temp_data, key=itemgetter('start_time'))
+#%%
+
+with open('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/settings.json') as file:
+    settings = json.load(file)
+    file.close()
+    
+data = pd.read_csv('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/process_stats.csv')
+data['end_timestamp'] =  pd.to_datetime(data['end_timestamp'], format=settings['read_options']['timeformat'])
+data['start_timestamp'] =  pd.to_datetime(data['start_timestamp'], format=settings['read_options']['timeformat'])
+evaluation = SimilarityEvaluator(
+    data,
+    settings,
+    0,
+    metric='tsd')
+print(evaluation.similarity)
