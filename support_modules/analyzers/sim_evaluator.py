@@ -81,6 +81,8 @@ class SimilarityEvaluator():
             distance = self.tsd_min_pattern(sampled_log_data, simulation_data)
         elif self.metric == 'mae':
             distance = self.mae_metric(sampled_log_data, simulation_data)
+        elif self.metric == 'log-emd':
+            distance = self.log_emd_metric(sampled_log_data, simulation_data)
         else:
             distance = self.dl_mae_distance(sampled_log_data, simulation_data)
         return distance
@@ -387,6 +389,46 @@ class SimilarityEvaluator():
                                    log_order=log_data[idy]['profile'],
                                    sim_score=(ae_matrix[idx][idy])))
         return similarity
+    
+# =============================================================================
+# Log emd distance
+# =============================================================================
+    
+    def log_emd_metric(self, log_data, simulation_data):
+        similarity = list()
+        window = 1
+        # hist_range = [0, int((window * 3600))]
+        day_hour = lambda x: x['timestamp'].hour
+        log_data['hour'] = log_data.apply(day_hour, axis=1)
+        simulation_data['hour'] = simulation_data.apply(day_hour, axis=1)
+        date = lambda x: x['timestamp'].date()
+        log_data['date'] = log_data.apply(date, axis=1)
+        simulation_data['date'] = simulation_data.apply(date, axis=1)
+        # create time windows
+        i = 0
+        daily_windows = dict()
+        for x in range(24):
+            if x % window == 0:
+                i += 1
+            daily_windows[x] = i
+        log_data = log_data.merge(
+            pd.DataFrame.from_dict(
+                daily_windows, orient='index').rename_axis('hour'),
+            on='hour',
+            how='left').rename(columns={0: 'window'})
+        simulation_data = simulation_data.merge(
+            pd.DataFrame.from_dict(
+                daily_windows, orient='index').rename_axis('hour'),
+            on='hour',
+            how='left').rename(columns={0: 'window'})
+        print(log_data)
+        print(simulation_data)
+        similarity.append(dict(caseid=0,
+                               sim_order=0,
+                               log_order=0,
+                               sim_score=0))
+        return similarity
+
 
 # =============================================================================
 # Support methods
@@ -505,5 +547,5 @@ evaluation = SimilarityEvaluator(
     data,
     settings,
     0,
-    metric='tsd')
+    metric='log-emd')
 print(evaluation.similarity)
