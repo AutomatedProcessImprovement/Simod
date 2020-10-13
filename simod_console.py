@@ -45,7 +45,7 @@ def main(argv):
             settings['pdef_method'] = 'automatic'
             # Calendar parameters
             # calendar methods 'default', 'discovery'
-            settings['calendar_method'] = 'discovery' 
+            settings['calendar_method'] = 'discovery'
             if settings['calendar_method'] == 'default':
                 settings['dtype'] = '247'  # 'LV917', '247'
             else:
