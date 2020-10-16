@@ -33,7 +33,7 @@ class ParameterMiner():
         self.conformant_traces = list()
         self.resource_table = pd.DataFrame()
 
-    def extract_parameters(self, num_inst) -> None:
+    def extract_parameters(self, num_inst, start_time) -> None:
         """
         main method for parameters extraction
         """
@@ -44,6 +44,7 @@ class ParameterMiner():
         self.process_tasks()
         # TODO: Num of test partition
         self.parameters['instances'] = num_inst
+        self.parameters['start_time'] = start_time
 
     def replay_process(self) -> None:
         """
@@ -106,7 +107,6 @@ class ParameterMiner():
                                       self.settings)
         self.parameters['elements_data'] = tevaluator.elements_data
         
-    # TODO: move to xml bimp writter 
     @staticmethod       
     def create_resource_pool(resource_table, table_name) -> list():
         """

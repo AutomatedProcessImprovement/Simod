@@ -13,11 +13,11 @@ def create_file(output_file, element):
 #-------------- kernel --------------
 def print_parameters(bpmn_input, output_file, parameters):
     my_doc = xml_template(parameters['arrival_rate'],
-                       # parameters['time_table'],
                        parameters['resource_pool'],
                        parameters['elements_data'],
                        parameters['sequences'],
-                       parameters['instances'])
+                       parameters['instances'],
+                       parameters['start_time'])
     # insert timetable
     ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
     child = parameters['time_table'].find('qbp:timetable', namespaces=ns)
@@ -27,7 +27,7 @@ def print_parameters(bpmn_input, output_file, parameters):
     root = append_parameters(bpmn_input, my_doc)
     create_file(output_file, etree.tostring(root, pretty_print=True))
 
-def xml_template(arrival_rate, resource_pool, elements_data, sequences, instances):
+def xml_template(arrival_rate, resource_pool, elements_data, sequences, instances, start_time):
     E = ElementMaker(namespace="http://www.qbp-simulator.com/Schema201212", 
                      nsmap={'qbp':"http://www.qbp-simulator.com/Schema201212"})
     PROCESSSIMULATIONINFO = E.processSimulationInfo
@@ -90,7 +90,7 @@ def xml_template(arrival_rate, resource_pool, elements_data, sequences, instance
             ]
         ),
         id=rootid, processInstances=str(instances), 
-        startDateTime="2017-08-14T08:00:00.000Z", 
+        startDateTime=start_time, 
         currency="EUR"
     )
     return my_doc

@@ -142,7 +142,9 @@ class Simod():
                                          self.process_graph,
                                          self.settings)
         num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
-        p_extractor.extract_parameters(num_inst)
+        start_time = (pd.DataFrame(self.log_test)
+                      .start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+        p_extractor.extract_parameters(num_inst, start_time)
         self.process_stats = self.process_stats.merge(
             p_extractor.resource_table[['resource', 'role']],
             on='resource',
@@ -165,12 +167,17 @@ class Simod():
                     self.read_stats(self.settings, self.bpmn, rep),
                     ignore_index=True,
                     sort=False)
-                evaluation = sim.SimilarityEvaluator(
+                evaluator = sim.SimilarityEvaluator(
                     self.process_stats,
                     self.settings,
-                    rep,
-                    metric=self.settings['sim_metric'])
-                self.sim_values.append(evaluation.similarity)
+                    rep)
+                metrics = [self.settings['sim_metric']]
+                if 'add_metrics' in self.settings.keys():
+                    metrics = list(set(list(self.settings['add_metrics']) +
+                                       metrics))
+                for metric in metrics:
+                    evaluator.measure_distance(metric)
+                    self.sim_values.append(evaluator.similarity)
             except Exception as e:
                 print(e)
                 self.status = STATUS_FAIL
@@ -197,10 +204,11 @@ class Simod():
             [print(k, v, sep=': ') for k, v in self.response.items()
              if k != 'params']
             self.response.pop('params', None)
-            sup.create_csv_file_header([self.response],
-                                       os.path.join(
-                                           'outputs',
-                                           self.settings['temp_file']))
+            if measurements:
+                sup.create_csv_file_header(measurements,
+                                           os.path.join(
+                                               'outputs',
+                                               self.settings['temp_file']))
 
     @staticmethod
     def define_response(status, sim_values, settings):
@@ -212,11 +220,15 @@ class Simod():
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
+        if settings['calendar_method'] == 'discovery':
+            data['support'] = settings['support']
+            data['confidence'] = settings['confidence']
         if settings['exec_mode'] == 'optimizer':
             similarity = 0
             response['params'] = settings
             if status == STATUS_OK:
-                similarity = np.mean([x['sim_val'] for x in sim_values])
+                similarity = np.mean([x['sim_val'] for x in sim_values
+                                      if x['metric'] == settings['sim_metric']])
                 loss = ((1 - similarity) if settings['sim_metric'] != 'mae'
                         else similarity)
                 response['loss'] = loss
@@ -224,22 +236,33 @@ class Simod():
                 for sim_val in sim_values:
                     measurements.append({
                         **{'similarity': sim_val['sim_val'],
-                            'status': response['status']},
+                           'sim_metric': sim_val['metric'],
+                           'status': response['status']},
                         **data})
             else:
                 response['status'] = status
                 measurements.append({
-                    **{'similarity': 0, 'status': response['status']},
+                    **{'similarity': 0, 
+                       'sim_metric': settings['sim_metric'],
+                       'status': response['status']},
                     **data})
         else:
             if status == STATUS_OK:
-                similarity = np.mean([x['sim_val'] for x in sim_values])
+                similarity = np.mean([x['sim_val'] for x in sim_values
+                                      if x['metric'] == settings['sim_metric']])
                 response['similarity'] = similarity
                 response['params'] = settings
                 response['status'] = status if similarity > 0 else STATUS_FAIL
                 response = {**response, **data}
+                for sim_val in sim_values:
+                    measurements.append({
+                        **{'similarity': sim_val['sim_val'],
+                           'sim_metric': sim_val['metric'],
+                           'status': response['status']},
+                        **data})
             else:
                 response['similarity'] = 0
+                response['sim_metric'] = settings['sim_metric']
                 response['status'] = status
                 response = {**response, **data}
         return response, measurements
@@ -424,6 +447,12 @@ class DiscoveryOptimizer():
                     'rp_similarity': hp.uniform('rp_similarity',
                                                 args['rp_similarity'][0],
                                                 args['rp_similarity'][1]),
+                    'support': hp.uniform('support',
+                                          args['support'][0],
+                                          args['support'][1]),
+                    'confidence': hp.uniform('confidence',
+                                             args['confidence'][0],
+                                             args['confidence'][1]),
                     'gate_management': hp.choice('gate_management',
                                                  args['gate_management'])},
                  **settings}

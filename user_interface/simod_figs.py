@@ -10,6 +10,7 @@ import getopt
 import threading
 import queue
 import time
+import subprocess
 
 import pandas as pd
 
@@ -18,7 +19,7 @@ from matplotlib.figure import Figure
 import seaborn as sns
 
 import tkinter
-from tkinter import BOTH, BOTTOM, HORIZONTAL
+from tkinter import BOTH, BOTTOM, HORIZONTAL, TOP
 from tkinter import Frame, Canvas, ttk, messagebox
 from PIL import Image, ImageTk
 
@@ -33,6 +34,7 @@ class OptimizerMonitor(Frame):
         self.image_path = os.path.join(
             'outputs', os.path.splitext(self.file)[0]+'.png')
         self.max_eval = settings['max_eval']
+        self.metric = settings['sim_metric']
         #
         center = Frame(master, padx=0, pady=0, width=760, height=300)
         btm_frame = Frame(master, pady=0, width=450, height=40)      
@@ -56,13 +58,19 @@ class OptimizerMonitor(Frame):
         table_frame.grid(row=0, column=1, sticky='W')
         
         self.tree = self.create_table(table_frame)
-        open_explorer = tkinter.Button(table_frame, 
+        self.tree.pack(side=TOP, padx=0, pady=0)
+
+        buttons = Frame(table_frame, padx=0, pady=0)
+        buttons.pack(side=BOTTOM, padx=0, pady=0)
+        open_explorer = tkinter.Button(buttons, 
                                        text='Open externally', 
                                        command=self.open_explorer)
-        self.tree.grid(row=0, column=0, sticky='W')
-        open_explorer.grid(row=1, column=0, sticky='W')
+        open_explorer.grid(row=0, column=0, padx=0, pady=0)
+        go_home = tkinter.Button(buttons,
+                                 text='New execution', 
+                                 command=self.go_home)
+        go_home.grid(row=0, column=1, padx=0, pady=0)
 
-        
         self.progress = ttk.Progressbar(btm_frame, orient=HORIZONTAL,
                                     length=760, mode='determinate')
         self.progress.pack(side=BOTTOM, padx=0, pady=0)
@@ -72,7 +80,8 @@ class OptimizerMonitor(Frame):
         log = pd.read_csv(os.path.join('outputs', self.file))
         log = log[log.status=='ok']
         log = log.groupby('output').mean().reset_index()
-        log = log.sort_values('similarity', ascending=False).head(10)
+        asc = True if self.metric == 'mae' else False 
+        log = log.sort_values('similarity', ascending=asc).head(10)
         log = log[['output', 'similarity']].to_dict('records')
         tree = ttk.Treeview(frame)
         tree['columns']=('similarity')
@@ -129,7 +138,8 @@ class OptimizerMonitor(Frame):
         log = pd.read_csv(os.path.join('outputs', self.file))
         log = log[log.status=='ok']
         log = log.groupby('output').mean().reset_index()
-        log = log.sort_values('similarity', ascending=False).head(10)
+        asc = True if self.metric == 'mae' else False 
+        log = log.sort_values('similarity', ascending=asc).head(10)
         log = log[['output', 'similarity']].to_dict('records')
         for data in log:
             self.tree.insert('', 'end', text=data['output'],
@@ -158,6 +168,13 @@ class OptimizerMonitor(Frame):
         except:
             messagebox.showerror("Error", "Please select one model")
             
+    def go_home(self):
+        try:
+            var = ['python', 'simod_ui.py']
+            subprocess.Popen(var)
+            self.master.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", e.message())
 
     def processIncoming(self):
         """
@@ -234,7 +251,7 @@ class ThreadedClient:
 
 def catch_parameter(opt):
     """Change the captured parameters names"""
-    switch = {'-h': 'help', '-f': 'file', '-e': 'max_eval'}
+    switch = {'-h': 'help', '-f': 'file', '-e': 'max_eval', '-s': 'sim_metric'}
     try:
         return switch[opt]
     except Exception as e:
@@ -246,7 +263,7 @@ if __name__ == "__main__":
     settings = dict()
     # Catch parameters by console
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "hf:e:", ['file=', "max_eval="])
+        opts, _ = getopt.getopt(sys.argv[1:], "hf:e:s:", ['file=', "max_eval=", "sim_metric="])
         for opt, arg in opts:
             key = catch_parameter(opt)
             if key == 'max_eval':

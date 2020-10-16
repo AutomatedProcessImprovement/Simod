@@ -19,9 +19,9 @@ class SimodWindow(Frame):
         self.master.title("Simod")
         self.tabControl = ttk.Notebook(root) 
           
-        tab1 = ttk.Frame(self.tabControl, width=450, height=450) 
-        tab2 = ttk.Frame(self.tabControl, width=450, height=450) 
-        tab3 = ttk.Frame(self.tabControl, width=450, height=450) 
+        tab1 = ttk.Frame(self.tabControl, width=450, height=550) 
+        tab2 = ttk.Frame(self.tabControl, width=450, height=550) 
+        tab3 = ttk.Frame(self.tabControl, width=450, height=550) 
         
         self.tabControl.add(tab1, text ='General') 
         self.tabControl.add(tab2, text ='Single', state='disable')
@@ -35,6 +35,7 @@ class SimodWindow(Frame):
         
         self.general_form = list()
         self.single_form = list()
+        self.calendar = dict()
         self.opt_form = list()
         self.create_general_form(tab1)
         self.create_single_form(tab2)
@@ -43,7 +44,7 @@ class SimodWindow(Frame):
        
     def create_general_form(self, tab):
         form = Frame(tab)
-        center = LabelFrame(form, padx=90, pady=30, width=450, height=250)
+        center = LabelFrame(form, padx=90, pady=30, width=450, height=350)
         btm_frame = Frame(form, pady=3, width=450, height=40)      
         
         # layout all of the main containers
@@ -61,11 +62,14 @@ class SimodWindow(Frame):
         en_file.grid(row=0, column=1, columnspan=2, padx=5, sticky='W')
         # Center elements
         def open_file():
+            en_file.config(state='normal')
+            en_file.delete(0, 'end')
+            en_file.config(state='disabled')
             file = filedialog.askopenfilename(
                 initialdir = os.path.join(os.getcwd(), 'inputs'),
                 title = "Select file",
-                filetypes = (("csv files","*.csv"),
-                             ("XES files","*.xes"),
+                filetypes = (("XES files","*.xes"),
+                             ("csv files","*.csv"),
                              ("all files","*.*")))
             en_file.config(state='normal')
             en_file.insert(0, os.path.basename(file))
@@ -107,7 +111,7 @@ class SimodWindow(Frame):
         
     def create_single_form(self, tab):
         form = Frame(tab)
-        center = LabelFrame(form, width=450, height=250, padx=50, pady=20)
+        center = LabelFrame(form, width=450, height=350, padx=50, pady=5)
         btm_frame = Frame(form, width=450, height=45, pady=3)        
         
         # layout all of the main containers
@@ -166,11 +170,47 @@ class SimodWindow(Frame):
         cb_gate.grid(row=4, column=1, padx=5, sticky='W')
         self.single_form.append({'name': 'gate_management', 'obj': cb_gate})
 
-      
+        lb_cal = Label(center, text ="Resources calendar discovery: ")
+        lb_cal.grid(row=5, sticky='W')
+        cb_cal = ttk.Combobox(center)
+        cb_cal.set('7/24')
+        cb_cal['values'] = ('discovery', '7/24', 'M-F 9/17')
+        cb_cal.grid(row=5, column=1, padx=5, sticky='W')
+        cb_cal.bind('<<ComboboxSelected>>', self.onselect)
+        self.single_form.append({'name': 'calendar_method', 'obj': cb_cal})
+        
+        # Calendar discovery parameters
+        self.center2 = LabelFrame(center, padx=0, pady=0, width=350, height=95)
+        self.center2.grid(row=6, column=0, columnspan=2, padx=0, sticky='W')
+        self.center2.grid_propagate(False)
+        
+        lb_sup = Label(self.center2, text ="Support: ")
+        lb_sup.grid(row=0, sticky='W')
+        var = tk.DoubleVar()
+        sl_sup = Scale(self.center2, variable=var,
+                          from_=0, to=1, resolution=0.01,
+                          orient = tk.HORIZONTAL, length=140)
+        sl_sup.set(0.02)
+        sl_sup.grid(row=0, column=1, columnspan=2, padx=5, sticky='W')
+        self.calendar['support'] = sl_sup
+        
+        lb_conf = Label(self.center2, text ="Confidence: ")
+        lb_conf.grid(row=1, sticky='W')
+        var2 = tk.DoubleVar()
+        sl_conf = Scale(self.center2, variable=var2,
+                          from_=50, to=100, resolution=1,
+                          orient = tk.HORIZONTAL, length=140)
+        sl_conf.set(70)
+        sl_conf.grid(row=1, column=1, columnspan=2, padx=5, sticky='W')
+        self.calendar['confidence'] = sl_conf
+        
+        for child in self.center2.winfo_children():
+            child.configure(state='disable')
+
         var4 = tk.BooleanVar()
         ck_semi= ttk.Checkbutton(center, variable=var4,
                                  text="Semi-automatic")
-        ck_semi.grid(row=5, column=0, padx=5, sticky='W')
+        ck_semi.grid(row=7, column=0, padx=5, sticky='W')
         self.single_form.append({'name': 'pdef_method', 'obj': var4})
         
         # Bottom elements
@@ -182,10 +222,20 @@ class SimodWindow(Frame):
         form.pack(side = tk.TOP, fill = tk.X, padx = 5 , pady = 5)
         return form
 
+    def onselect(self, evt):
+        # Note here that Tkinter passes an event object to onselect()
+        w = evt.widget
+        if w.get() == 'discovery':
+            for child in self.center2.winfo_children():
+                child.configure(state='normal')
+        else:
+            for child in self.center2.winfo_children():
+                child.configure(state='disable')
+    
 
     def create_optimizer_form(self, tab):
         form = Frame(tab)
-        center = LabelFrame(form, width=450, height=250, padx=50, pady=10)
+        center = LabelFrame(form, width=450, height=350, padx=20, pady=10)
         btm_frame = Frame(form, width=450, height=45, pady=3)        
         
         # layout all of the main containers
@@ -246,14 +296,47 @@ class SimodWindow(Frame):
         self.opt_form.append({'name': 'rpool_min', 'obj': sl_rpool_min})
         self.opt_form.append({'name': 'rpool_max', 'obj': sl_rpool_max})
 
+        lb_sup = Label(center, text ="Calendar Support: ")
+        varmin = tk.DoubleVar()
+        varmax = tk.DoubleVar()
+        sl_sup_min = tk.Scale(center, variable=varmin,
+                          from_=0.01, to=1, resolution=0.01,
+                          orient = tk.HORIZONTAL, label='min')
+        sl_sup_max = tk.Scale(center, variable=varmax,
+                          from_=0.01, to=1, resolution=0.01,
+                          orient = tk.HORIZONTAL, label='max')
+        sl_sup_min.set(0.01)
+        sl_sup_max.set(0.3)
+        lb_sup.grid(row=3, sticky='W')
+        sl_sup_min.grid(row=3, column=1, padx=5, sticky='W')
+        sl_sup_max.grid(row=3, column=2, padx=5, sticky='W')
+        self.opt_form.append({'name': 'sup_min', 'obj': sl_sup_min})
+        self.opt_form.append({'name': 'sup_max', 'obj': sl_sup_max})
+
+        lb_con = Label(center, text ="Calendar Confidence: ")
+        varmin = tk.DoubleVar()
+        varmax = tk.DoubleVar()
+        sl_con_min = tk.Scale(center, variable=varmin,
+                          from_=50, to=100, resolution=1,
+                          orient = tk.HORIZONTAL, label='min')
+        sl_con_max = tk.Scale(center, variable=varmax,
+                          from_=50, to=100, resolution=1,
+                          orient = tk.HORIZONTAL, label='max')
+        sl_con_min.set(50)
+        sl_con_max.set(85)
+        lb_con.grid(row=4, sticky='W')
+        sl_con_min.grid(row=4, column=1, padx=5, sticky='W')
+        sl_con_max.grid(row=4, column=2, padx=5, sticky='W')
+        self.opt_form.append({'name': 'con_min', 'obj': sl_con_min})
+        self.opt_form.append({'name': 'con_max', 'obj': sl_con_max})
         
         lb_eval = Label(center, text ="Max. Evaluations: ")
-        lb_eval.grid(row=3, sticky='W')
+        lb_eval.grid(row=5, sticky='W')
         var3 = tk.IntVar()
         sl_eval = tk.Scale(center, variable=var3,
                           from_=1, to=50, resolution=1,
                           orient = tk.HORIZONTAL, length=215)
-        sl_eval.grid(row=3, column=1, columnspan=2, padx=5, sticky='W')
+        sl_eval.grid(row=5, column=1, columnspan=2, padx=5, sticky='W')
         self.opt_form.append({'name': 'max_eval', 'obj': sl_eval})
 
         
@@ -269,7 +352,6 @@ class SimodWindow(Frame):
 
     def execute_single(self, event=None):
         self.settings['temp_file'] = sup.file_id(prefix='SE_')
-        self.settings['simulation'] = True
         for obj in self.general_form:
             self.settings[obj['name']] = obj['obj'].get()
         for obj in self.single_form:
@@ -277,6 +359,17 @@ class SimodWindow(Frame):
                 self.settings[obj['name']] = ('semi-automatic' 
                                               if obj['obj'].get() else 
                                               'automatic')
+            elif obj['name'] == 'calendar_method':
+                if obj['obj'].get() == '7/24':
+                    self.settings['calendar_method'] = 'default'
+                    self.settings['dtype'] = '247'
+                elif obj['obj'].get() == 'M-F 9/17':
+                    self.settings['calendar_method'] = 'default'
+                    self.settings['dtype'] = 'LV917'
+                else:
+                    self.settings['calendar_method'] = 'discovery'
+                    self.settings['support'] = self.calendar['support'].get()
+                    self.settings['confidence'] = self.calendar['confidence'].get()
             else:
                 self.settings[obj['name']] = obj['obj'].get()
         self.validated = True
@@ -312,14 +405,26 @@ class SimodWindow(Frame):
                                 self.opt_form))[0]['obj'].get(),
            list(filter(lambda x: x['name']=='rpool_max', 
                                 self.opt_form))[0]['obj'].get()]
+        self.args['support'] = [
+           list(filter(lambda x: x['name']=='sup_min', 
+                                self.opt_form))[0]['obj'].get(),
+           list(filter(lambda x: x['name']=='sup_max', 
+                                self.opt_form))[0]['obj'].get()]
+        self.args['confidence'] = [
+           list(filter(lambda x: x['name']=='con_min', 
+                                self.opt_form))[0]['obj'].get(),
+           list(filter(lambda x: x['name']=='con_max', 
+                                self.opt_form))[0]['obj'].get()]
         self.args['gate_management'] = ['discovery', 'random', 'equiprobable']
         for obj in self.general_form:
             self.settings[obj['name']] = obj['obj'].get()
         
-        self.settings['simulation'] = True
         self.settings['temp_file'] = sup.file_id(prefix='OP_')
         self.settings['pdef_method'] = 'automatic'
-        if val_inter('eta') and val_inter('epsilon') and val_inter('rp_similarity'):
+        self.settings['calendar_method'] = 'discovery'
+        if (val_inter('eta') and val_inter('epsilon') and 
+            val_inter('rp_similarity') and val_inter('support') and 
+            val_inter('confidence')):
             self.validated = True
             self.master.destroy()
  
@@ -377,7 +482,11 @@ class SimodWindow(Frame):
                                              'CaseTypeAlignmentResults.csv')
         self.settings['aligntype'] = os.path.join(self.settings['output'],
                                              'AlignmentStatistics.csv')
-
+        self.settings['calender_path'] = os.path.join('external_tools',
+                                                 'calenderimp',
+                                                 'CalenderImp.jar')
+        self.settings['simulator'] = 'bimp'        
+        self.settings['simulation'] = True
 
 if __name__ == "__main__":
     root = tk.Tk()
@@ -389,6 +498,10 @@ if __name__ == "__main__":
             print(settings)
             simod = sim.Simod(settings)
             simod.execute_pipeline(settings['exec_mode'])
+            var = ['python',
+                   os.path.join('user_interface', 'simod_sres.py'),
+                   '-f', settings['temp_file']]
+            subprocess.Popen(var)
         elif 'exec_mode' in settings.keys() and settings['exec_mode'] == 'optimizer':
             args = window.args
             print(args)
@@ -399,8 +512,11 @@ if __name__ == "__main__":
                 open(os.path.join('outputs',
                                   settings['temp_file']), 'w').close()
             # start monitor
-            var = ['python', 'simod_figs.py', 
-                    '-f',settings['temp_file'], '-e', str(args['max_eval'])]
+            var = ['python',
+                   os.path.join('user_interface', 'simod_figs.py'), 
+                   '-f',settings['temp_file'],
+                   '-e', str(args['max_eval']),
+                   '-s', settings['sim_metric']]
             subprocess.Popen(var)
             # optimizer
             optimizer = sim.DiscoveryOptimizer(settings, args)

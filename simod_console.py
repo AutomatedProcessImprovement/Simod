@@ -21,14 +21,17 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'single'
-    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae', 'log-emd'
-    settings['sim_metric'] = 'log-emd'
+    settings['exec_mode'] = 'optimizer'
+    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae', 
+    # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
+    settings['sim_metric'] = 'tsd' # Main metric
+    # Additional metrics
+    settings['add_metrics'] = ['hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'] 
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.xes'
-        settings['repetitions'] = 1
+        settings['file'] = 'ConsultaDataMining201618.xes'
+        settings['repetitions'] = 3
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
@@ -45,7 +48,7 @@ def main(argv):
             settings['pdef_method'] = 'automatic'
             # Calendar parameters
             # calendar methods 'default', 'discovery'
-            settings['calendar_method'] = 'default'
+            settings['calendar_method'] = 'discovery'
             if settings['calendar_method'] == 'default':
                 settings['dtype'] = '247'  # 'LV917', '247'
             else:
@@ -59,10 +62,13 @@ def main(argv):
         elif settings['exec_mode'] == 'optimizer':
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 3
+            args['max_eval'] = 2
             # Similarity btw the resources profile execution (Song e.t. all)
             args['rp_similarity'] = [0.5, 0.9]
             args['gate_management'] = ['discovery', 'random', 'equiprobable']
+            settings['calendar_method'] = 'discovery'
+            args['support'] = [0.01, 0.3]  # [0..1]
+            args['confidence'] = [50, 85]  # [50..85]
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer

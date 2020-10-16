@@ -12,7 +12,7 @@ import time
 
 
 def folder_id():
-    return datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')
+    return datetime.datetime.today().strftime('%Y%m%d_') + str(uuid.uuid4()).upper().replace('-', '_')
 
 def file_id(prefix='',extension='.csv'):
     return prefix+datetime.datetime.today().strftime('%Y%m%d_%H%M%S%f')+extension
@@ -51,13 +51,20 @@ def get_time_obj(date, timeformat):
     return date_modified
 
 #reduce list of lists with no repetitions
-def reduce_list(input):
+def reduce_list(input, dtype='int'):
     text = str(input).replace('[', '').replace(']', '')
     text = [x for x in text.split(',') if x != ' ']
-    temp_list = list()
-    for number in text:
-        temp_list.append(int(number))
-    return list(set(temp_list))
+    if text and not text == ['']:
+        if dtype=='int':
+            return list(set([int(x) for x in text]))
+        elif dtype=='float':
+            return list(set([float(x) for x in text]))
+        elif dtype=='str':
+            return list(set([x.strip() for x in text]))
+        else:
+            raise ValueError(dtype)
+    else:
+        return list()
 
 #print a csv file from list of lists
 def create_file_from_list(index, output_file):
@@ -96,7 +103,6 @@ def create_json(dictionary, output_file):
          f.write(json.dumps(dictionary))
          f.close()
 
-         
 
 def round_preserve(l, expected_sum):
     '''
@@ -129,11 +135,9 @@ def create_symetric_list(width, length):
     [numbers.append(x - a) for x in positions]
     return numbers
 
-
 def zero_to_nan(values):
     """Replace every 0 with 'nan' and return a copy."""
     return [float('nan') if x == 0 else x for x in values]
-
 
 def copy(source, destiny):
     if pl.system().lower() == 'windows':
@@ -187,9 +191,9 @@ def timeit(method) -> dict:
 # with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/settings.json') as file:
 #     settings = json.load(file)
 #     file.close()
-    
+
 # settings['pdef_method'] = 'apx'
-    
+
 # with open('C:/Users/Manuel Camargo/Documents/GitHub/SiMo-Discoverer/graph.json') as file:
 #     gdata = json.load(file)
 #     file.close()
