@@ -118,7 +118,7 @@ class Simod():
             print(e)
             self.status = STATUS_FAIL
             print("-- End of trial --")
-
+            
 
     @timeit
     def evaluate_alignment(self, **kwargs) -> None:
@@ -250,7 +250,7 @@ class Simod():
             else:
                 response['status'] = status
                 measurements.append({
-                    **{'similarity': 0,
+                    **{'similarity': 0, 
                        'sim_metric': settings['sim_metric'],
                        'status': response['status']},
                     **data})
@@ -463,15 +463,15 @@ class DiscoveryOptimizer():
             space = {
                 **{'res_cal_met': hp.choice('res_cal_met',
                 [('discovered',{
-                    'res_support1': hp.uniform('res_support1',
-                                              args['res_sup_dis'][0],
+                    'res_support1': hp.uniform('res_support1', 
+                                              args['res_sup_dis'][0], 
                                               args['res_sup_dis'][1]),
                     'res_confidence1': hp.uniform('res_confidence1',
                                                  args['res_con_dis'][0],
                                                  args['res_con_dis'][1])}),
                  ('pool', {
-                    'res_support2': hp.uniform('res_support2',
-                                              args['res_sup_pool'][0],
+                    'res_support2': hp.uniform('res_support2', 
+                                              args['res_sup_pool'][0], 
                                               args['res_sup_pool'][1]),
                     'res_confidence2': hp.uniform('res_confidence2',
                                                  args['res_con_pool'][0],
@@ -504,7 +504,7 @@ class DiscoveryOptimizer():
             simod.execute_pipeline(self.settings['exec_mode'])
             return simod.response
         # Optimize
-
+        
         best = fmin(fn=exec_simod,
                     space=self.space,
                     algo=tpe.suggest,
@@ -513,3 +513,4 @@ class DiscoveryOptimizer():
                     show_progressbar=False)
         print('------ Final results ------')
         [print(k, v) for k, v in best.items()]
+

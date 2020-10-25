@@ -21,7 +21,7 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'optimizer'
+    settings['exec_mode'] = 'single'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
     # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
     settings['sim_metric'] = 'tsd' # Main metric
@@ -30,7 +30,7 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'BPI_Challenge_2012_W_Two_TS.xes'
+        settings['file'] = 'Production.xes'
         settings['repetitions'] = 5
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
@@ -48,14 +48,14 @@ def main(argv):
             settings['pdef_method'] = 'automatic'
             # Calendar parameters
             # calendar methods 'default', 'discovered' ,'pool'
-            settings['res_cal_met'] = 'default'
+            settings['res_cal_met'] = 'pool'
             if settings['res_cal_met'] == 'default':
                 settings['res_dtype'] = '247'  # 'LV917', '247'
             else:
                 settings['res_support'] = 0.1  # [0..1]
                 settings['res_confidence'] = 10  # [50..85]
             # calendar methods 'default', 'discovered'
-            settings['arr_cal_met'] = 'default'
+            settings['arr_cal_met'] = 'discovered'
             if settings['arr_cal_met'] == 'default':
                 settings['arr_dtype'] = '247'  # 'LV917', '247'
             else:
