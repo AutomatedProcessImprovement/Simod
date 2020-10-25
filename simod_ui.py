@@ -61,6 +61,9 @@ class SimodWindow(Frame):
         en_file.grid(row=0, column=1, columnspan=2, padx=5, sticky='W')
         # Center elements
         def open_file():
+            en_file.config(state='normal')
+            en_file.delete(0, 'end')
+            en_file.config(state='disabled')
             file = filedialog.askopenfilename(
                 initialdir = os.path.join(os.getcwd(), 'inputs'),
                 title = "Select file",
@@ -389,6 +392,10 @@ if __name__ == "__main__":
             print(settings)
             simod = sim.Simod(settings)
             simod.execute_pipeline(settings['exec_mode'])
+            var = ['python',
+                   os.path.join('user_interface', 'simod_sres.py'),
+                   '-f', settings['temp_file']]
+            subprocess.Popen(var)
         elif 'exec_mode' in settings.keys() and settings['exec_mode'] == 'optimizer':
             args = window.args
             print(args)
@@ -399,8 +406,11 @@ if __name__ == "__main__":
                 open(os.path.join('outputs',
                                   settings['temp_file']), 'w').close()
             # start monitor
-            var = ['python', 'simod_figs.py', 
-                    '-f',settings['temp_file'], '-e', str(args['max_eval'])]
+            var = ['python',
+                   os.path.join('user_interface', 'simod_figs.py'), 
+                   '-f',settings['temp_file'],
+                   '-e', str(args['max_eval']),
+                   '-s', settings['sim_metric']]
             subprocess.Popen(var)
             # optimizer
             optimizer = sim.DiscoveryOptimizer(settings, args)
