@@ -118,7 +118,7 @@ class Simod():
             print(e)
             self.status = STATUS_FAIL
             print("-- End of trial --")
-            
+
 
     @timeit
     def evaluate_alignment(self, **kwargs) -> None:
@@ -137,25 +137,29 @@ class Simod():
     @timeit
     def extract_parameters(self, **kwargs) -> None:
         print("-- Mining Simulation Parameters --")
-        p_extractor = par.ParameterMiner(self.log_train,
-                                         self.bpmn,
-                                         self.process_graph,
-                                         self.settings)
-        num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
-        start_time = (pd.DataFrame(self.log_test)
-                      .start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
-        p_extractor.extract_parameters(num_inst, start_time)
-        self.process_stats = self.process_stats.merge(
-            p_extractor.resource_table[['resource', 'role']],
-            on='resource',
-            how='left')
-        # print parameters in xml bimp format
-        xml.print_parameters(os.path.join(
-            self.settings['output'],
-            self.settings['file'].split('.')[0]+'.bpmn'),
-            os.path.join(self.settings['output'],
-                         self.settings['file'].split('.')[0]+'.bpmn'),
-            p_extractor.parameters)
+        try:
+            p_extractor = par.ParameterMiner(self.log_train,
+                                             self.bpmn,
+                                             self.process_graph,
+                                             self.settings)
+            num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
+            start_time = (pd.DataFrame(self.log_test)
+                          .start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+            p_extractor.extract_parameters(num_inst, start_time)
+            self.process_stats = self.process_stats.merge(
+                p_extractor.resource_table[['resource', 'role']],
+                on='resource',
+                how='left')
+            # print parameters in xml bimp format
+            xml.print_parameters(os.path.join(
+                self.settings['output'],
+                self.settings['file'].split('.')[0]+'.bpmn'),
+                os.path.join(self.settings['output'],
+                             self.settings['file'].split('.')[0]+'.bpmn'),
+                p_extractor.parameters)
+        except Exception as e:
+            print(e)
+            self.status = STATUS_FAIL
 
     @timeit
     def simulate(self, **kwargs) -> None:
@@ -220,9 +224,13 @@ class Simod():
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
-        if settings['calendar_method'] == 'discovery':
-            data['support'] = settings['support']
-            data['confidence'] = settings['confidence']
+        if settings['res_cal_met'] in ['discovered' ,'pool']:
+            data['res_cal_met'] = settings['res_cal_met']
+            data['res_support'] = settings['res_support']
+            data['res_confidence'] = settings['res_confidence']
+        if settings['arr_cal_met'] == 'discovered':
+            data['arr_support'] = settings['arr_support']
+            data['arr_confidence'] = settings['arr_confidence']
         if settings['exec_mode'] == 'optimizer':
             similarity = 0
             response['params'] = settings
@@ -242,7 +250,7 @@ class Simod():
             else:
                 response['status'] = status
                 measurements.append({
-                    **{'similarity': 0, 
+                    **{'similarity': 0,
                        'sim_metric': settings['sim_metric'],
                        'status': response['status']},
                     **data})
@@ -434,38 +442,69 @@ class DiscoveryOptimizer():
 
     @staticmethod
     def define_search_space(settings, args):
-        space = {**{'epsilon': hp.uniform('epsilon',
-                                          args['epsilon'][0],
-                                          args['epsilon'][1]),
-                    'eta': hp.uniform('eta',
-                                      args['eta'][0],
-                                      args['eta'][1]),
-                    'alg_manag': hp.choice('alg_manag',
-                                           ['replacement',
-                                            'repair',
-                                            'removal']),
-                    'rp_similarity': hp.uniform('rp_similarity',
-                                                args['rp_similarity'][0],
-                                                args['rp_similarity'][1]),
-                    'support': hp.uniform('support',
-                                          args['support'][0],
-                                          args['support'][1]),
-                    'confidence': hp.uniform('confidence',
-                                             args['confidence'][0],
-                                             args['confidence'][1]),
-                    'gate_management': hp.choice('gate_management',
-                                                 args['gate_management'])},
-                 **settings}
+        if settings['calendar_method'] == 'default':
+            space = {**{'epsilon': hp.uniform('epsilon',
+                                              args['epsilon'][0],
+                                              args['epsilon'][1]),
+                        'eta': hp.uniform('eta',
+                                          args['eta'][0],
+                                          args['eta'][1]),
+                        'alg_manag': hp.choice('alg_manag',
+                                               ['replacement',
+                                                'repair',
+                                                'removal']),
+                        'rp_similarity': hp.uniform('rp_similarity',
+                                                    args['rp_similarity'][0],
+                                                    args['rp_similarity'][1]),
+                        'gate_management': hp.choice('gate_management',
+                                                     args['gate_management'])},
+                     **settings}
+        else:
+            space = {
+                **{'res_cal_met': hp.choice('res_cal_met',
+                [('discovered',{
+                    'res_support1': hp.uniform('res_support1',
+                                              args['res_sup_dis'][0],
+                                              args['res_sup_dis'][1]),
+                    'res_confidence1': hp.uniform('res_confidence1',
+                                                 args['res_con_dis'][0],
+                                                 args['res_con_dis'][1])}),
+                 ('pool', {
+                    'res_support2': hp.uniform('res_support2',
+                                              args['res_sup_pool'][0],
+                                              args['res_sup_pool'][1]),
+                    'res_confidence2': hp.uniform('res_confidence2',
+                                                 args['res_con_pool'][0],
+                                                 args['res_con_pool'][1])})
+                 ]),
+                'arr_support': hp.uniform('arr_support',
+                                          args['arr_support'][0],
+                                          args['arr_support'][1]),
+                'arr_confidence': hp.uniform('arr_confidence',
+                                              args['arr_confidence'][0],
+                                              args['arr_confidence'][1])},
+                **settings}
         return space
 
     def execute_trials(self):
         # create a new instance of Simod
         def exec_simod(instance_settings):
+            if not instance_settings['calendar_method'] == 'default':
+                method, values = instance_settings['res_cal_met']
+                if method == 'discovered':
+                    confidence = values['res_confidence1']
+                    support = values['res_support1']
+                else:
+                    confidence = values['res_confidence2']
+                    support = values['res_support2']
+                instance_settings['res_cal_met'] = method
+                instance_settings['res_confidence'] = confidence
+                instance_settings['res_support'] = support
             simod = Simod(instance_settings)
             simod.execute_pipeline(self.settings['exec_mode'])
             return simod.response
         # Optimize
-        
+
         best = fmin(fn=exec_simod,
                     space=self.space,
                     algo=tpe.suggest,
@@ -474,4 +513,3 @@ class DiscoveryOptimizer():
                     show_progressbar=False)
         print('------ Final results ------')
         [print(k, v) for k, v in best.items()]
-

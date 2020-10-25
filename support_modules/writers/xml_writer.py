@@ -20,9 +20,10 @@ def print_parameters(bpmn_input, output_file, parameters):
                        parameters['start_time'])
     # insert timetable
     ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
-    child = parameters['time_table'].find('qbp:timetable', namespaces=ns)
+    childs = parameters['time_table'].findall('qbp:timetable', namespaces=ns)
     node = my_doc.find('qbp:timetables', namespaces=ns)
-    node.insert(1, child)
+    for i, child in enumerate(childs):
+        node.insert((i + 1), child)
     # Append parameters to the bpmn model
     root = append_parameters(bpmn_input, my_doc)
     create_file(output_file, etree.tostring(root, pretty_print=True))

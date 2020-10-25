@@ -64,9 +64,12 @@ class ParameterMiner():
             sim_threshold=self.settings['rp_similarity'])
 
         ttcreator = sch.TimeTablesCreator(self.settings)
-        ttcreator.create_timetables(self.settings['calendar_method'])
+        args = {'res_cal_met': self.settings['res_cal_met'], 
+                'arr_cal_met': self.settings['arr_cal_met'], 
+                'resource_table': res_analyzer.resource_table}
+        ttcreator.create_timetables(args)
         resource_pool = self.create_resource_pool(res_analyzer.resource_table,
-                                                  ttcreator.time_table_name)
+                                                  ttcreator.res_ttable_name)
         self.parameters['resource_pool'] = resource_pool
         self.parameters['time_table'] = ttcreator.time_table
         # Adding role to process stats
@@ -115,14 +118,16 @@ class ParameterMiner():
         """
         resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM',
                               'total_amount': '20', 'costxhour': '20',
-                              'timetable_id': table_name}]
+                              'timetable_id': table_name['arrival']}]
         data = sorted(resource_table, key=lambda x: x['role'])
         for key, group in itertools.groupby(data, key=lambda x: x['role']):
             res_group = [x['resource'] for x in list(group)]
             r_pool_size = str(len(res_group))
+            name = (table_name['resources'] if 'resources' in table_name.keys()
+                    else table_name[key])
             resource_pool.append({'id': sup.gen_id(),
                                   'name': key,
                                   'total_amount': r_pool_size,
                                   'costxhour': '20',
-                                  'timetable_id': table_name})
+                                  'timetable_id': name})
         return resource_pool
