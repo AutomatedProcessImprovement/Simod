@@ -237,7 +237,7 @@ class Simod():
             if status == STATUS_OK:
                 similarity = np.mean([x['sim_val'] for x in sim_values
                                       if x['metric'] == settings['sim_metric']])
-                loss = ((1 - similarity) if settings['sim_metric'] != 'mae'
+                loss = ((1 - similarity) if not settings['sim_metric'] in ['mae', 'log_mae']
                         else similarity)
                 response['loss'] = loss
                 response['status'] = status if loss > 0 else STATUS_FAIL
@@ -459,6 +459,39 @@ class DiscoveryOptimizer():
                         'gate_management': hp.choice('gate_management',
                                                      args['gate_management'])},
                      **settings}
+        elif settings['calendar_method'] == 'global':
+            space = {**{'epsilon': hp.uniform('epsilon',
+                                              args['epsilon'][0],
+                                              args['epsilon'][1]),
+                        'eta': hp.uniform('eta',
+                                          args['eta'][0],
+                                          args['eta'][1]),
+                        'alg_manag': hp.choice('alg_manag',
+                                               ['replacement',
+                                                'repair',
+                                                'removal']),
+                        'rp_similarity': hp.uniform('rp_similarity',
+                                                    args['rp_similarity'][0],
+                                                    args['rp_similarity'][1]),
+                        'gate_management': hp.choice('gate_management',
+                                                     args['gate_management']),
+                        'res_cal_met': hp.choice('res_cal_met',
+                            [('discovered',{
+                                'res_support1': hp.uniform('res_support1', 
+                                                          args['res_sup_dis'][0], 
+                                                          args['res_sup_dis'][1]),
+                                'res_confidence1': hp.uniform('res_confidence1',
+                                                             args['res_con_dis'][0],
+                                                             args['res_con_dis'][1])})
+                             ]),
+                        'arr_support': hp.uniform('arr_support',
+                                                  args['arr_support'][0],
+                                                  args['arr_support'][1]),
+                        'arr_confidence': hp.uniform('arr_confidence',
+                                                      args['arr_confidence'][0],
+                                                      args['arr_confidence'][1])
+                        },
+                     **settings}
         else:
             space = {
                 **{'res_cal_met': hp.choice('res_cal_met',
@@ -468,14 +501,14 @@ class DiscoveryOptimizer():
                                               args['res_sup_dis'][1]),
                     'res_confidence1': hp.uniform('res_confidence1',
                                                  args['res_con_dis'][0],
-                                                 args['res_con_dis'][1])}),
-                 ('pool', {
-                    'res_support2': hp.uniform('res_support2', 
-                                              args['res_sup_pool'][0], 
-                                              args['res_sup_pool'][1]),
-                    'res_confidence2': hp.uniform('res_confidence2',
-                                                 args['res_con_pool'][0],
-                                                 args['res_con_pool'][1])})
+                                                 args['res_con_dis'][1])})
+                 # ('pool', {
+                 #    'res_support2': hp.uniform('res_support2', 
+                 #                              args['res_sup_pool'][0], 
+                 #                              args['res_sup_pool'][1]),
+                 #    'res_confidence2': hp.uniform('res_confidence2',
+                 #                                 args['res_con_pool'][0],
+                 #                                 args['res_con_pool'][1])})
                  ]),
                 'arr_support': hp.uniform('arr_support',
                                           args['arr_support'][0],
@@ -491,7 +524,7 @@ class DiscoveryOptimizer():
         def exec_simod(instance_settings):
             if not instance_settings['calendar_method'] == 'default':
                 method, values = instance_settings['res_cal_met']
-                if method == 'discovered':
+                if method in 'discovered':
                     confidence = values['res_confidence1']
                     support = values['res_support1']
                 else:

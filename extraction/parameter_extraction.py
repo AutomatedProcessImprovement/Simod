@@ -62,7 +62,6 @@ class ParameterMiner():
         res_analyzer = rl.ResourcePoolAnalyser(
             self.log,
             sim_threshold=self.settings['rp_similarity'])
-
         ttcreator = sch.TimeTablesCreator(self.settings)
         args = {'res_cal_met': self.settings['res_cal_met'], 
                 'arr_cal_met': self.settings['arr_cal_met'], 
@@ -74,6 +73,7 @@ class ParameterMiner():
         self.parameters['time_table'] = ttcreator.time_table
         # Adding role to process stats
         resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
+        # resource_table.to_csv('pools_'+self.settings['file'].split('.')[0]+'.csv')
         self.process_stats = self.process_stats.merge(resource_table,
                                                       on='resource',
                                                       how='left')

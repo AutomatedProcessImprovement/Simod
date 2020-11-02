@@ -21,41 +21,41 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'single'
+    settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
     # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
-    settings['sim_metric'] = 'tsd' # Main metric
+    settings['sim_metric'] = 'day_hour_emd' # Main metric
     # Additional metrics
-    settings['add_metrics'] = ['hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd', 'log_mae']
+    settings['add_metrics'] = ['tsd', 'hour_emd', 'day_emd', 'cal_emd', 'log_mae', 'dl_mae', 'mae']
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.xes'
+        settings['file'] = 'PurchasingExample.xes'
         settings['repetitions'] = 5
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
-            settings['gate_management'] = 'equiprobable'
+            settings['gate_management'] = 'discovery'
             # Similarity btw the resources profile execution (Song e.t. all)
-            settings['rp_similarity'] = 0.674159715
+            settings['rp_similarity'] = 0.672644226
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-            settings['epsilon'] = 0.982093376
-            settings['eta'] = 0.143679141
+            settings['epsilon'] = 0.601063585
+            settings['eta'] = 0.707803144
             # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'replacement'
+            settings['alg_manag'] = 'repair'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'automatic'
             # Calendar parameters
             # calendar methods 'default', 'discovered' ,'pool'
-            settings['res_cal_met'] = 'pool'
+            settings['res_cal_met'] = 'default'
             if settings['res_cal_met'] == 'default':
                 settings['res_dtype'] = '247'  # 'LV917', '247'
             else:
                 settings['res_support'] = 0.1  # [0..1]
                 settings['res_confidence'] = 10  # [50..85]
             # calendar methods 'default', 'discovered'
-            settings['arr_cal_met'] = 'discovered'
+            settings['arr_cal_met'] = 'default'
             if settings['arr_cal_met'] == 'default':
                 settings['arr_dtype'] = '247'  # 'LV917', '247'
             else:
@@ -67,26 +67,37 @@ def main(argv):
             simod = sim.Simod(settings)
             simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
-            args['max_eval'] = 30
+            args['max_eval'] = 50
             # calendar methods 'default', 'discovered'
             settings['calendar_method'] = 'discovered'
             if settings['calendar_method'] == 'discovered':
                 # gateways probabilities 'discovery', 'random', 'equiprobable'
-                settings['gate_management'] = 'equiprobable'
+                settings['gate_management'] = 'discovery'
                 # Similarity btw the resources profile execution (Song e.t. all)
-                settings['rp_similarity'] = 0.674159715
+                settings['rp_similarity'] = 0.672644226
                 # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-                settings['epsilon'] = 0.982093376
-                settings['eta'] = 0.143679141
+                settings['epsilon'] = 0.601063585
+                settings['eta'] = 0.707803144
                 # 'removal', 'replacement', 'repair'
-                settings['alg_manag'] = 'replacement'
+                settings['alg_manag'] = 'repair'
                 args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
                 args['res_con_dis'] = [50, 85]  # [50..85]
                 args['res_sup_pool'] = [0.01, 0.3]  # [0..1]
                 args['res_con_pool'] = [1, 20]  # [50..85]
                 settings['arr_cal_met'] = 'discovered'
                 args['arr_support'] = [0.01, 0.1]  # [0..1]
-                args['arr_confidence'] = [50, 52]  # [50..85]
+                args['arr_confidence'] = [10, 30]  # [50..85]
+            elif settings['calendar_method'] == 'global':
+                args['epsilon'] = [0.0, 1.0]
+                args['eta'] = [0.0, 1.0]
+                # Similarity btw the resources profile execution (Song e.t. all)
+                args['rp_similarity'] = [0.5, 0.9]
+                args['gate_management'] = ['discovery', 'random', 'equiprobable']
+                args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
+                args['res_con_dis'] = [50, 85]  # [50..85]
+                settings['arr_cal_met'] = 'discovered'
+                args['arr_support'] = [0.01, 0.1]  # [0..1]
+                args['arr_confidence'] = [10, 30]  # [50..85]
             else:
                 args['epsilon'] = [0.0, 1.0]
                 args['eta'] = [0.0, 1.0]
