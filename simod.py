@@ -17,8 +17,8 @@ from operator import itemgetter
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 
-from support_modules import support as sup
-from support_modules.support import timeit
+import utils.support as sup
+from utils.support import timeit
 from support_modules.readers import log_reader as lr
 from support_modules.readers import bpmn_reader as br
 from support_modules.readers import process_structure as gph

@@ -9,7 +9,7 @@ import sys
 import getopt
 import simod as sim
 
-from support_modules import support as sup
+import utils.support as sup
 
 # =============================================================================
 # Main function

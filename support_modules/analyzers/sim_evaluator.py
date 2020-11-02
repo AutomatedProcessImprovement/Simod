@@ -16,7 +16,7 @@ from scipy.optimize import linear_sum_assignment
 from scipy.stats import wasserstein_distance
 
 
-from support_modules import support as sup
+import utils.support as sup
 from support_modules.analyzers import alpha_oracle as ao
 from support_modules.analyzers.alpha_oracle import Rel
 

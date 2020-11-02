@@ -14,7 +14,7 @@ from extraction import tasks_evaluator as te
 
 import pandas as pd
 import itertools
-from support_modules import support as sup
+import utils.support as sup
 
 
 class ParameterMiner():

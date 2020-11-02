@@ -8,7 +8,7 @@ import tkinter as tk
 import os
 from tkinter import Frame, Button, Label, Entry, messagebox, ttk
 from tkinter import filedialog, Scale, LabelFrame
-from support_modules import support as sup
+import utils.support as sup
 import simod as sim
 import subprocess
 

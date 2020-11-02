@@ -9,7 +9,7 @@ import itertools as it
 import pandas as pd
 from operator import itemgetter
 
-from support_modules import support as sup
+import utils.support as sup
 
 
 class LogReader(object):

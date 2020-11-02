@@ -12,7 +12,7 @@ import numpy as np
 from extraction import pdf_finder as pdf
 from extraction.user_interface import manual_edition_ui as me
 
-from support_modules import support as sup
+import utils.support as sup
 
 
 class TaskEvaluator():
