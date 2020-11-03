@@ -291,7 +291,11 @@ class Simod():
 # =============================================================================
     def split_timeline(self, percentage: float, one_timestamp: bool) -> None:
         """
-        Split an event log dataframe to peform split-validation
+        Split an event log dataframe by time to peform split-validation. 
+        prefered method time splitting removing incomplete traces. 
+        If the testing set is smaller than the 10% of the log size 
+        the second method is sort by traces start and split taking the whole 
+        traces no matter if they are contained in the timeframe or not
 
         Parameters
         ----------
@@ -310,7 +314,7 @@ class Simod():
                 events[i]['trace_len'] = length
         log = pd.DataFrame.from_dict(log)
         log.sort_values(by='end_timestamp', ascending=False, inplace=True)
-
+        total_events = len(log)
         num_events = int(np.round(len(log)*percentage))
 
         df_test = log.iloc[:num_events]
@@ -331,7 +335,19 @@ class Simod():
 
         df_train = df_train[~df_train.caseid.isin(inc_traces)]
         df_train = df_train.drop(columns=['trace_len', 'pos_trace'])
-
+        
+        # Check size and change time splitting method if necesary
+        if len(df_test) < int(total_events*0.1):
+            cases = log[log.pos_trace==1]
+            key = 'end_timestamp' if one_timestamp else 'start_timestamp'
+            cases = cases.sort_values(key, ascending=True)
+            cases = cases.caseid.to_list()
+            num_test_cases = int(np.round(len(cases)*percentage))
+            test_cases = cases[:num_test_cases]
+            train_cases = cases[num_test_cases:]
+            df_train = log[log.caseid.isin(train_cases)]
+            df_test = log[log.caseid.isin(test_cases)]
+            
         key = 'end_timestamp' if one_timestamp else 'start_timestamp'
         self.log_test = (df_test
                          .sort_values(key, ascending=True)
