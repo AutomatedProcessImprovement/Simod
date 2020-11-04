@@ -5,6 +5,7 @@ import gzip
 import zipfile as zf
 import os
 import itertools as it
+import pm4py
 
 import pandas as pd
 from operator import itemgetter
@@ -38,7 +39,7 @@ class LogReader(object):
         reads all the data from the log depending
         the extension of the file
         """
-        # TODO: esto se puede manejar mejor con un patron de diseno
+        # TODO: esto se puede manejar mejor con un patron fabrica
         if self.file_extension == '.xes':
             self.get_xes_events_data()
         elif self.file_extension == '.csv':
@@ -49,73 +50,30 @@ class LogReader(object):
 # =============================================================================
 # xes methods
 # =============================================================================
-    def get_xes_events_data(self):
-        """
-        reads and parse all the events information from a xes file
-        """
-        temp_data = list()
-        tree = ET.parse(self.input)
-        root = tree.getroot()
-        if self.ns_include:
-            ns = {'xes': root.tag.split('}')[0].strip('{')}
-            tags = dict(trace='xes:trace',
-                        string='xes:string',
-                        event='xes:event',
-                        date='xes:date')
-        else:
-            ns = {'xes': ''}
-            tags = dict(trace='trace',
-                        string='string',
-                        event='event',
-                        date='date')
-        traces = root.findall(tags['trace'], ns)
-        i = 0
-        sup.print_performed_task('Reading log traces ')
-        for trace in traces:
-            temp_trace = list()
-            caseid = ''
-            for string in trace.findall(tags['string'], ns):
-                if string.attrib['key'] == 'concept:name':
-                    caseid = string.attrib['value']
-            for event in trace.findall(tags['event'], ns):
-                task = ''
-                user = ''
-                event_type = ''
-                for string in event.findall(tags['string'], ns):
-                    if string.attrib['key'] == 'concept:name':
-                        task = string.attrib['value']
-                    if string.attrib['key'] == 'org:resource':
-                        user = string.attrib['value']
-                    if string.attrib['key'] == 'lifecycle:transition':
-                        event_type = string.attrib['value'].lower()
-                timestamp = ''
-                for date in event.findall(tags['date'], ns):
-                    if date.attrib['key'] == 'time:timestamp':
-                        timestamp = date.attrib['value']
-                        try:
-                            timestamp = datetime.datetime.strptime(
-                                timestamp[:-6], self.timeformat)
-                        except ValueError:
-                            timestamp = datetime.datetime.strptime(
-                                timestamp, self.timeformat)
-                # By default remove Start and End events
-                # but will be added to standardize
-                if task not in ['0', '-1', 'Start', 'End', 'start', 'end']:
-                    if ((not self.one_timestamp) or
-                        (self.one_timestamp and event_type == 'complete')):
-                        temp_trace.append(dict(caseid=caseid,
-                                               task=task,
-                                               event_type=event_type,
-                                               user=user,
-                                               timestamp=timestamp))
-            if temp_trace:
-                temp_trace = self.append_xes_start_end(temp_trace)
-            temp_data.extend(temp_trace)
-            i += 1
-        self.raw_data = temp_data
-        self.data = self.reorder_xes(temp_data)
-        sup.print_done_task()
 
+    def get_xes_events_data(self):
+        log = pm4py.read_xes(self.input)
+        flattern_log = ([{**event, 
+                            **{'caseid': trace.attributes['concept:name']}} 
+                           for trace in log for event in trace])
+        temp_data = pd.DataFrame(flattern_log)
+        temp_data['time:timestamp'] = temp_data.apply(
+            lambda x: x['time:timestamp'].strftime(self.timeformat), axis=1)
+        temp_data['time:timestamp'] = pd.to_datetime(temp_data['time:timestamp'], 
+                                                format=self.timeformat)
+        temp_data.rename(columns={
+            'concept:name': 'task',
+            'lifecycle:transition': 'event_type',
+            'org:resource': 'user',
+            'time:timestamp': 'timestamp'}, inplace=True)
+        temp_data = (temp_data[(temp_data.task != 'Start') & (temp_data.task != 'End')]
+                .reset_index(drop=True))
+        self.raw_data = temp_data.to_dict('records')
+        sup.print_performed_task('Rearranging log traces ')
+        self.data = self.reorder_xes(temp_data)
+        self.append_csv_start_end()
+        sup.print_done_task()
+    
     def reorder_xes(self, temp_data):
         """
         this method match the duplicated events on the .xes log
@@ -132,58 +90,30 @@ class LogReader(object):
         else:
             self.column_names['Start Timestamp'] = 'start_timestamp'
             self.column_names['Complete Timestamp'] = 'end_timestamp'
-            cases = temp_data.caseid.unique()
-            for case in cases:
-                start_ev = (temp_data[(temp_data.event_type == 'start') &
-                                      (temp_data.caseid == case)]
-                            .sort_values(by='timestamp', ascending=True)
-                            .to_dict('records'))
-                complete_ev = (temp_data[(temp_data.event_type == 'complete') &
-                                         (temp_data.caseid == case)]
-                               .sort_values(by='timestamp', ascending=True)
-                               .to_dict('records'))
-                if len(start_ev) == len(complete_ev):
-                    temp_trace = list()
-                    for i, _ in enumerate(start_ev):
-                        match = False
-                        for j, _ in enumerate(complete_ev):
-                            if start_ev[i]['task'] == complete_ev[j]['task']:
-                                temp_trace.append(
-                                    {'caseid': case,
-                                     'task': start_ev[i]['task'],
-                                     'user': start_ev[i]['user'],
-                                     'start_timestamp': start_ev[i]['timestamp'],
-                                     'end_timestamp': complete_ev[j]['timestamp']})
-                                match = True
-                                break
-                        if match:
-                            del complete_ev[j]
-                    if match:
-                        ordered_event_log.extend(temp_trace)
+            for caseid, group in  temp_data.groupby(by=['caseid']):
+                trace = group.to_dict('records')
+                temp_trace = list()
+                for i in range(0, len(trace)-1):
+                    incomplete = False
+                    if trace[i]['event_type'] == 'start':
+                        c_task_name = trace[i]['task']
+                        remaining = trace[i+1:]
+                        complete_event = next((event for event in remaining if (event['task'] == c_task_name and event['event_type'] == 'complete')), None)
+                        if complete_event:
+                            temp_trace.append(
+                                {'caseid': caseid,
+                                  'task': trace[i]['task'],
+                                  'user': trace[i]['user'],
+                                  'start_timestamp': trace[i]['timestamp'],
+                                  'end_timestamp': complete_event['timestamp']})
+                        else:
+                            incomplete = True
+                            break
+                if not incomplete:
+                    ordered_event_log.extend(temp_trace)
+                    
+                
         return ordered_event_log
-
-    def append_xes_start_end(self, trace):
-        for event in ['Start', 'End']:
-            idx = 0 if event == 'Start' else -1
-            complete_ev = dict()
-            complete_ev['caseid'] = trace[idx]['caseid']
-            complete_ev['task'] = event
-            complete_ev['event_type'] = 'complete'
-            complete_ev['user'] = event
-            complete_ev['timestamp'] = trace[idx]['timestamp']
-            if event == 'Start':
-                trace.insert(0, complete_ev)
-                if not self.one_timestamp:
-                    start_ev = complete_ev.copy()
-                    start_ev['event_type'] = 'start'
-                    trace.insert(0, start_ev)
-            else:
-                trace.append(complete_ev)
-                if not self.one_timestamp:
-                    start_ev = complete_ev.copy()
-                    start_ev['event_type'] = 'start'
-                    trace.insert(-1, start_ev)
-        return trace
 
 # =============================================================================
 # csv methods
@@ -339,70 +269,17 @@ class LogReader(object):
         _, fileExtension = os.path.splitext(outfilename)
         return outfilename, fileExtension
 
-#     def get_mxml_events_data(self, filename, parameters):
-#         """read and parse all the events information from a MXML file"""
-#         temp_data = list()
-#         tree = ET.parse(filename)
-#         root = tree.getroot()
-#         process = root.find('Process')
-#         procInstas = process.findall('ProcessInstance')
-#         i = 0
-#         for procIns in procInstas:
-#             sup.print_progress(((i / (len(procInstas) - 1)) * 100), 'Reading log traces ')
-#             caseid = procIns.get('id')
-#             auditTrail = procIns.findall('AuditTrailEntry')
-#             for trail in auditTrail:
-#                 task = ''
-#                 user = ''
-#                 event_type = ''
-#                 timestamp = ''
-#                 attributes = trail.find('Data').findall('Attribute')
-#                 for attr in attributes:
-#                     if (attr.get('name') == 'concept:name'):
-#                         task = attr.text
-#                     if (attr.get('name') == 'lifecycle:transition'):
-#                         event_type = attr.text
-#                     if (attr.get('name') == 'org:resource'):
-#                         user = attr.text
-#                 event_type = trail.find('EventType').text
-#                 timestamp = trail.find('Timestamp').text
-#                 timestamp = datetime.datetime.strptime(trail.find('Timestamp').text[:-6], parameters['timeformat'])
-#                 temp_data.append(
-#                     dict(caseid=caseid, task=task, event_type=event_type, user=user, start_timestamp=timestamp,
-#                          end_timestamp=timestamp))
-#             i += 1
-#         raw_data = temp_data
-#         temp_data = self.reorder_mxml(temp_data)
-#         sup.print_done_task()
-#         return temp_data, raw_data
-#     def reorder_mxml(self, temp_data):
-#         """this method joints the duplicated events on the .mxml log"""
-#         data = list()
-#         start_events = list(filter(lambda x: x['event_type'] == 'start', temp_data))
-#         finish_events = list(filter(lambda x: x['event_type'] == 'complete', temp_data))
-#         for x, y in zip(start_events, finish_events):
-#             data.append(dict(caseid=x['caseid'], task=x['task'], event_type=x['event_type'],
-#                              user=x['user'], start_timestamp=x['start_timestamp'], end_timestamp=y['start_timestamp']))
-#         return data
-#     # TODO manejo de excepciones
-#     def find_first_task(self):
-#         """finds the first task"""
-#         cases = list()
-#         [cases.append(c['caseid']) for c in self.data]
-#         cases = sorted(list(set(cases)))
-#         first_task_names = list()
-#         for case in cases:
-#             trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter('start_timestamp'))
-#             first_task_names.append(trace[0]['task'])
-#         first_task_names = list(set(first_task_names))
-#         return first_task_names
-#     def read_resource_task(self,task,roles):
-#         """returns the resource that performs a task"""
-#         filtered_list = list(filter(lambda x: x['task']==task, self.data))
-#         role_assignment = list()
-#         for task in filtered_list:
-#             for role in roles:
-#                 for member in role['members']:
-#                     if task['user']==member:
-#                         role_assignment.append(role['role'])
-#         return max(role_assignment)
+# #%%
+# column_names = {'Case ID': 'caseid', 'Activity': 'task',
+#                 'lifecycle:transition': 'event_type', 'Resource': 'user'}
+# # Event-log reading options
+# settings = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
+#             'column_names': column_names,
+#             'one_timestamp': False,
+#             'filter_d_attrib': True,
+#             'ns_include': True}
+
+# log = LogReader(
+#     'C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/inputs/callcentre.xes',
+#     settings)
+# print(log.data)
