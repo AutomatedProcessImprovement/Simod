@@ -4,7 +4,7 @@ Simod combines several process mining techniques to automate the generation and 
 
 ### Prerequisites
 
-To execute this code, you need to install Anaconda in your system and create an environment using the *simo.yml* specification provided in the repository.
+To execute this code, you need to install Git and Anaconda in your system. Once installed, you can create an environment using the *simo.yml* specification provided in the repository.
 
 ### Data format
  
