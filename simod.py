@@ -9,6 +9,8 @@ import subprocess
 import types
 import itertools
 import copy
+import platform as pl
+
 
 import pandas as pd
 import numpy as np
@@ -106,19 +108,62 @@ class Simod():
         # Replaying test partition
         print("-- Reading test partition --")
         try:
+            log_test_size = len(pd.DataFrame(self.log_test).caseid.unique())
             test_replayer = rpl.LogReplayer(
                 self.process_graph,
                 self.get_traces(self.log_test,
                                 self.settings['read_options']['one_timestamp']),
                 self.settings)
-            self.process_stats = test_replayer.process_stats
-            self.process_stats = pd.DataFrame.from_records(self.process_stats)
-            self.log_test = test_replayer.conformant_traces
+            log_conf_size = len(pd.DataFrame(
+                test_replayer.conformant_traces).caseid.unique())
+            if (log_test_size*0.5) <= log_conf_size:
+                self.process_stats = test_replayer.process_stats
+                self.process_stats = pd.DataFrame.from_records(self.process_stats)
+                self.log_test = test_replayer.conformant_traces
+            else:
+                self.process_stats = self.calculate_times(pd.DataFrame(self.log_test))
+                self.process_stats.drop(['pos_trace', 'trace_len'], 
+                                        axis='columns', 
+                                        errors= 'ignore', 
+                                        inplace=True)
+                self.process_stats.rename(columns={'user': 'resource'}, 
+                                          inplace=True)
         except AssertionError as e:
             print(e)
             self.status = STATUS_FAIL
             print("-- End of trial --")
-            
+    
+    @staticmethod
+    def calculate_times(log):
+        """Appends the indexes and relative time to the dataframe.
+        parms:
+            log: dataframe.
+        Returns:
+            Dataframe: The dataframe with the calculated features added.
+        """
+        log['processing_time'] = 0
+        log['multitasking'] = 0
+        log['source'] = 'log'         
+        log['run_num'] = 0         
+        log = log.to_dict('records')
+        log = sorted(log, key=lambda x: x['caseid'])
+        for _, group in itertools.groupby(log, key=lambda x: x['caseid']):
+            events = list(group)
+            events = sorted(events, key=itemgetter('start_timestamp'))
+            for i in range(0, len(events)):
+                # In one-timestamp approach the first activity of the trace
+                # is taken as instantsince there is no previous timestamp
+                # to find a range
+                dur = (events[i]['end_timestamp'] -
+                       events[i]['start_timestamp']).total_seconds()
+                if i == 0:
+                    wit = 0
+                else:
+                    wit = (events[i]['start_timestamp'] -
+                           events[i-1]['end_timestamp']).total_seconds()
+                events[i]['waiting_time'] = wit if wit >= 0 else 0
+                events[i]['processing_time'] = dur
+        return pd.DataFrame.from_dict(log)
 
     @timeit
     def evaluate_alignment(self, **kwargs) -> None:
@@ -219,8 +264,9 @@ class Simod():
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                'epsilon': settings['epsilon'],
-                'eta': settings['eta'],
+                # 'epsilon': settings['epsilon'],
+                # 'eta': settings['eta'],
+                'concurrency': settings['concurrency'],
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
@@ -374,6 +420,24 @@ class Simod():
 # =============================================================================
 # External tools calling
 # =============================================================================
+    # @staticmethod
+    # def mining_structure(settings):
+    #     """Execute splitminer for bpmn structure mining.
+    #     Args:
+    #         settings (dict): Path to jar and file names
+    #         epsilon (double): Parallelism threshold (epsilon) in [0,1]
+    #         eta (double): Percentile for frequency threshold (eta) in [0,1]
+    #     """
+    #     print(" -- Mining Process Structure --")
+    #     # Event log file_name
+    #     file_name = settings['file'].split('.')[0]
+    #     input_route = os.path.join(settings['output'], file_name+'.xes')
+    #     # Mining structure definition
+    #     args = ['java', '-jar', settings['miner_path'],
+    #             str(settings['epsilon']), str(settings['eta']), input_route,
+    #             os.path.join(settings['output'], file_name)]
+    #     subprocess.call(args)
+        
     @staticmethod
     def mining_structure(settings):
         """Execute splitminer for bpmn structure mining.
@@ -386,10 +450,16 @@ class Simod():
         # Event log file_name
         file_name = settings['file'].split('.')[0]
         input_route = os.path.join(settings['output'], file_name+'.xes')
+        sep = ';' if pl.system().lower() == 'windows' else ':'
         # Mining structure definition
-        args = ['java', '-jar', settings['miner_path'],
-                str(settings['epsilon']), str(settings['eta']), input_route,
-                os.path.join(settings['output'], file_name)]
+        args = ['java', '-cp', 
+                (settings['miner_path']+sep+os.path.join(
+                    'external_tools','splitminer','lib','*')),
+                'au.edu.unimelb.services.ServiceProvider',
+                'SM2',
+                input_route,
+                os.path.join(settings['output'], file_name),
+                str(settings['concurrency'])]
         subprocess.call(args)
 
     @staticmethod
@@ -459,12 +529,9 @@ class DiscoveryOptimizer():
     @staticmethod
     def define_search_space(settings, args):
         if settings['calendar_method'] == 'default':
-            space = {**{'epsilon': hp.uniform('epsilon',
-                                              args['epsilon'][0],
-                                              args['epsilon'][1]),
-                        'eta': hp.uniform('eta',
-                                          args['eta'][0],
-                                          args['eta'][1]),
+            space = {**{'concurrency': hp.uniform('concurrency',
+                                              args['concurrency'][0],
+                                              args['concurrency'][1]),
                         'alg_manag': hp.choice('alg_manag',
                                                ['replacement',
                                                 'repair',
@@ -476,12 +543,9 @@ class DiscoveryOptimizer():
                                                      args['gate_management'])},
                      **settings}
         elif settings['calendar_method'] == 'global':
-            space = {**{'epsilon': hp.uniform('epsilon',
-                                              args['epsilon'][0],
-                                              args['epsilon'][1]),
-                        'eta': hp.uniform('eta',
-                                          args['eta'][0],
-                                          args['eta'][1]),
+            space = {**{'concurrency': hp.uniform('concurrency',
+                                              args['concurrency'][0],
+                                              args['concurrency'][1]),
                         'alg_manag': hp.choice('alg_manag',
                                                ['replacement',
                                                 'repair',

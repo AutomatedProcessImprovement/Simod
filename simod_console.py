@@ -21,7 +21,7 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'single'
+    settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
     # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
     settings['sim_metric'] = 'tsd' # Main metric
@@ -31,8 +31,8 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'callcentre.xes'
-        settings['repetitions'] = 5
+        settings['file'] = 'PurchasingExample.xes'
+        settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
@@ -40,8 +40,9 @@ def main(argv):
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.672644226
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-            settings['epsilon'] = 0.601063585
-            settings['eta'] = 0.707803144
+            # settings['epsilon'] = 0.601063585
+            # settings['eta'] = 0.707803144
+            settings['concurrency'] = 0.5
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'repair'
             # Processing time definition method:
@@ -68,17 +69,16 @@ def main(argv):
             simod = sim.Simod(settings)
             simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
-            args['max_eval'] = 50
+            args['max_eval'] = 2
             # calendar methods 'default', 'discovered'
-            settings['calendar_method'] = 'discovered'
+            settings['calendar_method'] = 'global'
             if settings['calendar_method'] == 'discovered':
                 # gateways probabilities 'discovery', 'random', 'equiprobable'
                 settings['gate_management'] = 'discovery'
                 # Similarity btw the resources profile execution (Song e.t. all)
                 settings['rp_similarity'] = 0.672644226
                 # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-                settings['epsilon'] = 0.601063585
-                settings['eta'] = 0.707803144
+                settings['concurrency'] = 0.601063585
                 # 'removal', 'replacement', 'repair'
                 settings['alg_manag'] = 'repair'
                 args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
@@ -89,8 +89,7 @@ def main(argv):
                 args['arr_support'] = [0.01, 0.1]  # [0..1]
                 args['arr_confidence'] = [10, 30]  # [50..85]
             elif settings['calendar_method'] == 'global':
-                args['epsilon'] = [0.0, 1.0]
-                args['eta'] = [0.0, 1.0]
+                args['concurrency'] = [0.0, 1.0]
                 # Similarity btw the resources profile execution (Song e.t. all)
                 args['rp_similarity'] = [0.5, 0.9]
                 args['gate_management'] = ['discovery', 'random', 'equiprobable']
@@ -100,8 +99,7 @@ def main(argv):
                 args['arr_support'] = [0.01, 0.1]  # [0..1]
                 args['arr_confidence'] = [10, 30]  # [50..85]
             else:
-                args['epsilon'] = [0.0, 1.0]
-                args['eta'] = [0.0, 1.0]
+                args['concurrency'] = [0.0, 1.0]
                 # Similarity btw the resources profile execution (Song e.t. all)
                 args['rp_similarity'] = [0.5, 0.9]
                 args['gate_management'] = ['discovery', 'random', 'equiprobable']
@@ -170,7 +168,7 @@ def define_general_settings(settings):
     # External tools routes
     settings['miner_path'] = os.path.join('external_tools',
                                           'splitminer',
-                                          'splitminer.jar')
+                                          'sm2.jar')
     settings['bimp_path'] = os.path.join('external_tools',
                                          'bimp',
                                          'qbp-simulator-engine.jar')
