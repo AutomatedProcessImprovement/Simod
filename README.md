@@ -14,7 +14,7 @@ and the mapping between activities and resource pools, which are a required elem
 
 ### Configuration
 
-Once created, you can execute the file simod_ui.py in a python console or using an IDE.
+You can execute the tool from the file simod_ui.py with a python console or IDE.
 
 ### Execution steps
 
