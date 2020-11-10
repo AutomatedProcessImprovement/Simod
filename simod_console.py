@@ -67,47 +67,21 @@ def main(argv):
             simod = sim.Simod(settings)
             simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
-            args['max_eval'] = 50
-            # calendar methods 'default', 'discovered'
-            settings['calendar_method'] = 'discovered'
-            if settings['calendar_method'] == 'discovered':
-                # gateways probabilities 'discovery', 'random', 'equiprobable'
-                settings['gate_management'] = 'discovery'
-                # Similarity btw the resources profile execution (Song e.t. all)
-                settings['rp_similarity'] = 0.672644226
-                # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-                settings['epsilon'] = 0.601063585
-                settings['eta'] = 0.707803144
-                # 'removal', 'replacement', 'repair'
-                settings['alg_manag'] = 'repair'
-                args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
-                args['res_con_dis'] = [50, 85]  # [50..85]
-                args['res_sup_pool'] = [0.01, 0.3]  # [0..1]
-                args['res_con_pool'] = [1, 20]  # [50..85]
-                settings['arr_cal_met'] = 'discovered'
-                args['arr_support'] = [0.01, 0.1]  # [0..1]
-                args['arr_confidence'] = [10, 30]  # [50..85]
-            elif settings['calendar_method'] == 'global':
-                args['epsilon'] = [0.0, 1.0]
-                args['eta'] = [0.0, 1.0]
-                # Similarity btw the resources profile execution (Song e.t. all)
-                args['rp_similarity'] = [0.5, 0.9]
-                args['gate_management'] = ['discovery', 'random', 'equiprobable']
-                args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
-                args['res_con_dis'] = [50, 85]  # [50..85]
-                settings['arr_cal_met'] = 'discovered'
-                args['arr_support'] = [0.01, 0.1]  # [0..1]
-                args['arr_confidence'] = [10, 30]  # [50..85]
-            else:
-                args['epsilon'] = [0.0, 1.0]
-                args['eta'] = [0.0, 1.0]
-                # Similarity btw the resources profile execution (Song e.t. all)
-                args['rp_similarity'] = [0.5, 0.9]
-                args['gate_management'] = ['discovery', 'random', 'equiprobable']
-                settings['res_cal_met'] = 'default'
-                settings['res_dtype'] = '247'  # 'LV917', '247'
-                settings['arr_cal_met'] = 'default'
-                settings['arr_dtype'] = '247'  # 'LV917', '247'
+            args['max_eval'] = 5
+            args['epsilon'] = [0.0, 1.0]
+            args['eta'] = [0.0, 1.0]
+            args['alg_manag'] = ['replacement', 'repair', 'removal']
+            # Similarity btw the resources profile execution (Song e.t. all)
+            args['rp_similarity'] = [0.5, 0.9]
+            args['gate_management'] = ['discovery', 'equiprobable']
+            args['res_cal_met'] = ['discovered', 'default']
+            args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
+            args['res_con_dis'] = [50, 85]  # [50..85]
+            args['res_dtype'] = ['LV917', '247']
+            args['arr_cal_met'] = ['discovered', 'default']
+            args['arr_support'] = [0.01, 0.1]  # [0..1]
+            args['arr_confidence'] = [10, 30]  # [50..85]
+            args['arr_dtype'] = ['LV917', '247']
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer
