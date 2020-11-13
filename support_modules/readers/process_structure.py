@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import networkx as nx
 import matplotlib.pyplot as plt
-from support_modules import support as sup
+import utils.support as sup
 
 
 def create_process_structure(bpmn, drawing=False):

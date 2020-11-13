@@ -10,7 +10,7 @@ Created on Wed Mar  4 10:56:37 2020
 import numpy as np
 import pandas as pd
 
-from support_modules import support as sup
+import utils.support as sup
 
 
 class GatewaysEvaluator():

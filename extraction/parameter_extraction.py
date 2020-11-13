@@ -13,6 +13,8 @@ from extraction import schedule_tables as sch
 from extraction import tasks_evaluator as te
 
 import pandas as pd
+import itertools
+import utils.support as sup
 
 
 class ParameterMiner():
@@ -31,7 +33,7 @@ class ParameterMiner():
         self.conformant_traces = list()
         self.resource_table = pd.DataFrame()
 
-    def extract_parameters(self, num_inst) -> None:
+    def extract_parameters(self, num_inst, start_time) -> None:
         """
         main method for parameters extraction
         """
@@ -42,6 +44,7 @@ class ParameterMiner():
         self.process_tasks()
         # TODO: Num of test partition
         self.parameters['instances'] = num_inst
+        self.parameters['start_time'] = start_time
 
     def replay_process(self) -> None:
         """
@@ -59,12 +62,18 @@ class ParameterMiner():
         res_analyzer = rl.ResourcePoolAnalyser(
             self.log,
             sim_threshold=self.settings['rp_similarity'])
-
-        ttcreator = sch.TimeTablesCreator(res_analyzer.resource_table, '247')
-        self.parameters['resource_pool'] = ttcreator.resource_pool
+        ttcreator = sch.TimeTablesCreator(self.settings)
+        args = {'res_cal_met': self.settings['res_cal_met'], 
+                'arr_cal_met': self.settings['arr_cal_met'], 
+                'resource_table': res_analyzer.resource_table}
+        ttcreator.create_timetables(args)
+        resource_pool = self.create_resource_pool(res_analyzer.resource_table,
+                                                  ttcreator.res_ttable_name)
+        self.parameters['resource_pool'] = resource_pool
         self.parameters['time_table'] = ttcreator.time_table
         # Adding role to process stats
-        resource_table = pd.DataFrame.from_records(ttcreator.resource_table)
+        resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
+        # resource_table.to_csv('pools_'+self.settings['file'].split('.')[0]+'.csv')
         self.process_stats = self.process_stats.merge(resource_table,
                                                       on='resource',
                                                       how='left')
@@ -100,3 +109,25 @@ class ParameterMiner():
                                       self.parameters['resource_pool'],
                                       self.settings)
         self.parameters['elements_data'] = tevaluator.elements_data
+        
+    @staticmethod       
+    def create_resource_pool(resource_table, table_name) -> list():
+        """
+        Creates resource pools and associate them the default timetable
+        in BIMP format
+        """
+        resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM',
+                              'total_amount': '20', 'costxhour': '20',
+                              'timetable_id': table_name['arrival']}]
+        data = sorted(resource_table, key=lambda x: x['role'])
+        for key, group in itertools.groupby(data, key=lambda x: x['role']):
+            res_group = [x['resource'] for x in list(group)]
+            r_pool_size = str(len(res_group))
+            name = (table_name['resources'] if 'resources' in table_name.keys()
+                    else table_name[key])
+            resource_pool.append({'id': sup.gen_id(),
+                                  'name': key,
+                                  'total_amount': r_pool_size,
+                                  'costxhour': '20',
+                                  'timetable_id': name})
+        return resource_pool

@@ -9,7 +9,7 @@ import sys
 import getopt
 import simod as sim
 
-from support_modules import support as sup
+import utils.support as sup
 
 # =============================================================================
 # Main function
@@ -22,39 +22,66 @@ def main(argv):
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
     settings['exec_mode'] = 'optimizer'
-    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae'
-    settings['sim_metric'] = 'tsd'
+    # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
+    # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
+    settings['sim_metric'] = 'day_hour_emd' # Main metric
+    # Additional metrics
+    settings['add_metrics'] = ['tsd', 'hour_emd', 'day_emd', 'cal_emd', 'log_mae', 'dl_mae', 'mae']
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'Production.csv'
-        settings['repetitions'] = 2
+        settings['file'] = 'PurchasingExample.xes'
+        settings['repetitions'] = 5
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
-            settings['gate_management'] = 'equiprobable'
+            settings['gate_management'] = 'discovery'
             # Similarity btw the resources profile execution (Song e.t. all)
-            settings['rp_similarity'] = 0.5
+            settings['rp_similarity'] = 0.672644226
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-            settings['epsilon'] = 0.1
-            settings['eta'] = 0.4
+            settings['epsilon'] = 0.601063585
+            settings['eta'] = 0.707803144
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'repair'
             # Processing time definition method:
             # 'manual', 'automatic', 'semi-automatic'
             settings['pdef_method'] = 'automatic'
+            # Calendar parameters
+            # calendar methods 'default', 'discovered' ,'pool'
+            settings['res_cal_met'] = 'default'
+            if settings['res_cal_met'] == 'default':
+                settings['res_dtype'] = '247'  # 'LV917', '247'
+            else:
+                settings['res_support'] = 0.1  # [0..1]
+                settings['res_confidence'] = 10  # [50..85]
+            # calendar methods 'default', 'discovered'
+            settings['arr_cal_met'] = 'default'
+            if settings['arr_cal_met'] == 'default':
+                settings['arr_dtype'] = '247'  # 'LV917', '247'
+            else:
+                settings['arr_support'] = 0.1  # [0..1]
+                settings['arr_confidence'] = 50  # [50..85]
             # temporal file for results
             settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
             simod = sim.Simod(settings)
             simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
+            args['max_eval'] = 5
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
-            args['max_eval'] = 3
+            args['alg_manag'] = ['replacement', 'repair', 'removal']
             # Similarity btw the resources profile execution (Song e.t. all)
             args['rp_similarity'] = [0.5, 0.9]
-            args['gate_management'] = ['discovery', 'random', 'equiprobable']
+            args['gate_management'] = ['discovery', 'equiprobable']
+            args['res_cal_met'] = ['discovered', 'default']
+            args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
+            args['res_con_dis'] = [50, 85]  # [50..85]
+            args['res_dtype'] = ['LV917', '247']
+            args['arr_cal_met'] = ['discovered', 'default']
+            args['arr_support'] = [0.01, 0.1]  # [0..1]
+            args['arr_confidence'] = [10, 30]  # [50..85]
+            args['arr_dtype'] = ['LV917', '247']
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
             # Execute optimizer
@@ -127,6 +154,10 @@ def define_general_settings(settings):
                                          'CaseTypeAlignmentResults.csv')
     settings['aligntype'] = os.path.join(settings['output'],
                                          'AlignmentStatistics.csv')
+    settings['calender_path'] = os.path.join('external_tools',
+                                             'calenderimp',
+                                             'CalenderImp.jar')
+    settings['simulator'] = 'bimp'
     return settings
 
 

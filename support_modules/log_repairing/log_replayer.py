@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import networkx as nx
 import pandas as pd
-from support_modules import support as sup
+import utils.support as sup
 
 from collections import OrderedDict
 

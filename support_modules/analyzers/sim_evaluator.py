@@ -3,6 +3,7 @@ Created on Fri Jan 10 11:40:46 2020
 
 @author: Manuel Camargo
 """
+import warnings
 import random
 import os
 import itertools
@@ -12,30 +13,40 @@ import jellyfish as jf
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from support_modules import support as sup
+from scipy.stats import wasserstein_distance
+
+
+import utils.support as sup
 from support_modules.analyzers import alpha_oracle as ao
 from support_modules.analyzers.alpha_oracle import Rel
 
+# import support as sup
+# import alpha_oracle as ao
+# from alpha_oracle import Rel
+
+import pandas as pd
+# import json
+
+## %%
 
 class SimilarityEvaluator():
     """
         This class evaluates the similarity of two event-logs
      """
 
-    def __init__(self, data, settings, rep, metric='tsd'):
+    def __init__(self, data, settings, rep):
         """constructor"""
         self.output = settings['output']
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.rep_num = rep + 1
         # posible metrics tsd, dl_mae, tsd_min
-        self.metric = metric
         self.ramp_io_perc = 0.2
 
         self.data = self.scaling_data(
             data[(data.source == 'log') |
                  ((data.source == 'simulation') &
                   (data.run_num == self.rep_num))])
-
+        # load data
         self.log_data = self.data[self.data.source == 'log']
         self.simulation_data = self.data[(self.data.source == 'simulation') &
                                          (self.data.run_num == self.rep_num)]
@@ -44,13 +55,16 @@ class SimilarityEvaluator():
         self.alpha_concurrency = ao.AlphaOracle(self.log_data,
                                                 self.alias,
                                                 self.one_timestamp, True)
+        # reformat and sampling data
+        self.log_data = self.reformat_events(
+            self.log_data.to_dict('records'), 'task')
+        self.simulation_data = self.reformat_events(
+            self.simulation_data.to_dict('records'), 'task')
+        num_traces = int(len(self.simulation_data) * self.ramp_io_perc)
+        self.simulation_data = self.simulation_data[num_traces:-num_traces]
+        self.log_data = random.sample(self.log_data, len(self.simulation_data))
 
-        self.measures = self.mesurement()
-        self.similarity = {'run_num': rep + 1}
-        self.similarity['sim_val'] = np.mean(
-            [x['sim_score'] for x in self.measures])
-
-    def mesurement(self):
+    def measure_distance(self, metric):
         """
         Measures the distance of two event-logs
         with with tsd or dl and mae distance
@@ -60,25 +74,35 @@ class SimilarityEvaluator():
         distance : float
 
         """
-        # Inputs reformating
-        log_data = self.reformat_events(
-            self.log_data.to_dict('records'), 'task')
-        simulation_data = self.reformat_events(
-            self.simulation_data.to_dict('records'), 'task')
-        # Ramp i/o percentage
-        num_traces = int(len(simulation_data) * self.ramp_io_perc)
-        simulation_data = simulation_data[num_traces:-num_traces]
-        sampled_log_data = random.sample(log_data, len(simulation_data))
         # similarity measurement and matching
-        if self.metric == 'tsd':
-            distance = self.tsd_metric(sampled_log_data, simulation_data)
-        elif self.metric == 'tsd_min':
-            distance = self.tsd_min_pattern(sampled_log_data, simulation_data)
-        elif self.metric == 'mae':
-            distance = self.mae_metric(sampled_log_data, simulation_data)
+        evaluator = self._get_evaluator(metric)
+        if metric in ['day_emd', 'day_hour_emd', 'cal_emd']:
+            distance = evaluator(self.log_data, 
+                                 self.simulation_data, 
+                                 criteria=metric)
         else:
-            distance = self.dl_mae_distance(sampled_log_data, simulation_data)
-        return distance
+            distance = evaluator(self.log_data, self.simulation_data)
+        self.similarity = {'run_num': self.rep_num,
+                           'metric': metric,
+                           'sim_val': np.mean(
+                               [x['sim_score'] for x in distance])}
+        
+
+    def _get_evaluator(self, metric):
+        if metric == 'tsd':
+            return self.tsd_metric
+        elif metric == 'tsd_min':
+            return self.tsd_min_pattern
+        elif metric == 'mae':
+            return self.mae_metric
+        elif metric in ['hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd']:
+            return self.log_emd_metric
+        elif metric == 'dl_mae':
+            return self.dl_mae_distance
+        elif metric == 'log_mae':
+            return self.log_mae_metric
+        else:
+            raise ValueError(metric)
 
     def print_measures(self):
         """
@@ -281,7 +305,7 @@ class SimilarityEvaluator():
         # start = timer()
         for i in range(0, mx_len):
             for j in range(0, mx_len):
-                d_l, ae = self.calculate_distances(
+                d_l, ae = self._calculate_distances(
                     simulation_data, log_data, i, j)
                 dl_matrix[i][j] = d_l
                 mae_matrix[i][j] = ae
@@ -307,7 +331,7 @@ class SimilarityEvaluator():
                                    sim_score=(1-(cost_matrix[idx][idy]))))
         return similarity
 
-    def calculate_distances(self, serie1, serie2, id1, id2):
+    def _calculate_distances(self, serie1, serie2, id1, id2):
         """
 
 
@@ -382,6 +406,85 @@ class SimilarityEvaluator():
                                    log_order=log_data[idy]['profile'],
                                    sim_score=(ae_matrix[idx][idy])))
         return similarity
+    
+# =============================================================================
+# Log emd distance
+# =============================================================================
+    
+    def log_emd_metric(self, log_data, simulation_data, criteria='hour'):
+        similarity = list()
+        window = 1
+        # hist_range = [0, int((window * 3600))]
+        log_data = pd.DataFrame(log_data)
+        simulation_data = pd.DataFrame(simulation_data)
+
+        def split_date_time(dataframe, feature, source):
+            day_hour = lambda x: x[feature].hour
+            dataframe['hour'] = dataframe.apply(day_hour, axis=1)
+            date = lambda x: x[feature].date()
+            dataframe['date'] = dataframe.apply(date, axis=1)
+            # create time windows
+            i = 0
+            daily_windows = dict()
+            for x in range(24):
+                if x % window == 0:
+                    i += 1
+                daily_windows[x] = i
+            dataframe = dataframe.merge(
+                pd.DataFrame.from_dict(
+                    daily_windows, orient='index').rename_axis('hour'),
+                on='hour',
+                how='left').rename(columns={0: 'window'})
+            dataframe = dataframe[[feature, 'date', 'window']]
+            dataframe.rename(columns={feature: 'timestamp'}, inplace=True)
+            dataframe['source'] = source
+            return dataframe
+        data = split_date_time(log_data, 'start_time', 'log')
+        data = data.append(
+            split_date_time(log_data, 'end_time', 'log'), ignore_index=True)
+        data = data.append(
+            split_date_time(simulation_data, 'start_time', 'sim'), ignore_index=True)
+        data = data.append(
+            split_date_time(simulation_data, 'end_time', 'sim'), ignore_index=True)
+        data['weekday'] = data.apply(lambda x: x.date.weekday(), axis=1)
+        g_criteria = {'hour': 'window', 'day_emd': 'weekday',
+                      'day_hour_emd': ['weekday', 'window'], 'cal_emd': 'date'} 
+        similarity = list()
+        for key, group in data.groupby(g_criteria[criteria]):
+            w_df = group.copy()
+            w_df = w_df.reset_index()
+            basetime = w_df.timestamp.min().floor(freq ='H')
+            diftime = lambda x: (x['timestamp'] - basetime).total_seconds()
+            w_df['rel_time'] = w_df.apply(diftime, axis=1)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore')
+                log_hist = np.histogram(w_df[w_df.source=='log'].rel_time, density=True)
+                sim_hist = np.histogram(w_df[w_df.source=='sim'].rel_time, density=True)
+            if np.isnan(np.sum(log_hist[0])) or np.isnan(np.sum(sim_hist[0])):
+                similarity.append({'window': key,
+                                   'sim_score': 0})
+            else:
+                similarity.append(
+                    {'window': key,
+                     'sim_score': (1 - wasserstein_distance(log_hist[0],
+                                                       sim_hist[0]))})
+        return similarity
+
+
+# =============================================================================
+# whole log MAE
+# =============================================================================
+    def log_mae_metric(self, log_data, simulation_data):
+        similarity = list()
+        log_data = pd.DataFrame(log_data)
+        simulation_data = pd.DataFrame(simulation_data)
+        log_timelapse = (log_data.end_time.max() - 
+                         log_data.start_time.min()).total_seconds()
+        sim_timelapse = (simulation_data.end_time.max() - 
+                         simulation_data.start_time.min()).total_seconds()
+        similarity.append({'sim_score': np.abs(sim_timelapse - log_timelapse)})
+        return similarity
+
 
 # =============================================================================
 # Support methods
@@ -487,3 +590,17 @@ class SimilarityEvaluator():
                          **temp_dict}
             temp_data.append(temp_dict)
         return sorted(temp_data, key=itemgetter('start_time'))
+# #%%
+# with open('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/settings.json') as file:
+#     settings = json.load(file)
+#     file.close()
+    
+# data = pd.read_csv('C:/Users/Manuel Camargo/Documents/Repositorio/experiments/sc_simo/process_stats.csv')
+# data['end_timestamp'] =  pd.to_datetime(data['end_timestamp'], format=settings['read_options']['timeformat'])
+# data['start_timestamp'] =  pd.to_datetime(data['start_timestamp'], format=settings['read_options']['timeformat'])
+# evaluation = SimilarityEvaluator(
+#     data,
+#     settings,
+#     0)
+# evaluation.measure_distance('log_mae')
+# print(evaluation.similarity)

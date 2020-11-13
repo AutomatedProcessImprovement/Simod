@@ -9,7 +9,7 @@ from support_modules.log_repairing import log_replayer as rpl
 from support_modules.log_repairing import traces_replacement as rep
 from support_modules.log_repairing import traces_alignment as tal
 
-from support_modules import support as sup
+import utils.support as sup
 
 
 def evaluate_alignment(process_graph, log, settings):

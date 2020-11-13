@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 import pandas as pd
-from support_modules import support as sup
+import utils.support as sup
 import itertools
 
 

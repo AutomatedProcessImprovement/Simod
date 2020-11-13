@@ -1,10 +1,11 @@
 # Simod
 
-Simod combines several process mining techniques to automate the generation and validation of BPS models.  The only input required by the Simod method is an event log in XES, MXML, or CSV format. These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
+Simod combines several process mining techniques to automate the generation and validation of BPS models.  The only input required by the Simod method is an event log in XES, or CSV format. These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
 ### Prerequisites
 
-To execute this code, you need to install Anaconda in your system and create an environment using the *simo.yml* specification provided in the repository.
+To execute this code, you need to install Git and Anaconda in your system. Once installed, you can create an environment using the *simo.yml* specification provided in the repository.
+
 
 ### Data format
  
@@ -14,7 +15,8 @@ and the mapping between activities and resource pools, which are a required elem
 
 ### Configuration
 
-Once created, you can execute the file simod_ui.py in a python console or using an IDE.
+You can execute the tool from the file simod_ui.py with a python console or IDE.
+
 
 ### Execution steps
 

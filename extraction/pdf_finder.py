@@ -9,7 +9,7 @@ import pandas as pd
 import scipy.stats as st
 import numpy as np
 
-from support_modules import support as sup
+import utils.support as sup
 # import support as sup
 
 
