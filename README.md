@@ -6,6 +6,7 @@ Simod combines several process mining techniques to automate the generation and 
 
 To execute this code, you need to install Git and Anaconda in your system. Once installed, you can create an environment using the *simo.yml* specification provided in the repository.
 
+
 ### Data format
  
 The tool assumes the input is composed of a case identifier, an activity label, a resource attribute (indicating which resource performed the activity), 
@@ -15,6 +16,7 @@ and the mapping between activities and resource pools, which are a required elem
 ### Configuration
 
 You can execute the tool from the file simod_ui.py with a python console or IDE.
+
 
 ### Execution steps
 
