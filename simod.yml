@@ -16,4 +16,3 @@ dependencies:
     - opyenxes==0.3.0
     - tqdm==4.31.1
     - git+git://github.com/Mcamargo85/support_modules.git
-    - pm4py

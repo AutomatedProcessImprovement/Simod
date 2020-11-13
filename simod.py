@@ -21,9 +21,9 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 
 import utils.support as sup
 from utils.support import timeit
-from support_modules.readers import log_reader as lr
-from support_modules.readers import bpmn_reader as br
-from support_modules.readers import process_structure as gph
+import readers.log_reader as lr
+import readers.bpmn_reader as br
+import readers.process_structure as gph
 from support_modules.writers import xml_writer as xml
 from support_modules.writers import xes_writer as xes
 from support_modules.analyzers import sim_evaluator as sim
