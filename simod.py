@@ -420,23 +420,6 @@ class Simod():
 # =============================================================================
 # External tools calling
 # =============================================================================
-    # @staticmethod
-    # def mining_structure(settings):
-    #     """Execute splitminer for bpmn structure mining.
-    #     Args:
-    #         settings (dict): Path to jar and file names
-    #         epsilon (double): Parallelism threshold (epsilon) in [0,1]
-    #         eta (double): Percentile for frequency threshold (eta) in [0,1]
-    #     """
-    #     print(" -- Mining Process Structure --")
-    #     # Event log file_name
-    #     file_name = settings['file'].split('.')[0]
-    #     input_route = os.path.join(settings['output'], file_name+'.xes')
-    #     # Mining structure definition
-    #     args = ['java', '-jar', settings['miner_path'],
-    #             str(settings['epsilon']), str(settings['eta']), input_route,
-    #             os.path.join(settings['output'], file_name)]
-    #     subprocess.call(args)
         
     @staticmethod
     def mining_structure(settings):
@@ -582,13 +565,6 @@ class DiscoveryOptimizer():
                     'res_confidence1': hp.uniform('res_confidence1',
                                                  args['res_con_dis'][0],
                                                  args['res_con_dis'][1])})
-                 # ('pool', {
-                 #    'res_support2': hp.uniform('res_support2', 
-                 #                              args['res_sup_pool'][0], 
-                 #                              args['res_sup_pool'][1]),
-                 #    'res_confidence2': hp.uniform('res_confidence2',
-                 #                                 args['res_con_pool'][0],
-                 #                                 args['res_con_pool'][1])})
                  ]),
                 'arr_support': hp.uniform('arr_support',
                                           args['arr_support'][0],
