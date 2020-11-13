@@ -489,7 +489,6 @@ class DiscoveryOptimizer():
         def exec_simod(instance_settings):
             # resources discovery
             method, values = instance_settings['res_cal_met']
-            print(method, values)
             if method in 'discovered':
                 instance_settings['res_confidence'] = values['res_confidence']
                 instance_settings['res_support'] = values['res_support']
@@ -498,7 +497,6 @@ class DiscoveryOptimizer():
             instance_settings['res_cal_met'] = method
             # arrivals calendar
             method, values = instance_settings['arr_cal_met']
-            print(method, values)
             if method in 'discovered':
                 instance_settings['arr_confidence'] = values['arr_confidence']
                 instance_settings['arr_support'] = values['arr_support']
