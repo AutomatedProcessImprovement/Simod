@@ -24,14 +24,15 @@ def main(argv):
     settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
     # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
-    settings['sim_metric'] = 'day_hour_emd' # Main metric
+    settings['sim_metric'] = 'tsd' # Main metric
     # Additional metrics
-    settings['add_metrics'] = ['tsd', 'hour_emd', 'day_emd', 'cal_emd', 'log_mae', 'dl_mae', 'mae']
+    settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
+                               'cal_emd', 'log_mae', 'dl_mae', 'mae']
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
         settings['file'] = 'PurchasingExample.xes'
-        settings['repetitions'] = 5
+        settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
@@ -39,8 +40,9 @@ def main(argv):
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.672644226
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-            settings['epsilon'] = 0.601063585
-            settings['eta'] = 0.707803144
+            # settings['epsilon'] = 0.601063585
+            # settings['eta'] = 0.707803144
+            settings['concurrency'] = 0.5
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'repair'
             # Processing time definition method:
@@ -143,7 +145,7 @@ def define_general_settings(settings):
     # External tools routes
     settings['miner_path'] = os.path.join('external_tools',
                                           'splitminer',
-                                          'splitminer.jar')
+                                          'sm2.jar')
     settings['bimp_path'] = os.path.join('external_tools',
                                          'bimp',
                                          'qbp-simulator-engine.jar')
