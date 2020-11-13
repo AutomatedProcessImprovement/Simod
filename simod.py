@@ -511,84 +511,67 @@ class DiscoveryOptimizer():
 
     @staticmethod
     def define_search_space(settings, args):
-        if settings['calendar_method'] == 'default':
-            space = {**{'concurrency': hp.uniform('concurrency',
-                                              args['concurrency'][0],
-                                              args['concurrency'][1]),
-                        'alg_manag': hp.choice('alg_manag',
-                                               ['replacement',
-                                                'repair',
-                                                'removal']),
-                        'rp_similarity': hp.uniform('rp_similarity',
-                                                    args['rp_similarity'][0],
-                                                    args['rp_similarity'][1]),
-                        'gate_management': hp.choice('gate_management',
-                                                     args['gate_management'])},
-                     **settings}
-        elif settings['calendar_method'] == 'global':
-            space = {**{'concurrency': hp.uniform('concurrency',
-                                              args['concurrency'][0],
-                                              args['concurrency'][1]),
-                        'alg_manag': hp.choice('alg_manag',
-                                               ['replacement',
-                                                'repair',
-                                                'removal']),
-                        'rp_similarity': hp.uniform('rp_similarity',
-                                                    args['rp_similarity'][0],
-                                                    args['rp_similarity'][1]),
-                        'gate_management': hp.choice('gate_management',
-                                                     args['gate_management']),
-                        'res_cal_met': hp.choice('res_cal_met',
-                            [('discovered',{
-                                'res_support1': hp.uniform('res_support1', 
-                                                          args['res_sup_dis'][0], 
-                                                          args['res_sup_dis'][1]),
-                                'res_confidence1': hp.uniform('res_confidence1',
-                                                             args['res_con_dis'][0],
-                                                             args['res_con_dis'][1])})
-                             ]),
-                        'arr_support': hp.uniform('arr_support',
-                                                  args['arr_support'][0],
-                                                  args['arr_support'][1]),
-                        'arr_confidence': hp.uniform('arr_confidence',
-                                                      args['arr_confidence'][0],
-                                                      args['arr_confidence'][1])
-                        },
-                     **settings}
-        else:
-            space = {
-                **{'res_cal_met': hp.choice('res_cal_met',
-                [('discovered',{
-                    'res_support1': hp.uniform('res_support1', 
-                                              args['res_sup_dis'][0], 
-                                              args['res_sup_dis'][1]),
-                    'res_confidence1': hp.uniform('res_confidence1',
-                                                 args['res_con_dis'][0],
-                                                 args['res_con_dis'][1])})
-                 ]),
-                'arr_support': hp.uniform('arr_support',
-                                          args['arr_support'][0],
-                                          args['arr_support'][1]),
-                'arr_confidence': hp.uniform('arr_confidence',
-                                              args['arr_confidence'][0],
-                                              args['arr_confidence'][1])},
-                **settings}
+        space = {**{'epsilon': hp.uniform('epsilon',
+                                          args['epsilon'][0],
+                                          args['epsilon'][1]),
+                    'eta': hp.uniform('eta',
+                                      args['eta'][0],
+                                      args['eta'][1]),
+                    'alg_manag': hp.choice('alg_manag',
+                                           args['alg_manag']),
+                    'rp_similarity': hp.uniform('rp_similarity',
+                                                args['rp_similarity'][0],
+                                                args['rp_similarity'][1]),
+                    'gate_management': hp.choice('gate_management',
+                                                 args['gate_management']),
+                    'res_cal_met': hp.choice('res_cal_met',
+                        [('discovered',{
+                            'res_support': hp.uniform('res_support', 
+                                                      args['res_sup_dis'][0], 
+                                                      args['res_sup_dis'][1]),
+                            'res_confidence': hp.uniform('res_confidence',
+                                                         args['res_con_dis'][0],
+                                                         args['res_con_dis'][1])}),
+                          ('default', {
+                              'res_dtype': hp.choice('res_dtype',
+                                                     args['res_dtype'])})
+                         ]),
+                    'arr_cal_met': hp.choice('arr_cal_met',
+                        [
+                            ('discovered',{
+                            'arr_support': hp.uniform('arr_support', 
+                                                      args['arr_support'][0], 
+                                                      args['arr_support'][1]),
+                            'arr_confidence': hp.uniform('arr_confidence',
+                                                         args['arr_confidence'][0],
+                                                         args['arr_confidence'][1])}),
+                          ('default', {
+                              'arr_dtype': hp.choice('arr_dtype',
+                                                     args['arr_dtype'])})
+                         ])
+                    },
+                 **settings}
         return space
 
     def execute_trials(self):
         # create a new instance of Simod
         def exec_simod(instance_settings):
-            if not instance_settings['calendar_method'] == 'default':
-                method, values = instance_settings['res_cal_met']
-                if method in 'discovered':
-                    confidence = values['res_confidence1']
-                    support = values['res_support1']
-                else:
-                    confidence = values['res_confidence2']
-                    support = values['res_support2']
-                instance_settings['res_cal_met'] = method
-                instance_settings['res_confidence'] = confidence
-                instance_settings['res_support'] = support
+            # resources discovery
+            method, values = instance_settings['res_cal_met']
+            if method in 'discovered':
+                instance_settings['res_confidence'] = values['res_confidence']
+                instance_settings['res_support'] = values['res_support']
+            else:
+                instance_settings['res_dtype'] = values['res_dtype']
+            instance_settings['res_cal_met'] = method
+            # arrivals calendar
+            method, values = instance_settings['arr_cal_met']
+            if method in 'discovered':
+                instance_settings['arr_confidence'] = values['arr_confidence']
+                instance_settings['arr_support'] = values['arr_support']
+            else:
+                instance_settings['arr_dtype'] = values['arr_dtype']
+            instance_settings['arr_cal_met'] = method
             simod = Simod(instance_settings)
             simod.execute_pipeline(self.settings['exec_mode'])
             return simod.response
