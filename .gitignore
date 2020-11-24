@@ -2,3 +2,5 @@ outputs
 *.pyc
 *.stats
 logs_meta
+callcentre.*
+poc_processmining.*
