@@ -20,7 +20,6 @@ import utils.support as sup
 from support_modules.analyzers import alpha_oracle as ao
 from support_modules.analyzers.alpha_oracle import Rel
 
-# import support as sup
 # import alpha_oracle as ao
 # from alpha_oracle import Rel
 
@@ -41,7 +40,8 @@ class SimilarityEvaluator():
         self.rep_num = rep + 1
         # posible metrics tsd, dl_mae, tsd_min
         self.ramp_io_perc = 0.2
-
+        if ('processing_time' not in data.columns) or ('waiting_time' not in data.columns):
+            data = self.calculate_times(data)
         self.data = self.scaling_data(
             data[(data.source == 'log') |
                  ((data.source == 'simulation') &
@@ -101,6 +101,8 @@ class SimilarityEvaluator():
             return self.dl_mae_distance
         elif metric == 'log_mae':
             return self.log_mae_metric
+        elif metric == 'dl':
+            return self.dl_distance
         else:
             raise ValueError(metric)
 
@@ -281,8 +283,51 @@ class SimilarityEvaluator():
         return cost
 
 # =============================================================================
+# dl distance
+# =============================================================================
+
+    def dl_distance(self, log_data, simulation_data):
+        """
+        similarity score
+
+        Parameters
+        ----------
+        log_data : list of events
+        simulation_data : list simulation event log
+
+        Returns
+        -------
+        similarity : float
+
+        """
+        similarity = list()
+        mx_len = len(log_data)
+        dl_matrix = [[0 for c in range(mx_len)] for r in range(mx_len)]
+        # Create cost matrix
+        # start = timer()
+        for i in range(0, mx_len):
+            for j in range(0, mx_len):
+                d_l, _ = self._calculate_distances(
+                    simulation_data, log_data, i, j)
+                dl_matrix[i][j] = d_l
+        # end = timer()
+        # print(end - start)
+        dl_matrix = np.array(dl_matrix)
+        # add each point in between
+        # Matching using the hungarian algorithm
+        row_ind, col_ind = linear_sum_assignment(dl_matrix)
+        # Create response
+        for idx, idy in zip(row_ind, col_ind):
+            similarity.append(dict(caseid=simulation_data[idx]['caseid'],
+                                   sim_order=simulation_data[idx]['profile'],
+                                   log_order=log_data[idy]['profile'],
+                                   sim_score=(1-(dl_matrix[idx][idy]))))
+        return similarity
+
+# =============================================================================
 # dl and mae distance
 # =============================================================================
+
     def dl_mae_distance(self, log_data, simulation_data):
         """
         similarity score
@@ -518,6 +563,36 @@ class SimilarityEvaluator():
             alias[variables[i]] = aliases[i]
         return alias
 
+    @staticmethod
+    def calculate_times(log):
+        """Appends the indexes and relative time to the dataframe.
+        parms:
+            log: dataframe.
+        Returns:
+            Dataframe: The dataframe with the calculated features added.
+        """
+        log['processing_time'] = 0
+        log['multitasking'] = 0
+        log = log.to_dict('records')
+        log = sorted(log, key=lambda x: (x['source'], x['caseid']))
+        for _, group in itertools.groupby(log, key=lambda x: (x['source'], x['caseid'])):
+            events = list(group)
+            events = sorted(events, key=itemgetter('start_timestamp'))
+            for i in range(0, len(events)):
+                # In one-timestamp approach the first activity of the trace
+                # is taken as instantsince there is no previous timestamp
+                # to find a range
+                dur = (events[i]['end_timestamp'] -
+                        events[i]['start_timestamp']).total_seconds()
+                if i == 0:
+                    wit = 0
+                else:
+                    wit = (events[i]['start_timestamp'] -
+                            events[i-1]['end_timestamp']).total_seconds()
+                events[i]['waiting_time'] = wit if wit >= 0 else 0
+                events[i]['processing_time'] = dur
+        return pd.DataFrame.from_dict(log)
+
     def scaling_data(self, data):
         """
         Scales times values activity based
@@ -602,5 +677,5 @@ class SimilarityEvaluator():
 #     data,
 #     settings,
 #     0)
-# evaluation.measure_distance('log_mae')
+# evaluation.measure_distance('dl')
 # print(evaluation.similarity)

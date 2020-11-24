@@ -21,13 +21,13 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'optimizer'
+    settings['exec_mode'] = 'single'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
     # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
-    settings['sim_metric'] = 'tsd' # Main metric
+    # settings['sim_metric'] = 'tsd' # Main metric
     # Additional metrics
-    settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
-                               'cal_emd', 'log_mae', 'dl_mae', 'mae']
+    # settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
+    #                            'cal_emd', 'log_mae', 'dl_mae', 'mae']
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
@@ -35,41 +35,25 @@ def main(argv):
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
-            # gateways probabilities 'discovery', 'random', 'equiprobable'
-            settings['gate_management'] = 'discovery'
-            # Similarity btw the resources profile execution (Song e.t. all)
-            settings['rp_similarity'] = 0.672644226
-            # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
-            # settings['epsilon'] = 0.601063585
-            # settings['eta'] = 0.707803144
-            settings['concurrency'] = 0.5
-            # 'removal', 'replacement', 'repair'
-            settings['alg_manag'] = 'repair'
-            # Processing time definition method:
-            # 'manual', 'automatic', 'semi-automatic'
-            settings['pdef_method'] = 'automatic'
-            # Calendar parameters
-            # calendar methods 'default', 'discovered' ,'pool'
-            settings['res_cal_met'] = 'default'
-            if settings['res_cal_met'] == 'default':
-                settings['res_dtype'] = '247'  # 'LV917', '247'
-            else:
-                settings['res_support'] = 0.1  # [0..1]
-                settings['res_confidence'] = 10  # [50..85]
-            # calendar methods 'default', 'discovered'
-            settings['arr_cal_met'] = 'default'
-            if settings['arr_cal_met'] == 'default':
-                settings['arr_dtype'] = '247'  # 'LV917', '247'
-            else:
-                settings['arr_support'] = 0.1  # [0..1]
-                settings['arr_confidence'] = 50  # [50..85]
+            args['max_eval'] = 5
+            args['concurrency'] = [0.0, 1.0]
+            args['alg_manag'] = ['replacement', 'repair', 'removal']
+            args['rp_similarity'] = [0.5, 0.9]
+            args['gate_management'] = ['discovery', 'equiprobable']
+            # settings['gate_management'] = 'discovery'
+            args['res_dtype'] = ['LV917', '247']
+            args['arr_dtype'] = ['LV917', '247']
+            args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
+            args['res_con_dis'] = [50, 85]  # [50..85]
+            args['arr_support'] = [0.01, 0.1]  # [0..1]
+            args['arr_confidence'] = [1, 20]  # [50..85]
             # temporal file for results
-            settings['temp_file'] = sup.file_id(prefix='SE_')
+            # settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
-            simod = sim.Simod(settings)
+            simod = sim.Simod(settings, args)
             simod.execute_pipeline(settings['exec_mode'])
         elif settings['exec_mode'] == 'optimizer':
-            args['max_eval'] = 5
+            args['max_eval'] = 2
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
             args['alg_manag'] = ['replacement', 'repair', 'removal']

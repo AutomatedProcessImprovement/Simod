@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 import pandas as pd
-import utils.support as sup
+# import utils.support as sup
 import itertools
+import numpy as np
 
 
 from extraction import pdf_finder as pdf
@@ -17,11 +18,11 @@ class InterArrivalEvaluator():
     def __init__(self, process_graph, log, settings):
         """constructor"""
         self.log = pd.DataFrame.from_records(log)
-        self.tasks = self.analize_first_tasks(process_graph)
+        self.tasks = self._analize_first_tasks(process_graph)
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.pdef_method = settings['pdef_method']
 
-        self.inter_arrival_times = self.mine_interarrival_time()
+        self.inter_arrival_times = self._mine_interarrival_time()
         self.dist = dict()
         self.define_interarrival_distribution()
 
@@ -34,14 +35,23 @@ class InterArrivalEvaluator():
         elements_data : Dataframe
 
         """
-        dist = pdf.DistributionFinder(self.inter_arrival_times).distribution
         # processing time discovery method
         if self.pdef_method == 'automatic':
-            self.dist = dist
-        if self.pdef_method in ['manual', 'semi-automatic']:
-            self.dist = self.define_distributions_manually(dist)
-
-    def mine_interarrival_time(self):
+            self.dist = pdf.DistributionFinder(
+                self.inter_arrival_times).distribution
+        elif self.pdef_method in ['manual', 'semi-automatic']:
+            self.dist = self._define_distributions_manually(
+                pdf.DistributionFinder(self.inter_arrival_times).distribution)
+        elif self.pdef_method == 'default':
+            self.dist = {'dname': 'EXPONENTIAL', 
+                         'dparams': {'mean': 0, 
+                                     'arg1': np.round(np.mean(self.inter_arrival_times), 2), 
+                                     'arg2': 0}}
+        else:
+            raise ValueError(self.pdef_method)
+            
+            
+    def _mine_interarrival_time(self):
         """
         Extracts the interarrival distribution from data
 
@@ -72,7 +82,7 @@ class InterArrivalEvaluator():
                 inter_arrival_times.append(delta)
         return inter_arrival_times
 
-    def analize_first_tasks(self, process_graph) -> list():
+    def _analize_first_tasks(self, process_graph) -> list():
         """
         Extracts the first tasks of the process
 
@@ -101,7 +111,7 @@ class InterArrivalEvaluator():
                     for x in temp_process_graph.successors(start)]
         return in_tasks
 
-    def define_distributions_manually(self, dist):
+    def _define_distributions_manually(self, dist):
         """
         Enable the manual edition of tasks duration
 
