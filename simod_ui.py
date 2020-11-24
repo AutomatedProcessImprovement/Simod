@@ -605,7 +605,7 @@ if __name__ == "__main__":
         if 'exec_mode' in settings.keys() and settings['exec_mode'] == 'single':
             print(settings)
             simod = sim.Simod(settings)
-            simod.execute_pipeline(settings['exec_mode'])
+            simod.execute_pipeline(settings['exec_mode'], can=True)
             var = ['python',
                    os.path.join('user_interface', 'simod_sres.py'),
                    '-f', settings['temp_file']]
@@ -627,5 +627,5 @@ if __name__ == "__main__":
                    '-s', settings['sim_metric']]
             subprocess.Popen(var)
             # optimizer
-            optimizer = sim.DiscoveryOptimizer(settings, args)
+            optimizer = sim.DiscoveryOptimizer(settings, args, can=True)
             optimizer.execute_trials()

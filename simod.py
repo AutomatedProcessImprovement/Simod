@@ -16,6 +16,9 @@ from operator import itemgetter
 
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
+import xmltodict as xtd
+from lxml import etree
+import json
 
 import utils.support as sup
 from utils.support import timeit
@@ -49,8 +52,9 @@ class Simod():
 
         self.sim_values = list()
         self.response = dict()
+        self.parameters = dict()
 
-    def execute_pipeline(self, mode) -> None:
+    def execute_pipeline(self, mode, can=False) -> None:
         exec_times = dict()
         if mode in ['optimizer']:
             self.temp_path_redef()
@@ -65,6 +69,8 @@ class Simod():
         self.mannage_results()
         if self.status == STATUS_OK:
             self.save_times(exec_times, self.settings)
+        if self.status == STATUS_OK and can == True:
+            self.export_canonical_model()
         print("-- End of trial --")
 
     def temp_path_redef(self) -> None:
@@ -150,6 +156,9 @@ class Simod():
                 p_extractor.resource_table[['resource', 'role']],
                 on='resource',
                 how='left')
+            # save parameters
+            # self.parameters = copy.deepcopy(p_extractor.parameters['time_table'])
+            self.parameters = copy.deepcopy(p_extractor.parameters)
             # print parameters in xml bimp format
             xml.print_parameters(os.path.join(
                 self.settings['output'],
@@ -285,6 +294,16 @@ class Simod():
             sup.create_csv_file(times, log_file, mode='a')
         else:
             sup.create_csv_file_header(times, log_file)
+            
+    def export_canonical_model(self):
+        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
+        time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
+        self.parameters['time_table'] = time_table
+        sup.create_json(self.parameters, os.path.join(
+            self.settings['output'],
+            self.settings['file'].split('.')[0]+'_canon.json'))
+        
 
 # =============================================================================
 # Support methods
@@ -432,11 +451,12 @@ class DiscoveryOptimizer():
     Hyperparameter-optimizer class
     """
 
-    def __init__(self, settings, args):
+    def __init__(self, settings, args, can=False):
         """constructor"""
         self.space = self.define_search_space(settings, args)
         self.settings = settings
         self.args = args
+        self.can = can
         # Trials object to track progress
         self.bayes_trials = Trials()
 
@@ -504,7 +524,7 @@ class DiscoveryOptimizer():
                 instance_settings['arr_dtype'] = values['arr_dtype']
             instance_settings['arr_cal_met'] = method
             simod = Simod(instance_settings)
-            simod.execute_pipeline(self.settings['exec_mode'])
+            simod.execute_pipeline(self.settings['exec_mode'], can=self.can)
             return simod.response
         # Optimize
         

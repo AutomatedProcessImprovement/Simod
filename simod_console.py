@@ -31,7 +31,7 @@ def main(argv):
     if not argv:
         # Event-log filename
         settings['file'] = 'PurchasingExample.xes'
-        settings['repetitions'] = 5
+        settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # gateways probabilities 'discovery', 'random', 'equiprobable'
@@ -48,26 +48,26 @@ def main(argv):
             settings['pdef_method'] = 'automatic'
             # Calendar parameters
             # calendar methods 'default', 'discovered' ,'pool'
-            settings['res_cal_met'] = 'default'
+            settings['res_cal_met'] = 'discovered'
             if settings['res_cal_met'] == 'default':
                 settings['res_dtype'] = '247'  # 'LV917', '247'
             else:
                 settings['res_support'] = 0.1  # [0..1]
-                settings['res_confidence'] = 10  # [50..85]
+                settings['res_confidence'] = 50  # [50..85]
             # calendar methods 'default', 'discovered'
-            settings['arr_cal_met'] = 'default'
+            settings['arr_cal_met'] = 'discovered'
             if settings['arr_cal_met'] == 'default':
                 settings['arr_dtype'] = '247'  # 'LV917', '247'
             else:
                 settings['arr_support'] = 0.1  # [0..1]
-                settings['arr_confidence'] = 50  # [50..85]
+                settings['arr_confidence'] = 10  # [50..85]
             # temporal file for results
             settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
             simod = sim.Simod(settings)
-            simod.execute_pipeline(settings['exec_mode'])
+            simod.execute_pipeline(settings['exec_mode'], can=True)
         elif settings['exec_mode'] == 'optimizer':
-            args['max_eval'] = 5
+            args['max_eval'] = 2
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
             args['alg_manag'] = ['replacement', 'repair', 'removal']
@@ -80,7 +80,7 @@ def main(argv):
             args['res_dtype'] = ['LV917', '247']
             args['arr_cal_met'] = ['discovered', 'default']
             args['arr_support'] = [0.01, 0.1]  # [0..1]
-            args['arr_confidence'] = [10, 30]  # [50..85]
+            args['arr_confidence'] = [1, 20]  # [50..85]
             args['arr_dtype'] = ['LV917', '247']
             settings['temp_file'] = sup.file_id(prefix='OP_')
             settings['pdef_method'] = 'automatic'
@@ -90,7 +90,7 @@ def main(argv):
                 open(os.path.join('outputs',
                                   settings['temp_file']), 'w').close()
                 # sim.hyper_execution(settings, args)
-                optimizer = sim.DiscoveryOptimizer(settings, args)
+                optimizer = sim.DiscoveryOptimizer(settings, args, can=True)
                 optimizer.execute_trials()
     else:
         # Catch parameters by console

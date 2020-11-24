@@ -10,6 +10,7 @@ dependencies:
   - networkx=2.2
   - pillow
   - seaborn
+  - xmltodict
   - pip:
     - hyperopt==0.1.2
     - jellyfish==0.7.1
