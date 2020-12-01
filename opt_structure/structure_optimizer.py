@@ -6,24 +6,28 @@ Created on Tue Nov 17 10:48:57 2020
 """
 import os
 import subprocess
+import copy
+import multiprocessing
+from multiprocessing import Pool
+import itertools
+import traceback
 
 import numpy as np
 import pandas as pd
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 
-
+import utils.support as sup
+from utils.support import timeit
+import readers.log_splitter as ls
 import readers.log_reader as lr
 from support_modules.writers import xes_writer as xes
 from support_modules.writers import xml_writer as xml
 from support_modules.analyzers import sim_evaluator as sim
 
-
 import opt_structure.structure_miner as sm
 import opt_structure.structure_params_miner as spm
 
-import utils.support as sup
-from utils.support import timeit
 
 class StructureOptimizer():
     """
@@ -49,6 +53,7 @@ class StructureOptimizer():
                         response['values'] = method(*args)
                     except Exception as e:
                         print(e)
+                        traceback.print_exc()
                         response['status'] = STATUS_FAIL
                 return response
             return safety_check
@@ -56,7 +61,13 @@ class StructureOptimizer():
     def __init__(self, settings, args, log):
         """constructor"""
         self.space = self.define_search_space(settings, args)
+        # Read inputs
         self.log = log
+        self._split_timeline(0.8, settings['read_options']['one_timestamp'])
+        self.org_log = copy.deepcopy(log)
+        self.org_log_train = copy.deepcopy(self.log_train)
+        self.org_log_valdn = copy.deepcopy(self.log_valdn)
+        # Load settings
         self.settings = settings
         self.file_name = os.path.join('outputs', sup.file_id(prefix='OP_'))
         # Results file
@@ -71,59 +82,61 @@ class StructureOptimizer():
     @staticmethod
     def define_search_space(settings, args):
         space = {**{'concurrency': hp.uniform('concurrency',
-                                          args['concurrency'][0],
-                                          args['concurrency'][1]),
+                                              args['concurrency'][0],
+                                              args['concurrency'][1]),
                     'alg_manag': hp.choice('alg_manag',
-                                            args['alg_manag']),
+                                           args['alg_manag']),
                     'gate_management': hp.choice('gate_management',
-                                                  args['gate_management']),
-                    },
+                                                 args['gate_management'])},
                   **settings}
         return space
 
     def execute_trials(self):
-
-        parameters, resource_table = spm.StructureParametersMiner.mine_resources(
-            self.settings, self.log)
-        
+        parameters, resource_table = (
+            spm.StructureParametersMiner.mine_resources(
+                self.settings, self.log_train))
+        self.log_train = copy.deepcopy(self.org_log_train)
         def exec_pipeline(trial_stg):
+            print('Train split: ', len(self.log_train.data))
+            print('Valdn split: ', len(self.log_valdn))
             # Vars initialization
             status = STATUS_OK
             exec_times = dict()
-            data = pd.DataFrame(self.log.data)
             sim_values = []
             # Path redefinition
             rsp = self._temp_path_redef(trial_stg,
-                                       status=status,
-                                       log_time=exec_times)
+                                        status=status,
+                                        log_time=exec_times)
             status = rsp['status']
             trial_stg = rsp['values'] if status == STATUS_OK else trial_stg
             # Structure mining
             rsp = self._mine_structure(trial_stg,
-                                      status=status,
-                                      log_time=exec_times)
+                                       status=status,
+                                       log_time=exec_times)
             status = rsp['status']
             # Parameters extraction
             rsp = self._extract_parameters(trial_stg,
-                                          rsp['values'],
-                                          parameters,
-                                          resource_table,
-                                          data,
-                                          status=status,
-                                          log_time=exec_times)
+                                           rsp['values'],
+                                           copy.deepcopy(parameters),
+                                           resource_table,
+                                           status=status,
+                                           log_time=exec_times)
             status = rsp['status']
-            data = rsp['values'] if status == STATUS_OK else data
             # Simulate model
             rsp = self._simulate(trial_stg,
-                                data,
-                                status=status,
-                                log_time=exec_times)
+                                 self.log_valdn,
+                                 status=status,
+                                 log_time=exec_times)
             status = rsp['status']
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
             # Save times
             self._save_times(exec_times, trial_stg)
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
+            # reinstate log
+            self.log = copy.deepcopy(self.org_log)
+            self.log_train = copy.deepcopy(self.org_log_train)
+            self.log_valdn = copy.deepcopy(self.org_log_valdn)
             print("-- End of trial --")
             return rsp
 
@@ -179,17 +192,16 @@ class StructureOptimizer():
 
     @timeit(rec_name='EXTRACTING_PARAMS')
     @Decorators.safe_exec
-    def _extract_parameters(self, settings, structure, parameters, resource_table, temp_log, **kwargs) -> None:
+    def _extract_parameters(self, settings, structure, parameters, resource_table, **kwargs) -> None:
         bpmn, process_graph = structure
-        # TODO: verificar porque self.log y no temp_log???
-        p_extractor = spm.StructureParametersMiner(self.log,
+        p_extractor = spm.StructureParametersMiner(self.log_train,
                                                    bpmn,
                                                    process_graph,
                                                    resource_table,
                                                    settings)
-        num_inst = len(temp_log.caseid.unique())
+        num_inst = len(self.log_valdn.caseid.unique())
         # Get minimum date
-        start_time = (temp_log
+        start_time = (self.log_valdn
                       .start_timestamp
                       .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
         p_extractor.extract_parameters(num_inst, start_time, parameters['resource_pool'])
@@ -203,28 +215,86 @@ class StructureOptimizer():
                              settings['file'].split('.')[0]+'.bpmn'),
                 parameters)
 
-            temp_log.rename(columns={'user': 'resource'}, inplace=True)
-            temp_log['source'] = 'log'
-            temp_log['run_num'] = 0
-            temp_log = temp_log.merge(
+            self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
+            self.log_valdn['source'] = 'log'
+            self.log_valdn['run_num'] = 0
+            self.log_valdn = self.log_valdn.merge(
                 p_extractor.resource_table[['resource', 'role']],
                 on='resource',
                 how='left')
-            temp_log = temp_log[
-                ~temp_log.task.isin(['Start', 'End'])]
-            return temp_log
+            self.log_valdn = self.log_valdn[
+                ~self.log_valdn.task.isin(['Start', 'End'])]
         else:
             raise RuntimeError('Parameters extraction error')
 
-    @timeit(rec_name='SIM_EVAL')
+    @timeit(rec_name='SIMULATION_EVAL')
     @Decorators.safe_exec
-    def _simulate(self, settings, data, **kwargs) -> list:
-        sim_values = list()
-        for rep in range(settings['repetitions']):
-            print("Experiment #" + str(rep + 1))
-            self._execute_simulator(settings, rep)
+    def _simulate(self, settings, data,**kwargs) -> list:
+        reps = settings['repetitions']
+        cpu_count = multiprocessing.cpu_count()
+        w_count =  reps if reps <= cpu_count else cpu_count
+        pool = Pool(processes=w_count)
+        # Simulate
+        args = [(settings, rep) for rep in range(reps)]
+        p = pool.map_async(self.execute_simulator, args)
+        p.wait()
+        # Read simulated logs
+        p = pool.map_async(self.read_stats, args)
+        p.wait()
+        # Evaluate
+        args = [(settings, data, log) for log in p.get()]
+        p = pool.map_async(self.evaluate_logs, args)
+        p.wait()
+        pool.close()
+        # Save results
+        sim_values = list(itertools.chain(*p.get()))
+        return sim_values
+
+    @staticmethod
+    def read_stats(args):
+        def read(settings, rep):
+            """Reads the simulation results stats
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            message = 'Reading log repetition: '+str(rep+1)
+            print(message)
+            m_settings = dict()
+            m_settings['output'] = settings['output']
+            m_settings['file'] = settings['file']
+            column_names = {'resource': 'user'}
+            m_settings['read_options'] = settings['read_options']
+            m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
+            m_settings['read_options']['column_names'] = column_names
+            temp = lr.LogReader(os.path.join(
+                m_settings['output'], 'sim_data',
+                m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),
+                m_settings['read_options'],
+                verbose=False)
+            temp = pd.DataFrame(temp.data)
+            temp.rename(columns={'user': 'resource'}, inplace=True)
+            temp['role'] = temp['resource']
+            temp['source'] = 'simulation'
+            temp['run_num'] = rep + 1
+            temp = temp[~temp.task.isin(['Start', 'End'])]
+            return temp
+        return read(*args)
+
+    @staticmethod
+    def evaluate_logs(args):
+        def evaluate(settings, data, sim_log):
+            """Reads the simulation results stats
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            rep = (sim_log.iloc[0].run_num) - 1
+            sim_values = list()
+            message = 'Evaluating repetition: '+str(rep+1)
+            print(message)
             data = data.append(
-                self._read_stats(settings, rep),
+                sim_log,
                 ignore_index=True,
                 sort=False)
             evaluator = sim.SimilarityEvaluator(
@@ -233,7 +303,28 @@ class StructureOptimizer():
                 rep)
             evaluator.measure_distance('dl')
             sim_values.append(evaluator.similarity)
-        return sim_values
+            return sim_values
+        return evaluate(*args)
+
+    @staticmethod
+    def execute_simulator(args):
+        def sim_call(settings, rep):
+            """Executes BIMP Simulations.
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            message = 'Executing BIMP Simulations Repetition: '+str(rep+1)
+            print(message)
+            args = ['java', '-jar', settings['bimp_path'],
+                    os.path.join(settings['output'],
+                                  settings['file'].split('.')[0]+'.bpmn'),
+                    '-csv',
+                    os.path.join(settings['output'], 'sim_data',
+                                  settings['file']
+                                  .split('.')[0]+'_'+str(rep+1)+'.csv')]
+            subprocess.run(args, check=True, stdout=subprocess.PIPE)
+        sim_call(*args)
 
     @staticmethod
     def _save_times(times, settings):
@@ -280,47 +371,32 @@ class StructureOptimizer():
             sup.create_csv_file_header(measurements, self.file_name)
         return response
 
-    @staticmethod
-    def _read_stats(settings, rep):
-        """Reads the simulation results stats
-        Args:
-            settings (dict): Path to jar and file names
-            rep (int): repetition number
+    def _split_timeline(self, size: float, one_ts: bool) -> None:
         """
-        m_settings = dict()
-        m_settings['output'] = settings['output']
-        m_settings['file'] = settings['file']
-        column_names = {'resource': 'user'}
-        m_settings['read_options'] = settings['read_options']
-        m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
-        m_settings['read_options']['column_names'] = column_names
-        temp = lr.LogReader(os.path.join(
-            m_settings['output'], 'sim_data',
-            m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),
-            m_settings['read_options'])
-        temp = pd.DataFrame(temp.data)
-        temp.rename(columns={'user': 'resource'}, inplace=True)
-        temp['role'] = temp['resource']
-        temp['source'] = 'simulation'
-        temp['run_num'] = rep + 1
-        temp = temp[~temp.task.isin(['Start', 'End'])]
-        return temp
+        Split an event log dataframe by time to peform split-validation.
+        prefered method time splitting removing incomplete traces.
+        If the testing set is smaller than the 10% of the log size
+        the second method is sort by traces start and split taking the whole
+        traces no matter if they are contained in the timeframe or not
 
-    @staticmethod
-    def _execute_simulator(settings, rep):
-        """Executes BIMP Simulations.
-        Args:
-            settings (dict): Path to jar and file names
-            rep (int): repetition number
+        Parameters
+        ----------
+        size : float, validation percentage.
+        one_ts : bool, Support only one timestamp.
         """
-        print("-- Executing BIMP Simulations --")
-        args = ['java', '-jar', settings['bimp_path'],
-                os.path.join(settings['output'],
-                              settings['file'].split('.')[0]+'.bpmn'),
-                '-csv',
-                os.path.join(settings['output'], 'sim_data',
-                              settings['file']
-                              .split('.')[0]+'_'+str(rep+1)+'.csv')]
-        subprocess.call(args)
-
-
+        # Split log data
+        splitter = ls.LogSplitter(self.log.data)
+        train, valdn = splitter.split_log('timeline_contained', size, one_ts)
+        total_events = len(self.log.data)
+        # Check size and change time splitting method if necesary
+        if len(valdn) < int(total_events*0.1):
+            train, valdn = splitter.split_log('timeline_trace', size, one_ts)
+        # Set splits
+        key = 'end_timestamp' if one_ts else 'start_timestamp'
+        valdn = pd.DataFrame(valdn)
+        train = pd.DataFrame(train)
+        self.log_valdn = (valdn.sort_values(key, ascending=True)
+                         .reset_index(drop=True))
+        self.log_train = copy.deepcopy(self.log)
+        self.log_train.set_data(train.sort_values(key, ascending=True)
+                                .reset_index(drop=True).to_dict('records'))

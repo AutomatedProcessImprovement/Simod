@@ -4,6 +4,9 @@ Created on Fri Mar  6 20:47:09 2020
 
 @author: Manuel Camargo
 """
+import pandas as pd
+import itertools
+import utils.support as sup
 
 from extraction import log_replayer as rpl
 from extraction import interarrival_definition as arr
@@ -12,9 +15,6 @@ from extraction import role_discovery as rl
 from extraction import schedule_tables as sch
 from extraction import tasks_evaluator as te
 
-import pandas as pd
-import itertools
-import utils.support as sup
 
 class StructureParametersMiner():
     """
@@ -52,7 +52,7 @@ class StructureParametersMiner():
         # inter-arrival times and durations by default mean an exponential
         # 'manual', 'automatic', 'semi-automatic', 'default'
         self.settings['pdef_method'] = 'default'
-        # self.settings['rp_similarity'] = 0.5        
+        # self.settings['rp_similarity'] = 0.5
         self.process_stats = list()
         self.parameters = dict()
         self.conformant_traces = list()
@@ -67,7 +67,7 @@ class StructureParametersMiner():
         self.is_safe = self._mine_interarrival(is_safe=self.is_safe)
         self.is_safe = self._mine_gateways_probabilities(is_safe=self.is_safe)
         self.is_safe = self._process_tasks(resource_pool, is_safe=self.is_safe)
-        
+
         # TODO: Num of test partition
         self.parameters['instances'] = num_inst
         self.parameters['start_time'] = start_time
@@ -97,7 +97,7 @@ class StructureParametersMiner():
         settings['arr_cal_met'] = 'default'
         settings['arr_dtype'] = '247'  # 'LV917', '247'
         settings['rp_similarity'] = 0.5
-        
+
         def create_resource_pool(resource_table, table_name) -> list():
             """
             Creates resource pools and associate them the default timetable
@@ -123,8 +123,8 @@ class StructureParametersMiner():
             log,
             sim_threshold=settings['rp_similarity'])
         ttcreator = sch.TimeTablesCreator(settings)
-        args = {'res_cal_met': settings['res_cal_met'], 
-                'arr_cal_met': settings['arr_cal_met'], 
+        args = {'res_cal_met': settings['res_cal_met'],
+                'arr_cal_met': settings['arr_cal_met'],
                 'resource_table': res_analyzer.resource_table}
         ttcreator.create_timetables(args)
         resource_pool = create_resource_pool(res_analyzer.resource_table,
@@ -169,4 +169,3 @@ class StructureParametersMiner():
                                       resource_pool,
                                       self.settings)
         self.parameters['elements_data'] = tevaluator.elements_data
-        

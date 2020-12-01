@@ -14,7 +14,7 @@ class LogReplayer():
     measures the global conformance and the KPI's related with times
     """
 
-    def __init__(self, model, log, settings, source='log', run_num=0):
+    def __init__(self, model, log, settings, source='log', run_num=0, verbose=True):
         """constructor"""
         self.source = source
         self.run_num = run_num
@@ -22,6 +22,7 @@ class LogReplayer():
         self.model = model
         self.m_data = pd.DataFrame.from_dict(dict(model.nodes.data()),
                                              orient='index')
+        self.verbose = verbose
         self.start_tasks_list = list()
         self.end_tasks_list = list()
         self.find_start_finish_tasks()
@@ -111,9 +112,11 @@ class LogReplayer():
                 self.process_stats.extend(t_times)
             else:
                 self.not_conformant_traces.extend(trace)
-            sup.print_progress(((index / (len(self.traces) - 1)) * 100),
-                               'Replaying process traces ')
-        sup.print_done_task()            
+            if self.verbose:
+                sup.print_progress(((index / (len(self.traces) - 1)) * 100),
+                                   'Replaying process traces ')
+        if self.verbose:
+            sup.print_done_task()            
         if len(self.conformant_traces) > 0:
             self.calculate_process_metrics()
         else:
