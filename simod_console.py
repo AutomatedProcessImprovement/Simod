@@ -30,7 +30,7 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes'
+        settings['file'] = 'callcentre.xes'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
