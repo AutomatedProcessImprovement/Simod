@@ -21,7 +21,7 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'optimizer'
+    settings['exec_mode'] = 'single'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
@@ -33,8 +33,8 @@ def main(argv):
             # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
             settings['sim_metric'] = 'tsd' # Main metric
             # Additional metrics
-            settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
-                                        'cal_emd', 'log_mae', 'dl_mae', 'mae']
+            # settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
+            #                             'cal_emd', 'log_mae', 'dl_mae', 'mae']
             settings['gate_management'] = 'discovery'
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.672644226
@@ -61,7 +61,7 @@ def main(argv):
                 settings['arr_support'] = 0.1  # [0..1]
                 settings['arr_confidence'] = 10  # [50..85]
             # temporal file for results
-            # settings['temp_file'] = sup.file_id(prefix='SE_')
+            settings['temp_file'] = sup.file_id(prefix='SE_')
             # Single Execution
             simod = sim.Simod(settings)
             simod.execute_pipeline()

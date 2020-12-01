@@ -5,7 +5,7 @@ Created on Thu Mar 28 10:56:25 2019
 @author: Manuel Camargo
 """
 import os
-# import subprocess
+import subprocess
 import types
 import itertools
 import platform as pl
@@ -18,10 +18,10 @@ from xml.dom import minidom
 import pandas as pd
 import numpy as np
 from operator import itemgetter
-from tqdm import tqdm
+# from tqdm import tqdm
 
 
-# import utils.support as sup
+import utils.support as sup
 from utils.support import timeit
 import readers.log_reader as lr
 import readers.bpmn_reader as br
@@ -34,11 +34,8 @@ from support_modules.writers import xml_writer as xml
 from support_modules.analyzers import sim_evaluator as sim
 from support_modules.log_repairing import conformance_checking as chk
 
-# from extraction import parameter_extraction as par
-# from extraction import log_replayer as rpl
-
-import opt_times.times_optimizer as to
-import opt_structure.structure_optimizer as so
+from extraction import parameter_extraction as par
+from extraction import log_replayer as rpl
 
 import opt_times.times_optimizer as to
 import opt_structure.structure_optimizer as so
@@ -71,10 +68,9 @@ class Simod():
                 return is_safe
             return safety_check
 
-    def __init__(self, settings, args):
+    def __init__(self, settings):
         """constructor"""
         self.settings = settings
-        self.args = args
 
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
@@ -106,9 +102,9 @@ class Simod():
     @Decorators.safe_exec
     def read_inputs(self, **kwargs) -> None:
         # Output folder creation
-        # if not os.path.exists(self.settings['output']):
-        #     os.makedirs(self.settings['output'])
-        #     os.makedirs(os.path.join(self.settings['output'], 'sim_data'))
+        if not os.path.exists(self.settings['output']):
+            os.makedirs(self.settings['output'])
+            os.makedirs(os.path.join(self.settings['output'], 'sim_data'))
         # Event log reading
         self.log = lr.LogReader(os.path.join(self.settings['input'],
                                              self.settings['file']),
