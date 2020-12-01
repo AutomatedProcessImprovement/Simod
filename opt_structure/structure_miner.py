@@ -99,7 +99,6 @@ class StructureMiner():
         """
         print(" -- Mining Process Structure --")
         # Event log file_name
-        # Event log file_name
         file_name = self.settings['file'].split('.')[0]
         input_route = os.path.join(self.settings['output'], file_name+'.xes')
         # Mining structure definition

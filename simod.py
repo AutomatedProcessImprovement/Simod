@@ -75,8 +75,6 @@ class Simod():
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
-        # self.bpmn = types.SimpleNamespace()
-        # self.process_graph = types.SimpleNamespace()
 
         self.sim_values = list()
         self.response = dict()
@@ -225,7 +223,8 @@ class Simod():
                                                settings,
                                                source='simulation',
                                                run_num=rep + 1,
-                                               verbose=False)
+                                               verbose=False,
+                                               mode='seq')
             temp_stats = results_replayer.process_stats
             temp_stats['role'] = temp_stats['resource']
             return temp_stats
@@ -440,8 +439,34 @@ class Simod():
 # =============================================================================
 # External tools calling
 # =============================================================================
+    # @staticmethod
+    # def mining_structure(settings):
+    #     """
+    #     Executes splitminer for bpmn structure mining.
+
+    #     Returns
+    #     -------
+    #     None
+    #         DESCRIPTION.
+    #     """
+    #     print(" -- Mining Process Structure --")
+    #     # Event log file_name
+    #     file_name = settings['file'].split('.')[0]
+    #     input_route = os.path.join(settings['output'], file_name+'.xes')
+    #     sep = ';' if pl.system().lower() == 'windows' else ':'
+    #     # Mining structure definition
+    #     args = ['java', '-cp',
+    #             (settings['miner_path']+sep+os.path.join(
+    #                 'external_tools','splitminer','lib','*')),
+    #             'au.edu.unimelb.services.ServiceProvider',
+    #             'SM2',
+    #             input_route,
+    #             os.path.join(settings['output'], file_name),
+    #             str(settings['concurrency'])]
+    #     subprocess.call(args)
+
     @staticmethod
-    def mining_structure(settings):
+    def mining_structure(settings) -> None:
         """
         Executes splitminer for bpmn structure mining.
 
@@ -454,16 +479,11 @@ class Simod():
         # Event log file_name
         file_name = settings['file'].split('.')[0]
         input_route = os.path.join(settings['output'], file_name+'.xes')
-        sep = ';' if pl.system().lower() == 'windows' else ':'
         # Mining structure definition
-        args = ['java', '-cp',
-                (settings['miner_path']+sep+os.path.join(
-                    'external_tools','splitminer','lib','*')),
-                'au.edu.unimelb.services.ServiceProvider',
-                'SM2',
+        args = ['java', '-jar', settings['miner_path'],
+                str(settings['epsilon']), str(settings['eta']),
                 input_route,
-                os.path.join(settings['output'], file_name),
-                str(settings['concurrency'])]
+                os.path.join(settings['output'], file_name)]
         subprocess.call(args)
 
 # =============================================================================

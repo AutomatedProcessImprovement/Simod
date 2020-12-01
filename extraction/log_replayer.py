@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import networkx as nx
 import pandas as pd
+import multiprocessing
+from multiprocessing import Pool
+import itertools
 
 import utils.support as sup
-# import support as sup
 
 from collections import OrderedDict
 
@@ -14,7 +16,7 @@ class LogReplayer():
     measures the global conformance and the KPI's related with times
     """
 
-    def __init__(self, model, log, settings, source='log', run_num=0, verbose=True):
+    def __init__(self, model, log, settings, source='log', run_num=0, verbose=True, mode='multi'):
         """constructor"""
         self.source = source
         self.run_num = run_num
@@ -38,58 +40,159 @@ class LogReplayer():
         self.process_stats = list()
         self.traces = log
 
-        self.replay()
+        self._replay_traces(mode)
 
-    def replay(self) -> None:
+    def _replay_traces(self, mode, **kwargs) -> None:
+        if self.verbose:
+            sup.print_performed_task('Replaying process traces')            
+        # Simulate
+        args = [(i,
+                 trace,
+                 self.model,
+                 self.start_tasks_list,
+                 self.end_tasks_list,
+                 self.parallel_gt_exec,
+                 self.subsec_set) for i, trace in enumerate(self.traces)]
+        if mode == 'multi':
+            cpu_count = multiprocessing.cpu_count()
+            pool = Pool(processes=cpu_count)
+            p = pool.map_async(self.replay_trace, args)
+            p.wait()
+            pool.close()
+            results = p.get()
+        elif mode == 'seq':
+            results = [self.replay_trace(arg) for arg in args]
+        else:
+            raise ValueError(mode)
+        self.process_stats = [trace[2] for trace in results if trace[0]]
+        self.process_stats = list(itertools.chain(*self.process_stats))
+        self.conformant_traces = [self.traces[trace[1]] for trace in results if trace[0]]
+        self.conformant_traces = list(itertools.chain(*self.conformant_traces))
+        self.not_conformant_traces = [self.traces[trace[1]] for trace in results if not trace[0]]
+        self.not_conformant_traces = list(itertools.chain(*self.not_conformant_traces))
+        if self.verbose:
+            sup.print_done_task()            
+        if len(self.conformant_traces) > 0:
+            self.calculate_process_metrics()
+        else:
+            raise AssertionError('Model not valid for testing')
+
+    @staticmethod
+    def replay_trace(args) -> None:
         """
         Replays the event-log traces over the BPMN model
         """
-        for index in range(0, len(self.traces)):
+   
+        def find_task_node(model: iter, task_name: str) -> int:
+            resp = list(filter(
+                lambda x: model.node[x]['name'] == task_name, model.nodes))
+            if len(resp) > 0:
+                resp = resp[0]
+            else:
+                raise Exception('Task not found on bpmn structure...')
+            return resp
+        
+        def update_cursor(nnode: int, model: iter, cursor: list) -> (list, int):
+            """
+            This method updates the execution pile (cursor) in the replay
+            """
+            tasks = list(filter(
+                lambda x: model.node[x]['type'] == 'task', cursor))
+            shortest_path = list()
+            pnode = 0
+            for pnode in reversed(tasks):
+                try:
+                    shortest_path = list(nx.shortest_path(model,
+                                                          pnode,
+                                                          nnode))[1:]
+                    pnode = pnode
+                    break
+                except nx.NetworkXNoPath:
+                    pass
+            if len(list(filter(lambda x: model.node[x]['type'] == 'task',
+                               shortest_path))) > 1:
+                raise Exception('Incoherent path')
+            ap_list = cursor + shortest_path
+            # Preserve order and leave only new
+            cursor = list(OrderedDict.fromkeys(ap_list))
+            return cursor, pnode
+        
+        def save_record(model, t_times: list, trace: list, i: int, node=None) -> list:
+            """
+            Saves the execution times of the trace in the t_times list
+            """
+            prev_rec = dict()
+            if node is not None:
+                task = model.node[node]['name']
+                for x in t_times[::-1]:
+                    if task == x['task']:
+                        prev_rec = x
+                        break
+            record = create_record(trace, i, False, prev_rec)
+            if record['resource'] != 'AUTO':
+                t_times.append(record)
+            return t_times
+
+        def create_record(trace, index, one_timestamp, last_event=dict()):
+            if not bool(last_event):
+                enabling_time = trace[index]['end_timestamp']
+            else:
+                enabling_time = last_event['end_timestamp']
+            record = {'caseid': trace[index]['caseid'],
+                      'task': trace[index]['task'],
+                      'end_timestamp': trace[index]['end_timestamp'],
+                      'enable_timestamp': enabling_time,
+                      'resource': trace[index]['user']}
+            if not one_timestamp:
+                record['start_timestamp'] = trace[index]['start_timestamp']
+            return record
+
+
+        def replay(index, trace, model, start_tasks, end_tasks, parallel_gt_exec, subsec_set):
             t_times = list()
-            trace = self.traces[index][1:-1]  # remove start and end event
+            # trace = traces[index][1:-1]  # remove start and end event
+            trace = trace[1:-1]  # remove start and end event
             # Check if is a complete trace
             is_conformant = True
             curr_node, last_node = 0, 0
             try:
-                curr_node = self.find_task_node(self.model, trace[0]['task'])
-                last_node = self.find_task_node(self.model, trace[-1]['task'])
+                curr_node = find_task_node(model, trace[0]['task'])
+                last_node = find_task_node(model, trace[-1]['task'])
             except:
                 is_conformant = False
-            if curr_node not in self.start_tasks_list or not is_conformant:
-                self.not_conformant_traces.append(trace)
-                continue
-            if last_node not in self.end_tasks_list or not is_conformant:
-                self.not_conformant_traces.append(trace)
-                continue
+            if curr_node not in start_tasks or not is_conformant:
+                return False, index, []
+            if last_node not in end_tasks or not is_conformant:
+                return False, index, []
             # Initialize
-            temp_gt_exec = self.parallel_gt_exec
+            temp_gt_exec = parallel_gt_exec
             cursor = [curr_node]
             remove = True
             # ----time recording------
-            t_times = self.save_record(t_times, trace, 0)
+            t_times = save_record(model, t_times, trace, 0)
             # ------------------------
             for i in range(1, len(trace)):
                 try:
-                    nnode = self.find_task_node(self.model, trace[i]['task'])
+                    nnode = find_task_node(model, trace[i]['task'])
                 except:
                     is_conformant = False
                     break
                 # If loop management
                 if nnode == cursor[-1]:
-                    t_times = self.save_record(t_times, trace, i, nnode)
-                    self.model.node[nnode]['executions'] += 1
+                    t_times = save_record(model,t_times, trace, i, nnode)
+                    model.node[nnode]['executions'] += 1
                     continue
                 try:
-                    cursor, pnode = self.update_cursor(nnode, self.model, cursor)
+                    cursor, pnode = update_cursor(nnode, model, cursor)
                     # ----time recording------
-                    t_times = self.save_record(t_times, trace, i, pnode)
-                    self.model.node[nnode]['executions'] += 1
+                    t_times = save_record(model, t_times, trace, i, pnode)
+                    model.node[nnode]['executions'] += 1
                     # ------------------------
                 except:
                     is_conformant = False
                     break
                 for element in reversed(cursor[:-1]):
-                    element_type = self.model.node[element]['type']
+                    element_type = model.node[element]['type']
                     # Process AND
                     if element_type == 'gate3':
                         gate = [d for d in temp_gt_exec if d['nod_num'] == element][0]
@@ -101,114 +204,22 @@ class LogReplayer():
                             cursor.remove(element)
                     # Process Task
                     elif element_type == 'task':
-                        if (element, nnode) in self.subsec_set and remove:
+                        if (element, nnode) in subsec_set and remove:
                             cursor.remove(element)
                     # Process other
                     elif remove:
                         cursor.remove(element)
             if is_conformant:
                 # Append the original one
-                self.conformant_traces.extend(self.traces[index])
-                self.process_stats.extend(t_times)
+                return True, index, t_times
             else:
-                self.not_conformant_traces.extend(trace)
-            if self.verbose:
-                sup.print_progress(((index / (len(self.traces) - 1)) * 100),
-                                   'Replaying process traces ')
-        if self.verbose:
-            sup.print_done_task()            
-        if len(self.conformant_traces) > 0:
-            self.calculate_process_metrics()
-        else:
-            raise AssertionError('Model not valid for testing')
-
-    @staticmethod
-    def update_cursor(nnode: int, model: iter, cursor: list) -> (list, int):
-        """
-        This method updates the execution pile (cursor) in the replay
-
-        Parameters
-        ----------
-        nnode : int
-        model : iter
-        cursor : list
-
-        Raises
-        ------
-        Exception
-            Incoherent path.
-
-        Returns
-        -------
-        (list, int)
-            cursor and past node.
-        """
-        tasks = list(filter(
-            lambda x: model.node[x]['type'] == 'task', cursor))
-        shortest_path = list()
-        pnode = 0
-        for pnode in reversed(tasks):
-            try:
-                shortest_path = list(nx.shortest_path(model,
-                                                      pnode,
-                                                      nnode))[1:]
-                pnode = pnode
-                break
-            except nx.NetworkXNoPath:
-                pass
-        if len(list(filter(lambda x: model.node[x]['type'] == 'task',
-                           shortest_path))) > 1:
-            raise Exception('Incoherent path')
-        ap_list = cursor + shortest_path
-        # Preserve order and leave only new
-        cursor = list(OrderedDict.fromkeys(ap_list))
-        return cursor, pnode
+                return False, index, []
+        return replay(*args)
 
 # =============================================================================
 # metrics related
 # =============================================================================
 
-    def save_record(self, t_times: list, trace: list, i: int, node=None) -> list:
-        """
-        Saves the execution times of the trace in the t_times list
-
-        Parameters
-        ----------
-        t_times : list
-        trace : list
-        i : int
-        node : TYPE, optional
-
-        Returns
-        -------
-        list
-        """
-        prev_rec = dict()
-        if node is not None:
-            task = self.model.node[node]['name']
-            for x in t_times[::-1]:
-                if task == x['task']:
-                    prev_rec = x
-                    break
-        record = self.create_record(trace, i, self.one_timestamp, prev_rec)
-        if record['resource'] != 'AUTO':
-            t_times.append(record)
-        return t_times
-
-    @staticmethod
-    def create_record(trace, index, one_timestamp, last_event=dict()):
-        if not bool(last_event):
-            enabling_time = trace[index]['end_timestamp']
-        else:
-            enabling_time = last_event['end_timestamp']
-        record = {'caseid': trace[index]['caseid'],
-                  'task': trace[index]['task'],
-                  'end_timestamp': trace[index]['end_timestamp'],
-                  'enable_timestamp': enabling_time,
-                  'resource': trace[index]['user']}
-        if not one_timestamp:
-            record['start_timestamp'] = trace[index]['start_timestamp']
-        return record
 
     def calculate_process_metrics(self):
         ps = pd.DataFrame(self.process_stats)
@@ -291,13 +302,3 @@ class LogReplayer():
                 tasks_list.append(
                     LogReplayer.find_next_tasks(model, node))
         return tasks_list
-
-    @staticmethod
-    def find_task_node(model: iter, task_name: str) -> int:
-        resp = list(filter(
-            lambda x: model.node[x]['name'] == task_name, model.nodes))
-        if len(resp) > 0:
-            resp = resp[0]
-        else:
-            raise Exception('Task not found on bpmn structure...')
-        return resp
