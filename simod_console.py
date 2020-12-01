@@ -21,12 +21,12 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'single'
+    settings['exec_mode'] = 'optimizer'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes'
-        settings['repetitions'] = 3
+        settings['file'] = 'poc_processmining.xes'
+        settings['repetitions'] = 5
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
@@ -39,7 +39,10 @@ def main(argv):
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.672644226
             # Splitminer settings [0..1]
-            settings['concurrency'] = 0.5
+            # settings['concurrency'] = 0.5
+            # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
+            settings['epsilon'] = 0.601063585
+            settings['eta'] = 0.707803144
             # 'removal', 'replacement', 'repair'
             settings['alg_manag'] = 'removal'
             # Processing time definition method:
@@ -69,8 +72,10 @@ def main(argv):
             settings['sim_metric'] = 'tsd'
             settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
                                        'cal_emd', 'log_mae', 'dl_mae', 'mae']
-            args['max_eval'] = 2
-            args['concurrency'] = [0.0, 1.0]
+            args['max_eval'] = 30
+            # args['concurrency'] = [0.0, 1.0]
+            args['epsilon'] = [0.0, 1.0]
+            args['eta'] = [0.0, 1.0]
             args['alg_manag'] = ['replacement', 'repair', 'removal']
             args['rp_similarity'] = [0.5, 0.9]
             args['gate_management'] = ['discovery', 'equiprobable']
@@ -132,9 +137,12 @@ def define_general_settings(settings):
     settings['input'] = 'inputs'
     settings['output'] = os.path.join('outputs', sup.folder_id())
     # External tools routes
+    # settings['miner_path'] = os.path.join('external_tools',
+    #                                       'splitminer',
+    #                                       'sm2.jar')
     settings['miner_path'] = os.path.join('external_tools',
                                           'splitminer',
-                                          'sm2.jar')
+                                          'splitminer.jar')
     settings['bimp_path'] = os.path.join('external_tools',
                                          'bimp',
                                          'qbp-simulator-engine.jar')

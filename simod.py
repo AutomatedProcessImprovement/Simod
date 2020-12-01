@@ -262,6 +262,25 @@ class Simod():
             return sim_values
         return evaluate(*args)
 
+    # @staticmethod
+    # def execute_simulator(args):
+    #     def sim_call(settings, rep):
+    #         """Executes BIMP Simulations.
+    #         Args:
+    #             settings (dict): Path to jar and file names
+    #             rep (int): repetition number
+    #         """
+    #         message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
+    #         print(message)
+    #         args = ['java', '-jar', settings['bimp_path'],
+    #                 os.path.join(settings['output'],
+    #                               settings['file'].split('.')[0]+'.bpmn'),
+    #                 '-csv',
+    #                 os.path.join(settings['output'], 'sim_data',
+    #                               settings['file']
+    #                               .split('.')[0]+'_'+str(rep+1)+'.csv')]
+    #         subprocess.run(args, check=True, stdout=subprocess.PIPE)
+    #     sim_call(*args)
     @staticmethod
     def execute_simulator(args):
         def sim_call(settings, rep):
@@ -274,11 +293,11 @@ class Simod():
             print(message)
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
-                                  settings['file'].split('.')[0]+'.bpmn'),
+                                 settings['file'].split('.')[0]+'.bpmn'),
                     '-csv',
                     os.path.join(settings['output'], 'sim_data',
-                                  settings['file']
-                                  .split('.')[0]+'_'+str(rep+1)+'.csv')]
+                                 settings['file']
+                                 .split('.')[0]+'_'+str(rep+1)+'.csv')]
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
         sim_call(*args)
 
@@ -314,7 +333,9 @@ class Simod():
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                'concurrency': settings['concurrency'],
+                # 'concurrency': settings['concurrency'],
+                'epsilon': settings['epsilon'],
+                'eta': settings['eta'],
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
@@ -480,7 +501,8 @@ class DiscoveryOptimizer():
             self.args['alg_manag'][best_parms['alg_manag']])
         self.settings['gate_management'] = (
             self.args['gate_management'][best_parms['gate_management']])
-        self.settings['concurrency'] = best_parms['concurrency']
+        self.settings['eta'] = best_parms['eta']
+        self.settings['epsilon'] = best_parms['epsilon']
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis',
                     'res_con_dis', 'arr_support', 'arr_confidence',
                     'res_cal_met', 'arr_cal_met']:

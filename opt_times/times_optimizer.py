@@ -265,7 +265,9 @@ class TimesOptimizer():
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                'concurrency': settings['concurrency'],
+                # 'concurrency': settings['concurrency'],
+                'epsilon': settings['epsilon'],
+                'eta': settings['eta'],
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}

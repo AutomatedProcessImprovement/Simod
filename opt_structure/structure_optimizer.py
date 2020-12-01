@@ -81,9 +81,15 @@ class StructureOptimizer():
 
     @staticmethod
     def define_search_space(settings, args):
-        space = {**{'concurrency': hp.uniform('concurrency',
-                                              args['concurrency'][0],
-                                              args['concurrency'][1]),
+        space = {**{'epsilon': hp.uniform('epsilon',
+                                          args['epsilon'][0],
+                                          args['epsilon'][1]),
+                    'eta': hp.uniform('eta',
+                                      args['eta'][0],
+                                      args['eta'][1]),
+                    # 'concurrency': hp.uniform('concurrency',
+                    #                           args['concurrency'][0],
+                    #                           args['concurrency'][1]),
                     'alg_manag': hp.choice('alg_manag',
                                            args['alg_manag']),
                     'gate_management': hp.choice('gate_management',
@@ -342,7 +348,9 @@ class StructureOptimizer():
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                'concurrency': settings['concurrency'],
+                # 'concurrency': settings['concurrency'],
+                'epsilon': settings['epsilon'],
+                'eta': settings['eta'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
         similarity = 0

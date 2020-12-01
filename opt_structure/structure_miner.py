@@ -61,6 +61,32 @@ class StructureMiner():
         self.is_safe = self._mining_structure(is_safe=self.is_safe)
         self.is_safe = self._evaluate_alignment(is_safe=self.is_safe)
 
+    # @Decorators.safe_exec
+    # def _mining_structure(self, **kwargs) -> None:
+    #     """
+    #     Executes splitminer for bpmn structure mining.
+
+    #     Returns
+    #     -------
+    #     None
+    #         DESCRIPTION.
+    #     """
+    #     print(" -- Mining Process Structure --")
+    #     # Event log file_name
+    #     file_name = self.settings['file'].split('.')[0]
+    #     input_route = os.path.join(self.settings['output'], file_name+'.xes')
+    #     sep = ';' if pl.system().lower() == 'windows' else ':'
+    #     mem = '-cp' if pl.system().lower() == 'windows' else '-Xmx1G -cp'
+    #     # Mining structure definition
+    #     args = ['java', mem,
+    #             (self.settings['miner_path']+sep+os.path.join(
+    #                 'external_tools','splitminer','lib','*')),
+    #             'au.edu.unimelb.services.ServiceProvider',
+    #             'SM2',
+    #             input_route,
+    #             os.path.join(self.settings['output'], file_name),
+    #             str(self.settings['concurrency'])]
+    #     subprocess.call(args)
     @Decorators.safe_exec
     def _mining_structure(self, **kwargs) -> None:
         """
@@ -73,19 +99,16 @@ class StructureMiner():
         """
         print(" -- Mining Process Structure --")
         # Event log file_name
+        # Event log file_name
         file_name = self.settings['file'].split('.')[0]
         input_route = os.path.join(self.settings['output'], file_name+'.xes')
-        sep = ';' if pl.system().lower() == 'windows' else ':'
         # Mining structure definition
-        args = ['java', '-cp',
-                (self.settings['miner_path']+sep+os.path.join(
-                    'external_tools','splitminer','lib','*')),
-                'au.edu.unimelb.services.ServiceProvider',
-                'SM2',
+        args = ['java', '-jar', self.settings['miner_path'],
+                str(self.settings['epsilon']), str(self.settings['eta']),
                 input_route,
-                os.path.join(self.settings['output'], file_name),
-                str(self.settings['concurrency'])]
+                os.path.join(self.settings['output'], file_name)]
         subprocess.call(args)
+
 
     @Decorators.safe_exec
     def _evaluate_alignment(self, **kwargs) -> None:
