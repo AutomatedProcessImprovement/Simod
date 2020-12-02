@@ -156,8 +156,8 @@ class Simod():
                 on='resource',
                 how='left')
             # save parameters
-            # self.parameters = copy.deepcopy(p_extractor.parameters['time_table'])
             self.parameters = copy.deepcopy(p_extractor.parameters)
+            self.parameters['rol_user'] = p_extractor.resource_table
             # print parameters in xml bimp format
             xml.print_parameters(os.path.join(
                 self.settings['output'],
@@ -299,6 +299,12 @@ class Simod():
         time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
         time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
         self.parameters['time_table'] = time_table
+        # Users in rol data
+        user_rol = dict()
+        for key, group in self.parameters['rol_user'].groupby('role'):
+            user_rol[key] = list(group.resource)
+        self.parameters['rol_user'] = user_rol
+        # Json creation
         sup.create_json(self.parameters, os.path.join(
             self.settings['output'],
             self.settings['file'].split('.')[0]+'_canon.json'))

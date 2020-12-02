@@ -24,13 +24,13 @@ def main(argv):
     settings['exec_mode'] = 'optimizer'
     # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
     # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
-    settings['sim_metric'] = 'day_hour_emd' # Main metric
+    settings['sim_metric'] = 'tsd' # Main metric
     # Additional metrics
-    settings['add_metrics'] = ['tsd', 'hour_emd', 'day_emd', 'cal_emd', 'log_mae', 'dl_mae', 'mae']
+    settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd', 'cal_emd', 'log_mae', 'dl_mae', 'mae']
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'callcentre.xes'
+        settings['file'] = 'PurchasingExample.xes'
         settings['repetitions'] = 1
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
