@@ -265,12 +265,17 @@ class TimesOptimizer():
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                # 'concurrency': settings['concurrency'],
-                'epsilon': settings['epsilon'],
-                'eta': settings['eta'],
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
+        # Miner parms
+        if settings['mining_alg'] == 'sm1':
+            data['epsilon'] = settings['epsilon']
+            data['eta'] = settings['eta']
+        elif settings['mining_alg'] == 'sm2':
+            data['concurrency'] = settings['concurrency']
+        else:
+            raise ValueError(settings['mining_alg'])
         similarity = 0
         # response['params'] = settings
         response['output'] = settings['output']

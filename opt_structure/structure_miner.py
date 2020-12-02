@@ -51,12 +51,6 @@ class StructureMiner():
     def execute_pipeline(self) -> None:
         """
         Main method for mining structure
-
-        Returns
-        -------
-        None
-            DESCRIPTION.
-
         """
         self.is_safe = self._mining_structure(is_safe=self.is_safe)
         self.is_safe = self._evaluate_alignment(is_safe=self.is_safe)
@@ -89,6 +83,19 @@ class StructureMiner():
     #     subprocess.call(args)
     @Decorators.safe_exec
     def _mining_structure(self, **kwargs) -> None:
+        miner = self._get_miner(self.settings['mining_alg'])
+        miner(self.settings)
+        
+    def _get_miner(self, miner):
+        if  miner == 'sm1':
+            return self._sm1_miner
+        elif miner == 'sm2':
+            return self._sm2_miner
+        else:
+            raise ValueError(miner)
+            
+    @staticmethod
+    def _sm2_miner(settings):
         """
         Executes splitminer for bpmn structure mining.
 
@@ -99,13 +106,42 @@ class StructureMiner():
         """
         print(" -- Mining Process Structure --")
         # Event log file_name
-        file_name = self.settings['file'].split('.')[0]
-        input_route = os.path.join(self.settings['output'], file_name+'.xes')
+        file_name = settings['file'].split('.')[0]
+        input_route = os.path.join(settings['output'], file_name+'.xes')
+        sep = ';' if pl.system().lower() == 'windows' else ':'
         # Mining structure definition
-        args = ['java', '-jar', self.settings['miner_path'],
-                str(self.settings['epsilon']), str(self.settings['eta']),
+        args = ['java']
+        if not pl.system().lower() == 'windows':
+            args.append('-Xmx2G') 
+        args.extend(['-cp',
+                     (settings['sm2_path']+sep+os.path.join(
+                         'external_tools','splitminer2','lib','*')),
+                     'au.edu.unimelb.services.ServiceProvider',
+                     'SM2',
+                     input_route,
+                     os.path.join(settings['output'], file_name),
+                     str(settings['concurrency'])])
+        subprocess.call(args)
+
+    @staticmethod
+    def _sm1_miner(settings) -> None:
+        """
+        Executes splitminer for bpmn structure mining.
+
+        Returns
+        -------
+        None
+            DESCRIPTION.
+        """
+        print(" -- Mining Process Structure --")
+        # Event log file_name
+        file_name = settings['file'].split('.')[0]
+        input_route = os.path.join(settings['output'], file_name+'.xes')
+        # Mining structure definition
+        args = ['java', '-jar', settings['sm1_path'],
+                str(settings['epsilon']), str(settings['eta']),
                 input_route,
-                os.path.join(self.settings['output'], file_name)]
+                os.path.join(settings['output'], file_name)]
         subprocess.call(args)
 
 

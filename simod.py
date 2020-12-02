@@ -113,7 +113,7 @@ class Simod():
         # Create customized event-log for the external tools
         xes.XesWriter(self.log, self.settings)
         # Execution steps
-        self.mining_structure(self.settings)
+        self.mining_structure()
         self.bpmn = br.BpmnReader(os.path.join(
             self.settings['output'],
             self.settings['file'].split('.')[0]+'.bpmn'))
@@ -261,25 +261,6 @@ class Simod():
             return sim_values
         return evaluate(*args)
 
-    # @staticmethod
-    # def execute_simulator(args):
-    #     def sim_call(settings, rep):
-    #         """Executes BIMP Simulations.
-    #         Args:
-    #             settings (dict): Path to jar and file names
-    #             rep (int): repetition number
-    #         """
-    #         message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
-    #         print(message)
-    #         args = ['java', '-jar', settings['bimp_path'],
-    #                 os.path.join(settings['output'],
-    #                               settings['file'].split('.')[0]+'.bpmn'),
-    #                 '-csv',
-    #                 os.path.join(settings['output'], 'sim_data',
-    #                               settings['file']
-    #                               .split('.')[0]+'_'+str(rep+1)+'.csv')]
-    #         subprocess.run(args, check=True, stdout=subprocess.PIPE)
-    #     sim_call(*args)
     @staticmethod
     def execute_simulator(args):
         def sim_call(settings, rep):
@@ -332,12 +313,18 @@ class Simod():
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                # 'concurrency': settings['concurrency'],
-                'epsilon': settings['epsilon'],
-                'eta': settings['eta'],
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
+        # Miner parms
+        if settings['mining_alg'] == 'sm1':
+            data['epsilon'] = settings['epsilon']
+            data['eta'] = settings['eta']
+        elif settings['mining_alg'] == 'sm2':
+            data['concurrency'] = settings['concurrency']
+        else:
+            raise ValueError(settings['mining_alg'])
+        # Calendar parms    
         if settings['res_cal_met'] in ['discovered' ,'pool']:
             data['res_cal_met'] = settings['res_cal_met']
             data['res_support'] = settings['res_support']
@@ -439,34 +426,50 @@ class Simod():
 # =============================================================================
 # External tools calling
 # =============================================================================
-    # @staticmethod
-    # def mining_structure(settings):
-    #     """
-    #     Executes splitminer for bpmn structure mining.
+    
+    def mining_structure(self):
+        miner = self._get_miner(self.settings['mining_alg'])
+        miner(self.settings)
+        
+    def _get_miner(self, miner):
+        if miner == 'sm1':
+            return self._sm1_miner
+        elif miner == 'sm2':
+            return self._sm2_miner
+        else:
+            raise ValueError(miner)
+            
+    @staticmethod
+    def _sm2_miner(settings):
+        """
+        Executes splitminer for bpmn structure mining.
 
-    #     Returns
-    #     -------
-    #     None
-    #         DESCRIPTION.
-    #     """
-    #     print(" -- Mining Process Structure --")
-    #     # Event log file_name
-    #     file_name = settings['file'].split('.')[0]
-    #     input_route = os.path.join(settings['output'], file_name+'.xes')
-    #     sep = ';' if pl.system().lower() == 'windows' else ':'
-    #     # Mining structure definition
-    #     args = ['java', '-cp',
-    #             (settings['miner_path']+sep+os.path.join(
-    #                 'external_tools','splitminer','lib','*')),
-    #             'au.edu.unimelb.services.ServiceProvider',
-    #             'SM2',
-    #             input_route,
-    #             os.path.join(settings['output'], file_name),
-    #             str(settings['concurrency'])]
-    #     subprocess.call(args)
+        Returns
+        -------
+        None
+            DESCRIPTION.
+        """
+        print(" -- Mining Process Structure --")
+        # Event log file_name
+        file_name = settings['file'].split('.')[0]
+        input_route = os.path.join(settings['output'], file_name+'.xes')
+        sep = ';' if pl.system().lower() == 'windows' else ':'
+        # Mining structure definition
+        args = ['java']
+        if not pl.system().lower() == 'windows':
+            args.append('-Xmx2G') 
+        args.extend(['-cp',
+                     (settings['sm2_path']+sep+os.path.join(
+                         'external_tools','splitminer2','lib','*')),
+                     'au.edu.unimelb.services.ServiceProvider',
+                     'SM2',
+                     input_route,
+                     os.path.join(settings['output'], file_name),
+                     str(settings['concurrency'])])
+        subprocess.call(args)
 
     @staticmethod
-    def mining_structure(settings) -> None:
+    def _sm1_miner(settings) -> None:
         """
         Executes splitminer for bpmn structure mining.
 
@@ -480,7 +483,7 @@ class Simod():
         file_name = settings['file'].split('.')[0]
         input_route = os.path.join(settings['output'], file_name+'.xes')
         # Mining structure definition
-        args = ['java', '-jar', settings['miner_path'],
+        args = ['java', '-jar', settings['sm1_path'],
                 str(settings['epsilon']), str(settings['eta']),
                 input_route,
                 os.path.join(settings['output'], file_name)]
@@ -521,8 +524,13 @@ class DiscoveryOptimizer():
             self.args['alg_manag'][best_parms['alg_manag']])
         self.settings['gate_management'] = (
             self.args['gate_management'][best_parms['gate_management']])
-        self.settings['eta'] = best_parms['eta']
-        self.settings['epsilon'] = best_parms['epsilon']
+        # best structure mining parameters
+        if self.settings['mining_alg'] == 'sm1':
+            self.settings['epsilon'] = best_parms['epsilon']
+            self.settings['eta'] = best_parms['eta']
+        elif self.settings['mining_alg'] == 'sm2':
+            self.settings['concurrency'] = best_parms['concurrency']
+            
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis',
                     'res_con_dis', 'arr_support', 'arr_confidence',
                     'res_cal_met', 'arr_cal_met']:
@@ -631,8 +639,6 @@ class DiscoveryOptimizer():
         self.process_stats['source'] = 'log'
         self.process_stats['run_num'] = 0
 
-    # @timeit(rec_name='SIMULATION_EVAL')
-    # @Decorators.safe_exec
     def _simulate(self, **kwargs) -> None:
         reps = self.settings['repetitions']
         cpu_count = multiprocessing.cpu_count()

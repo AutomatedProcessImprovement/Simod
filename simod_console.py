@@ -25,8 +25,8 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'poc_processmining.xes'
-        settings['repetitions'] = 5
+        settings['file'] = 'insurance.xes'
+        settings['repetitions'] = 3
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
             # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
@@ -39,7 +39,7 @@ def main(argv):
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.672644226
             # Splitminer settings [0..1]
-            # settings['concurrency'] = 0.5
+            settings['concurrency'] = 0.5
             # Splitminer settings [0..1] default epsilon = 0.1, eta = 0.4
             settings['epsilon'] = 0.601063585
             settings['eta'] = 0.707803144
@@ -72,8 +72,8 @@ def main(argv):
             settings['sim_metric'] = 'tsd'
             settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
                                        'cal_emd', 'log_mae', 'dl_mae', 'mae']
-            args['max_eval'] = 30
-            # args['concurrency'] = [0.0, 1.0]
+            args['max_eval'] = 1
+            args['concurrency'] = [0.0, 1.0]
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
             args['alg_manag'] = ['replacement', 'repair', 'removal']
@@ -131,18 +131,17 @@ def define_general_settings(settings):
     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
                                 'column_names': column_names,
                                 'one_timestamp': False,
-                                'filter_d_attrib': True,
-                                'ns_include': True}
+                                'filter_d_attrib': True}
     # Folders structure
     settings['input'] = 'inputs'
     settings['output'] = os.path.join('outputs', sup.folder_id())
     # External tools routes
-    # settings['miner_path'] = os.path.join('external_tools',
-    #                                       'splitminer',
-    #                                       'sm2.jar')
-    settings['miner_path'] = os.path.join('external_tools',
-                                          'splitminer',
-                                          'splitminer.jar')
+    settings['sm2_path'] = os.path.join('external_tools',
+                                        'splitminer2',
+                                        'sm2.jar')
+    settings['sm1_path'] = os.path.join('external_tools',
+                                        'splitminer',
+                                        'splitminer.jar')
     settings['bimp_path'] = os.path.join('external_tools',
                                          'bimp',
                                          'qbp-simulator-engine.jar')
@@ -157,6 +156,7 @@ def define_general_settings(settings):
                                              'calenderimp',
                                              'CalenderImp.jar')
     settings['simulator'] = 'bimp'
+    settings['mining_alg'] = 'sm2'
     return settings
 
 

@@ -81,20 +81,22 @@ class StructureOptimizer():
 
     @staticmethod
     def define_search_space(settings, args):
-        space = {**{'epsilon': hp.uniform('epsilon',
-                                          args['epsilon'][0],
-                                          args['epsilon'][1]),
-                    'eta': hp.uniform('eta',
-                                      args['eta'][0],
-                                      args['eta'][1]),
-                    # 'concurrency': hp.uniform('concurrency',
-                    #                           args['concurrency'][0],
-                    #                           args['concurrency'][1]),
-                    'alg_manag': hp.choice('alg_manag',
+        var_dim = {'alg_manag': hp.choice('alg_manag',
                                            args['alg_manag']),
                     'gate_management': hp.choice('gate_management',
-                                                 args['gate_management'])},
-                  **settings}
+                                                 args['gate_management'])}
+        if settings['mining_alg'] == 'sm1':
+            var_dim['epsilon'] = hp.uniform('epsilon',
+                                          args['epsilon'][0],
+                                          args['epsilon'][1])
+            var_dim['eta'] = hp.uniform('eta',
+                                          args['eta'][0],
+                                          args['eta'][1])
+        elif settings['mining_alg'] == 'sm2':
+            var_dim['concurrency'] = hp.uniform('concurrency',
+                                          args['concurrency'][0],
+                                          args['concurrency'][1])
+        space = {**var_dim, **settings}
         return space
 
     def execute_trials(self):
@@ -348,11 +350,16 @@ class StructureOptimizer():
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                # 'concurrency': settings['concurrency'],
-                'epsilon': settings['epsilon'],
-                'eta': settings['eta'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
+        # Miner parms
+        if settings['mining_alg'] == 'sm1':
+            data['epsilon'] = settings['epsilon']
+            data['eta'] = settings['eta']
+        elif settings['mining_alg'] == 'sm2':
+            data['concurrency'] = settings['concurrency']
+        else:
+            raise ValueError(settings['mining_alg'])
         similarity = 0
         # response['params'] = settings
         response['output'] = settings['output']
