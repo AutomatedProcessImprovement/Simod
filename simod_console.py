@@ -25,7 +25,7 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'insurance.xes'
+        settings['file'] = 'PurchasingExample.xes'
         settings['repetitions'] = 3
         settings['simulation'] = True
         if settings['exec_mode'] == 'single':
@@ -35,7 +35,7 @@ def main(argv):
             # Additional metrics
             # settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
             #                             'cal_emd', 'log_mae', 'dl_mae', 'mae']
-            settings['gate_management'] = 'discovery'
+            settings['gate_management'] = 'equiprobable'
             # Similarity btw the resources profile execution (Song e.t. all)
             settings['rp_similarity'] = 0.672644226
             # Splitminer settings [0..1]
@@ -72,7 +72,7 @@ def main(argv):
             settings['sim_metric'] = 'tsd'
             settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
                                        'cal_emd', 'log_mae', 'dl_mae', 'mae']
-            args['max_eval'] = 1
+            args['max_eval'] = 2
             args['concurrency'] = [0.0, 1.0]
             args['epsilon'] = [0.0, 1.0]
             args['eta'] = [0.0, 1.0]
@@ -156,7 +156,7 @@ def define_general_settings(settings):
                                              'calenderimp',
                                              'CalenderImp.jar')
     settings['simulator'] = 'bimp'
-    settings['mining_alg'] = 'sm2'
+    settings['mining_alg'] = 'sm1'
     return settings
 
 

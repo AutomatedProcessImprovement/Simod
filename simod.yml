@@ -10,7 +10,7 @@ dependencies:
   - pillow
   - seaborn
   - pip:
-    - hyperopt==0.1.2
+    - hyperopt==0.2.5
     - jellyfish==0.7.1
     - opyenxes==0.3.0
     - tqdm==4.31.1

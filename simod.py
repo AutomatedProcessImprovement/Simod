@@ -13,13 +13,13 @@ import copy
 import multiprocessing
 from multiprocessing import Pool
 from xml.dom import minidom
-
+import time
 
 import pandas as pd
 import numpy as np
 from operator import itemgetter
-# from tqdm import tqdm
-
+from tqdm import tqdm
+import traceback
 
 import utils.support as sup
 from utils.support import timeit
@@ -27,7 +27,6 @@ import readers.log_reader as lr
 import readers.bpmn_reader as br
 import readers.process_structure as gph
 import readers.log_splitter as ls
-
 
 from support_modules.writers import xes_writer as xes
 from support_modules.writers import xml_writer as xml
@@ -64,6 +63,7 @@ class Simod():
                         method(*args)
                     except Exception as e:
                         print(e)
+                        traceback.print_exc()
                         is_safe = False
                 return is_safe
             return safety_check
@@ -119,12 +119,12 @@ class Simod():
             self.settings['file'].split('.')[0]+'.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
         # Replaying test partition
-        print("-- Reading test partition --")
         test_replayer = rpl.LogReplayer(
             self.process_graph,
             self.get_traces(self.log_test,
                             self.settings['read_options']['one_timestamp']),
-            self.settings)
+            self.settings,
+            msg='reading test partition:')
         self.process_stats = test_replayer.process_stats
         self.process_stats = pd.DataFrame.from_records(self.process_stats)
         self.log_test = test_replayer.conformant_traces
@@ -174,6 +174,20 @@ class Simod():
     @timeit(rec_name='SIMULATION_EVAL')
     @Decorators.safe_exec
     def simulate(self, **kwargs) -> None:
+
+        def pbar_async(p, msg):
+            pbar = tqdm(total=reps, desc=msg)
+            processed = 0
+            while not p.ready():
+                cprocesed = (reps - p._number_left)
+                if processed < cprocesed:
+                    increment = cprocesed - processed
+                    pbar.update(n=increment)
+                    processed = cprocesed
+            time.sleep(1)
+            pbar.update(n=(reps - processed))
+            p.wait()
+            pbar.close()
         reps = self.settings['repetitions']
         cpu_count = multiprocessing.cpu_count()
         w_count =  reps if reps <= cpu_count else cpu_count
@@ -181,19 +195,21 @@ class Simod():
         # Simulate
         args = [(self.settings, rep) for rep in range(reps)]
         p = pool.map_async(self.execute_simulator, args)
-        p.wait()
+        pbar_async(p, 'simulating:')
+        # p.wait()
         # Read simulated logs
         args = [(self.settings, self.bpmn, rep) for rep in range(reps)]
         p = pool.map_async(self.read_stats, args)
-        p.wait()
+        pbar_async(p, 'reading simulated logs:')
+        # p.wait()
         # Evaluate
         args = [(self.settings, self.process_stats, log) for log in p.get()]
         p = pool.map_async(self.evaluate_logs, args)
-        p.wait()
+        pbar_async(p, 'evaluating results:')
+        # p.wait()
         pool.close()
         # Save results
         self.sim_values = list(itertools.chain(*p.get()))
-        print(self.sim_values)
 
     @staticmethod
     def read_stats(args):
@@ -203,8 +219,8 @@ class Simod():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Reading log repetition: ' + str(rep+1)
-            print(message)
+            # message = 'Reading log repetition: ' + str(rep+1)
+            # print(message)
             m_settings = dict()
             m_settings['output'] = settings['output']
             m_settings['file'] = settings['file']
@@ -241,8 +257,8 @@ class Simod():
             # print('Reading repetition:', (rep+1), sep=' ')
             rep = (sim_log.iloc[0].run_num) - 1
             sim_values = list()
-            message = 'Evaluating repetition: ' + str(rep+1)
-            print(message)
+            # message = 'Evaluating repetition: ' + str(rep+1)
+            # print(message)
             process_stats = process_stats.append(
                 sim_log,
                 ignore_index=True,
@@ -269,8 +285,8 @@ class Simod():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
-            print(message)
+            # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
+            # print(message)
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
                                  settings['file'].split('.')[0]+'.bpmn'),
@@ -324,7 +340,7 @@ class Simod():
             data['concurrency'] = settings['concurrency']
         else:
             raise ValueError(settings['mining_alg'])
-        # Calendar parms    
+        # Calendar parms
         if settings['res_cal_met'] in ['discovered' ,'pool']:
             data['res_cal_met'] = settings['res_cal_met']
             data['res_support'] = settings['res_support']
@@ -426,11 +442,11 @@ class Simod():
 # =============================================================================
 # External tools calling
 # =============================================================================
-    
+
     def mining_structure(self):
         miner = self._get_miner(self.settings['mining_alg'])
         miner(self.settings)
-        
+
     def _get_miner(self, miner):
         if miner == 'sm1':
             return self._sm1_miner
@@ -438,7 +454,7 @@ class Simod():
             return self._sm2_miner
         else:
             raise ValueError(miner)
-            
+
     @staticmethod
     def _sm2_miner(settings):
         """
@@ -457,7 +473,7 @@ class Simod():
         # Mining structure definition
         args = ['java']
         if not pl.system().lower() == 'windows':
-            args.append('-Xmx2G') 
+            args.append('-Xmx2G')
         args.extend(['-cp',
                      (settings['sm2_path']+sep+os.path.join(
                          'external_tools','splitminer2','lib','*')),
@@ -530,7 +546,7 @@ class DiscoveryOptimizer():
             self.settings['eta'] = best_parms['eta']
         elif self.settings['mining_alg'] == 'sm2':
             self.settings['concurrency'] = best_parms['concurrency']
-            
+
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis',
                     'res_con_dis', 'arr_support', 'arr_confidence',
                     'res_cal_met', 'arr_cal_met']:
@@ -557,7 +573,6 @@ class DiscoveryOptimizer():
         self._modify_simulation_model(
             os.path.join(best_output,
                           self.settings['file'].split('.')[0]+'.bpmn'))
-        # self._modify_simulation_model(best_output)
         self._load_model_and_measures()
         self._simulate()
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
@@ -640,6 +655,20 @@ class DiscoveryOptimizer():
         self.process_stats['run_num'] = 0
 
     def _simulate(self, **kwargs) -> None:
+
+        def pbar_async(p, msg):
+            pbar = tqdm(total=reps, desc=msg)
+            processed = 0
+            while not p.ready():
+                cprocesed = (reps - p._number_left)
+                if processed < cprocesed:
+                    increment = cprocesed - processed
+                    pbar.update(n=increment)
+                    processed = cprocesed
+            time.sleep(1)
+            pbar.update(n=(reps - processed))
+            p.wait()
+            pbar.close()
         reps = self.settings['repetitions']
         cpu_count = multiprocessing.cpu_count()
         w_count =  reps if reps <= cpu_count else cpu_count
@@ -647,15 +676,15 @@ class DiscoveryOptimizer():
         # Simulate
         args = [(self.settings, rep) for rep in range(reps)]
         p = pool.map_async(self.execute_simulator, args)
-        p.wait()
+        pbar_async(p, 'simulating:')
         # Read simulated logs
         args = [(self.settings, rep) for rep in range(reps)]
         p = pool.map_async(self.read_stats, args)
-        p.wait()
+        pbar_async(p, 'reading simulated logs:')
         # Evaluate
         args = [(self.settings, self.process_stats, log) for log in p.get()]
         p = pool.map_async(self.evaluate_logs, args)
-        p.wait()
+        pbar_async(p, 'evaluating results:')
         pool.close()
         # Save results
         self.sim_values = list(itertools.chain(*p.get()))
@@ -668,8 +697,8 @@ class DiscoveryOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Reading log repetition: ' + str(rep+1)
-            print(message)
+            # message = 'Reading log repetition: ' + str(rep+1)
+            # print(message)
             path = os.path.join(settings['output'], 'sim_data')
             log_name = settings['file'].split('.')[0]+'_'+str(rep+1)+'.csv'
             rep_results = pd.read_csv(os.path.join(path, log_name),
@@ -696,8 +725,8 @@ class DiscoveryOptimizer():
             # print('Reading repetition:', (rep+1), sep=' ')
             rep = (sim_log.iloc[0].run_num) - 1
             sim_values = list()
-            message = 'Evaluating repetition: ' + str(rep+2)
-            print(message)
+            # message = 'Evaluating repetition: ' + str(rep+2)
+            # print(message)
             process_stats = process_stats.append(
                 sim_log,
                 ignore_index=True,
@@ -724,8 +753,8 @@ class DiscoveryOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
-            print(message)
+            # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
+            # print(message)
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
                                   settings['file'].split('.')[0]+'.bpmn'),

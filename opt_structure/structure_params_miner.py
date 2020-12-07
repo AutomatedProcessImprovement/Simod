@@ -77,8 +77,10 @@ class StructureParametersMiner():
         """
         Process replaying
         """
-        replayer = rpl.LogReplayer(self.process_graph, self.log.get_traces(),
-                                   self.settings)
+        replayer = rpl.LogReplayer(self.process_graph,
+                                   self.log.get_traces(),
+                                   self.settings,
+                                   msg='reading conformant training traces:')
         self.process_stats = replayer.process_stats
         self.process_stats = self.process_stats.merge(self.resource_table,
                                  on='resource',

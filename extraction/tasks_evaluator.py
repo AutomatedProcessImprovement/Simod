@@ -13,6 +13,8 @@ from extraction import pdf_finder as pdf
 from extraction.user_interface import manual_edition_ui as me
 
 import utils.support as sup
+from tqdm import tqdm
+
 
 
 class TaskEvaluator():
@@ -75,7 +77,8 @@ class TaskEvaluator():
 
         """
         elements_data = list()
-        for task in self.tasks:
+        for task in tqdm(self.tasks, 
+                         desc='minimg tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
             task_processing = (
                 self.process_stats[
@@ -125,7 +128,8 @@ class TaskEvaluator():
         elements_data : Dataframe
         """
         elements_data = list()
-        for task in self.tasks:
+        for task in tqdm(self.tasks, 
+                         desc='minimg tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
             task_processing = (
                 self.process_stats[

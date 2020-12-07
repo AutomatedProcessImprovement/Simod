@@ -6,6 +6,7 @@ from lxml.builder import ElementMaker # lxml only !
 import datetime
 import utils.support as sup
 import pandas as pd
+from tqdm import tqdm
 
 
 class TimeTablesCreator():
@@ -21,7 +22,6 @@ class TimeTablesCreator():
 
     def create_timetables(self, args):
         creator = self._get_creator(args['res_cal_met'], args['arr_cal_met'])
-        sup.print_performed_task('Mining calendars')
         if args['res_cal_met'] == 'pool':
             return creator(args['resource_table'])
         else:
@@ -45,8 +45,11 @@ class TimeTablesCreator():
             raise ValueError(res_cal_met, arr_cal_met)
 
     def _def_timetables(self) -> None:
+        pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._default_creator(self.settings['res_dtype'], 1)
+        pbar.update(1)
         xmlarr = self._default_creator(self.settings['arr_dtype'], 2)
+        pbar.update(1)
         
         # merge timetables
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
@@ -60,16 +63,18 @@ class TimeTablesCreator():
         self.res_ttable_name = {'arrival': arrivaltable[0].attrib['id'], 
                                 'resources': restimetable.attrib['id']}
         
-        sup.print_done_task()
+        pbar.close()
         
     def _defres_disarr(self) -> None:
+        pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._default_creator(self.settings['res_dtype'], 1)
+        pbar.update(1)
         xmlarr = self._timetable_discoverer(
             self.settings['calender_path'],
             os.path.join(self.settings['input'], self.settings['file']),
             str(self.settings['arr_support']),
             str(self.settings['arr_confidence']), 2)
-        
+        pbar.update(1)
         # merge timetables
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         restimetable = xmlres.find('qbp:timetable', namespaces=ns)
@@ -81,16 +86,18 @@ class TimeTablesCreator():
         self.time_table = xmlarr
         self.res_ttable_name = {'arrival': arrivaltable[0].attrib['id'], 
                                 'resources': restimetable.attrib['id']}
-        sup.print_done_task()
+        pbar.close()
         
     def _disres_defarr(self) -> None:
+        pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
             self.settings['calender_path'],
             os.path.join(self.settings['input'], self.settings['file']),
             str(self.settings['res_support']),
             str(self.settings['res_confidence']), 1)
+        pbar.update(1)
         xmlarr = self._default_creator(self.settings['arr_dtype'], 2)
-        
+        pbar.update(1)
         # merge timetables
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         restimetable = xmlres.find('qbp:timetable', namespaces=ns)
@@ -102,20 +109,22 @@ class TimeTablesCreator():
         self.time_table = xmlarr
         self.res_ttable_name = {'arrival': arrivaltable[0].attrib['id'], 
                                 'resources': restimetable.attrib['id']}
-        sup.print_done_task()
+        pbar.close()
 
     def _disres_disarr(self) -> None:
+        pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
             self.settings['calender_path'],
             os.path.join(self.settings['input'], self.settings['file']),
             str(self.settings['res_support']),
             str(self.settings['res_confidence']), 1)
+        pbar.update(1)
         xmlarr = self._timetable_discoverer(
             self.settings['calender_path'],
             os.path.join(self.settings['input'], self.settings['file']),
             str(self.settings['arr_support']),
             str(self.settings['arr_confidence']), 2)
-        
+        pbar.update(1)
         # merge timetables
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         restimetable = xmlres.find('qbp:timetable', namespaces=ns)
@@ -127,11 +136,13 @@ class TimeTablesCreator():
         self.time_table = xmlarr
         self.res_ttable_name = {'arrival': arrivaltable[0].attrib['id'], 
                                 'resources': restimetable.attrib['id']}
-        sup.print_done_task()
+        pbar.close()
 
     def _dispoolres_defarr(self, timetable) -> None:
+        pbar = tqdm(total=2, desc='mining calendars:')
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         xmlarr = self._default_creator(self.settings['arr_dtype'], 2)
+        pbar.update(1)
         arrivaltable = xmlarr.find('qbp:timetable', namespaces=ns)
         
         tablenames = {'arrival': arrivaltable.attrib['id']}
@@ -151,18 +162,21 @@ class TimeTablesCreator():
             index = len(xmlarr.findall('qbp:timetable', namespaces=ns))
             xmlarr.insert(index, restimetable)
             os.unlink(temp_filename)
+        pbar.update(1)
         # save values
         self.time_table = xmlarr
         self.res_ttable_name =  tablenames
-        sup.print_done_task()
+        pbar.close()
 
     def _dispoolres_disarr(self, timetable) -> None:
+        pbar = tqdm(total=2, desc='mining calendars:')
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         xmlarr = self._timetable_discoverer(
             self.settings['calender_path'],
             os.path.join(self.settings['input'], self.settings['file']),
             str(self.settings['arr_support']),
             str(self.settings['arr_confidence']), 2)
+        pbar.update(1)
         arrivaltable = xmlarr.find('qbp:timetable', namespaces=ns)
         tablenames = {'arrival': arrivaltable.attrib['id']}
         for k, group in pd.DataFrame(timetable).groupby('role'):
@@ -181,10 +195,11 @@ class TimeTablesCreator():
             index = len(xmlarr.findall('qbp:timetable', namespaces=ns))
             xmlarr.insert(index, restimetable)
             os.unlink(temp_filename)
+        pbar.update(1)
         # save values
         self.time_table = xmlarr
         self.res_ttable_name =  tablenames
-        sup.print_done_task()
+        pbar.close()
 
     @staticmethod
     def _default_creator(dtype, mode) -> None:

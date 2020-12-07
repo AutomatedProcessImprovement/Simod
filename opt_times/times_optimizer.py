@@ -14,11 +14,13 @@ import itertools
 import xml.etree.ElementTree as ET
 from lxml import etree
 from lxml.builder import ElementMaker
-import traceback
+# import traceback
 
 
 import numpy as np
 import pandas as pd
+import tqdm
+import time
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 
@@ -59,7 +61,7 @@ class TimesOptimizer():
                         response['values'] = method(*args)
                     except Exception as e:
                         print(e)
-                        traceback.print_exc()
+                        # traceback.print_exc()
                         response['status'] = STATUS_FAIL
                 return response
             return safety_check
@@ -123,8 +125,11 @@ class TimesOptimizer():
     def execute_trials(self):
         # create a new instance of Simod
         def exec_pipeline(trial_stg):
-            print('Train split: ', len(self.log_train.data))
-            print('Valdn split: ', len(self.log_valdn))
+            print('train split:', 
+                  len(pd.DataFrame(self.log_train.data).caseid.unique()), 
+                  ', valdn split:', 
+                  len(pd.DataFrame(self.log_valdn).caseid.unique()),
+                  sep=' ')
             # Vars initialization
             status = STATUS_OK
             exec_times = dict()
@@ -167,7 +172,7 @@ class TimesOptimizer():
                     max_evals=self.args['max_eval'],
                     trials=self.bayes_trials,
                     show_progressbar=False)
-        print('------ Final results ------')
+        # Save results
         try:
             results = (pd.DataFrame(self.bayes_trials.results)
                         .sort_values('loss', ascending=bool))
@@ -177,9 +182,6 @@ class TimesOptimizer():
         except Exception as e:
             print(e)
             pass
-        print(self.best_output)
-        print(self.best_parms)
-
 
     @timeit(rec_name='PATH_DEF')
     @Decorators.safe_exec
@@ -229,6 +231,20 @@ class TimesOptimizer():
     @timeit(rec_name='SIMULATION_EVAL')
     @Decorators.safe_exec
     def _simulate(self, settings, data,**kwargs) -> list:
+        def pbar_async(p, msg):
+            pbar = tqdm.tqdm(total=reps, desc=msg)
+            processed = 0
+            while not p.ready():
+                cprocesed = (reps - p._number_left)
+                if processed < cprocesed:
+                    increment = cprocesed - processed
+                    pbar.update(n=increment)
+                    processed = cprocesed
+            time.sleep(1)
+            pbar.update(n=(reps - processed))
+            p.wait()
+            pbar.close()
+            
         reps = settings['repetitions']
         cpu_count = multiprocessing.cpu_count()
         w_count =  reps if reps <= cpu_count else cpu_count
@@ -236,14 +252,14 @@ class TimesOptimizer():
         # Simulate
         args = [(settings, rep) for rep in range(reps)]
         p = pool.map_async(self.execute_simulator, args)
-        p.wait()
+        pbar_async(p, 'simulating:')
         # Read simulated logs
         p = pool.map_async(self.read_stats, args)
-        p.wait()
+        pbar_async(p, 'reading simulated logs:')
         # Evaluate
         args = [(settings, data, log) for log in p.get()]
         p = pool.map_async(self.evaluate_logs, args)
-        p.wait()
+        pbar_async(p, 'evaluating results:')
         pool.close()
         # Save results
         sim_values = list(itertools.chain(*p.get()))
@@ -310,8 +326,6 @@ class TimesOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Reading log repetition: '+str(rep+1)
-            print(message)
             m_settings = dict()
             m_settings['output'] = settings['output']
             m_settings['file'] = settings['file']
@@ -344,8 +358,6 @@ class TimesOptimizer():
             """
             rep = (sim_log.iloc[0].run_num) - 1
             sim_values = list()
-            message = 'Evaluating repetition: '+str(rep+1)
-            print(message)
             data = data.append(
                 sim_log,
                 ignore_index=True,
@@ -354,7 +366,7 @@ class TimesOptimizer():
                 data,
                 settings,
                 rep)
-            evaluator.measure_distance('dl')
+            evaluator.measure_distance('day_hour_emd')
             sim_values.append(evaluator.similarity)
             return sim_values
         return evaluate(*args)
@@ -367,8 +379,6 @@ class TimesOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Executing BIMP Simulations Repetition: '+str(rep+1)
-            print(message)
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
                                   settings['file'].split('.')[0]+'.bpmn'),
@@ -488,8 +498,10 @@ class TimesOptimizer():
         """
         Process replaying
         """
-        replayer = rpl.LogReplayer(self.process_graph, self.log.get_traces(),
-                                   self.settings)
+        replayer = rpl.LogReplayer(self.process_graph, 
+                                   self.log_train.get_traces(),
+                                   self.settings, 
+                                   msg='reading conformant training traces')
         self.process_stats = replayer.process_stats
         self.conformant_traces = replayer.conformant_traces
 

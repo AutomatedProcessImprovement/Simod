@@ -55,37 +55,11 @@ class StructureMiner():
         self.is_safe = self._mining_structure(is_safe=self.is_safe)
         self.is_safe = self._evaluate_alignment(is_safe=self.is_safe)
 
-    # @Decorators.safe_exec
-    # def _mining_structure(self, **kwargs) -> None:
-    #     """
-    #     Executes splitminer for bpmn structure mining.
-
-    #     Returns
-    #     -------
-    #     None
-    #         DESCRIPTION.
-    #     """
-    #     print(" -- Mining Process Structure --")
-    #     # Event log file_name
-    #     file_name = self.settings['file'].split('.')[0]
-    #     input_route = os.path.join(self.settings['output'], file_name+'.xes')
-    #     sep = ';' if pl.system().lower() == 'windows' else ':'
-    #     mem = '-cp' if pl.system().lower() == 'windows' else '-Xmx1G -cp'
-    #     # Mining structure definition
-    #     args = ['java', mem,
-    #             (self.settings['miner_path']+sep+os.path.join(
-    #                 'external_tools','splitminer','lib','*')),
-    #             'au.edu.unimelb.services.ServiceProvider',
-    #             'SM2',
-    #             input_route,
-    #             os.path.join(self.settings['output'], file_name),
-    #             str(self.settings['concurrency'])]
-    #     subprocess.call(args)
     @Decorators.safe_exec
     def _mining_structure(self, **kwargs) -> None:
         miner = self._get_miner(self.settings['mining_alg'])
         miner(self.settings)
-        
+
     def _get_miner(self, miner):
         if  miner == 'sm1':
             return self._sm1_miner
@@ -93,7 +67,7 @@ class StructureMiner():
             return self._sm2_miner
         else:
             raise ValueError(miner)
-            
+
     @staticmethod
     def _sm2_miner(settings):
         """
@@ -112,7 +86,7 @@ class StructureMiner():
         # Mining structure definition
         args = ['java']
         if not pl.system().lower() == 'windows':
-            args.append('-Xmx2G') 
+            args.append('-Xmx2G')
         args.extend(['-cp',
                      (settings['sm2_path']+sep+os.path.join(
                          'external_tools','splitminer2','lib','*')),

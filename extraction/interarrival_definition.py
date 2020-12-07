@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 import pandas as pd
-# import utils.support as sup
+from tqdm import tqdm
 import itertools
 import numpy as np
 
@@ -72,7 +72,8 @@ class InterArrivalEvaluator():
         # group by day and calculate inter-arrival
         arrival_timestamps['date'] = arrival_timestamps['times'].dt.floor('d')
         inter_arrival_times = list()
-        for key, group in arrival_timestamps.groupby('date'):
+        for key, group in tqdm(arrival_timestamps.groupby('date'),
+                               desc='extracting interarrivals:'):
             daily_times = sorted(list(group.times))
             for i in range(1, len(daily_times)):
                 delta = (daily_times[i] - daily_times[i-1]).total_seconds()

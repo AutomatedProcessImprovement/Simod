@@ -10,8 +10,7 @@ import copy
 import multiprocessing
 from multiprocessing import Pool
 import itertools
-import traceback
-
+# import traceback
 import numpy as np
 import pandas as pd
 from hyperopt import tpe
@@ -27,6 +26,8 @@ from support_modules.analyzers import sim_evaluator as sim
 
 import opt_structure.structure_miner as sm
 import opt_structure.structure_params_miner as spm
+from tqdm import tqdm
+import time
 
 
 class StructureOptimizer():
@@ -53,7 +54,7 @@ class StructureOptimizer():
                         response['values'] = method(*args)
                     except Exception as e:
                         print(e)
-                        traceback.print_exc()
+                        # traceback.print_exc()
                         response['status'] = STATUS_FAIL
                 return response
             return safety_check
@@ -105,8 +106,12 @@ class StructureOptimizer():
                 self.settings, self.log_train))
         self.log_train = copy.deepcopy(self.org_log_train)
         def exec_pipeline(trial_stg):
-            print('Train split: ', len(self.log_train.data))
-            print('Valdn split: ', len(self.log_valdn))
+            
+            print('train split:', 
+                  len(pd.DataFrame(self.log_train.data).caseid.unique()), 
+                  ', valdn split:', 
+                  len(pd.DataFrame(self.log_valdn).caseid.unique()),
+                  sep=' ')
             # Vars initialization
             status = STATUS_OK
             exec_times = dict()
@@ -155,7 +160,7 @@ class StructureOptimizer():
                     max_evals=self.args['max_eval'],
                     trials=self.bayes_trials,
                     show_progressbar=False)
-        print('------ Final results ------')
+        # Save results
         try:
             results = (pd.DataFrame(self.bayes_trials.results)
                        .sort_values('loss', ascending=bool))
@@ -165,8 +170,6 @@ class StructureOptimizer():
         except Exception as e:
             print(e)
             pass
-        print(self.best_output)
-        print(self.best_parms)
 
     @timeit(rec_name='PATH_DEF')
     @Decorators.safe_exec
@@ -191,7 +194,7 @@ class StructureOptimizer():
     @timeit(rec_name='MINING_STRUCTURE')
     @Decorators.safe_exec
     def _mine_structure(self, settings, **kwargs) -> None:
-        structure_miner = sm.StructureMiner(settings, self.log)
+        structure_miner = sm.StructureMiner(settings, self.log_train)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             return [structure_miner.bpmn, structure_miner.process_graph]
@@ -238,6 +241,21 @@ class StructureOptimizer():
     @timeit(rec_name='SIMULATION_EVAL')
     @Decorators.safe_exec
     def _simulate(self, settings, data,**kwargs) -> list:
+        
+        def pbar_async(p, msg):
+            pbar = tqdm(total=reps, desc=msg)
+            processed = 0
+            while not p.ready():
+                cprocesed = (reps - p._number_left)
+                if processed < cprocesed:
+                    increment = cprocesed - processed
+                    pbar.update(n=increment)
+                    processed = cprocesed
+            time.sleep(1)
+            pbar.update(n=(reps - processed))
+            p.wait()
+            pbar.close()
+            
         reps = settings['repetitions']
         cpu_count = multiprocessing.cpu_count()
         w_count =  reps if reps <= cpu_count else cpu_count
@@ -245,14 +263,14 @@ class StructureOptimizer():
         # Simulate
         args = [(settings, rep) for rep in range(reps)]
         p = pool.map_async(self.execute_simulator, args)
-        p.wait()
+        pbar_async(p, 'simulating:')
         # Read simulated logs
         p = pool.map_async(self.read_stats, args)
-        p.wait()
+        pbar_async(p, 'reading simulated logs:')
         # Evaluate
         args = [(settings, data, log) for log in p.get()]
         p = pool.map_async(self.evaluate_logs, args)
-        p.wait()
+        pbar_async(p, 'evaluating results:')
         pool.close()
         # Save results
         sim_values = list(itertools.chain(*p.get()))
@@ -266,8 +284,6 @@ class StructureOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Reading log repetition: '+str(rep+1)
-            print(message)
             m_settings = dict()
             m_settings['output'] = settings['output']
             m_settings['file'] = settings['file']
@@ -299,8 +315,6 @@ class StructureOptimizer():
             """
             rep = (sim_log.iloc[0].run_num) - 1
             sim_values = list()
-            message = 'Evaluating repetition: '+str(rep+1)
-            print(message)
             data = data.append(
                 sim_log,
                 ignore_index=True,
@@ -322,8 +336,6 @@ class StructureOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            message = 'Executing BIMP Simulations Repetition: '+str(rep+1)
-            print(message)
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
                                   settings['file'].split('.')[0]+'.bpmn'),

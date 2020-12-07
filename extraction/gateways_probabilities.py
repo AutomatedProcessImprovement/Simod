@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 import utils.support as sup
+from tqdm import tqdm 
 
 
 class GatewaysEvaluator():
@@ -31,7 +32,7 @@ class GatewaysEvaluator():
         Defines the gateways' probabilities according with an spcified method
 
         """
-        sup.print_performed_task('Analysing gateways` probabilities')
+        # sup.print_performed_task('Analysing gateways` probabilities')
         # Analisys of gateways probabilities
         if self.method == 'discovery':
             gateways = self.analize_gateways()
@@ -49,7 +50,7 @@ class GatewaysEvaluator():
         self.probabilities = gateways[['gatewayid',
                                        'out_path_id',
                                        'prob']].to_dict('records')
-        sup.print_done_task()
+        # sup.print_done_task()
 
     @staticmethod
     def normalize_probabilities(nodes_list: pd.DataFrame) -> pd.DataFrame:
@@ -84,7 +85,8 @@ class GatewaysEvaluator():
             return tasks_list
 
         nodes_list = list()
-        for node in self.process_graph.nodes:
+        for node in tqdm(self.process_graph.nodes, 
+                         desc='analysing gateways probabilities:'):
             outs = list()
             if self.process_graph.node[node]['type'] == 'gate':
                 # Targets
@@ -167,7 +169,7 @@ class GatewaysEvaluator():
                       .count()
                       .reset_index())
         nodes_list['prob'] = 0.0
-        # assign random probabilities
+        # assign probabilities
         temp_list = list()
         for key, group in nodes_list.groupby(by=['gate']):
             p = 1/len(group)
