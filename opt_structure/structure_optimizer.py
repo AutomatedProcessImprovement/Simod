@@ -11,6 +11,9 @@ import multiprocessing
 from multiprocessing import Pool
 import itertools
 # import traceback
+import math
+import random
+
 import numpy as np
 import pandas as pd
 from hyperopt import tpe
@@ -189,7 +192,7 @@ class StructureOptimizer():
             os.makedirs(settings['output'])
             os.makedirs(os.path.join(settings['output'], 'sim_data'))
         # Create customized event-log for the external tools
-        xes.XesWriter(self.log, settings)
+        xes.XesWriter(self.log_train, settings)
         return settings
 
     @timeit(rec_name='MINING_STRUCTURE')
@@ -204,7 +207,8 @@ class StructureOptimizer():
 
     @timeit(rec_name='EXTRACTING_PARAMS')
     @Decorators.safe_exec
-    def _extract_parameters(self, settings, structure, parameters, resource_table, **kwargs) -> None:
+    def _extract_parameters(self, settings, structure, parameters, 
+                            resource_table, **kwargs) -> None:
         bpmn, process_graph = structure
         p_extractor = spm.StructureParametersMiner(self.log_train,
                                                    bpmn,
@@ -216,7 +220,9 @@ class StructureOptimizer():
         start_time = (self.log_valdn
                       .start_timestamp
                       .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
-        p_extractor.extract_parameters(num_inst, start_time, parameters['resource_pool'])
+        p_extractor.extract_parameters(num_inst, 
+                                       start_time, 
+                                       parameters['resource_pool'])
         if p_extractor.is_safe:
             parameters = {**parameters, **p_extractor.parameters}
             # print parameters in xml bimp format
@@ -272,7 +278,8 @@ class StructureOptimizer():
         args = [(settings, data, log) for log in p.get()]
         if len(self.log_valdn.caseid.unique()) > 1000:
             pool.close()
-            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            results = [self.evaluate_logs(arg) 
+                       for arg in tqdm(args, 'evaluating results:')]
             # Save results
             sim_values = list(itertools.chain(*results))
         else:
@@ -430,8 +437,42 @@ class StructureOptimizer():
         key = 'end_timestamp' if one_ts else 'start_timestamp'
         valdn = pd.DataFrame(valdn)
         train = pd.DataFrame(train)
+        # If the log is big sample train partition
+        train = self._sample_log(train)
+        # Save partitions
         self.log_valdn = (valdn.sort_values(key, ascending=True)
                          .reset_index(drop=True))
         self.log_train = copy.deepcopy(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True)
                                 .reset_index(drop=True).to_dict('records'))
+
+    @staticmethod
+    def _sample_log(train):
+        
+        def sample_size(p_size, c_level, c_interval):
+            """
+            p_size : population size.
+            c_level : confidence level.
+            c_interval : confidence interval.
+            """
+            c_level_constant = {50: .67, 68: .99, 90: 1.64, 95: 1.96, 99: 2.57}
+            Z = 0.0
+            p = 0.5
+            e = c_interval/100.0
+            N = p_size
+            n_0 = 0.0
+            n = 0.0
+            # DEVIATIONS FOR THAT CONFIDENCE LEVEL
+            Z = c_level_constant[c_level]
+            # CALC SAMPLE SIZE
+            n_0 = ((Z**2) * p * (1-p)) / (e**2)
+            # ADJUST SAMPLE SIZE FOR FINITE POPULATION
+            n = n_0 / (1 + ((n_0 - 1) / float(N)) )
+            return int(math.ceil(n)) # THE SAMPLE SIZE
+        
+        cases = list(train.caseid.unique())
+        if len(cases) > 1000:
+            sample_sz = sample_size(len(cases), 95.0, 3.0)
+            scases = random.sample(cases, sample_sz)
+            train = train[train.caseid.isin(scases)]
+        return train
