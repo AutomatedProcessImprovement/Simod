@@ -78,7 +78,7 @@ class TaskEvaluator():
         """
         elements_data = list()
         for task in tqdm(self.tasks, 
-                         desc='minimg tasks distributions:'):
+                         desc='mining tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
             task_processing = (
                 self.process_stats[
@@ -129,7 +129,7 @@ class TaskEvaluator():
         """
         elements_data = list()
         for task in tqdm(self.tasks, 
-                         desc='minimg tasks distributions:'):
+                         desc='mining tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
             task_processing = (
                 self.process_stats[
@@ -204,6 +204,7 @@ class TaskEvaluator():
                                             left_on='name',
                                             right_on='task',
                                             how='left').drop(columns=['task'])
+        elements_data['resource'].fillna('QBP_DEFAULT_RESOURCE', inplace=True)
         return elements_data
 
     def get_task_list(self, process_graph):
@@ -220,9 +221,9 @@ class TaskEvaluator():
 
         """
         tasks = list(filter(
-            lambda x: process_graph.node[x]['type'] == 'task',
+            lambda x: process_graph.nodes[x]['type'] == 'task',
             list(nx.nodes(process_graph))))
-        tasks = [process_graph.node[x]['name'] for x in tasks]
+        tasks = [process_graph.nodes[x]['name'] for x in tasks]
         return tasks
 
     def get_model_data(self, process_graph):

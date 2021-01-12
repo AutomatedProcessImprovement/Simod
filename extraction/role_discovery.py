@@ -62,7 +62,7 @@ class ResourcePoolAnalyser():
                            weight=rel['distance'])
         pbar.update(20)
         # extraction of fully conected subgraphs as roles
-        sub_graphs = list(nx.connected_component_subgraphs(g))
+        sub_graphs = list((g.subgraph(c) for c in nx.connected_components(g)))
         pbar.update(20)
         # role definition from graph
         roles = self.role_definition(sub_graphs)

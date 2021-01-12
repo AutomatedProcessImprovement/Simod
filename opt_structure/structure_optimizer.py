@@ -20,9 +20,10 @@ import utils.support as sup
 from utils.support import timeit
 import readers.log_splitter as ls
 import readers.log_reader as lr
+import analyzers.sim_evaluator as sim
+
 from support_modules.writers import xes_writer as xes
 from support_modules.writers import xml_writer as xml
-from support_modules.analyzers import sim_evaluator as sim
 
 import opt_structure.structure_miner as sm
 import opt_structure.structure_params_miner as spm
@@ -269,11 +270,17 @@ class StructureOptimizer():
         pbar_async(p, 'reading simulated logs:')
         # Evaluate
         args = [(settings, data, log) for log in p.get()]
-        p = pool.map_async(self.evaluate_logs, args)
-        pbar_async(p, 'evaluating results:')
-        pool.close()
-        # Save results
-        sim_values = list(itertools.chain(*p.get()))
+        if len(self.log_valdn.caseid.unique()) > 1000:
+            pool.close()
+            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            # Save results
+            sim_values = list(itertools.chain(*results))
+        else:
+            p = pool.map_async(self.evaluate_logs, args)
+            pbar_async(p, 'evaluating results:')
+            pool.close()
+            # Save results
+            sim_values = list(itertools.chain(*p.get()))
         return sim_values
 
     @staticmethod
@@ -322,7 +329,8 @@ class StructureOptimizer():
             evaluator = sim.SimilarityEvaluator(
                 data,
                 settings,
-                rep)
+                rep,
+                max_cases=1000)
             evaluator.measure_distance('dl')
             sim_values.append(evaluator.similarity)
             return sim_values

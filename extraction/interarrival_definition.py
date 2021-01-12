@@ -98,7 +98,7 @@ class InterArrivalEvaluator():
         """
         temp_process_graph = process_graph.copy()
         for node in list(temp_process_graph.nodes):
-            if process_graph.node[node]['type'] not in ['start', 'end', 'task']:
+            if process_graph.nodes[node]['type'] not in ['start', 'end', 'task']:
                 preds = list(temp_process_graph.predecessors(node))
                 succs = list(temp_process_graph.successors(node))
                 temp_process_graph.add_edges_from(
@@ -108,7 +108,7 @@ class InterArrivalEvaluator():
             dict(temp_process_graph.nodes.data()), orient='index'))
         start = graph_data[graph_data.type.isin(['start'])]
         start = start.index.tolist()[0]  # start node id 
-        in_tasks = [temp_process_graph.node[x]['name']
+        in_tasks = [temp_process_graph.nodes[x]['name']
                     for x in temp_process_graph.successors(start)]
         return in_tasks
 

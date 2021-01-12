@@ -27,10 +27,10 @@ import readers.log_reader as lr
 import readers.bpmn_reader as br
 import readers.process_structure as gph
 import readers.log_splitter as ls
+import analyzers.sim_evaluator as sim
 
 from support_modules.writers import xes_writer as xes
 from support_modules.writers import xml_writer as xml
-from support_modules.analyzers import sim_evaluator as sim
 from support_modules.log_repairing import conformance_checking as chk
 
 from extraction import parameter_extraction as par
@@ -201,15 +201,19 @@ class Simod():
         args = [(self.settings, self.bpmn, rep) for rep in range(reps)]
         p = pool.map_async(self.read_stats, args)
         pbar_async(p, 'reading simulated logs:')
-        # p.wait()
         # Evaluate
         args = [(self.settings, self.process_stats, log) for log in p.get()]
-        p = pool.map_async(self.evaluate_logs, args)
-        pbar_async(p, 'evaluating results:')
-        # p.wait()
-        pool.close()
-        # Save results
-        self.sim_values = list(itertools.chain(*p.get()))
+        if len(pd.DataFrame(self.log_test).caseid.unique()) > 1000:
+            pool.close()
+            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            # Save results
+            self.sim_values = list(itertools.chain(*results))
+        else:
+            p = pool.map_async(self.evaluate_logs, args)
+            pbar_async(p, 'evaluating results:')
+            pool.close()
+            # Save results
+            self.sim_values = list(itertools.chain(*p.get()))
 
     @staticmethod
     def read_stats(args):
@@ -258,7 +262,6 @@ class Simod():
             rep = (sim_log.iloc[0].run_num) - 1
             sim_values = list()
             # message = 'Evaluating repetition: ' + str(rep+1)
-            # print(message)
             process_stats = process_stats.append(
                 sim_log,
                 ignore_index=True,
@@ -266,7 +269,8 @@ class Simod():
             evaluator = sim.SimilarityEvaluator(
                 process_stats,
                 settings,
-                rep)
+                rep,
+                max_cases=1000)
             metrics = [settings['sim_metric']]
             if 'add_metrics' in settings.keys():
                 metrics = list(set(list(settings['add_metrics']) +
@@ -577,7 +581,8 @@ class DiscoveryOptimizer():
         self._simulate()
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
-        self.sim_values = pd.pivot_table(self.sim_values, values='sim_val', index=['output'],
+        self.sim_values = pd.pivot_table(self.sim_values, values='sim_val', 
+                                         index=['output'],
                     columns=['metric'], aggfunc=np.mean).reset_index()
         if mode == 'w':
             self.sim_values.to_csv(os.path.join('outputs', output_file),
@@ -624,7 +629,7 @@ class DiscoveryOptimizer():
         test = pd.DataFrame(test)
         train = pd.DataFrame(train)
         self.log_test = (test.sort_values(key, ascending=True)
-                         .reset_index(drop=True).to_dict('records'))
+                         .reset_index(drop=True))
         self.log_train = copy.deepcopy(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True)
                                 .reset_index(drop=True).to_dict('records'))
@@ -632,10 +637,9 @@ class DiscoveryOptimizer():
     def _modify_simulation_model(self, model):
         """Modifies the number of instances of the BIMP simulation model
         to be equal to the number of instances in the testing log"""
-        test_log = pd.DataFrame(self.log_test)
-        num_inst = len(test_log.caseid.unique())
+        num_inst = len(self.log_test.caseid.unique())
         # Get minimum date
-        start_time = (test_log
+        start_time = (self.log_test
                       .start_timestamp
                       .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
         mydoc = minidom.parse(model)
@@ -650,7 +654,7 @@ class DiscoveryOptimizer():
         return new_model_path
 
     def _load_model_and_measures(self):
-        self.process_stats = pd.DataFrame.from_records(self.log_test)
+        self.process_stats = self.log_test
         self.process_stats['source'] = 'log'
         self.process_stats['run_num'] = 0
 
@@ -683,11 +687,17 @@ class DiscoveryOptimizer():
         pbar_async(p, 'reading simulated logs:')
         # Evaluate
         args = [(self.settings, self.process_stats, log) for log in p.get()]
-        p = pool.map_async(self.evaluate_logs, args)
-        pbar_async(p, 'evaluating results:')
-        pool.close()
-        # Save results
-        self.sim_values = list(itertools.chain(*p.get()))
+        if len(self.log_test.caseid.unique()) > 1000:
+            pool.close()
+            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            # Save results
+            self.sim_values = list(itertools.chain(*results))
+        else:
+            p = pool.map_async(self.evaluate_logs, args)
+            pbar_async(p, 'evaluating results:')
+            pool.close()
+            # Save results
+            self.sim_values = list(itertools.chain(*p.get()))
 
     @staticmethod
     def read_stats(args):
@@ -734,7 +744,8 @@ class DiscoveryOptimizer():
             evaluator = sim.SimilarityEvaluator(
                 process_stats,
                 settings,
-                rep)
+                rep,
+                max_cases=1000)
             metrics = [settings['sim_metric']]
             if 'add_metrics' in settings.keys():
                 metrics = list(set(list(settings['add_metrics']) +

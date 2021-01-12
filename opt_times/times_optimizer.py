@@ -14,12 +14,12 @@ import itertools
 import xml.etree.ElementTree as ET
 from lxml import etree
 from lxml.builder import ElementMaker
-# import traceback
+import traceback
 
 
 import numpy as np
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 import time
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
@@ -29,8 +29,8 @@ import readers.log_reader as lr
 import readers.bpmn_reader as br
 import readers.process_structure as gph
 import readers.log_splitter as ls
+import analyzers.sim_evaluator as sim
 
-from support_modules.analyzers import sim_evaluator as sim
 from extraction import log_replayer as rpl
 import opt_times.times_params_miner as tpm
 
@@ -61,7 +61,7 @@ class TimesOptimizer():
                         response['values'] = method(*args)
                     except Exception as e:
                         print(e)
-                        # traceback.print_exc()
+                        traceback.print_exc()
                         response['status'] = STATUS_FAIL
                 return response
             return safety_check
@@ -95,7 +95,8 @@ class TimesOptimizer():
                                                 args['rp_similarity'][0],
                                                 args['rp_similarity'][1]),
                     'res_cal_met': hp.choice('res_cal_met',
-                        [('discovered',{
+                        [
+                            ('discovered',{
                             'res_support': hp.uniform('res_support',
                                                       args['res_sup_dis'][0],
                                                       args['res_sup_dis'][1]),
@@ -232,7 +233,7 @@ class TimesOptimizer():
     @Decorators.safe_exec
     def _simulate(self, settings, data,**kwargs) -> list:
         def pbar_async(p, msg):
-            pbar = tqdm.tqdm(total=reps, desc=msg)
+            pbar = tqdm(total=reps, desc=msg)
             processed = 0
             while not p.ready():
                 cprocesed = (reps - p._number_left)
@@ -258,11 +259,17 @@ class TimesOptimizer():
         pbar_async(p, 'reading simulated logs:')
         # Evaluate
         args = [(settings, data, log) for log in p.get()]
-        p = pool.map_async(self.evaluate_logs, args)
-        pbar_async(p, 'evaluating results:')
-        pool.close()
-        # Save results
-        sim_values = list(itertools.chain(*p.get()))
+        if len(self.log_valdn.caseid.unique()) > 1000:
+            pool.close()
+            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            # Save results
+            sim_values = list(itertools.chain(*results))
+        else:
+            p = pool.map_async(self.evaluate_logs, args)
+            pbar_async(p, 'evaluating results:')
+            pool.close()
+            # Save results
+            sim_values = list(itertools.chain(*p.get()))
         return sim_values
 
     @staticmethod
@@ -365,7 +372,8 @@ class TimesOptimizer():
             evaluator = sim.SimilarityEvaluator(
                 data,
                 settings,
-                rep)
+                rep,
+                max_cases=1000)
             evaluator.measure_distance('day_hour_emd')
             sim_values.append(evaluator.similarity)
             return sim_values
