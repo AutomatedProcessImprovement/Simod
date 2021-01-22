@@ -21,14 +21,14 @@ def main(argv):
     args = dict()
     settings = define_general_settings(settings)
     # Exec mode 'single', 'optimizer'
-    settings['exec_mode'] = 'optimizer'
+    settings['gl']['exec_mode'] = 'optimizer'
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        settings['file'] = 'PurchasingExample.xes'
-        settings['repetitions'] = 3
-        settings['simulation'] = True
-        if settings['exec_mode'] == 'single':
+        settings['gl']['file'] = 'PurchasingExample.xes'
+        settings['gl']['repetitions'] = 5
+        settings['gl']['simulation'] = True
+        if settings['gl']['exec_mode'] == 'single':
             # Similarity metric 'tsd', 'dl_mae', 'tsd_min', 'mae',
             # 'hour_emd', 'day_emd', 'day_hour_emd', 'cal_emd'
             settings['sim_metric'] = 'tsd' # Main metric
@@ -68,24 +68,25 @@ def main(argv):
             # Single Execution
             simod = sim.Simod(settings)
             simod.execute_pipeline()
-        elif settings['exec_mode'] == 'optimizer':
-            settings['sim_metric'] = 'tsd'
-            settings['add_metrics'] = ['day_hour_emd', 'hour_emd', 'day_emd',
-                                       'cal_emd', 'log_mae', 'dl_mae', 'mae']
-            args['max_eval'] = 2
-            args['concurrency'] = [0.0, 1.0]
-            args['epsilon'] = [0.0, 1.0]
-            args['eta'] = [0.0, 1.0]
-            args['alg_manag'] = ['replacement', 'repair', 'removal']
-            args['rp_similarity'] = [0.5, 0.9]
-            args['gate_management'] = ['discovery', 'equiprobable']
-            # settings['gate_management'] = 'discovery'
-            args['res_dtype'] = ['LV917', '247']
-            args['arr_dtype'] = ['LV917', '247']
-            args['res_sup_dis'] = [0.01, 0.3]  # [0..1]
-            args['res_con_dis'] = [50, 85]  # [50..85]
-            args['arr_support'] = [0.01, 0.1]  # [0..1]
-            args['arr_confidence'] = [1, 20]  # [50..85]
+        elif settings['gl']['exec_mode'] == 'optimizer':
+            settings['gl']['sim_metric'] = 'tsd'
+            settings['gl']['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
+            settings['strc'] = dict()
+            settings['strc']['max_eval_s'] = 1
+            settings['strc']['concurrency'] = [0.0, 1.0]
+            settings['strc']['epsilon'] = [0.0, 1.0]
+            settings['strc']['eta'] = [0.0, 1.0]
+            settings['strc']['alg_manag'] = ['replacement', 'repair', 'removal']
+            settings['strc']['gate_management'] = ['discovery', 'equiprobable']
+            settings['tm'] = dict()
+            settings['tm']['max_eval_t'] = 2
+            settings['tm']['rp_similarity'] = [0.5, 0.9]
+            settings['tm']['res_dtype'] = ['LV917', '247']
+            settings['tm']['arr_dtype'] = ['LV917', '247']
+            settings['tm']['res_sup_dis'] = [0.01, 0.3]  # [0..1]
+            settings['tm']['res_con_dis'] = [50, 85]  # [50..85]
+            settings['tm']['arr_support'] = [0.01, 0.1]  # [0..1]
+            settings['tm']['arr_confidence'] = [1, 20]  # [50..85]
             optimizer = sim.DiscoveryOptimizer(settings, args)
             optimizer.execute_pipeline()
     else:
@@ -125,38 +126,42 @@ def catch_parameter(opt):
 
 def define_general_settings(settings):
     """ Sets the app general settings"""
+    settings['gl'] = dict()
     column_names = {'Case ID': 'caseid', 'Activity': 'task',
                     'lifecycle:transition': 'event_type', 'Resource': 'user'}
     # Event-log reading options
-    settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
-                                'column_names': column_names,
-                                'one_timestamp': False,
-                                'filter_d_attrib': True}
+    settings['gl']['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
+                                      'column_names': column_names,
+                                      'one_timestamp': False,
+                                      'filter_d_attrib': True}
     # Folders structure
-    settings['input'] = 'inputs'
-    settings['output'] = os.path.join('outputs', sup.folder_id())
+    settings['gl']['input'] = 'inputs'
+    settings['gl']['output'] = os.path.join('outputs', sup.folder_id())
     # External tools routes
-    settings['sm2_path'] = os.path.join('external_tools',
-                                        'splitminer2',
-                                        'sm2.jar')
-    settings['sm1_path'] = os.path.join('external_tools',
-                                        'splitminer',
-                                        'splitminer.jar')
-    settings['bimp_path'] = os.path.join('external_tools',
-                                         'bimp',
-                                         'qbp-simulator-engine.jar')
-    settings['align_path'] = os.path.join('external_tools',
-                                          'proconformance',
-                                          'ProConformance2.jar')
-    settings['aligninfo'] = os.path.join(settings['output'],
-                                         'CaseTypeAlignmentResults.csv')
-    settings['aligntype'] = os.path.join(settings['output'],
-                                         'AlignmentStatistics.csv')
-    settings['calender_path'] = os.path.join('external_tools',
-                                             'calenderimp',
-                                             'CalenderImp.jar')
-    settings['simulator'] = 'bimp'
-    settings['mining_alg'] = 'sm1'
+    settings['gl']['sm2_path'] = os.path.join('external_tools',
+                                              'splitminer2',
+                                              'sm2.jar')
+    settings['gl']['sm1_path'] = os.path.join('external_tools',
+                                              'splitminer',
+                                              'splitminer.jar')
+    settings['gl']['sm3_path'] = os.path.join('external_tools',
+                                              'splitminer3',
+                                              'bpmtk.jar')
+    settings['gl']['bimp_path'] = os.path.join('external_tools',
+                                               'bimp',
+                                               'qbp-simulator-engine.jar')
+    settings['gl']['align_path'] = os.path.join('external_tools',
+                                                'proconformance',
+                                                'ProConformance2.jar')
+    settings['gl']['aligninfo'] = os.path.join(settings['gl']['output'],
+                                               'CaseTypeAlignmentResults.csv')
+    settings['gl']['aligntype'] = os.path.join(settings['gl']['output'],
+                                               'AlignmentStatistics.csv')
+    settings['gl']['calender_path'] = os.path.join('external_tools',
+                                                   'calenderimp',
+                                                   'CalenderImp.jar')
+    settings['gl']['simulator'] = 'bimp'
+    settings['gl']['mining_alg'] = 'sm3'
     return settings
 
 

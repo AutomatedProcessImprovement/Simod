@@ -79,7 +79,11 @@ class TimesOptimizer():
         self.settings = settings
         self._load_sim_model(struc_model)
         self._replay_process()
-        self.file_name = os.path.join('outputs', sup.file_id(prefix='OP_'))
+        # Temp folder
+        self.temp_output = os.path.join('outputs', sup.folder_id())
+        if not os.path.exists(self.temp_output):
+            os.makedirs(self.temp_output)
+        self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
         # Results file
         if not os.path.exists(self.file_name):
             open(self.file_name, 'w').close()
@@ -108,8 +112,7 @@ class TimesOptimizer():
                                                       args['res_dtype'])})
                           ]),
                     'arr_cal_met': hp.choice('arr_cal_met',
-                        [
-                            ('discovered',{
+                        [('discovered',{
                             'arr_support': hp.uniform('arr_support',
                                                       args['arr_support'][0],
                                                       args['arr_support'][1]),
@@ -156,7 +159,7 @@ class TimesOptimizer():
             status = rsp['status']
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
             # Save times
-            self._save_times(exec_times, trial_stg)
+            self._save_times(exec_times, trial_stg, self.temp_output)
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
             # reinstate log
@@ -170,7 +173,7 @@ class TimesOptimizer():
         best = fmin(fn=exec_pipeline,
                     space=self.space,
                     algo=tpe.suggest,
-                    max_evals=self.args['max_eval'],
+                    max_evals=self.args['max_eval_t'],
                     trials=self.bayes_trials,
                     show_progressbar=False)
         # Save results
@@ -188,7 +191,7 @@ class TimesOptimizer():
     @Decorators.safe_exec
     def _temp_path_redef(self, settings, **kwargs) -> None:
         # Paths redefinition
-        settings['output'] = os.path.join('outputs', sup.folder_id())
+        settings['output'] = os.path.join(self.temp_output, sup.folder_id())
         # Output folder creation
         if not os.path.exists(settings['output']):
             os.makedirs(settings['output'])
@@ -273,10 +276,10 @@ class TimesOptimizer():
         return sim_values
 
     @staticmethod
-    def _save_times(times, settings):
+    def _save_times(times, settings, temp_output):
         if times:
             times = [{**{'output': settings['output']}, **times}]
-            log_file = os.path.join('outputs', 'execution_times.csv')
+            log_file = os.path.join(temp_output, 'execution_times.csv')
             if not os.path.exists(log_file):
                     open(log_file, 'w').close()
             if os.path.getsize(log_file) > 0:
@@ -292,7 +295,7 @@ class TimesOptimizer():
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
         # Miner parms
-        if settings['mining_alg'] == 'sm1':
+        if settings['mining_alg'] in ['sm1', 'sm3']:
             data['epsilon'] = settings['epsilon']
             data['eta'] = settings['eta']
         elif settings['mining_alg'] == 'sm2':

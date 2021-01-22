@@ -7,6 +7,7 @@ Created on Fri Mar  6 20:47:09 2020
 import pandas as pd
 import itertools
 import utils.support as sup
+import traceback
 
 from extraction import log_replayer as rpl
 from extraction import interarrival_definition as arr
@@ -39,11 +40,12 @@ class StructureParametersMiner():
                         method(*args)
                     except Exception as e:
                         print(e)
+                        traceback.print_exc()
                         is_safe = False
                 return is_safe
             return safety_check
 
-    def __init__(self, log, bpmn, process_graph, resource_table, settings):
+    def __init__(self, log, bpmn, process_graph, settings):
         """constructor"""
         self.log = log
         self.bpmn = bpmn
@@ -56,7 +58,6 @@ class StructureParametersMiner():
         self.process_stats = list()
         self.parameters = dict()
         self.conformant_traces = list()
-        self.resource_table = resource_table
         self.is_safe = True
 
     def extract_parameters(self, num_inst, start_time, resource_pool) -> None:
@@ -82,9 +83,7 @@ class StructureParametersMiner():
                                    self.settings,
                                    msg='reading conformant training traces:')
         self.process_stats = replayer.process_stats
-        self.process_stats = self.process_stats.merge(self.resource_table,
-                                 on='resource',
-                                 how='left')
+        self.process_stats['role'] = 'SYSTEM'
         self.conformant_traces = replayer.conformant_traces
 
     # @Decorators.safe_exec
@@ -98,45 +97,17 @@ class StructureParametersMiner():
         settings['res_dtype'] = '247'  # 'LV917', '247'
         settings['arr_cal_met'] = 'default'
         settings['arr_dtype'] = '247'  # 'LV917', '247'
-        settings['rp_similarity'] = 0.5
-
-        def create_resource_pool(resource_table, table_name) -> list():
-            """
-            Creates resource pools and associate them the default timetable
-            in BIMP format
-            """
-            resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM',
-                                  'total_amount': '20', 'costxhour': '20',
-                                  'timetable_id': table_name['arrival']}]
-            data = sorted(resource_table, key=lambda x: x['role'])
-            for key, group in itertools.groupby(data, key=lambda x: x['role']):
-                res_group = [x['resource'] for x in list(group)]
-                r_pool_size = str(len(res_group))
-                name = (table_name['resources'] if 'resources' in table_name.keys()
-                        else table_name[key])
-                resource_pool.append({'id': sup.gen_id(),
-                                      'name': key,
-                                      'total_amount': r_pool_size,
-                                      'costxhour': '20',
-                                      'timetable_id': name})
-            return resource_pool
-
-        res_analyzer = rl.ResourcePoolAnalyser(
-            log,
-            sim_threshold=settings['rp_similarity'])
         ttcreator = sch.TimeTablesCreator(settings)
         args = {'res_cal_met': settings['res_cal_met'],
-                'arr_cal_met': settings['arr_cal_met'],
-                'resource_table': res_analyzer.resource_table}
+                'arr_cal_met': settings['arr_cal_met']}
         ttcreator.create_timetables(args)
-        resource_pool = create_resource_pool(res_analyzer.resource_table,
-                                             ttcreator.res_ttable_name)
+        resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM',
+                          'total_amount': '100000', 'costxhour': '20',
+                          'timetable_id': ttcreator.res_ttable_name['arrival']}]
+
         parameters['resource_pool'] = resource_pool
         parameters['time_table'] = ttcreator.time_table
-        # Adding role to process stats
-        resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
-        resource_table = resource_table
-        return parameters, resource_table
+        return parameters
 
     @Decorators.safe_exec
     def _mine_interarrival(self) -> None:

@@ -9,6 +9,7 @@ dependencies:
   - networkx
   - pillow
   - seaborn
+  - ipywidgets
   - pip:
     - hyperopt
     - jellyfish

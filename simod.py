@@ -14,6 +14,7 @@ import multiprocessing
 from multiprocessing import Pool
 from xml.dom import minidom
 import time
+import shutil
 
 import pandas as pd
 import numpy as np
@@ -519,10 +520,10 @@ class DiscoveryOptimizer():
     Hyperparameter-optimizer class
     """
 
-    def __init__(self, settings, args):
+    def __init__(self, settings):
         """constructor"""
         self.settings = settings
-        self.args = args
+        # self.args = args
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
@@ -534,75 +535,66 @@ class DiscoveryOptimizer():
         print('############ Structure optimization ############')
         # Structure optimization
         structure_optimizer = so.StructureOptimizer(
-            self.settings,
-            self.args,
+            {**self.settings['gl'], **self.settings['strc']},
             copy.deepcopy(self.log_train))
         structure_optimizer.execute_trials()
         struc_model = structure_optimizer.best_output
         best_parms = structure_optimizer.best_parms
-        self.settings['alg_manag'] = (
-            self.args['alg_manag'][best_parms['alg_manag']])
-        self.settings['gate_management'] = (
-            self.args['gate_management'][best_parms['gate_management']])
+        self.settings['gl']['alg_manag'] = (
+            self.settings['strc']['alg_manag'][best_parms['alg_manag']])
+        self.settings['gl']['gate_management'] = (
+            self.settings['strc']['gate_management'][best_parms['gate_management']])
         # best structure mining parameters
-        if self.settings['mining_alg'] == 'sm1':
-            self.settings['epsilon'] = best_parms['epsilon']
-            self.settings['eta'] = best_parms['eta']
-        elif self.settings['mining_alg'] == 'sm2':
-            self.settings['concurrency'] = best_parms['concurrency']
+        if self.settings['gl']['mining_alg'] in ['sm1', 'sm3']:
+            self.settings['gl']['epsilon'] = best_parms['epsilon']
+            self.settings['gl']['eta'] = best_parms['eta']
+        elif self.settings['gl']['mining_alg'] == 'sm2':
+            self.settings['gl']['concurrency'] = best_parms['concurrency']
 
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis',
                     'res_con_dis', 'arr_support', 'arr_confidence',
                     'res_cal_met', 'arr_cal_met']:
             self.settings.pop(key, None)
-        self._test_model(struc_model, output_file)
+        # self._test_model(struc_model, output_file)
         print('############ Times optimization ############')
         times_optimizer = to.TimesOptimizer(
-            self.settings,
-            self.args,
+            self.settings['gl'],
+            self.settings['tm'],
             copy.deepcopy(self.log_train),
             struc_model)
         times_optimizer.execute_trials()
         print('############ Final comparison ############')
-        self._test_model(times_optimizer.best_output, output_file, mode='a')
+        self._test_model(times_optimizer.best_output, output_file)
+        shutil.rmtree(structure_optimizer.temp_output)
+        shutil.rmtree(times_optimizer.temp_output)
         print("-- End of trial --")
 
-    def _test_model(self, best_output, output_file, mode='w'):
+    def _test_model(self, best_output, output_file):
         output_path = os.path.join('outputs', sup.folder_id())
         if not os.path.exists(output_path):
             os.makedirs(output_path)
             os.makedirs(os.path.join(output_path, 'sim_data'))
-        self.settings.pop('output', None)
-        self.settings['output'] = output_path
+        self.settings['gl'].pop('output', None)
+        self.settings['gl']['output'] = output_path
         self._modify_simulation_model(
             os.path.join(best_output,
-                          self.settings['file'].split('.')[0]+'.bpmn'))
+                          self.settings['gl']['file'].split('.')[0]+'.bpmn'))
         self._load_model_and_measures()
         self._simulate()
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
-        self.sim_values = pd.pivot_table(self.sim_values, values='sim_val', 
-                                         index=['output'],
-                    columns=['metric'], aggfunc=np.mean).reset_index()
-        if mode == 'w':
-            self.sim_values.to_csv(os.path.join('outputs', output_file),
-                                   index=False)
-        elif mode == 'a':
-            self.sim_values.to_csv(os.path.join('outputs', output_file),
-                                   index=False, mode=mode, header=False)
-        else:
-            raise ValueError(mode)
-
+        self.sim_values.to_csv(os.path.join(output_path, output_file),
+                               index=False)
 
     @timeit
     def read_inputs(self, **kwargs) -> None:
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings['input'],
-                                             self.settings['file']),
-                                self.settings['read_options'])
+        self.log = lr.LogReader(os.path.join(self.settings['gl']['input'],
+                                             self.settings['gl']['file']),
+                                self.settings['gl']['read_options'])
         # Time splitting 80-20
         self.split_timeline(0.8,
-                            self.settings['read_options']['one_timestamp'])
+                            self.settings['gl']['read_options']['one_timestamp'])
 
     def split_timeline(self, size: float, one_ts: bool) -> None:
         """
@@ -646,7 +638,7 @@ class DiscoveryOptimizer():
         items = mydoc.getElementsByTagName('qbp:processSimulationInfo')
         items[0].attributes['processInstances'].value = str(num_inst)
         items[0].attributes['startDateTime'].value = start_time
-        new_model_path = os.path.join(self.settings['output'],
+        new_model_path = os.path.join(self.settings['gl']['output'],
                                       os.path.split(model)[1])
         with open(new_model_path, 'wb') as f:
             f.write(mydoc.toxml().encode('utf-8'))
@@ -673,20 +665,20 @@ class DiscoveryOptimizer():
             pbar.update(n=(reps - processed))
             p.wait()
             pbar.close()
-        reps = self.settings['repetitions']
+        reps = self.settings['gl']['repetitions']
         cpu_count = multiprocessing.cpu_count()
         w_count =  reps if reps <= cpu_count else cpu_count
         pool = Pool(processes=w_count)
         # Simulate
-        args = [(self.settings, rep) for rep in range(reps)]
+        args = [(self.settings['gl'], rep) for rep in range(reps)]
         p = pool.map_async(self.execute_simulator, args)
         pbar_async(p, 'simulating:')
         # Read simulated logs
-        args = [(self.settings, rep) for rep in range(reps)]
+        args = [(self.settings['gl'], rep) for rep in range(reps)]
         p = pool.map_async(self.read_stats, args)
         pbar_async(p, 'reading simulated logs:')
         # Evaluate
-        args = [(self.settings, self.process_stats, log) for log in p.get()]
+        args = [(self.settings['gl'], self.process_stats, log) for log in p.get()]
         if len(self.log_test.caseid.unique()) > 1000:
             pool.close()
             results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]

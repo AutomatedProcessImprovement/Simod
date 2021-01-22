@@ -10,12 +10,12 @@ import copy
 import multiprocessing
 from multiprocessing import Pool
 import itertools
-# import traceback
+import traceback
+import numpy as np
+import pandas as pd
 import math
 import random
 
-import numpy as np
-import pandas as pd
 from hyperopt import tpe
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 
@@ -27,6 +27,7 @@ import analyzers.sim_evaluator as sim
 
 from support_modules.writers import xes_writer as xes
 from support_modules.writers import xml_writer as xml
+import analyzers.sim_evaluator as sim
 
 import opt_structure.structure_miner as sm
 import opt_structure.structure_params_miner as spm
@@ -63,49 +64,56 @@ class StructureOptimizer():
                 return response
             return safety_check
 
-    def __init__(self, settings, args, log):
+    def __init__(self, settings, log):
         """constructor"""
-        self.space = self.define_search_space(settings, args)
+        self.space = self.define_search_space(settings)
         # Read inputs
         self.log = log
         self._split_timeline(0.8, settings['read_options']['one_timestamp'])
+        
         self.org_log = copy.deepcopy(log)
         self.org_log_train = copy.deepcopy(self.log_train)
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
         # Load settings
         self.settings = settings
-        self.file_name = os.path.join('outputs', sup.file_id(prefix='OP_'))
+        self.temp_output = os.path.join('outputs', sup.folder_id())
+        if not os.path.exists(self.temp_output):
+            os.makedirs(self.temp_output)
+        self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
         # Results file
         if not os.path.exists(self.file_name):
             open(self.file_name, 'w').close()
-        self.args = args
         # Trials object to track progress
         self.bayes_trials = Trials()
         self.best_output = None
         self.best_parms = dict()
+        self.best_similarity = 0
 
     @staticmethod
-    def define_search_space(settings, args):
-        var_dim = {'alg_manag': hp.choice('alg_manag',
-                                           args['alg_manag']),
-                    'gate_management': hp.choice('gate_management',
-                                                 args['gate_management'])}
-        if settings['mining_alg'] == 'sm1':
-            var_dim['epsilon'] = hp.uniform('epsilon',
-                                          args['epsilon'][0],
-                                          args['epsilon'][1])
+    def define_search_space(settings):
+        var_dim = {'alg_manag': hp.choice('alg_manag', 
+                                          settings['alg_manag']),
+                   'gate_management': hp.choice('gate_management',
+                                                settings['gate_management'])}
+        if settings['mining_alg'] in ['sm1', 'sm3']:
+            var_dim['epsilon'] = hp.uniform('epsilon', 
+                                            settings['epsilon'][0],
+                                            settings['epsilon'][1])
             var_dim['eta'] = hp.uniform('eta',
-                                          args['eta'][0],
-                                          args['eta'][1])
+                                              settings['eta'][0],
+                                              settings['eta'][1])
         elif settings['mining_alg'] == 'sm2':
             var_dim['concurrency'] = hp.uniform('concurrency',
-                                          args['concurrency'][0],
-                                          args['concurrency'][1])
-        space = {**var_dim, **settings}
+                                                settings['concurrency'][0],
+                                                settings['concurrency'][1])
+        csettings = copy.deepcopy(settings)
+        for key in var_dim.keys():
+            csettings.pop(key, None) 
+        space = {**var_dim, **csettings}
         return space
 
     def execute_trials(self):
-        parameters, resource_table = (
+        parameters = (
             spm.StructureParametersMiner.mine_resources(
                 self.settings, self.log_train))
         self.log_train = copy.deepcopy(self.org_log_train)
@@ -135,7 +143,6 @@ class StructureOptimizer():
             rsp = self._extract_parameters(trial_stg,
                                            rsp['values'],
                                            copy.deepcopy(parameters),
-                                           resource_table,
                                            status=status,
                                            log_time=exec_times)
             status = rsp['status']
@@ -147,7 +154,7 @@ class StructureOptimizer():
             status = rsp['status']
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
             # Save times
-            self._save_times(exec_times, trial_stg)
+            self._save_times(exec_times, trial_stg, self.temp_output)
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
             # reinstate log
@@ -161,7 +168,7 @@ class StructureOptimizer():
         best = fmin(fn=exec_pipeline,
                     space=self.space,
                     algo=tpe.suggest,
-                    max_evals=self.args['max_eval'],
+                    max_evals=self.settings['max_eval_s'],
                     trials=self.bayes_trials,
                     show_progressbar=False)
         # Save results
@@ -171,6 +178,8 @@ class StructureOptimizer():
             self.best_output = (results[results.status=='ok']
                                 .head(1).iloc[0].output)
             self.best_parms = best
+            self.best_similarity = (results[results.status=='ok']
+                                    .head(1).iloc[0].loss)
         except Exception as e:
             print(e)
             pass
@@ -179,7 +188,7 @@ class StructureOptimizer():
     @Decorators.safe_exec
     def _temp_path_redef(self, settings, **kwargs) -> None:
         # Paths redefinition
-        settings['output'] = os.path.join('outputs', sup.folder_id())
+        settings['output'] = os.path.join(self.temp_output, sup.folder_id())
         if settings['alg_manag'] == 'repair':
             settings['aligninfo'] = os.path.join(
                 settings['output'],
@@ -208,20 +217,19 @@ class StructureOptimizer():
     @timeit(rec_name='EXTRACTING_PARAMS')
     @Decorators.safe_exec
     def _extract_parameters(self, settings, structure, parameters, 
-                            resource_table, **kwargs) -> None:
+                            **kwargs) -> None:
         bpmn, process_graph = structure
         p_extractor = spm.StructureParametersMiner(self.log_train,
                                                    bpmn,
                                                    process_graph,
-                                                   resource_table,
                                                    settings)
         num_inst = len(self.log_valdn.caseid.unique())
         # Get minimum date
         start_time = (self.log_valdn
                       .start_timestamp
                       .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
-        p_extractor.extract_parameters(num_inst, 
-                                       start_time, 
+        p_extractor.extract_parameters(num_inst,
+                                       start_time,
                                        parameters['resource_pool'])
         if p_extractor.is_safe:
             parameters = {**parameters, **p_extractor.parameters}
@@ -236,10 +244,7 @@ class StructureOptimizer():
             self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
             self.log_valdn['source'] = 'log'
             self.log_valdn['run_num'] = 0
-            self.log_valdn = self.log_valdn.merge(
-                p_extractor.resource_table[['resource', 'role']],
-                on='resource',
-                how='left')
+            self.log_valdn['role'] = 'SYSTEM'
             self.log_valdn = self.log_valdn[
                 ~self.log_valdn.task.isin(['Start', 'End'])]
         else:
@@ -335,7 +340,7 @@ class StructureOptimizer():
                 sort=False)
             evaluator = sim.SimilarityEvaluator(
                 data,
-                settings,
+                settings,                
                 rep,
                 max_cases=1000)
             evaluator.measure_distance('dl')
@@ -362,10 +367,10 @@ class StructureOptimizer():
         sim_call(*args)
 
     @staticmethod
-    def _save_times(times, settings):
+    def _save_times(times, settings, temp_output):
         if times:
             times = [{**{'output': settings['output']}, **times}]
-            log_file = os.path.join('outputs', 'execution_times.csv')
+            log_file = os.path.join(temp_output, 'execution_times.csv')
             if not os.path.exists(log_file):
                     open(log_file, 'w').close()
             if os.path.getsize(log_file) > 0:
@@ -380,7 +385,7 @@ class StructureOptimizer():
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
         # Miner parms
-        if settings['mining_alg'] == 'sm1':
+        if settings['mining_alg'] in ['sm1', 'sm3']:
             data['epsilon'] = settings['epsilon']
             data['eta'] = settings['eta']
         elif settings['mining_alg'] == 'sm2':
@@ -428,6 +433,7 @@ class StructureOptimizer():
         """
         # Split log data
         splitter = ls.LogSplitter(self.log.data)
+        # train, valdn = splitter.split_log('random', size, one_ts)
         train, valdn = splitter.split_log('timeline_contained', size, one_ts)
         total_events = len(self.log.data)
         # Check size and change time splitting method if necesary
