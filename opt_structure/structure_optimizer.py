@@ -332,19 +332,15 @@ class StructureOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
-            rep = (sim_log.iloc[0].run_num) - 1
+            rep = (sim_log.iloc[0].run_num)
             sim_values = list()
-            data = data.append(
-                sim_log,
-                ignore_index=True,
-                sort=False)
             evaluator = sim.SimilarityEvaluator(
                 data,
+                sim_log,
                 settings,                
-                rep,
                 max_cases=1000)
             evaluator.measure_distance('dl')
-            sim_values.append(evaluator.similarity)
+            sim_values.append({**{'run_num': rep}, **evaluator.similarity})
             return sim_values
         return evaluate(*args)
 

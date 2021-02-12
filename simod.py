@@ -263,14 +263,10 @@ class Simod():
             rep = (sim_log.iloc[0].run_num) - 1
             sim_values = list()
             # message = 'Evaluating repetition: ' + str(rep+1)
-            process_stats = process_stats.append(
-                sim_log,
-                ignore_index=True,
-                sort=False)
             evaluator = sim.SimilarityEvaluator(
                 process_stats,
+                sim_log,
                 settings,
-                rep,
                 max_cases=1000)
             metrics = [settings['sim_metric']]
             if 'add_metrics' in settings.keys():
@@ -278,7 +274,7 @@ class Simod():
                                     metrics))
             for metric in metrics:
                 evaluator.measure_distance(metric)
-                sim_values.append(evaluator.similarity)
+                sim_values.append({**{'run_num': rep}, **evaluator.similarity})
             return sim_values
         return evaluate(*args)
 
@@ -725,18 +721,12 @@ class DiscoveryOptimizer():
                 rep (int): repetition number
             """
             # print('Reading repetition:', (rep+1), sep=' ')
-            rep = (sim_log.iloc[0].run_num) - 1
+            rep = (sim_log.iloc[0].run_num)
             sim_values = list()
-            # message = 'Evaluating repetition: ' + str(rep+2)
-            # print(message)
-            process_stats = process_stats.append(
-                sim_log,
-                ignore_index=True,
-                sort=False)
             evaluator = sim.SimilarityEvaluator(
                 process_stats,
+                sim_log,
                 settings,
-                rep,
                 max_cases=1000)
             metrics = [settings['sim_metric']]
             if 'add_metrics' in settings.keys():
@@ -744,7 +734,7 @@ class DiscoveryOptimizer():
                                     metrics))
             for metric in metrics:
                 evaluator.measure_distance(metric)
-                sim_values.append(evaluator.similarity)
+                sim_values.append({**{'run_num': rep}, **evaluator.similarity})
             return sim_values
         return evaluate(*args)
 

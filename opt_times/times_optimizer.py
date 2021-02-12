@@ -368,17 +368,13 @@ class TimesOptimizer():
             """
             rep = (sim_log.iloc[0].run_num) - 1
             sim_values = list()
-            data = data.append(
-                sim_log,
-                ignore_index=True,
-                sort=False)
             evaluator = sim.SimilarityEvaluator(
                 data,
+                sim_log,
                 settings,
-                rep,
                 max_cases=1000)
             evaluator.measure_distance('day_hour_emd')
-            sim_values.append(evaluator.similarity)
+            sim_values.append({**{'run_num': rep}, **evaluator.similarity})
             return sim_values
         return evaluate(*args)
 
