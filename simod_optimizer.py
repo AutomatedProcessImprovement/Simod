@@ -41,14 +41,14 @@ def main(argv):
     settings['gl']['sim_metric'] = 'tsd'
     settings['gl']['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
     settings['strc'] = dict()
-    settings['strc']['max_eval_s'] = 2
+    settings['strc']['max_eval_s'] = 15
     settings['strc']['concurrency'] = [0.0, 1.0]
     settings['strc']['epsilon'] = [0.0, 1.0]
     settings['strc']['eta'] = [0.0, 1.0]
     settings['strc']['alg_manag'] = ['replacement', 'repair', 'removal']
     settings['strc']['gate_management'] = ['discovery', 'equiprobable']
     settings['tm'] = dict()
-    settings['tm']['max_eval_t'] = 2
+    settings['tm']['max_eval_t'] = 20
     settings['tm']['rp_similarity'] = [0.5, 0.9]
     settings['tm']['res_dtype'] = ['LV917', '247']
     settings['tm']['arr_dtype'] = ['LV917', '247']

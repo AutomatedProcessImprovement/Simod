@@ -229,6 +229,8 @@ class TimesOptimizer():
                 how='left')
             self.log_valdn = self.log_valdn[
                 ~self.log_valdn.task.isin(['Start', 'End'])]
+            p_extractor.resource_table.to_pickle(
+                os.path.join(settings['output'], 'resource_table.pkl'))
         else:
             raise RuntimeError('Parameters extraction error')
 
@@ -264,7 +266,8 @@ class TimesOptimizer():
         args = [(settings, data, log) for log in p.get()]
         if len(self.log_valdn.caseid.unique()) > 1000:
             pool.close()
-            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            results = [self.evaluate_logs(arg) 
+                       for arg in tqdm(args, 'evaluating results:')]
             # Save results
             sim_values = list(itertools.chain(*results))
         else:

@@ -27,7 +27,6 @@ import analyzers.sim_evaluator as sim
 
 from support_modules.writers import xes_writer as xes
 from support_modules.writers import xml_writer as xml
-import analyzers.sim_evaluator as sim
 
 import opt_structure.structure_miner as sm
 import opt_structure.structure_params_miner as spm

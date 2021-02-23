@@ -32,6 +32,7 @@ import analyzers.sim_evaluator as sim
 
 from support_modules.writers import xes_writer as xes
 from support_modules.writers import xml_writer as xml
+from support_modules.writers.model_serialization import serialize_model
 from support_modules.log_repairing import conformance_checking as chk
 
 from extraction import parameter_extraction as par
@@ -519,7 +520,7 @@ class DiscoveryOptimizer():
     def __init__(self, settings):
         """constructor"""
         self.settings = settings
-        # self.args = args
+        self.best_params = dict()
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
@@ -538,15 +539,19 @@ class DiscoveryOptimizer():
         best_parms = structure_optimizer.best_parms
         self.settings['gl']['alg_manag'] = (
             self.settings['strc']['alg_manag'][best_parms['alg_manag']])
+        self.best_params['alg_manag'] = self.settings['gl']['alg_manag']
         self.settings['gl']['gate_management'] = (
             self.settings['strc']['gate_management'][best_parms['gate_management']])
+        self.best_params['gate_management'] = self.settings['gl']['gate_management']
         # best structure mining parameters
         if self.settings['gl']['mining_alg'] in ['sm1', 'sm3']:
             self.settings['gl']['epsilon'] = best_parms['epsilon']
             self.settings['gl']['eta'] = best_parms['eta']
+            self.best_params['epsilon'] = best_parms['epsilon']
+            self.best_params['eta'] = best_parms['eta']
         elif self.settings['gl']['mining_alg'] == 'sm2':
             self.settings['gl']['concurrency'] = best_parms['concurrency']
-
+            self.best_params['concurrency'] = best_parms['concurrency']
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis',
                     'res_con_dis', 'arr_support', 'arr_confidence',
                     'res_cal_met', 'arr_cal_met']:
@@ -559,13 +564,37 @@ class DiscoveryOptimizer():
             copy.deepcopy(self.log_train),
             struc_model)
         times_optimizer.execute_trials()
+        # Discovery parameters
+        if times_optimizer.best_parms['res_cal_met'] == 1:
+            self.best_params['res_dtype'] = (
+                self.settings['tm']['res_dtype']
+                [times_optimizer.best_parms['res_dtype']])
+        else:
+            self.best_params['res_support'] = (
+                times_optimizer.best_parms['res_support'])
+            self.best_params['res_confidence'] = (
+                times_optimizer.best_parms['res_confidence'])
+        if times_optimizer.best_parms['arr_cal_met'] == 1:
+            self.best_params['arr_dtype'] = (
+                self.settings['tm']['res_dtype']
+                [times_optimizer.best_parms['arr_dtype']])
+        else:
+            self.best_params['arr_support'] = (
+                times_optimizer.best_parms['arr_support'])
+            self.best_params['arr_confidence'] = (
+                times_optimizer.best_parms['arr_confidence'])
+
         print('############ Final comparison ############')
-        self._test_model(times_optimizer.best_output, output_file)
+        self._test_model(times_optimizer.best_output, 
+                         output_file,
+                         structure_optimizer.file_name,
+                         times_optimizer.file_name)
+        self._export_canonical_model(times_optimizer.best_output)
         shutil.rmtree(structure_optimizer.temp_output)
         shutil.rmtree(times_optimizer.temp_output)
         print("-- End of trial --")
 
-    def _test_model(self, best_output, output_file):
+    def _test_model(self, best_output, output_file, opt_strf, opt_timf):
         output_path = os.path.join('outputs', sup.folder_id())
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -581,7 +610,30 @@ class DiscoveryOptimizer():
         self.sim_values['output'] = output_path
         self.sim_values.to_csv(os.path.join(output_path, output_file),
                                index=False)
-
+        shutil.move(opt_strf, output_path)
+        shutil.move(opt_timf, output_path)
+        
+    def _export_canonical_model(self, best_output):
+        print(os.path.join(
+            self.settings['gl']['output'], 
+            self.settings['gl']['file'].split('.')[0]+'.bpmn'))
+        canonical_model = serialize_model(os.path.join(
+            self.settings['gl']['output'], 
+            self.settings['gl']['file'].split('.')[0]+'.bpmn'))
+        # Users in rol data
+        resource_table = pd.read_pickle(
+            os.path.join(best_output, 'resource_table.pkl'))
+        user_rol = dict()
+        for key, group in resource_table.groupby('role'):
+            user_rol[key] = list(group.resource)
+        canonical_model['rol_user'] = user_rol
+        # Json creation
+        self.best_params = {k: str(v) for k, v in self.best_params.items()}
+        canonical_model['discovery_parameters'] = self.best_params
+        sup.create_json(canonical_model, os.path.join(
+            self.settings['gl']['output'],
+            self.settings['gl']['file'].split('.')[0]+'_canon.json'))
+        
     @timeit
     def read_inputs(self, **kwargs) -> None:
         # Event log reading
