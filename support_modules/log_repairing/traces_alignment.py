@@ -5,6 +5,7 @@ import utils.support as sup
 from operator import itemgetter
 import subprocess
 import os
+import platform as pl
 
 
 class TracesAligner(object):
@@ -213,11 +214,15 @@ class TracesAligner(object):
         """
         print(" -- Evaluating event log alignment --")
         file_name = settings['file'].split('.')[0]
-        args = ['java', '-jar', settings['align_path'],
+        args = ['java']
+        if not pl.system().lower() == 'windows':
+            args.append('-Xmx2G')
+            args.append('-Xss8G')
+        args.extend(['-jar', settings['align_path'],
                 settings['output']+os.sep,
                 file_name+'.xes',
                 settings['file'].split('.')[0]+'.bpmn',
-                'true']
+                'true'])
         subprocess.call(args, bufsize=-1)
 
 # =============================================================================

@@ -4,6 +4,9 @@ Created on Fri Mar  6 20:47:09 2020
 
 @author: Manuel Camargo
 """
+import pandas as pd
+import itertools
+import utils.support as sup
 
 from extraction import log_replayer as rpl
 from extraction import interarrival_definition as arr
@@ -12,16 +15,33 @@ from extraction import role_discovery as rl
 from extraction import schedule_tables as sch
 from extraction import tasks_evaluator as te
 
-import pandas as pd
-import itertools
-import utils.support as sup
-
-
 class ParameterMiner():
     """
     This class extracts all the BPS parameters
     """
+    class Decorators(object):
 
+        @classmethod
+        def safe_exec(cls, method):
+            """
+            Decorator to safe execute methods and return the state
+            ----------
+            method : Any method.
+            Returns
+            -------
+            dict : execution status
+            """
+            def safety_check(*args, **kw):
+                is_safe = kw.get('is_safe', method.__name__.upper())
+                if is_safe:
+                    try:
+                        method(*args)
+                    except Exception as e:
+                        print(e)
+                        is_safe = False
+                return is_safe
+            return safety_check
+        
     def __init__(self, log, bpmn, process_graph, settings):
         """constructor"""
         self.log = log
@@ -32,30 +52,35 @@ class ParameterMiner():
         self.parameters = dict()
         self.conformant_traces = list()
         self.resource_table = pd.DataFrame()
+        self.is_safe = True
 
     def extract_parameters(self, num_inst, start_time) -> None:
         """
         main method for parameters extraction
         """
-        self.replay_process()
-        self.mine_resources()
-        self.mine_interarrival()
-        self.mine_gateways_probabilities()
-        self.process_tasks()
+        self.is_safe = self.replay_process(is_safe=self.is_safe)
+        self.is_safe = self.mine_resources(is_safe=self.is_safe)
+        self.is_safe = self.mine_interarrival(is_safe=self.is_safe)
+        self.is_safe = self.mine_gateways_probabilities(is_safe=self.is_safe)
+        self.is_safe = self.process_tasks(is_safe=self.is_safe)
         # TODO: Num of test partition
         self.parameters['instances'] = num_inst
         self.parameters['start_time'] = start_time
 
-    def replay_process(self) -> None:
+    @Decorators.safe_exec
+    def replay_process(self, **kwargs) -> None:
         """
         Process replaying
         """
-        replayer = rpl.LogReplayer(self.process_graph, self.log.get_traces(),
-                                   self.settings)
+        replayer = rpl.LogReplayer(self.process_graph, 
+                                   self.log.get_traces(),
+                                   self.settings, 
+                                   msg='reading conformant training traces:')
         self.process_stats = replayer.process_stats
         self.conformant_traces = replayer.conformant_traces
 
-    def mine_resources(self) -> None:
+    @Decorators.safe_exec
+    def mine_resources(self, **kwargs) -> None:
         """
         Analysing resource pool LV917 or 247
         """
@@ -79,7 +104,8 @@ class ParameterMiner():
                                                       how='left')
         self.resource_table = resource_table
 
-    def mine_interarrival(self) -> None:
+    @Decorators.safe_exec
+    def mine_interarrival(self, **kwargs) -> None:
         """
         Calculates the inter-arrival rate
         """
@@ -88,7 +114,8 @@ class ParameterMiner():
                                                     self.settings)
         self.parameters['arrival_rate'] = inter_evaluator.dist
 
-    def mine_gateways_probabilities(self) -> None:
+    @Decorators.safe_exec
+    def mine_gateways_probabilities(self, **kwargs) -> None:
         """
         Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
         """
@@ -100,7 +127,8 @@ class ParameterMiner():
                                                           seq['out_path_id'])
         self.parameters['sequences'] = sequences
 
-    def process_tasks(self) -> None:
+    @Decorators.safe_exec
+    def process_tasks(self, **kwargs) -> None:
         """
         Tasks id information
         """

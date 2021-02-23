@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 import utils.support as sup
+from tqdm import tqdm 
 
 
 class GatewaysEvaluator():
@@ -31,7 +32,7 @@ class GatewaysEvaluator():
         Defines the gateways' probabilities according with an spcified method
 
         """
-        sup.print_performed_task('Analysing gateways` probabilities')
+        # sup.print_performed_task('Analysing gateways` probabilities')
         # Analisys of gateways probabilities
         if self.method == 'discovery':
             gateways = self.analize_gateways()
@@ -42,14 +43,14 @@ class GatewaysEvaluator():
         # Fix 0 probabilities and float error sums
         gateways = self.normalize_probabilities(gateways)
         # Creating response list
-        gids = lambda x: self.process_graph.node[x['gate']]['id']
+        gids = lambda x: self.process_graph.nodes[x['gate']]['id']
         gateways['gatewayid'] = gateways.apply(gids, axis=1)
-        gids = lambda x: self.process_graph.node[x['t_path']]['id']
+        gids = lambda x: self.process_graph.nodes[x['t_path']]['id']
         gateways['out_path_id'] = gateways.apply(gids, axis=1)
         self.probabilities = gateways[['gatewayid',
                                        'out_path_id',
                                        'prob']].to_dict('records')
-        sup.print_done_task()
+        # sup.print_done_task()
 
     @staticmethod
     def normalize_probabilities(nodes_list: pd.DataFrame) -> pd.DataFrame:
@@ -77,16 +78,17 @@ class GatewaysEvaluator():
         def extract_target_tasks(graph: object, num: int) -> list:
             tasks_list = list()
             for node in graph.neighbors(num):
-                if graph.node[node]['type'] in ['task', 'start', 'end']:
+                if graph.nodes[node]['type'] in ['task', 'start', 'end']:
                     tasks_list.append([node])
                 else:
                     tasks_list.append(extract_target_tasks(graph, node))
             return tasks_list
 
         nodes_list = list()
-        for node in self.process_graph.nodes:
+        for node in tqdm(self.process_graph.nodes, 
+                         desc='analysing gateways probabilities:'):
             outs = list()
-            if self.process_graph.node[node]['type'] == 'gate':
+            if self.process_graph.nodes[node]['type'] == 'gate':
                 # Targets
                 paths = list(self.process_graph.neighbors(node))
                 task_paths = extract_target_tasks(self.process_graph, node)
@@ -112,7 +114,7 @@ class GatewaysEvaluator():
         # Obtain gateways structure
         nodes_list = self.analize_gateway_structure()
         # Add task execution count
-        executions = lambda x: self.process_graph.node[x['t_task']]['executions']
+        executions = lambda x: self.process_graph.nodes[x['t_task']]['executions']
         nodes_list['executions'] = nodes_list.apply(executions, axis=1)
         # Aggregate path executions
         nodes_list = (nodes_list.groupby(by=['gate', 't_path'])['executions']
@@ -167,7 +169,7 @@ class GatewaysEvaluator():
                       .count()
                       .reset_index())
         nodes_list['prob'] = 0.0
-        # assign random probabilities
+        # assign probabilities
         temp_list = list()
         for key, group in nodes_list.groupby(by=['gate']):
             p = 1/len(group)

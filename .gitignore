@@ -3,5 +3,5 @@ outputs
 *.stats
 logs_meta
 callcentre.*
-poc_processmining.*
 insurance.*
+poc_processmining.*

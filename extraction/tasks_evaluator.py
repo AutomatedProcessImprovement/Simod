@@ -13,6 +13,8 @@ from extraction import pdf_finder as pdf
 from extraction.user_interface import manual_edition_ui as me
 
 import utils.support as sup
+from tqdm import tqdm
+
 
 
 class TaskEvaluator():
@@ -29,19 +31,10 @@ class TaskEvaluator():
 
         self.pdef_method = settings['pdef_method']
         self.pdef_values = dict()
-        self.load_pdef_values(settings)
 
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.elements_data = self.evaluate_tasks()
 
-    def load_pdef_values(self, settings):
-        if self.pdef_method == 'apx':
-            self.pdef_values = settings['tasks']
-        elif self.pdef_method == 'apx_percentage':
-            # Iterator
-            for task in settings['percentage'].keys():
-                self.pdef_values[task] = (settings['percentage'][task] *
-                                          settings['enabling_times'][task])
 
     def evaluate_tasks(self):
         """
@@ -56,15 +49,23 @@ class TaskEvaluator():
         # processing time discovery method
         if self.pdef_method == 'automatic':
             elements_data = self.mine_processing_time()
-        if self.pdef_method in ['manual', 'semi-automatic']:
+        elif self.pdef_method in ['manual', 'semi-automatic']:
             elements_data = self.define_distributions_manually()
-        if self.pdef_method in ['apx', 'apx_percentage']:
-            elements_data = self.match_predefined_time()
+        elif self.pdef_method == 'default':
+            elements_data = self.default_processing_time()
+        else:
+            raise ValueError(self.pdef_method)
         # Resource association
         elements_data = self.associate_resource(elements_data)
         elements_data = elements_data.to_dict('records')
         elements_data = self.add_start_end_info(elements_data)
         return elements_data
+
+    def default_processing_time(self):
+        elements_data = self.default_values()
+        elements_data = pd.DataFrame(elements_data)
+        return elements_data
+
 
     def mine_processing_time(self):
         """
@@ -76,7 +77,8 @@ class TaskEvaluator():
 
         """
         elements_data = list()
-        for task in self.tasks:
+        for task in tqdm(self.tasks, 
+                         desc='mining tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
             task_processing = (
                 self.process_stats[
@@ -93,39 +95,6 @@ class TaskEvaluator():
             self.model_data[['name', 'elementid']], on='name', how='left')
         return elements_data
 
-    def match_predefined_time(self):
-        """
-        Perform the matching btween the information given by the hyper-opt
-        and the BPMN model and resources data
-
-        Returns
-        -------
-        elements_data : Dataframe
-
-        """
-        elements_data = list()
-        # Predefined tasks records creation
-        default_record = {'type': 'EXPONENTIAL', 'mean': '0', 'arg2': '0'}
-        for task, value in self.pdef_values.items():
-            record = {
-                **{'id': sup.gen_id(), 'name': str(task), 'arg1': str(value)},
-                **default_record}
-            elements_data.append(record)
-
-        # Check If there is tasks with not predefined time
-        pdef_tasks = list(self.pdef_values.keys())
-        not_included = [task for task in self.tasks if task not in pdef_tasks]
-        default_record = {'type': 'EXPONENTIAL', 'mean': '0',
-                          'arg1': '60', 'arg2': '0'}
-        for task in not_included:
-            elements_data.append({**{'id': sup.gen_id(), 'name': task},
-                                  **default_record})
-        elements_data = pd.DataFrame(elements_data)
-        # Matching with model info
-        elements_data = elements_data.merge(self.model_data[['name', 'elementid']],
-                                            on='name',
-                                            how='left').sort_values(by='name')
-        return elements_data
 
     def define_distributions_manually(self):
         """
@@ -159,7 +128,8 @@ class TaskEvaluator():
         elements_data : Dataframe
         """
         elements_data = list()
-        for task in self.tasks:
+        for task in tqdm(self.tasks, 
+                         desc='mining tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
             task_processing = (
                 self.process_stats[
@@ -234,6 +204,7 @@ class TaskEvaluator():
                                             left_on='name',
                                             right_on='task',
                                             how='left').drop(columns=['task'])
+        elements_data['resource'].fillna('QBP_DEFAULT_RESOURCE', inplace=True)
         return elements_data
 
     def get_task_list(self, process_graph):
@@ -250,9 +221,9 @@ class TaskEvaluator():
 
         """
         tasks = list(filter(
-            lambda x: process_graph.node[x]['type'] == 'task',
+            lambda x: process_graph.nodes[x]['type'] == 'task',
             list(nx.nodes(process_graph))))
-        tasks = [process_graph.node[x]['name'] for x in tasks]
+        tasks = [process_graph.nodes[x]['name'] for x in tasks]
         return tasks
 
     def get_model_data(self, process_graph):

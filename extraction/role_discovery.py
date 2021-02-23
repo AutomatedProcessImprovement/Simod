@@ -2,11 +2,11 @@
 import scipy
 from scipy.stats import pearsonr
 import networkx as nx
-import matplotlib.pyplot as plt
-import utils.support as sup
+# import matplotlib.pyplot as plt
 from operator import itemgetter
-import random
+# import random
 import pandas as pd
+from tqdm import tqdm
 
 
 class ResourcePoolAnalyser():
@@ -33,6 +33,7 @@ class ResourcePoolAnalyser():
 
 
     def discover_roles(self):
+        pbar = tqdm(total=100, desc='analysing resource pool:')
         associations = lambda x: (self.tasks[x['task']], self.users[x['user']])
         self.data['ac_rl'] = self.data.apply(associations, axis=1)
     
@@ -44,10 +45,10 @@ class ResourcePoolAnalyser():
         
         profiles = self.build_profile(freq_matrix)
     
-        sup.print_progress(((20 / 100)* 100),'Analysing resource pool ')
+        pbar.update(20)
         # building of a correl matrix between resouces profiles
         correl_matrix = self.det_correl_matrix(profiles)
-        sup.print_progress(((40 / 100)* 100),'Analysing resource pool ')
+        pbar.update(20)
         # creation of a rel network between resouces
         g = nx.Graph()
         for user in self.users.values():
@@ -59,17 +60,17 @@ class ResourcePoolAnalyser():
                 g.add_edge(rel['x'],
                            rel['y'],
                            weight=rel['distance'])
-        sup.print_progress(((60 / 100) * 100),'Analysing resource pool ')
+        pbar.update(20)
         # extraction of fully conected subgraphs as roles
-        sub_graphs = list(nx.connected_component_subgraphs(g))
-        sup.print_progress(((80 / 100) * 100),'Analysing resource pool ')
+        sub_graphs = list((g.subgraph(c) for c in nx.connected_components(g)))
+        pbar.update(20)
         # role definition from graph
         roles = self.role_definition(sub_graphs)
         # plot creation (optional)
         # if drawing == True:
         #     graph_network(g, sub_graphs)
-        sup.print_progress(((100 / 100)* 100),'Analysing resource pool ')
-        sup.print_done_task()
+        pbar.update(20)
+        pbar.close()
         return roles
     
     def build_profile(self, freq_matrix):

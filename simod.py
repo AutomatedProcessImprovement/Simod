@@ -7,16 +7,20 @@ Created on Thu Mar 28 10:56:25 2019
 import os
 import subprocess
 import types
+import itertools
+import platform as pl
 import copy
+import multiprocessing
+from multiprocessing import Pool
+from xml.dom import minidom
+import time
+import shutil
 
 import pandas as pd
 import numpy as np
 from operator import itemgetter
-
-from hyperopt import tpe
-from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
-import xmltodict as xtd
-from lxml import etree
+from tqdm import tqdm
+import traceback
 
 import utils.support as sup
 from utils.support import timeit
@@ -24,70 +28,78 @@ import readers.log_reader as lr
 import readers.bpmn_reader as br
 import readers.process_structure as gph
 import readers.log_splitter as ls
-from support_modules.writers import xml_writer as xml
+import analyzers.sim_evaluator as sim
+
 from support_modules.writers import xes_writer as xes
-from support_modules.analyzers import sim_evaluator as sim
+from support_modules.writers import xml_writer as xml
+from support_modules.writers.model_serialization import serialize_model
 from support_modules.log_repairing import conformance_checking as chk
 
 from extraction import parameter_extraction as par
 from extraction import log_replayer as rpl
+
+import opt_times.times_optimizer as to
+import opt_structure.structure_optimizer as so
 
 
 class Simod():
     """
     Main class of the Simulation Models Discoverer
     """
+    class Decorators(object):
+
+        @classmethod
+        def safe_exec(cls, method):
+            """
+            Decorator to safe execute methods and return the state
+            ----------
+            method : Any method.
+            Returns
+            -------
+            dict : execution status
+            """
+            def safety_check(*args, **kw):
+                is_safe = kw.get('is_safe', method.__name__.upper())
+                if is_safe:
+                    try:
+                        method(*args)
+                    except Exception as e:
+                        print(e)
+                        traceback.print_exc()
+                        is_safe = False
+                return is_safe
+            return safety_check
 
     def __init__(self, settings):
         """constructor"""
-        self.status = STATUS_OK
         self.settings = settings
 
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
-        self.bpmn = types.SimpleNamespace()
-        self.process_graph = types.SimpleNamespace()
 
         self.sim_values = list()
         self.response = dict()
         self.parameters = dict()
+        self.is_safe = True
 
-    def execute_pipeline(self, mode, can=False) -> None:
+    def execute_pipeline(self, can=False) -> None:
         exec_times = dict()
-        if mode in ['optimizer']:
-            self.temp_path_redef()
-        if self.status == STATUS_OK:
-            self.read_inputs(log_time=exec_times)
-        if self.status == STATUS_OK:
-            self.evaluate_alignment(log_time=exec_times)
-        if self.status == STATUS_OK:
-            self.extract_parameters(log_time=exec_times)
-        if self.status == STATUS_OK:
-            self.simulate(log_time=exec_times)
+        self.is_safe = self.read_inputs(
+            log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.evaluate_alignment(
+            log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.extract_parameters(
+            log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.simulate(
+            log_time=exec_times, is_safe=self.is_safe)
         self.mannage_results()
-        if self.status == STATUS_OK:
-            self.save_times(exec_times, self.settings)
-        if self.status == STATUS_OK and can == True:
-            self.export_canonical_model()
+        self.save_times(exec_times, self.settings)
+        # self.is_safe = self.export_canonical_model(is_safe=self.is_safe)
         print("-- End of trial --")
 
-    def temp_path_redef(self) -> None:
-        # Paths redefinition
-        self.settings['output'] = os.path.join('outputs', sup.folder_id())
-        if self.settings['alg_manag'] == 'repair':
-            try:
-                self.settings['aligninfo'] = os.path.join(
-                    self.settings['output'],
-                    'CaseTypeAlignmentResults.csv')
-                self.settings['aligntype'] = os.path.join(
-                    self.settings['output'],
-                    'AlignmentStatistics.csv')
-            except Exception as e:
-                print(e)
-                self.status = STATUS_FAIL
-
-    @timeit
+    @timeit(rec_name='READ_INPUTS')
+    @Decorators.safe_exec
     def read_inputs(self, **kwargs) -> None:
         # Output folder creation
         if not os.path.exists(self.settings['output']):
@@ -103,61 +115,54 @@ class Simod():
         # Create customized event-log for the external tools
         xes.XesWriter(self.log, self.settings)
         # Execution steps
-        self.mining_structure(self.settings)
+        self.mining_structure()
         self.bpmn = br.BpmnReader(os.path.join(
             self.settings['output'],
             self.settings['file'].split('.')[0]+'.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
         # Replaying test partition
-        print("-- Reading test partition --")
-        try:
-            test_replayer = rpl.LogReplayer(
-                self.process_graph,
-                self.get_traces(self.log_test,
-                                self.settings['read_options']['one_timestamp']),
-                self.settings)
-            self.process_stats = test_replayer.process_stats
-            self.process_stats = pd.DataFrame.from_records(self.process_stats)
-            self.log_test = test_replayer.conformant_traces
-        except AssertionError as e:
-            print(e)
-            self.status = STATUS_FAIL
-            print("-- End of trial --")
-            
+        test_replayer = rpl.LogReplayer(
+            self.process_graph,
+            self.get_traces(self.log_test,
+                            self.settings['read_options']['one_timestamp']),
+            self.settings,
+            msg='reading test partition:')
+        self.process_stats = test_replayer.process_stats
+        self.process_stats = pd.DataFrame.from_records(self.process_stats)
+        self.log_test = test_replayer.conformant_traces
+        print("-- End of trial --")
 
-    @timeit
+
+    @timeit(rec_name='ALIGNMENT')
+    @Decorators.safe_exec
     def evaluate_alignment(self, **kwargs) -> None:
         """
         Evaluate alignment
         """
         # Evaluate alignment
-        try:
-            chk.evaluate_alignment(self.process_graph,
-                                   self.log_train,
-                                   self.settings)
-        except Exception as e:
-            print(e)
-            self.status = STATUS_FAIL
+        chk.evaluate_alignment(self.process_graph,
+                               self.log_train,
+                               self.settings)
 
-    @timeit
+    @timeit(rec_name='EXTRACTION')
+    @Decorators.safe_exec
     def extract_parameters(self, **kwargs) -> None:
         print("-- Mining Simulation Parameters --")
-        try:
-            p_extractor = par.ParameterMiner(self.log_train,
-                                             self.bpmn,
-                                             self.process_graph,
-                                             self.settings)
-            num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
-            start_time = (pd.DataFrame(self.log_test)
-                          .start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
-            p_extractor.extract_parameters(num_inst, start_time)
+        p_extractor = par.ParameterMiner(self.log_train,
+                                         self.bpmn,
+                                         self.process_graph,
+                                         self.settings)
+        num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
+        start_time = (pd.DataFrame(self.log_test)
+                      .start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+        p_extractor.extract_parameters(num_inst, start_time)
+        if p_extractor.is_safe:
             self.process_stats = self.process_stats.merge(
                 p_extractor.resource_table[['resource', 'role']],
                 on='resource',
                 how='left')
             # save parameters
             self.parameters = copy.deepcopy(p_extractor.parameters)
-            self.parameters['rol_user'] = p_extractor.resource_table
             # print parameters in xml bimp format
             xml.print_parameters(os.path.join(
                 self.settings['output'],
@@ -165,38 +170,137 @@ class Simod():
                 os.path.join(self.settings['output'],
                              self.settings['file'].split('.')[0]+'.bpmn'),
                 p_extractor.parameters)
-        except Exception as e:
-            print(e)
-            self.status = STATUS_FAIL
+        else:
+            raise RuntimeError('Parameters extraction error')
 
-    @timeit
+    @timeit(rec_name='SIMULATION_EVAL')
+    @Decorators.safe_exec
     def simulate(self, **kwargs) -> None:
-        for rep in range(self.settings['repetitions']):
-            print("Experiment #" + str(rep + 1))
-            try:
-                self.execute_simulator(self.settings, rep)
-                self.process_stats = self.process_stats.append(
-                    self.read_stats(self.settings, self.bpmn, rep),
-                    ignore_index=True,
-                    sort=False)
-                evaluator = sim.SimilarityEvaluator(
-                    self.process_stats,
-                    self.settings,
-                    rep)
-                metrics = [self.settings['sim_metric']]
-                if 'add_metrics' in self.settings.keys():
-                    metrics = list(set(list(self.settings['add_metrics']) +
-                                       metrics))
-                for metric in metrics:
-                    evaluator.measure_distance(metric)
-                    self.sim_values.append(evaluator.similarity)
-            except Exception as e:
-                print(e)
-                self.status = STATUS_FAIL
-                break
+
+        def pbar_async(p, msg):
+            pbar = tqdm(total=reps, desc=msg)
+            processed = 0
+            while not p.ready():
+                cprocesed = (reps - p._number_left)
+                if processed < cprocesed:
+                    increment = cprocesed - processed
+                    pbar.update(n=increment)
+                    processed = cprocesed
+            time.sleep(1)
+            pbar.update(n=(reps - processed))
+            p.wait()
+            pbar.close()
+        reps = self.settings['repetitions']
+        cpu_count = multiprocessing.cpu_count()
+        w_count =  reps if reps <= cpu_count else cpu_count
+        pool = Pool(processes=w_count)
+        # Simulate
+        args = [(self.settings, rep) for rep in range(reps)]
+        p = pool.map_async(self.execute_simulator, args)
+        pbar_async(p, 'simulating:')
+        # p.wait()
+        # Read simulated logs
+        args = [(self.settings, self.bpmn, rep) for rep in range(reps)]
+        p = pool.map_async(self.read_stats, args)
+        pbar_async(p, 'reading simulated logs:')
+        # Evaluate
+        args = [(self.settings, self.process_stats, log) for log in p.get()]
+        if len(pd.DataFrame(self.log_test).caseid.unique()) > 1000:
+            pool.close()
+            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            # Save results
+            self.sim_values = list(itertools.chain(*results))
+        else:
+            p = pool.map_async(self.evaluate_logs, args)
+            pbar_async(p, 'evaluating results:')
+            pool.close()
+            # Save results
+            self.sim_values = list(itertools.chain(*p.get()))
+
+    @staticmethod
+    def read_stats(args):
+        def read(settings, bpmn, rep):
+            """Reads the simulation results stats
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            # message = 'Reading log repetition: ' + str(rep+1)
+            # print(message)
+            m_settings = dict()
+            m_settings['output'] = settings['output']
+            m_settings['file'] = settings['file']
+            column_names = {'resource': 'user'}
+            m_settings['read_options'] = settings['read_options']
+            m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
+            m_settings['read_options']['column_names'] = column_names
+            temp = lr.LogReader(os.path.join(
+                m_settings['output'], 'sim_data',
+                m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),
+                m_settings['read_options'],
+                verbose=False)
+            process_graph = gph.create_process_structure(bpmn, verbose=False)
+            results_replayer = rpl.LogReplayer(process_graph,
+                                               temp.get_traces(),
+                                               settings,
+                                               source='simulation',
+                                               run_num=rep + 1,
+                                               verbose=False,
+                                               mode='seq')
+            temp_stats = results_replayer.process_stats
+            temp_stats['role'] = temp_stats['resource']
+            return temp_stats
+        return read(*args)
+
+    @staticmethod
+    def evaluate_logs(args):
+        def evaluate(settings, process_stats, sim_log):
+            """Reads the simulation results stats
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            # print('Reading repetition:', (rep+1), sep=' ')
+            rep = (sim_log.iloc[0].run_num) - 1
+            sim_values = list()
+            # message = 'Evaluating repetition: ' + str(rep+1)
+            evaluator = sim.SimilarityEvaluator(
+                process_stats,
+                sim_log,
+                settings,
+                max_cases=1000)
+            metrics = [settings['sim_metric']]
+            if 'add_metrics' in settings.keys():
+                metrics = list(set(list(settings['add_metrics']) +
+                                    metrics))
+            for metric in metrics:
+                evaluator.measure_distance(metric)
+                sim_values.append({**{'run_num': rep}, **evaluator.similarity})
+            return sim_values
+        return evaluate(*args)
+
+    @staticmethod
+    def execute_simulator(args):
+        def sim_call(settings, rep):
+            """Executes BIMP Simulations.
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
+            # print(message)
+            args = ['java', '-jar', settings['bimp_path'],
+                    os.path.join(settings['output'],
+                                 settings['file'].split('.')[0]+'.bpmn'),
+                    '-csv',
+                    os.path.join(settings['output'], 'sim_data',
+                                 settings['file']
+                                 .split('.')[0]+'_'+str(rep+1)+'.csv')]
+            subprocess.run(args, check=True, stdout=subprocess.PIPE)
+        sim_call(*args)
 
     def mannage_results(self) -> None:
-        self.response, measurements = self.define_response(self.status,
+        self.response, measurements = self.define_response(self.is_safe,
                                                            self.sim_values,
                                                            self.settings)
         if self.settings['exec_mode'] in ['optimizer'] and measurements:
@@ -223,15 +327,22 @@ class Simod():
                                                self.settings['temp_file']))
 
     @staticmethod
-    def define_response(status, sim_values, settings):
+    def define_response(is_safe, sim_values, settings):
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],
-                'epsilon': settings['epsilon'],
-                'eta': settings['eta'],
                 'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
+        # Miner parms
+        if settings['mining_alg'] == 'sm1':
+            data['epsilon'] = settings['epsilon']
+            data['eta'] = settings['eta']
+        elif settings['mining_alg'] == 'sm2':
+            data['concurrency'] = settings['concurrency']
+        else:
+            raise ValueError(settings['mining_alg'])
+        # Calendar parms
         if settings['res_cal_met'] in ['discovered' ,'pool']:
             data['res_cal_met'] = settings['res_cal_met']
             data['res_support'] = settings['res_support']
@@ -239,48 +350,24 @@ class Simod():
         if settings['arr_cal_met'] == 'discovered':
             data['arr_support'] = settings['arr_support']
             data['arr_confidence'] = settings['arr_confidence']
-        if settings['exec_mode'] == 'optimizer':
-            similarity = 0
+        if is_safe:
+            similarity = np.mean([x['sim_val'] for x in sim_values
+                                  if x['metric'] == settings['sim_metric']])
+            response['similarity'] = similarity
             response['params'] = settings
-            if status == STATUS_OK:
-                similarity = np.mean([x['sim_val'] for x in sim_values
-                                      if x['metric'] == settings['sim_metric']])
-                loss = ((1 - similarity) if not settings['sim_metric'] in ['mae', 'log_mae']
-                        else similarity)
-                response['loss'] = loss
-                response['status'] = status if loss > 0 else STATUS_FAIL
-                for sim_val in sim_values:
-                    measurements.append({
-                        **{'similarity': sim_val['sim_val'],
-                           'sim_metric': sim_val['metric'],
-                           'status': response['status']},
-                        **data})
-            else:
-                response['status'] = status
+            response['status'] = is_safe if similarity > 0 else False
+            response = {**response, **data}
+            for sim_val in sim_values:
                 measurements.append({
-                    **{'similarity': 0, 
-                       'sim_metric': settings['sim_metric'],
+                    **{'similarity': sim_val['sim_val'],
+                       'sim_metric': sim_val['metric'],
                        'status': response['status']},
                     **data})
         else:
-            if status == STATUS_OK:
-                similarity = np.mean([x['sim_val'] for x in sim_values
-                                      if x['metric'] == settings['sim_metric']])
-                response['similarity'] = similarity
-                response['params'] = settings
-                response['status'] = status if similarity > 0 else STATUS_FAIL
-                response = {**response, **data}
-                for sim_val in sim_values:
-                    measurements.append({
-                        **{'similarity': sim_val['sim_val'],
-                           'sim_metric': sim_val['metric'],
-                           'status': response['status']},
-                        **data})
-            else:
-                response['similarity'] = 0
-                response['sim_metric'] = settings['sim_metric']
-                response['status'] = status
-                response = {**response, **data}
+            response['similarity'] = 0
+            response['sim_metric'] = settings['sim_metric']
+            response['status'] = is_safe
+            response = {**response, **data}
         return response, measurements
 
     @staticmethod
@@ -293,22 +380,16 @@ class Simod():
             sup.create_csv_file(times, log_file, mode='a')
         else:
             sup.create_csv_file_header(times, log_file)
-            
-    def export_canonical_model(self):
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
-        time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
-        time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
-        self.parameters['time_table'] = time_table
-        # Users in rol data
-        user_rol = dict()
-        for key, group in self.parameters['rol_user'].groupby('role'):
-            user_rol[key] = list(group.resource)
-        self.parameters['rol_user'] = user_rol
-        # Json creation
-        sup.create_json(self.parameters, os.path.join(
-            self.settings['output'],
-            self.settings['file'].split('.')[0]+'_canon.json'))
-        
+
+    # def export_canonical_model(self):
+    #     ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+    #     time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
+    #     time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
+    #     self.parameters['time_table'] = time_table
+    #     sup.create_json(self.parameters, os.path.join(
+    #         self.settings['output'],
+    #         self.settings['file'].split('.')[0]+'_canon.json'))
+
 
 # =============================================================================
 # Support methods
@@ -321,6 +402,7 @@ class Simod():
         If the testing set is smaller than the 10% of the log size
         the second method is sort by traces start and split taking the whole
         traces no matter if they are contained in the timeframe or not
+
         Parameters
         ----------
         size : float, validation percentage.
@@ -342,7 +424,8 @@ class Simod():
         self.log_train = copy.deepcopy(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True)
                                 .reset_index(drop=True).to_dict('records'))
-        
+
+
     @staticmethod
     def get_traces(data, one_timestamp):
         """
@@ -361,69 +444,68 @@ class Simod():
 # =============================================================================
 # External tools calling
 # =============================================================================
+
+    def mining_structure(self):
+        miner = self._get_miner(self.settings['mining_alg'])
+        miner(self.settings)
+
+    def _get_miner(self, miner):
+        if miner == 'sm1':
+            return self._sm1_miner
+        elif miner == 'sm2':
+            return self._sm2_miner
+        else:
+            raise ValueError(miner)
+
     @staticmethod
-    def mining_structure(settings):
-        """Execute splitminer for bpmn structure mining.
-        Args:
-            settings (dict): Path to jar and file names
-            epsilon (double): Parallelism threshold (epsilon) in [0,1]
-            eta (double): Percentile for frequency threshold (eta) in [0,1]
+    def _sm2_miner(settings):
+        """
+        Executes splitminer for bpmn structure mining.
+
+        Returns
+        -------
+        None
+            DESCRIPTION.
+        """
+        print(" -- Mining Process Structure --")
+        # Event log file_name
+        file_name = settings['file'].split('.')[0]
+        input_route = os.path.join(settings['output'], file_name+'.xes')
+        sep = ';' if pl.system().lower() == 'windows' else ':'
+        # Mining structure definition
+        args = ['java']
+        if not pl.system().lower() == 'windows':
+            args.append('-Xmx2G')
+        args.extend(['-cp',
+                     (settings['sm2_path']+sep+os.path.join(
+                         'external_tools','splitminer2','lib','*')),
+                     'au.edu.unimelb.services.ServiceProvider',
+                     'SM2',
+                     input_route,
+                     os.path.join(settings['output'], file_name),
+                     str(settings['concurrency'])])
+        subprocess.call(args)
+
+    @staticmethod
+    def _sm1_miner(settings) -> None:
+        """
+        Executes splitminer for bpmn structure mining.
+
+        Returns
+        -------
+        None
+            DESCRIPTION.
         """
         print(" -- Mining Process Structure --")
         # Event log file_name
         file_name = settings['file'].split('.')[0]
         input_route = os.path.join(settings['output'], file_name+'.xes')
         # Mining structure definition
-        args = ['java', '-jar', settings['miner_path'],
-                str(settings['epsilon']), str(settings['eta']), input_route,
+        args = ['java', '-jar', settings['sm1_path'],
+                str(settings['epsilon']), str(settings['eta']),
+                input_route,
                 os.path.join(settings['output'], file_name)]
         subprocess.call(args)
-
-    @staticmethod
-    def execute_simulator(settings, rep):
-        """Executes BIMP Simulations.
-        Args:
-            settings (dict): Path to jar and file names
-            rep (int): repetition number
-        """
-        print("-- Executing BIMP Simulations --")
-        args = ['java', '-jar', settings['bimp_path'],
-                os.path.join(settings['output'],
-                             settings['file'].split('.')[0]+'.bpmn'),
-                '-csv',
-                os.path.join(settings['output'], 'sim_data',
-                             settings['file']
-                             .split('.')[0]+'_'+str(rep+1)+'.csv')]
-        subprocess.call(args)
-
-    @staticmethod
-    def read_stats(settings, bpmn, rep):
-        """Reads the simulation results stats
-        Args:
-            settings (dict): Path to jar and file names
-            rep (int): repetition number
-        """
-        m_settings = dict()
-        m_settings['output'] = settings['output']
-        m_settings['file'] = settings['file']
-        column_names = {'resource': 'user'}
-        m_settings['read_options'] = settings['read_options']
-        m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
-        m_settings['read_options']['column_names'] = column_names
-        temp = lr.LogReader(os.path.join(
-            m_settings['output'], 'sim_data',
-            m_settings['file'].split('.')[0] + '_'+str(rep + 1)+'.csv'),
-            m_settings['read_options'])
-        process_graph = gph.create_process_structure(bpmn)
-        results_replayer = rpl.LogReplayer(process_graph,
-                                           temp.get_traces(),
-                                           settings,
-                                           source='simulation',
-                                           run_num=rep + 1)
-        temp_stats = results_replayer.process_stats
-        temp_stats['role'] = temp_stats['resource']
-        return temp_stats
-
 
 # =============================================================================
 # Hyperparameter-optimizer
@@ -435,89 +517,313 @@ class DiscoveryOptimizer():
     Hyperparameter-optimizer class
     """
 
-    def __init__(self, settings, args, can=False):
+    def __init__(self, settings):
         """constructor"""
-        self.space = self.define_search_space(settings, args)
         self.settings = settings
-        self.args = args
-        self.can = can
-        # Trials object to track progress
-        self.bayes_trials = Trials()
+        self.best_params = dict()
+        self.log = types.SimpleNamespace()
+        self.log_train = types.SimpleNamespace()
+        self.log_test = types.SimpleNamespace()
+        if not os.path.exists('outputs'):
+            os.makedirs('outputs')
+
+    def execute_pipeline(self) -> None:
+        exec_times = dict()
+        self.read_inputs(log_time=exec_times)
+        output_file = sup.file_id(prefix='SE_')
+        print('############ Structure optimization ############')
+        # Structure optimization
+        structure_optimizer = so.StructureOptimizer(
+            {**self.settings['gl'], **self.settings['strc']},
+            copy.deepcopy(self.log_train))
+        structure_optimizer.execute_trials()
+        struc_model = structure_optimizer.best_output
+        best_parms = structure_optimizer.best_parms
+        self.settings['gl']['alg_manag'] = (
+            self.settings['strc']['alg_manag'][best_parms['alg_manag']])
+        self.best_params['alg_manag'] = self.settings['gl']['alg_manag']
+        self.settings['gl']['gate_management'] = (
+            self.settings['strc']['gate_management'][best_parms['gate_management']])
+        self.best_params['gate_management'] = self.settings['gl']['gate_management']
+        # best structure mining parameters
+        if self.settings['gl']['mining_alg'] in ['sm1', 'sm3']:
+            self.settings['gl']['epsilon'] = best_parms['epsilon']
+            self.settings['gl']['eta'] = best_parms['eta']
+            self.best_params['epsilon'] = best_parms['epsilon']
+            self.best_params['eta'] = best_parms['eta']
+        elif self.settings['gl']['mining_alg'] == 'sm2':
+            self.settings['gl']['concurrency'] = best_parms['concurrency']
+            self.best_params['concurrency'] = best_parms['concurrency']
+        for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis',
+                    'res_con_dis', 'arr_support', 'arr_confidence',
+                    'res_cal_met', 'arr_cal_met']:
+            self.settings.pop(key, None)
+        # self._test_model(struc_model, output_file)
+        print('############ Times optimization ############')
+        times_optimizer = to.TimesOptimizer(
+            self.settings['gl'],
+            self.settings['tm'],
+            copy.deepcopy(self.log_train),
+            struc_model)
+        times_optimizer.execute_trials()
+        # Discovery parameters
+        if times_optimizer.best_parms['res_cal_met'] == 1:
+            self.best_params['res_dtype'] = (
+                self.settings['tm']['res_dtype']
+                [times_optimizer.best_parms['res_dtype']])
+        else:
+            self.best_params['res_support'] = (
+                times_optimizer.best_parms['res_support'])
+            self.best_params['res_confidence'] = (
+                times_optimizer.best_parms['res_confidence'])
+        if times_optimizer.best_parms['arr_cal_met'] == 1:
+            self.best_params['arr_dtype'] = (
+                self.settings['tm']['res_dtype']
+                [times_optimizer.best_parms['arr_dtype']])
+        else:
+            self.best_params['arr_support'] = (
+                times_optimizer.best_parms['arr_support'])
+            self.best_params['arr_confidence'] = (
+                times_optimizer.best_parms['arr_confidence'])
+
+        print('############ Final comparison ############')
+        self._test_model(times_optimizer.best_output, 
+                         output_file,
+                         structure_optimizer.file_name,
+                         times_optimizer.file_name)
+        self._export_canonical_model(times_optimizer.best_output)
+        shutil.rmtree(structure_optimizer.temp_output)
+        shutil.rmtree(times_optimizer.temp_output)
+        print("-- End of trial --")
+
+    def _test_model(self, best_output, output_file, opt_strf, opt_timf):
+        output_path = os.path.join('outputs', sup.folder_id())
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+            os.makedirs(os.path.join(output_path, 'sim_data'))
+        self.settings['gl'].pop('output', None)
+        self.settings['gl']['output'] = output_path
+        self._modify_simulation_model(
+            os.path.join(best_output,
+                          self.settings['gl']['file'].split('.')[0]+'.bpmn'))
+        self._load_model_and_measures()
+        self._simulate()
+        self.sim_values = pd.DataFrame.from_records(self.sim_values)
+        self.sim_values['output'] = output_path
+        self.sim_values.to_csv(os.path.join(output_path, output_file),
+                               index=False)
+        shutil.move(opt_strf, output_path)
+        shutil.move(opt_timf, output_path)
+        
+    def _export_canonical_model(self, best_output):
+        print(os.path.join(
+            self.settings['gl']['output'], 
+            self.settings['gl']['file'].split('.')[0]+'.bpmn'))
+        canonical_model = serialize_model(os.path.join(
+            self.settings['gl']['output'], 
+            self.settings['gl']['file'].split('.')[0]+'.bpmn'))
+        # Users in rol data
+        resource_table = pd.read_pickle(
+            os.path.join(best_output, 'resource_table.pkl'))
+        user_rol = dict()
+        for key, group in resource_table.groupby('role'):
+            user_rol[key] = list(group.resource)
+        canonical_model['rol_user'] = user_rol
+        # Json creation
+        self.best_params = {k: str(v) for k, v in self.best_params.items()}
+        canonical_model['discovery_parameters'] = self.best_params
+        sup.create_json(canonical_model, os.path.join(
+            self.settings['gl']['output'],
+            self.settings['gl']['file'].split('.')[0]+'_canon.json'))
+        
+    @timeit
+    def read_inputs(self, **kwargs) -> None:
+        # Event log reading
+        self.log = lr.LogReader(os.path.join(self.settings['gl']['input'],
+                                             self.settings['gl']['file']),
+                                self.settings['gl']['read_options'])
+        # Time splitting 80-20
+        self.split_timeline(0.8,
+                            self.settings['gl']['read_options']['one_timestamp'])
+
+    def split_timeline(self, size: float, one_ts: bool) -> None:
+        """
+        Split an event log dataframe by time to peform split-validation.
+        prefered method time splitting removing incomplete traces.
+        If the testing set is smaller than the 10% of the log size
+        the second method is sort by traces start and split taking the whole
+        traces no matter if they are contained in the timeframe or not
+
+        Parameters
+        ----------
+        size : float, validation percentage.
+        one_ts : bool, Support only one timestamp.
+        """
+        # Split log data
+        splitter = ls.LogSplitter(self.log.data)
+        train, test = splitter.split_log('timeline_contained', size, one_ts)
+        total_events = len(self.log.data)
+        # Check size and change time splitting method if necesary
+        if len(test) < int(total_events*0.1):
+            train, test = splitter.split_log('timeline_trace', size, one_ts)
+        # Set splits
+        key = 'end_timestamp' if one_ts else 'start_timestamp'
+        test = pd.DataFrame(test)
+        train = pd.DataFrame(train)
+        self.log_test = (test.sort_values(key, ascending=True)
+                         .reset_index(drop=True))
+        self.log_train = copy.deepcopy(self.log)
+        self.log_train.set_data(train.sort_values(key, ascending=True)
+                                .reset_index(drop=True).to_dict('records'))
+
+    def _modify_simulation_model(self, model):
+        """Modifies the number of instances of the BIMP simulation model
+        to be equal to the number of instances in the testing log"""
+        num_inst = len(self.log_test.caseid.unique())
+        # Get minimum date
+        start_time = (self.log_test
+                      .start_timestamp
+                      .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+        mydoc = minidom.parse(model)
+        items = mydoc.getElementsByTagName('qbp:processSimulationInfo')
+        items[0].attributes['processInstances'].value = str(num_inst)
+        items[0].attributes['startDateTime'].value = start_time
+        new_model_path = os.path.join(self.settings['gl']['output'],
+                                      os.path.split(model)[1])
+        with open(new_model_path, 'wb') as f:
+            f.write(mydoc.toxml().encode('utf-8'))
+        f.close()
+        return new_model_path
+
+    def _load_model_and_measures(self):
+        self.process_stats = self.log_test
+        self.process_stats['source'] = 'log'
+        self.process_stats['run_num'] = 0
+
+    def _simulate(self, **kwargs) -> None:
+
+        def pbar_async(p, msg):
+            pbar = tqdm(total=reps, desc=msg)
+            processed = 0
+            while not p.ready():
+                cprocesed = (reps - p._number_left)
+                if processed < cprocesed:
+                    increment = cprocesed - processed
+                    pbar.update(n=increment)
+                    processed = cprocesed
+            time.sleep(1)
+            pbar.update(n=(reps - processed))
+            p.wait()
+            pbar.close()
+        reps = self.settings['gl']['repetitions']
+        cpu_count = multiprocessing.cpu_count()
+        w_count =  reps if reps <= cpu_count else cpu_count
+        pool = Pool(processes=w_count)
+        # Simulate
+        args = [(self.settings['gl'], rep) for rep in range(reps)]
+        p = pool.map_async(self.execute_simulator, args)
+        pbar_async(p, 'simulating:')
+        # Read simulated logs
+        args = [(self.settings['gl'], rep) for rep in range(reps)]
+        p = pool.map_async(self.read_stats, args)
+        pbar_async(p, 'reading simulated logs:')
+        # Evaluate
+        args = [(self.settings['gl'], self.process_stats, log) for log in p.get()]
+        if len(self.log_test.caseid.unique()) > 1000:
+            pool.close()
+            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+            # Save results
+            self.sim_values = list(itertools.chain(*results))
+        else:
+            p = pool.map_async(self.evaluate_logs, args)
+            pbar_async(p, 'evaluating results:')
+            pool.close()
+            # Save results
+            self.sim_values = list(itertools.chain(*p.get()))
 
     @staticmethod
-    def define_search_space(settings, args):
-        space = {**{'epsilon': hp.uniform('epsilon',
-                                          args['epsilon'][0],
-                                          args['epsilon'][1]),
-                    'eta': hp.uniform('eta',
-                                      args['eta'][0],
-                                      args['eta'][1]),
-                    'alg_manag': hp.choice('alg_manag',
-                                           args['alg_manag']),
-                    'rp_similarity': hp.uniform('rp_similarity',
-                                                args['rp_similarity'][0],
-                                                args['rp_similarity'][1]),
-                    'gate_management': hp.choice('gate_management',
-                                                 args['gate_management']),
-                    'res_cal_met': hp.choice('res_cal_met',
-                        [('discovered',{
-                            'res_support': hp.uniform('res_support', 
-                                                      args['res_sup_dis'][0], 
-                                                      args['res_sup_dis'][1]),
-                            'res_confidence': hp.uniform('res_confidence',
-                                                         args['res_con_dis'][0],
-                                                         args['res_con_dis'][1])}),
-                          ('default', {
-                              'res_dtype': hp.choice('res_dtype',
-                                                     args['res_dtype'])})
-                         ]),
-                    'arr_cal_met': hp.choice('arr_cal_met',
-                        [
-                            ('discovered',{
-                            'arr_support': hp.uniform('arr_support', 
-                                                      args['arr_support'][0], 
-                                                      args['arr_support'][1]),
-                            'arr_confidence': hp.uniform('arr_confidence',
-                                                         args['arr_confidence'][0],
-                                                         args['arr_confidence'][1])}),
-                          ('default', {
-                              'arr_dtype': hp.choice('arr_dtype',
-                                                     args['arr_dtype'])})
-                         ])
-                    },
-                 **settings}
-        return space
+    def read_stats(args):
+        def read(settings, rep):
+            """Reads the simulation results stats
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            # message = 'Reading log repetition: ' + str(rep+1)
+            # print(message)
+            path = os.path.join(settings['output'], 'sim_data')
+            log_name = settings['file'].split('.')[0]+'_'+str(rep+1)+'.csv'
+            rep_results = pd.read_csv(os.path.join(path, log_name),
+                                      dtype={'caseid': object})
+            rep_results['caseid'] = 'Case' + rep_results['caseid']
+            rep_results['run_num'] = rep
+            rep_results['source'] = 'simulation'
+            rep_results.rename(columns={'resource': 'user'}, inplace=True)
+            rep_results['start_timestamp'] =  pd.to_datetime(
+                rep_results['start_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            rep_results['end_timestamp'] =  pd.to_datetime(
+                rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            return rep_results
+        return read(*args)
 
-    def execute_trials(self):
-        # create a new instance of Simod
-        def exec_simod(instance_settings):
-            # resources discovery
-            method, values = instance_settings['res_cal_met']
-            if method in 'discovered':
-                instance_settings['res_confidence'] = values['res_confidence']
-                instance_settings['res_support'] = values['res_support']
-            else:
-                instance_settings['res_dtype'] = values['res_dtype']
-            instance_settings['res_cal_met'] = method
-            # arrivals calendar
-            method, values = instance_settings['arr_cal_met']
-            if method in 'discovered':
-                instance_settings['arr_confidence'] = values['arr_confidence']
-                instance_settings['arr_support'] = values['arr_support']
-            else:
-                instance_settings['arr_dtype'] = values['arr_dtype']
-            instance_settings['arr_cal_met'] = method
-            simod = Simod(instance_settings)
-            simod.execute_pipeline(self.settings['exec_mode'], can=self.can)
-            return simod.response
-        # Optimize
-        
-        best = fmin(fn=exec_simod,
-                    space=self.space,
-                    algo=tpe.suggest,
-                    max_evals=self.args['max_eval'],
-                    trials=self.bayes_trials,
-                    show_progressbar=False)
-        print('------ Final results ------')
-        [print(k, v) for k, v in best.items()]
+    @staticmethod
+    def evaluate_logs(args):
+        def evaluate(settings, process_stats, sim_log):
+            """Reads the simulation results stats
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            # print('Reading repetition:', (rep+1), sep=' ')
+            rep = (sim_log.iloc[0].run_num)
+            sim_values = list()
+            evaluator = sim.SimilarityEvaluator(
+                process_stats,
+                sim_log,
+                settings,
+                max_cases=1000)
+            metrics = [settings['sim_metric']]
+            if 'add_metrics' in settings.keys():
+                metrics = list(set(list(settings['add_metrics']) +
+                                    metrics))
+            for metric in metrics:
+                evaluator.measure_distance(metric)
+                sim_values.append({**{'run_num': rep}, **evaluator.similarity})
+            return sim_values
+        return evaluate(*args)
 
+    @staticmethod
+    def execute_simulator(args):
+        def sim_call(settings, rep):
+            """Executes BIMP Simulations.
+            Args:
+                settings (dict): Path to jar and file names
+                rep (int): repetition number
+            """
+            # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
+            # print(message)
+            args = ['java', '-jar', settings['bimp_path'],
+                    os.path.join(settings['output'],
+                                  settings['file'].split('.')[0]+'.bpmn'),
+                    '-csv',
+                    os.path.join(settings['output'], 'sim_data',
+                                  settings['file']
+                                  .split('.')[0]+'_'+str(rep+1)+'.csv')]
+            subprocess.run(args, check=True, stdout=subprocess.PIPE)
+        sim_call(*args)
+
+
+    @staticmethod
+    def get_traces(data, one_timestamp):
+        """
+        returns the data splitted by caseid and ordered by start_timestamp
+        """
+        cases = list(set([x['caseid'] for x in data]))
+        traces = list()
+        for case in cases:
+            order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
+            trace = sorted(
+                list(filter(lambda x: (x['caseid'] == case), data)),
+                key=itemgetter(order_key))
+            traces.append(trace)
+        return traces
