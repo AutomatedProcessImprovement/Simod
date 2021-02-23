@@ -524,6 +524,8 @@ class DiscoveryOptimizer():
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
+        if not os.path.exists('outputs'):
+            os.makedirs('outputs')
 
     def execute_pipeline(self) -> None:
         exec_times = dict()
