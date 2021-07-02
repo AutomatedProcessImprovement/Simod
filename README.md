@@ -2,23 +2,31 @@
 
 Simod combines several process mining techniques to automate the generation and validation of BPS models.  The only input required by the Simod method is an event log in XES, or CSV format. These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
-### Prerequisites
+## Getting Started
 
-To execute this code, you need to install Git and Anaconda in your system. Once installed, you can create an environment using the *simo.yml* specification provided in the repository.
+Python environment can be set up using *Anaconda* from `simod.yml` or using the built-in *venv* module from `requirements.txt`.
 
+We start with the optimizer:
 
-### Data format
+```shell
+$ python simod_optimizer.py
+```
+
+which finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
+
+From this file we need to provide `discovery_parameters` for the console tool by modifying `settings` in `main()` from `simod_console.py`. Then run the console: 
+
+```shell
+$ python simod_console.py
+```
+
+## Data format
  
 The tool assumes the input is composed of a case identifier, an activity label, a resource attribute (indicating which resource performed the activity), 
 and two timestamps: the start timestamp and the end timestamp. The resource attribute is required to discover the available resource pools, timetables, 
 and the mapping between activities and resource pools, which are a required element in a BPS model. We require both start and end timestamps for each activity instance to compute the processing time of activities, which is also a required element in a simulation model.
 
-### Configuration
-
-You can execute the tool from the file simod_ui.py with a python console or IDE.
-
-
-### Execution steps
+## Execution steps
 
 ***Event-log loading:*** Under the General tab, the event log must be selected; if the user requires a new event log, it can be loaded in the folder inputs. Remember, the event log must be in XES or CSV format and contain start and complete timestamps. Then It is necessary to define the execution mode between single and optimizer execution.
 
@@ -38,7 +46,6 @@ You can execute the tool from the file simod_ui.py with a python console or IDE.
  - *Number of simulations runs:* Refers to the number of simulations performed by the BIMP simulator, once the model is created. The goal of defining this value is to improve the accuracy of the assessment. Between 1 and 50.
 
 Once all the parameters are settled, It is time to start the execution and wait for the results.
-
 
 ## Authors
 
