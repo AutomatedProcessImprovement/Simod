@@ -9,7 +9,7 @@ Python environment can be set up using *Anaconda* from `simod.yml` or using the 
 We start with the optimizer:
 
 ```shell
-$ python simod_optimizer.py
+$ python src/optimizer.py
 ```
 
 which finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
@@ -17,7 +17,7 @@ which finds optimal parameters for a model and saves them in `outputs/<id>/Purch
 From this file we need to provide `discovery_parameters` for the console tool by modifying `settings` in `main()` from `simod_console.py`. Then run the console: 
 
 ```shell
-$ python simod_console.py
+$ python src/discoverer.py
 ```
 
 ## Data format
