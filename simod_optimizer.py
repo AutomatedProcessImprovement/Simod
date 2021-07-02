@@ -55,7 +55,7 @@ def main(argv):
     settings['tm']['res_sup_dis'] = [0.01, 0.3]  # [0..1]
     settings['tm']['res_con_dis'] = [50, 85]  # [50..85]
     settings['tm']['arr_support'] = [0.01, 0.1]  # [0..1]
-    settings['tm']['arr_confidence'] = [1, 20]  # [50..85]
+    settings['tm']['arr_confidence'] = [1, 10]  # [50..85]
     optimizer = sim.DiscoveryOptimizer(settings)
     optimizer.execute_pipeline()
 

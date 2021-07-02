@@ -39,10 +39,10 @@ def main(argv):
     settings['sim_metric'] = 'tsd'
     settings['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
     settings['concurrency'] = 0.0
-    settings['epsilon'] = 0.5
-    settings['eta'] = 0.7
+    settings['epsilon'] = 0.27747592754346484
+    settings['eta'] = 0.3475132024591636
     # 'replacement', 'repair', 'removal'
-    settings['alg_manag'] = 'replacement'
+    settings['alg_manag'] = 'repair'
     # 'discovery', 'equiprobable'
     settings['gate_management'] = 'discovery'
     settings['rp_similarity'] = 0.8
@@ -54,10 +54,10 @@ def main(argv):
     settings['arr_dtype'] = '247'
     # 'manual', 'automatic', 'semi-automatic'
     settings['pdef_method'] = 'automatic'
-    settings['res_support'] = 0.05  # [0..1]
-    settings['res_confidence'] = 70    # [50..85]
-    settings['arr_support'] = 0.05   # [0..1]
-    settings['arr_confidence'] = 10 # [50..85]
+    settings['res_support'] = 0.07334543198001255  # [0..1]
+    settings['res_confidence'] = 56.03564752634776    # [50..85]
+    settings['arr_support'] = 0.098   # [0..1]
+    settings['arr_confidence'] = 9.2 # [50..85]
     optimizer = sim.Simod(settings)
     optimizer.execute_pipeline()
 
