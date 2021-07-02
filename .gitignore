@@ -5,3 +5,5 @@ logs_meta
 callcentre.*
 insurance.*
 poc_processmining.*
+venv
+.idea
