@@ -6,19 +6,23 @@ Simod combines several process mining techniques to automate the generation and 
 
 Python environment can be set up using *Anaconda* from `simod.yml` or using the built-in *venv* module from `requirements.txt`.
 
-We start with the optimizer:
+To install the CLI-tool:
 
 ```shell
-$ python src/optimizer.py
+$ pip install -e .
 ```
 
-which finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
-
-From this file we need to provide `discovery_parameters` for the console tool by modifying `settings` in `main()` from `simod_console.py`. Then run the console: 
+Invoke the tool:
 
 ```shell
-$ python src/discoverer.py
+$ simod
+$ simod optimize
+$ simod discover
 ```
+
+The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
+
+From this file we need to provide `discovery_parameters` for the discoverer tool by modifying `settings` in `main()` from `simod_console.py`. Then run the console:
 
 ## Data format
  

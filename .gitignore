@@ -7,3 +7,4 @@ insurance.*
 poc_processmining.*
 venv
 .idea
+*.egg-info
