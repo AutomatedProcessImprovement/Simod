@@ -3,11 +3,12 @@ import os
 import click
 import utils.support as sup
 from simod.discoverer import Discoverer
+from simod.discovery_optimizer import DiscoveryOptimizer
 
 
 @click.group()
 def main():
-    click.echo("main tool")
+    pass
 
 
 @main.command()
@@ -39,50 +40,115 @@ def main():
 def discover(ctx, logfile, mining_alg, alg_manag, arr_confidence, arr_support, arr_dtype, epsilon,
              eta, gate_management, res_confidence, res_support, res_cal_met, res_dtype,
              rp_similarity, pdef_method):
+    def define_general_settings(settings: dict = None) -> dict:
+        """ Sets the app general settings"""
+        if not settings:
+            settings = dict()
+        column_names = {'Case ID': 'caseid', 'Activity': 'task',
+                        'lifecycle:transition': 'event_type', 'Resource': 'user'}
+        # Event-log reading options
+        settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
+                                    'column_names': column_names,
+                                    'one_timestamp': False,
+                                    'filter_d_attrib': True}
+        # Folders structure
+        settings['output'] = os.path.join('outputs', sup.folder_id())
+        # External tools routes
+        settings['sm2_path'] = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
+        settings['sm1_path'] = os.path.join('external_tools', 'splitminer', 'splitminer.jar')
+        settings['sm3_path'] = os.path.join('external_tools', 'splitminer3', 'bpmtk.jar')
+        settings['bimp_path'] = os.path.join('external_tools', 'bimp', 'qbp-simulator-engine.jar')
+        settings['align_path'] = os.path.join('external_tools', 'proconformance',
+                                              'ProConformance2.jar')
+        settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
+        settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
+        settings['calender_path'] = os.path.join('external_tools', 'calenderimp', 'CalenderImp.jar')
+        settings['simulator'] = 'bimp'
+        settings['mining_alg'] = 'sm3'
+        return settings
+
     settings = define_general_settings()
+    settings['input'] = os.path.dirname(logfile)
+    settings['file'] = os.path.basename(logfile)
     settings['repetitions'] = 1
     settings['simulation'] = True
     settings['sim_metric'] = 'tsd'
     settings['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
     settings['concurrency'] = 0.0
     settings['arr_cal_met'] = 'discovered'
-    settings['input'] = os.path.dirname(logfile)
-    settings['file'] = os.path.basename(logfile)
     settings.update(ctx.params)
     optimizer = Discoverer(settings)
     optimizer.execute_pipeline()
 
 
-def define_general_settings(settings: dict = None) -> dict:
-    """ Sets the app general settings"""
-    if not settings:
-        settings = dict()
-    column_names = {'Case ID': 'caseid', 'Activity': 'task',
-                    'lifecycle:transition': 'event_type', 'Resource': 'user'}
-    # Event-log reading options
-    settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
-                                'column_names': column_names,
-                                'one_timestamp': False,
-                                'filter_d_attrib': True}
-    # Folders structure
-    settings['output'] = os.path.join('outputs', sup.folder_id())
-    # External tools routes
-    settings['sm2_path'] = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
-    settings['sm1_path'] = os.path.join('external_tools', 'splitminer', 'splitminer.jar')
-    settings['sm3_path'] = os.path.join('external_tools', 'splitminer3', 'bpmtk.jar')
-    settings['bimp_path'] = os.path.join('external_tools', 'bimp', 'qbp-simulator-engine.jar')
-    settings['align_path'] = os.path.join('external_tools', 'proconformance', 'ProConformance2.jar')
-    settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
-    settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
-    settings['calender_path'] = os.path.join('external_tools', 'calenderimp', 'CalenderImp.jar')
-    settings['simulator'] = 'bimp'
-    settings['mining_alg'] = 'sm3'
-    return settings
-
-
 @main.command()
-def optimize():
-    click.echo("hi optimizer")
+@click.option('-l', '--logfile', required=True, default='inputs/PurchasingExample.xes',
+              show_default=True)
+@click.option('--mining_alg', default='sm3', show_default=True,
+              type=click.Choice(['sm1', 'sm2', 'sm3'], case_sensitive=False))
+@click.pass_context
+def optimize(ctx, logfile, mining_alg):
+    def define_general_settings(settings: dict = None) -> dict:
+        """ Sets the app general settings"""
+        if not settings:
+            settings = dict()
+        settings['gl'] = dict()
+        column_names = {'Case ID': 'caseid', 'Activity': 'task',
+                        'lifecycle:transition': 'event_type', 'Resource': 'user'}
+        # Event-log reading options
+        settings['gl']['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
+                                          'column_names': column_names,
+                                          'one_timestamp': False,
+                                          'filter_d_attrib': True}
+        # Folders structure
+        settings['gl']['input'] = 'inputs'
+        settings['gl']['output'] = os.path.join('outputs', sup.folder_id())
+        # External tools routes
+        settings['gl']['sm2_path'] = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
+        settings['gl']['sm1_path'] = os.path.join('external_tools', 'splitminer',
+                                                  'splitminer.jar')
+        settings['gl']['sm3_path'] = os.path.join('external_tools', 'splitminer3', 'bpmtk.jar')
+        settings['gl']['bimp_path'] = os.path.join('external_tools', 'bimp',
+                                                   'qbp-simulator-engine.jar')
+        settings['gl']['align_path'] = os.path.join('external_tools', 'proconformance',
+                                                    'ProConformance2.jar')
+        settings['gl']['aligninfo'] = os.path.join(settings['gl']['output'],
+                                                   'CaseTypeAlignmentResults.csv')
+        settings['gl']['aligntype'] = os.path.join(settings['gl']['output'],
+                                                   'AlignmentStatistics.csv')
+        settings['gl']['calender_path'] = os.path.join('external_tools', 'calenderimp',
+                                                       'CalenderImp.jar')
+        settings['gl']['simulator'] = 'bimp'
+        return settings
+
+    settings = define_general_settings()
+    settings['input'] = os.path.dirname(logfile)
+    settings['gl']['file'] = os.path.basename(logfile)
+    settings['gl']['mining_alg'] = mining_alg
+    settings['gl']['exec_mode'] = 'optimizer'  # 'single', 'optimizer'
+    settings['gl']['repetitions'] = 5
+    settings['gl']['simulation'] = True
+    settings['gl']['sim_metric'] = 'tsd'
+    settings['gl']['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
+    settings['strc'] = dict()
+    settings['strc']['max_eval_s'] = 15
+    settings['strc']['concurrency'] = [0.0, 1.0]
+    settings['strc']['epsilon'] = [0.0, 1.0]
+    settings['strc']['eta'] = [0.0, 1.0]
+    settings['strc']['alg_manag'] = ['replacement', 'repair', 'removal']
+    settings['strc']['gate_management'] = ['discovery', 'equiprobable']
+    settings['tm'] = dict()
+    settings['tm']['max_eval_t'] = 20
+    settings['tm']['rp_similarity'] = [0.5, 0.9]
+    settings['tm']['res_dtype'] = ['LV917', '247']
+    settings['tm']['arr_dtype'] = ['LV917', '247']
+    settings['tm']['res_sup_dis'] = [0.01, 0.3]  # [0..1]
+    settings['tm']['res_con_dis'] = [50, 85]  # [50..85]
+    settings['tm']['arr_support'] = [0.01, 0.1]  # [0..1]
+    settings['tm']['arr_confidence'] = [1, 10]  # [50..85]
+    settings.update(ctx.params)
+    optimizer = DiscoveryOptimizer(settings)
+    optimizer.execute_pipeline()
 
 
 if __name__ == "__main__":

@@ -35,8 +35,8 @@ class DiscoveryOptimizer:
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
-        if not os.path.exists(settings['output']):
-            os.makedirs(settings['output'])
+        if not os.path.exists('outputs'):
+            os.makedirs('outputs')
 
     def execute_pipeline(self) -> None:
         exec_times = dict()
@@ -106,10 +106,10 @@ class DiscoveryOptimizer:
         shutil.rmtree(structure_optimizer.temp_output)
         shutil.rmtree(times_optimizer.temp_output)
         print("-- End of trial --")
-        print(f"Output folder is at {self.settings['output']}")
+        print(f"Output folder is at {self.settings['gl']['output']}")
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
-        output_path = os.path.join(self.settings['output'], sup.folder_id())
+        output_path = os.path.join('outputs', sup.folder_id())
         if not os.path.exists(output_path):
             os.makedirs(output_path)
             os.makedirs(os.path.join(output_path, 'sim_data'))
@@ -128,7 +128,7 @@ class DiscoveryOptimizer:
         shutil.move(opt_timf, output_path)
 
     def _export_canonical_model(self, best_output):
-        print(os.path.join(
+        print("Model file location:", os.path.join(
             self.settings['gl']['output'],
             self.settings['gl']['file'].split('.')[0] + '.bpmn'))
         canonical_model = serialize_model(os.path.join(

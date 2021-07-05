@@ -94,8 +94,7 @@ class Discoverer:
     @Decorators.safe_exec
     def read_inputs(self, **kwargs) -> None:
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings['input'],
-                                             self.settings['file']),
+        self.log = lr.LogReader(os.path.join(self.settings['logfile']),
                                 self.settings['read_options'])
         # Time splitting 80-20
         self.split_timeline(0.8,
@@ -308,7 +307,7 @@ class Discoverer:
     @staticmethod
     def save_times(times, settings):
         times = [{**{'output': settings['output']}, **times}]
-        log_file = os.path.join(settings['output'], 'execution_times.csv')
+        log_file = os.path.join('outputs', 'execution_times.csv')
         if not os.path.exists(log_file):
             open(log_file, 'w').close()
         if os.path.getsize(log_file) > 0:
