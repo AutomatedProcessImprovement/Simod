@@ -298,7 +298,6 @@ class StructureOptimizer():
             """
             m_settings = dict()
             m_settings['output'] = settings['output']
-            m_settings['file'] = settings['file']
             column_names = {'resource': 'user'}
             m_settings['read_options'] = settings['read_options']
             m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
