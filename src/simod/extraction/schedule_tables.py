@@ -69,7 +69,7 @@ class TimeTablesCreator():
         pbar.update(1)
         xmlarr = self._timetable_discoverer(
             self.settings['calender_path'],
-            os.path.join(self.settings['input'], self.settings['file']),
+            self.settings['log_path'],
             str(self.settings['arr_support']),
             str(self.settings['arr_confidence']), 2)
         pbar.update(1)
@@ -90,7 +90,7 @@ class TimeTablesCreator():
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
             self.settings['calender_path'],
-            os.path.join(self.settings['input'], self.settings['file']),
+            self.settings['log_path'],
             str(self.settings['res_support']),
             str(self.settings['res_confidence']), 1)
         pbar.update(1)
@@ -113,13 +113,13 @@ class TimeTablesCreator():
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
             self.settings['calender_path'],
-            os.path.join(self.settings['input'], self.settings['file']),
+            self.settings['log_path'],
             str(self.settings['res_support']),
             str(self.settings['res_confidence']), 1)
         pbar.update(1)
         xmlarr = self._timetable_discoverer(
             self.settings['calender_path'],
-            os.path.join(self.settings['input'], self.settings['file']),
+            self.settings['log_path'],
             str(self.settings['arr_support']),
             str(self.settings['arr_confidence']), 2)
         pbar.update(1)
@@ -150,7 +150,7 @@ class TimeTablesCreator():
             group[['resource']].to_csv(temp_filename, index=False)
             xmlres = self._timetable_discoverer(
                 self.settings['calender_path'],
-                os.path.join(self.settings['input'], self.settings['file']),
+                self.settings['log_path'],
                 str(self.settings['res_support']),
                 str(self.settings['res_confidence']), 3, temp_filename)
             restimetable = xmlres.find('qbp:timetable', namespaces=ns)
@@ -171,7 +171,7 @@ class TimeTablesCreator():
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         xmlarr = self._timetable_discoverer(
             self.settings['calender_path'],
-            os.path.join(self.settings['input'], self.settings['file']),
+            self.settings['log_path'],
             str(self.settings['arr_support']),
             str(self.settings['arr_confidence']), 2)
         pbar.update(1)
@@ -183,7 +183,7 @@ class TimeTablesCreator():
             group[['resource']].to_csv(temp_filename, index=False)
             xmlres = self._timetable_discoverer(
                 self.settings['calender_path'],
-                os.path.join(self.settings['input'], self.settings['file']),
+                self.settings['log_path'],
                 str(self.settings['res_support']),
                 str(self.settings['res_confidence']), 3, temp_filename)
             restimetable = xmlres.find('qbp:timetable', namespaces=ns)

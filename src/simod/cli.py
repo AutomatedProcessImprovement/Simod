@@ -70,7 +70,6 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
         click.echo("Model is missing. It will be dynamically discovered from the log file.")
 
     settings = define_general_settings()
-    settings['input'] = os.path.dirname(log_path)
     settings['file'] = os.path.basename(log_path)
     settings['repetitions'] = 1
     settings['simulation'] = True
