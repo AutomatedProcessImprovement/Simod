@@ -53,7 +53,7 @@ class StructureMiner():
         """
         print(" -- Mining Process Structure --")
         # Event log file_name
-        file_name = settings['file'].split('.')[0]
+        file_name = settings['project_name']
         input_route = os.path.join(settings['output'], file_name + '.xes')
         sep = ';' if pl.system().lower() == 'windows' else ':'
         # Mining structure definition
@@ -82,7 +82,7 @@ class StructureMiner():
         """
         print(" -- Mining Process Structure --")
         # Event log file_name
-        file_name = settings['file'].split('.')[0]
+        file_name = settings['project_name']
         input_route = os.path.join(settings['output'], file_name + '.xes')
         # Mining structure definition
         args = ['java', '-jar', settings['sm1_path'],
@@ -103,7 +103,7 @@ class StructureMiner():
         """
         print(" -- Mining Process Structure --")
         # Event log file_name
-        file_name = settings['file'].split('.')[0]
+        file_name = settings['project_name']
         input_route = os.path.join(settings['output'], file_name + '.xes')
         sep = ';' if pl.system().lower() == 'windows' else ':'
         # Mining structure definition
@@ -133,6 +133,6 @@ class StructureMiner():
         """
         self.bpmn = br.BpmnReader(os.path.join(
             self.settings['output'],
-            self.settings['file'].split('.')[0] + '.bpmn'))
+            self.settings['project_name'] + '.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
         evaluate_alignment(self.process_graph, self.log, self.settings)

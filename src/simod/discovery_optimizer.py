@@ -265,7 +265,7 @@ class DiscoveryOptimizer:
             # message = 'Reading log repetition: ' + str(rep+1)
             # print(message)
             path = os.path.join(settings['output'], 'sim_data')
-            log_name = settings['file'].split('.')[0] + '_' + str(rep + 1) + '.csv'
+            log_name = settings['project_name'] + '_' + str(rep + 1) + '.csv'
             rep_results = pd.read_csv(os.path.join(path, log_name),
                                       dtype={'caseid': object})
             rep_results['caseid'] = 'Case' + rep_results['caseid']
@@ -319,11 +319,10 @@ class DiscoveryOptimizer:
             # print(message)
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
-                                 settings['file'].split('.')[0] + '.bpmn'),
+                                 settings['project_name'] + '.bpmn'),
                     '-csv',
                     os.path.join(settings['output'], 'sim_data',
-                                 settings['file']
-                                 .split('.')[0] + '_' + str(rep + 1) + '.csv')]
+                                 settings['project_name'] + '_' + str(rep + 1) + '.csv')]
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
         sim_call(*args)

@@ -5,6 +5,7 @@ import utils.support as sup
 from simod.discoverer import Discoverer
 from simod.discovery_optimizer import DiscoveryOptimizer
 
+
 @click.group()
 def main():
     pass
@@ -36,9 +37,9 @@ def main():
 @click.option('--pdef_method', default='automatic', show_default=True,
               type=click.Choice(['manual', 'automatic', 'semi-automatic'], case_sensitive=False))
 @click.pass_context
-def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, arr_support, arr_dtype,
-             epsilon, eta, gate_management, res_confidence, res_support, res_cal_met, res_dtype,
-             rp_similarity, pdef_method):
+def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, arr_support,
+             arr_dtype, epsilon, eta, gate_management, res_confidence, res_support, res_cal_met,
+             res_dtype, rp_similarity, pdef_method):
     def define_general_settings(settings: dict = None) -> dict:
         """ Sets the app general settings"""
         if not settings:
@@ -71,6 +72,7 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
 
     settings = define_general_settings()
     settings['file'] = os.path.basename(log_path)
+    settings['project_name'], _ = os.path.splitext(settings['file'])
     settings['repetitions'] = 1
     settings['simulation'] = True
     settings['sim_metric'] = 'tsd'

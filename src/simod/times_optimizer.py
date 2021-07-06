@@ -220,7 +220,7 @@ class TimesOptimizer():
             self._xml_print(p_extractor.parameters,
                             os.path.join(
                                 settings['output'],
-                                settings['file'].split('.')[0] + '.bpmn'))
+                                settings['project_name'] + '.bpmn'))
 
             self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
             self.log_valdn['source'] = 'log'
@@ -350,7 +350,7 @@ class TimesOptimizer():
             m_settings['read_options']['column_names'] = column_names
             temp = lr.LogReader(os.path.join(
                 m_settings['output'], 'sim_data',
-                m_settings['file'].split('.')[0] + '_' + str(rep + 1) + '.csv'),
+                m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
                 m_settings['read_options'],
                 verbose=False)
             temp = pd.DataFrame(temp.data)
@@ -395,11 +395,10 @@ class TimesOptimizer():
             """
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
-                                 settings['file'].split('.')[0] + '.bpmn'),
+                                 settings['project_name'] + '.bpmn'),
                     '-csv',
                     os.path.join(settings['output'], 'sim_data',
-                                 settings['file']
-                                 .split('.')[0] + '_' + str(rep + 1) + '.csv')]
+                                 settings['project_name'] + '_' + str(rep + 1) + '.csv')]
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
         sim_call(*args)
@@ -494,7 +493,7 @@ class TimesOptimizer():
 
     def _load_sim_model(self, struc_model) -> None:
         bpmn_file = os.path.join(struc_model,
-                                 self.settings['file'].split('.')[0] + '.bpmn')
+                                 self.settings['project_name'] + '.bpmn')
         tree = ET.parse(bpmn_file)
         root = tree.getroot()
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}

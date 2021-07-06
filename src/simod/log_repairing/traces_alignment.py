@@ -213,7 +213,7 @@ class TracesAligner(object):
 
         """
         print(" -- Evaluating event log alignment --")
-        file_name = settings['file'].split('.')[0]
+        file_name = settings['project_name']
         args = ['java']
         if not pl.system().lower() == 'windows':
             args.append('-Xmx2G')
@@ -221,7 +221,7 @@ class TracesAligner(object):
         args.extend(['-jar', settings['align_path'],
                      settings['output'] + os.sep,
                      file_name + '.xes',
-                     settings['file'].split('.')[0] + '.bpmn',
+                     settings['project_name'] + '.bpmn',
                      'true'])
         subprocess.call(args, bufsize=-1)
 

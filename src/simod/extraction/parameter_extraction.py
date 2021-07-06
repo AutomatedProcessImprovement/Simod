@@ -97,7 +97,7 @@ class ParameterMiner():
         self.parameters['time_table'] = ttcreator.time_table
         # Adding role to process stats
         resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
-        # resource_table.to_csv('pools_'+self.settings['file'].split('.')[0]+'.csv')
+        # resource_table.to_csv('pools_'+self.settings['project_name']+'.csv')
         self.process_stats = self.process_stats.merge(resource_table,
                                                       on='resource',
                                                       how='left')

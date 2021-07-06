@@ -17,7 +17,7 @@ class XesWriter(object):
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.column_names = settings['read_options']['column_names']
         self.output_file = os.path.join(settings['output'],
-                                        settings['file'].split('.')[0] + '.xes')
+                                        settings['project_name'] + '.xes')
         self.create_xes_file()
 
     def create_xes_file(self):

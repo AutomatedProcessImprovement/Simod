@@ -229,9 +229,9 @@ class StructureOptimizer():
             # print parameters in xml bimp format
             xml.print_parameters(os.path.join(
                 settings['output'],
-                settings['file'].split('.')[0] + '.bpmn'),
+                settings['project_name'] + '.bpmn'),
                 os.path.join(settings['output'],
-                             settings['file'].split('.')[0] + '.bpmn'),
+                             settings['project_name'] + '.bpmn'),
                 parameters)
 
             self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
@@ -305,7 +305,7 @@ class StructureOptimizer():
             m_settings['read_options']['column_names'] = column_names
             temp = lr.LogReader(os.path.join(
                 m_settings['output'], 'sim_data',
-                m_settings['file'].split('.')[0] + '_' + str(rep + 1) + '.csv'),
+                m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
                 m_settings['read_options'],
                 verbose=False)
             temp = pd.DataFrame(temp.data)
@@ -349,11 +349,10 @@ class StructureOptimizer():
             """
             args = ['java', '-jar', settings['bimp_path'],
                     os.path.join(settings['output'],
-                                 settings['file'].split('.')[0] + '.bpmn'),
+                                 settings['project_name'] + '.bpmn'),
                     '-csv',
                     os.path.join(settings['output'], 'sim_data',
-                                 settings['file']
-                                 .split('.')[0] + '_' + str(rep + 1) + '.csv')]
+                                 settings['project_name'] + '_' + str(rep + 1) + '.csv')]
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
         sim_call(*args)
