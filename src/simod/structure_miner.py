@@ -1,11 +1,11 @@
 import os
 import platform as pl
 import subprocess
-import traceback
 
 import readers.bpmn_reader as br
 import readers.process_structure as gph
 
+from .decorators import safe_exec
 from .log_repairing.conformance_checking import evaluate_alignment
 
 
@@ -13,33 +13,6 @@ class StructureMiner():
     """
     This class extracts all the BPS parameters
     """
-
-    class Decorators(object):
-
-        @classmethod
-        def safe_exec(cls, method):
-            """
-            Decorator to safe execute methods and return the state
-            ----------
-            method : Any method.
-            Returns
-            -------
-            dict : execution status
-            """
-
-            def safety_check(*args, **kw):
-                is_safe = kw.get('is_safe', method.__name__.upper())
-                if is_safe:
-                    try:
-                        method(*args)
-                    except Exception as e:
-                        print(e)
-                        traceback.print_exc()
-                        is_safe = False
-                return is_safe
-
-            return safety_check
-
     def __init__(self, settings, log):
         """constructor"""
         self.log = log
@@ -54,7 +27,7 @@ class StructureMiner():
         # TODO: is=f a model is provided, start here right away
         self.is_safe = self._evaluate_alignment(is_safe=self.is_safe)
 
-    @Decorators.safe_exec
+    @safe_exec
     def _mining_structure(self, **kwargs) -> None:
         miner = self._get_miner(self.settings['mining_alg'])
         miner(self.settings)
@@ -149,7 +122,7 @@ class StructureMiner():
                      os.path.join(settings['output'], file_name)])
         subprocess.call(args)
 
-    @Decorators.safe_exec
+    @safe_exec
     def _evaluate_alignment(self, **kwargs) -> None:
         """
         Evaluates alignment

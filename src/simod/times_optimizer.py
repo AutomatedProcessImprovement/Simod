@@ -21,8 +21,8 @@ from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
 from tqdm import tqdm
-from utils.support import timeit
 
+from .decorators import timeit
 from .extraction.log_replayer import LogReplayer
 from .times_params_miner import TimesParametersMiner
 

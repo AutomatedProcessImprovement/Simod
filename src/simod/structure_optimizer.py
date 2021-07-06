@@ -17,8 +17,8 @@ import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
-from utils.support import timeit
 
+from .decorators import timeit
 from .structure_miner import StructureMiner
 from .structure_params_miner import StructureParametersMiner
 from .writers import xml_writer as xml, xes_writer as xes

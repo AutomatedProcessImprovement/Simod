@@ -16,8 +16,8 @@ import readers.log_reader as lr
 import readers.log_splitter as ls
 import utils.support as sup
 from tqdm import tqdm
-from utils.support import timeit
 
+from .decorators import timeit
 from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers.model_serialization import serialize_model

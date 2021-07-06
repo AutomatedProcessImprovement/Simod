@@ -4,7 +4,6 @@ import multiprocessing
 import os
 import subprocess
 import time
-import traceback
 import types
 from multiprocessing import Pool
 from operator import itemgetter
@@ -17,8 +16,8 @@ import utils.support as sup
 import xmltodict as xtd
 from lxml import etree
 from tqdm import tqdm
-from utils.support import timeit
 
+from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer
 from .extraction.parameter_extraction import ParameterMiner
 from .structure_miner import StructureMiner
@@ -29,32 +28,6 @@ class Discoverer:
     """
     Main class of the Simulation Models Discoverer
     """
-
-    class Decorators(object):
-
-        @classmethod
-        def safe_exec(cls, method):
-            """
-            Decorator to safe execute methods and return the state
-            ----------
-            method : Any method.
-            Returns
-            -------
-            dict : execution status
-            """
-
-            def safety_check(*args, **kw):
-                is_safe = kw.get('is_safe', method.__name__.upper())
-                if is_safe:
-                    try:
-                        method(*args)
-                    except Exception as e:
-                        print(e)
-                        traceback.print_exc()
-                        is_safe = False
-                return is_safe
-
-            return safety_check
 
     def __init__(self, settings):
         """constructor"""
@@ -91,7 +64,7 @@ class Discoverer:
         print(f"Output folder is at {self.settings['output']}")
 
     @timeit(rec_name='READ_INPUTS')
-    @Decorators.safe_exec
+    @safe_exec
     def read_inputs(self, **kwargs) -> None:
         # Event log reading
         self.log = lr.LogReader(os.path.join(self.settings['logfile']),
@@ -101,7 +74,7 @@ class Discoverer:
                             self.settings['read_options']['one_timestamp'])
 
     @timeit(rec_name='PATH_DEF')
-    @Decorators.safe_exec
+    @safe_exec
     def temp_path_creation(self, **kwargs) -> None:
         # Output folder creation
         if not os.path.exists(self.settings['output']):
@@ -111,7 +84,7 @@ class Discoverer:
         xes.XesWriter(self.log_train, self.settings)
 
     @timeit(rec_name='MINING_STRUCTURE')
-    @Decorators.safe_exec
+    @safe_exec
     def mine_structure(self, **kwargs) -> None:
         print(self.settings)
         structure_miner = StructureMiner(self.settings, self.log_train)
@@ -123,8 +96,8 @@ class Discoverer:
             raise RuntimeError('Mining Structure error')
 
     @timeit(rec_name='REPLAY_PROCESS')
-    @Decorators.safe_exec
-    def replay_process(self) -> None:
+    @safe_exec
+    def replay_process(self, **kwargs) -> None:
         """
         Process replaying
         """
@@ -136,7 +109,7 @@ class Discoverer:
         self.conformant_traces = replayer.conformant_traces
 
     @timeit(rec_name='EXTRACTION')
-    @Decorators.safe_exec
+    @safe_exec
     def extract_parameters(self, **kwargs) -> None:
         print("-- Mining Simulation Parameters --")
         p_extractor = ParameterMiner(self.log_train,
@@ -165,7 +138,7 @@ class Discoverer:
             raise RuntimeError('Parameters extraction error')
 
     @timeit(rec_name='SIMULATION_EVAL')
-    @Decorators.safe_exec
+    @safe_exec
     def simulate(self, **kwargs) -> None:
 
         def pbar_async(p, msg):
@@ -315,7 +288,7 @@ class Discoverer:
         else:
             sup.create_csv_file_header(times, log_file)
 
-    @Decorators.safe_exec
+    @safe_exec
     def export_canonical_model(self, **kwargs):
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         time_table = etree.tostring(self.parameters['time_table'],
