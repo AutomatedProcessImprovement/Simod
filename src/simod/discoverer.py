@@ -39,24 +39,17 @@ class Discoverer:
 
         self.sim_values = list()
         self.response = dict()
-        # self.parameters = dict()
         self.is_safe = True
         self.output_file = sup.file_id(prefix='SE_')
 
     def execute_pipeline(self, can=False) -> None:
         exec_times = dict()
-        self.is_safe = self.read_inputs(
-            log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.temp_path_creation(
-            log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.mine_structure(
-            log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.replay_process(
-            log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.extract_parameters(
-            log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.simulate(
-            log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.read_inputs(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.mine_structure(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.replay_process(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.extract_parameters(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.simulate(log_time=exec_times, is_safe=self.is_safe)
         self.mannage_results()
         self.save_times(exec_times, self.settings)
         self.is_safe = self.export_canonical_model(is_safe=self.is_safe)
@@ -70,8 +63,7 @@ class Discoverer:
         self.log = lr.LogReader(os.path.join(self.settings['logfile']),
                                 self.settings['read_options'])
         # Time splitting 80-20
-        self.split_timeline(0.8,
-                            self.settings['read_options']['one_timestamp'])
+        self.split_timeline(0.8, self.settings['read_options']['one_timestamp'])
 
     @timeit(rec_name='PATH_DEF')
     @safe_exec
@@ -273,9 +265,7 @@ class Discoverer:
     def mannage_results(self) -> None:
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = self.settings['output']
-        self.sim_values.to_csv(os.path.join(self.settings['output'],
-                                            self.output_file),
-                               index=False)
+        self.sim_values.to_csv(os.path.join(self.settings['output'], self.output_file), index=False)
 
     @staticmethod
     def save_times(times, settings):

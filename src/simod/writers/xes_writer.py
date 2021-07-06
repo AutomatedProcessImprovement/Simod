@@ -18,7 +18,6 @@ class XesWriter(object):
         self.column_names = settings['read_options']['column_names']
         self.output_file = os.path.join(settings['output'],
                                         settings['file'].split('.')[0] + '.xes')
-
         self.create_xes_file()
 
     def create_xes_file(self):

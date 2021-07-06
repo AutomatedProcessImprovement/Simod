@@ -5,7 +5,6 @@ import utils.support as sup
 from simod.discoverer import Discoverer
 from simod.discovery_optimizer import DiscoveryOptimizer
 
-
 @click.group()
 def main():
     pass

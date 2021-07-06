@@ -14,7 +14,6 @@ class StructureMiner():
     This class extracts all the BPS parameters
     """
     def __init__(self, settings, log):
-        """constructor"""
         self.log = log
         self.is_safe = True
         self.settings = settings
@@ -132,13 +131,8 @@ class StructureMiner():
             DESCRIPTION.
 
         """
-        # load bpmn model
         self.bpmn = br.BpmnReader(os.path.join(
             self.settings['output'],
             self.settings['file'].split('.')[0] + '.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
-        # Evaluate alignment
-
-        evaluate_alignment(self.process_graph,
-                           self.log,
-                           self.settings)
+        evaluate_alignment(self.process_graph, self.log, self.settings)
