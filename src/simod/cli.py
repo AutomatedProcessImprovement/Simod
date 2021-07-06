@@ -11,8 +11,8 @@ def main():
 
 
 @main.command()
-@click.option('-l', '--logfile', required=True, default='inputs/PurchasingExample.xes',
-              show_default=True)
+@click.option('-l', '--log_path', required=True)
+@click.option('-m', '--model_path', default=None, type=str)
 @click.option('--mining_alg', default='sm3', show_default=True,
               type=click.Choice(['sm1', 'sm2', 'sm3'], case_sensitive=False))
 @click.option('--alg_manag', default='repair', show_default=True,
@@ -36,8 +36,8 @@ def main():
 @click.option('--pdef_method', default='automatic', show_default=True,
               type=click.Choice(['manual', 'automatic', 'semi-automatic'], case_sensitive=False))
 @click.pass_context
-def discover(ctx, logfile, mining_alg, alg_manag, arr_confidence, arr_support, arr_dtype, epsilon,
-             eta, gate_management, res_confidence, res_support, res_cal_met, res_dtype,
+def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, arr_support, arr_dtype,
+             epsilon, eta, gate_management, res_confidence, res_support, res_cal_met, res_dtype,
              rp_similarity, pdef_method):
     def define_general_settings(settings: dict = None) -> dict:
         """ Sets the app general settings"""
@@ -66,9 +66,12 @@ def discover(ctx, logfile, mining_alg, alg_manag, arr_confidence, arr_support, a
         settings['mining_alg'] = 'sm3'
         return settings
 
+    if model_path is None:
+        click.echo("Model is missing. It will be dynamically discovered from the log file.")
+
     settings = define_general_settings()
-    settings['input'] = os.path.dirname(logfile)
-    settings['file'] = os.path.basename(logfile)
+    settings['input'] = os.path.dirname(log_path)
+    settings['file'] = os.path.basename(log_path)
     settings['repetitions'] = 1
     settings['simulation'] = True
     settings['sim_metric'] = 'tsd'
@@ -76,17 +79,17 @@ def discover(ctx, logfile, mining_alg, alg_manag, arr_confidence, arr_support, a
     settings['concurrency'] = 0.0
     settings['arr_cal_met'] = 'discovered'
     settings.update(ctx.params)
+
     optimizer = Discoverer(settings)
     optimizer.execute_pipeline()
 
 
 @main.command()
-@click.option('-l', '--logfile', required=True, default='inputs/PurchasingExample.xes',
-              show_default=True)
+@click.option('-l', '--log_path', required=True)
 @click.option('--mining_alg', default='sm3', show_default=True,
               type=click.Choice(['sm1', 'sm2', 'sm3'], case_sensitive=False))
 @click.pass_context
-def optimize(ctx, logfile, mining_alg):
+def optimize(ctx, log_path, mining_alg):
     def define_general_settings(settings: dict = None) -> dict:
         """ Sets the app general settings"""
         if not settings:
@@ -121,8 +124,9 @@ def optimize(ctx, logfile, mining_alg):
         return settings
 
     settings = define_general_settings()
-    settings['input'] = os.path.dirname(logfile)
-    settings['gl']['file'] = os.path.basename(logfile)
+    settings['gl']['input'] = os.path.dirname(log_path)
+    settings['gl']['file'] = os.path.basename(log_path)
+    settings['gl']['file'] = os.path.basename(log_path)
     settings['gl']['mining_alg'] = mining_alg
     settings['gl']['exec_mode'] = 'optimizer'  # 'single', 'optimizer'
     settings['gl']['repetitions'] = 5

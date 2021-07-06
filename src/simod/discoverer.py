@@ -60,7 +60,7 @@ class Discoverer:
     @safe_exec
     def read_inputs(self, **kwargs) -> None:
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings['logfile']),
+        self.log = lr.LogReader(os.path.join(self.settings['log_path']),
                                 self.settings['read_options'])
         # Time splitting 80-20
         self.split_timeline(0.8, self.settings['read_options']['one_timestamp'])
