@@ -71,8 +71,7 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
         click.echo("Model is missing. It will be dynamically discovered from the log file.")
 
     settings = define_general_settings()
-    settings['file'] = os.path.basename(log_path)
-    settings['project_name'], _ = os.path.splitext(settings['file'])
+    settings['project_name'], _ = os.path.splitext(os.path.basename(log_path))
     settings['repetitions'] = 1
     settings['simulation'] = True
     settings['sim_metric'] = 'tsd'
