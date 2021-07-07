@@ -11,13 +11,12 @@ from tqdm import tqdm
 
 class LogReplayer():
     """
-    This class replays an evant log over a model,
+    This class replays an event log over a model,
     measures the global conformance and the KPI's related with times
     """
 
     def __init__(self, model, log, settings, msg='',
                  source='log', run_num=0, verbose=True, mode='multi', st=True):
-        """constructor"""
         self.source = source
         self.run_num = run_num
         self.one_timestamp = settings['read_options']['one_timestamp']

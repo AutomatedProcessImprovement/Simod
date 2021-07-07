@@ -7,9 +7,10 @@ import readers.process_structure as gph
 
 from .decorators import safe_exec
 from .log_repairing.conformance_checking import evaluate_alignment
+from .cli_formatter import *
 
 
-class StructureMiner():
+class StructureMiner:
     """
     This class extracts all the BPS parameters
     """
@@ -51,7 +52,6 @@ class StructureMiner():
         None
             DESCRIPTION.
         """
-        print(" -- Mining Process Structure --")
         # Event log file_name
         file_name = settings['project_name']
         input_route = os.path.join(settings['output'], file_name + '.xes')
@@ -80,7 +80,6 @@ class StructureMiner():
         None
             DESCRIPTION.
         """
-        print(" -- Mining Process Structure --")
         # Event log file_name
         file_name = settings['project_name']
         input_route = os.path.join(settings['output'], file_name + '.xes')
@@ -101,7 +100,6 @@ class StructureMiner():
         None
             DESCRIPTION.
         """
-        print(" -- Mining Process Structure --")
         # Event log file_name
         file_name = settings['project_name']
         input_route = os.path.join(settings['output'], file_name + '.xes')
@@ -132,7 +130,6 @@ class StructureMiner():
 
         """
         self.bpmn = br.BpmnReader(os.path.join(
-            self.settings['output'],
-            self.settings['project_name'] + '.bpmn'))
+            self.settings['output'], self.settings['project_name'] + '.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
         evaluate_alignment(self.process_graph, self.log, self.settings)

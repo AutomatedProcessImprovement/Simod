@@ -9,11 +9,8 @@ from ..extraction.log_replayer import LogReplayer
 
 def evaluate_alignment(process_graph, log, settings):
     traces = log.get_traces()
-    test_replayer = LogReplayer(
-        process_graph,
-        traces,
-        settings,
-        msg='evaluating train partition conformance:')
+    test_replayer = LogReplayer(process_graph, traces, settings,
+                                msg='evaluating train partition conformance:')
     conformant = get_traces(test_replayer.conformant_traces, False)
     not_conformant = get_traces(test_replayer.not_conformant_traces, False)
     # ------conformance percentage before repair------------------

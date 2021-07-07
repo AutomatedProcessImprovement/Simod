@@ -17,6 +17,7 @@ import xmltodict as xtd
 from lxml import etree
 from tqdm import tqdm
 
+from .cli_formatter import *
 from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer
 from .extraction.parameter_extraction import ParameterMiner
@@ -53,12 +54,12 @@ class Discoverer:
         self.mannage_results()
         self.save_times(exec_times, self.settings)
         self.is_safe = self.export_canonical_model(is_safe=self.is_safe)
-        print("-- End of trial --")
-        print(f"Output folder is at {self.settings['output']}")
+        print_asset(f"Output folder is at {self.settings['output']}")
 
     @timeit(rec_name='READ_INPUTS')
     @safe_exec
     def read_inputs(self, **kwargs) -> None:
+        print_section("Log Parsing")
         # Event log reading
         self.log = lr.LogReader(os.path.join(self.settings['log_path']),
                                 self.settings['read_options'])
@@ -68,6 +69,7 @@ class Discoverer:
     @timeit(rec_name='PATH_DEF')
     @safe_exec
     def temp_path_creation(self, **kwargs) -> None:
+        print_section("Log Customization")
         # Output folder creation
         if not os.path.exists(self.settings['output']):
             os.makedirs(self.settings['output'])
@@ -78,14 +80,14 @@ class Discoverer:
     @timeit(rec_name='MINING_STRUCTURE')
     @safe_exec
     def mine_structure(self, **kwargs) -> None:
-        print(self.settings)
+        print_section("Process Structure Mining")
         structure_miner = StructureMiner(self.settings, self.log_train)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             self.bpmn = structure_miner.bpmn
             self.process_graph = structure_miner.process_graph
         else:
-            raise RuntimeError('Mining Structure error')
+            raise RuntimeError('Structure Mining error')
 
     @timeit(rec_name='REPLAY_PROCESS')
     @safe_exec
@@ -93,6 +95,7 @@ class Discoverer:
         """
         Process replaying
         """
+        print_section("Log Replaying")
         replayer = LogReplayer(self.process_graph,
                                self.log_train.get_traces(),
                                self.settings,
@@ -103,7 +106,8 @@ class Discoverer:
     @timeit(rec_name='EXTRACTION')
     @safe_exec
     def extract_parameters(self, **kwargs) -> None:
-        print("-- Mining Simulation Parameters --")
+        # print("-- Mining Simulation Parameters --")
+        print_section("Simulation Parameters Mining")
         p_extractor = ParameterMiner(self.log_train,
                                      self.bpmn,
                                      self.process_graph,
@@ -132,6 +136,7 @@ class Discoverer:
     @timeit(rec_name='SIMULATION_EVAL')
     @safe_exec
     def simulate(self, **kwargs) -> None:
+        print_section("Simulation")
 
         def pbar_async(p, msg):
             pbar = tqdm(total=reps, desc=msg)

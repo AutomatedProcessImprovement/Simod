@@ -7,6 +7,8 @@ from operator import itemgetter
 
 import utils.support as sup
 
+from ..cli_formatter import *
+
 
 class TracesAligner(object):
     """
@@ -212,7 +214,7 @@ class TracesAligner(object):
         settings : Path to jar and file names
 
         """
-        print(" -- Evaluating event log alignment --")
+        print_section("Log Repairing")
         file_name = settings['project_name']
         args = ['java']
         if not pl.system().lower() == 'windows':

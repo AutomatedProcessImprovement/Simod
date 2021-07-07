@@ -1,7 +1,7 @@
 import os
 
-import click
 import utils.support as sup
+from simod.cli_formatter import *
 from simod.discoverer import Discoverer
 from simod.discovery_optimizer import DiscoveryOptimizer
 
@@ -68,7 +68,7 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
         return settings
 
     if model_path is None:
-        click.echo("Model is missing. It will be dynamically discovered from the log file.")
+        print_notice("Model is missing. It will be dynamically discovered from the log file.")
 
     settings = define_general_settings()
     settings['project_name'], _ = os.path.splitext(os.path.basename(log_path))
