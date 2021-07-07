@@ -1,5 +1,6 @@
 import os
 import platform as pl
+import shutil
 import subprocess
 
 import readers.bpmn_reader as br
@@ -23,9 +24,15 @@ class StructureMiner:
         """
         Main method for mining structure
         """
-        self.is_safe = self._mining_structure(is_safe=self.is_safe)
-        # TODO: is=f a model is provided, start here right away
-        self.is_safe = self._evaluate_alignment(is_safe=self.is_safe)
+        print_subsection("Split Mining")
+        model_path = self.settings.get('model_path')
+        if model_path is None:
+            self.is_safe = self._mining_structure(is_safe=self.is_safe)
+        else:
+            print_step("Copying The Model")
+            shutil.copy(model_path, self.settings['output'])
+        print_subsection("Alignment Evaluation")
+        self.is_safe = self._evaluate_alignment(is_safe=self.is_safe, model_path=model_path)
 
     @safe_exec
     def _mining_structure(self, **kwargs) -> None:
@@ -129,7 +136,6 @@ class StructureMiner:
             DESCRIPTION.
 
         """
-        self.bpmn = br.BpmnReader(os.path.join(
-            self.settings['output'], self.settings['project_name'] + '.bpmn'))
+        self.bpmn = br.BpmnReader(os.path.join(self.settings['output'], self.settings['project_name'] + '.bpmn'))
         self.process_graph = gph.create_process_structure(self.bpmn)
         evaluate_alignment(self.process_graph, self.log, self.settings)
