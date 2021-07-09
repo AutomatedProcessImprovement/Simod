@@ -22,6 +22,7 @@ from lxml import etree
 from lxml.builder import ElementMaker
 from tqdm import tqdm
 
+from .cli_formatter import *
 from .decorators import timeit
 from .extraction.log_replayer import LogReplayer
 from .times_params_miner import TimesParametersMiner
@@ -50,7 +51,7 @@ class TimesOptimizer():
                 response = {'values': [], 'status': status}
                 if status == STATUS_OK:
                     try:
-                        response['values'] = method(*args)
+                        response['values'] = method(*args, **kw)
                     except Exception as e:
                         print(e)
                         traceback.print_exc()
@@ -60,7 +61,6 @@ class TimesOptimizer():
             return safety_check
 
     def __init__(self, settings, args, log, struc_model):
-        """constructor"""
         self.space = self.define_search_space(settings, args)
         # read inputs
         self.log = log
@@ -132,11 +132,9 @@ class TimesOptimizer():
     def execute_trials(self):
         # create a new instance of Simod
         def exec_pipeline(trial_stg):
-            print('train split:',
-                  len(pd.DataFrame(self.log_train.data).caseid.unique()),
-                  ', valdn split:',
-                  len(pd.DataFrame(self.log_valdn).caseid.unique()),
-                  sep=' ')
+            print_subsection('Trial')
+            print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
+                          f'valdn split: {len(pd.DataFrame(self.log_valdn).caseid.unique())}')
             # Vars initialization
             status = STATUS_OK
             exec_times = dict()
@@ -169,7 +167,6 @@ class TimesOptimizer():
             self.log = copy.deepcopy(self.org_log)
             self.log_train = copy.deepcopy(self.org_log_train)
             self.log_valdn = copy.deepcopy(self.org_log_valdn)
-            print("-- End of trial --")
             return rsp
 
         # Optimize
@@ -347,6 +344,7 @@ class TimesOptimizer():
             m_settings['read_options'] = settings['read_options']
             m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
             m_settings['read_options']['column_names'] = column_names
+            m_settings['project_name'] = settings['project_name']
             temp = lr.LogReader(os.path.join(
                 m_settings['output'], 'sim_data',
                 m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),

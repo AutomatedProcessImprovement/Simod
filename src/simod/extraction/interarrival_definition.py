@@ -49,7 +49,7 @@ class InterArrivalEvaluator():
         else:
             raise ValueError(self.pdef_method)
 
-    def _mine_interarrival_time(self):
+    def _mine_interarrival_time(self, **kwargs):
         """
         Extracts the interarrival distribution from data
 

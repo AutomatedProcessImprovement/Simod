@@ -7,40 +7,14 @@ from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.role_discovery import ResourcePoolAnalyser
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
+from .decorators import safe_exec
 
 
 class TimesParametersMiner():
     """
     This class extracts all the BPS parameters
     """
-
-    class Decorators(object):
-
-        @classmethod
-        def safe_exec(cls, method):
-            """
-            Decorator to safe execute methods and return the state
-            ----------
-            method : Any method.
-            Returns
-            -------
-            dict : execution status
-            """
-
-            def safety_check(*args, **kw):
-                is_safe = kw.get('is_safe', method.__name__.upper())
-                if is_safe:
-                    try:
-                        method(*args)
-                    except Exception as e:
-                        print(e)
-                        is_safe = False
-                return is_safe
-
-            return safety_check
-
     def __init__(self, log, bpmn, process_graph, conformant_traces, process_stats, settings):
-        """constructor"""
         self.log = log
         self.bpmn = bpmn
         self.process_graph = process_graph
@@ -65,8 +39,8 @@ class TimesParametersMiner():
         self.parameters['instances'] = num_inst
         self.parameters['start_time'] = start_time
 
-    @Decorators.safe_exec
-    def _mine_resources(self) -> None:
+    @safe_exec
+    def _mine_resources(self, **kwargs) -> None:
         """
         Analysing resource pool LV917 or 247
         """
@@ -89,8 +63,8 @@ class TimesParametersMiner():
                                                       how='left')
         self.resource_table = resource_table
 
-    @Decorators.safe_exec
-    def _mine_interarrival(self) -> None:
+    @safe_exec
+    def _mine_interarrival(self, **kwargs) -> None:
         """
         Calculates the inter-arrival rate
         """
@@ -99,8 +73,8 @@ class TimesParametersMiner():
                                                 self.settings)
         self.parameters['arrival_rate'] = inter_evaluator.dist
 
-    @Decorators.safe_exec
-    def _process_tasks(self) -> None:
+    @safe_exec
+    def _process_tasks(self, **kwargs) -> None:
         """
         Tasks id information
         """

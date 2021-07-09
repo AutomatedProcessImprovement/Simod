@@ -214,7 +214,7 @@ class TracesAligner(object):
         settings : Path to jar and file names
 
         """
-        print_section("Log Repairing")
+        print_subsection("Log Repairing")
         file_name = settings['project_name']
         args = ['java']
         if not pl.system().lower() == 'windows':

@@ -6,6 +6,7 @@ import os
 import random
 import subprocess
 import time
+import traceback
 from multiprocessing import Pool
 
 import analyzers.sim_evaluator as sim
@@ -18,6 +19,7 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
+from .cli_formatter import *
 from .decorators import timeit
 from .structure_miner import StructureMiner
 from .structure_params_miner import StructureParametersMiner
@@ -50,7 +52,7 @@ class StructureOptimizer():
                         response['values'] = method(*args)
                     except Exception as e:
                         print(e)
-                        # traceback.print_exc()
+                        traceback.print_exc()
                         response['status'] = STATUS_FAIL
                 return response
 
@@ -105,45 +107,30 @@ class StructureOptimizer():
         return space
 
     def execute_trials(self):
-        parameters = (
-            StructureParametersMiner.mine_resources(
-                self.settings, self.log_train))
+        parameters = (StructureParametersMiner.mine_resources(self.settings, self.log_train))
         self.log_train = copy.deepcopy(self.org_log_train)
 
         def exec_pipeline(trial_stg):
-
-            print('train split:',
-                  len(pd.DataFrame(self.log_train.data).caseid.unique()),
-                  ', valdn split:',
-                  len(pd.DataFrame(self.log_valdn).caseid.unique()),
-                  sep=' ')
+            print_section("Trial")
+            print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
+                          f'validation split: {len(pd.DataFrame(self.log_valdn).caseid.unique())}')
             # Vars initialization
             status = STATUS_OK
             exec_times = dict()
             sim_values = []
             # Path redefinition
-            rsp = self._temp_path_redef(trial_stg,
-                                        status=status,
-                                        log_time=exec_times)
+            rsp = self._temp_path_redef(trial_stg, status=status, log_time=exec_times)
             status = rsp['status']
             trial_stg = rsp['values'] if status == STATUS_OK else trial_stg
             # Structure mining
-            rsp = self._mine_structure(trial_stg,
-                                       status=status,
-                                       log_time=exec_times)
+            rsp = self._mine_structure(trial_stg, status=status, log_time=exec_times)
             status = rsp['status']
             # Parameters extraction
-            rsp = self._extract_parameters(trial_stg,
-                                           rsp['values'],
-                                           copy.deepcopy(parameters),
-                                           status=status,
+            rsp = self._extract_parameters(trial_stg, rsp['values'], copy.deepcopy(parameters), status=status,
                                            log_time=exec_times)
             status = rsp['status']
             # Simulate model
-            rsp = self._simulate(trial_stg,
-                                 self.log_valdn,
-                                 status=status,
-                                 log_time=exec_times)
+            rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
             status = rsp['status']
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
             # Save times
@@ -154,7 +141,6 @@ class StructureOptimizer():
             self.log = copy.deepcopy(self.org_log)
             self.log_train = copy.deepcopy(self.org_log_train)
             self.log_valdn = copy.deepcopy(self.org_log_valdn)
-            print("-- End of trial --")
             return rsp
 
         # Optimize
@@ -166,13 +152,10 @@ class StructureOptimizer():
                     show_progressbar=False)
         # Save results
         try:
-            results = (pd.DataFrame(self.bayes_trials.results)
-                       .sort_values('loss', ascending=bool))
-            self.best_output = (results[results.status == 'ok']
-                                .head(1).iloc[0].output)
+            results = (pd.DataFrame(self.bayes_trials.results).sort_values('loss', ascending=bool))
+            self.best_output = (results[results.status == 'ok'].head(1).iloc[0].output)
             self.best_parms = best
-            self.best_similarity = (results[results.status == 'ok']
-                                    .head(1).iloc[0].loss)
+            self.best_similarity = (results[results.status == 'ok'].head(1).iloc[0].loss)
         except Exception as e:
             print(e)
             pass
@@ -183,12 +166,8 @@ class StructureOptimizer():
         # Paths redefinition
         settings['output'] = os.path.join(self.temp_output, sup.folder_id())
         if settings['alg_manag'] == 'repair':
-            settings['aligninfo'] = os.path.join(
-                settings['output'],
-                'CaseTypeAlignmentResults.csv')
-            settings['aligntype'] = os.path.join(
-                settings['output'],
-                'AlignmentStatistics.csv')
+            settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
+            settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
         # Output folder creation
         if not os.path.exists(settings['output']):
             os.makedirs(settings['output'])
@@ -302,6 +281,7 @@ class StructureOptimizer():
             m_settings['read_options'] = settings['read_options']
             m_settings['read_options']['timeformat'] = '%Y-%m-%d %H:%M:%S.%f'
             m_settings['read_options']['column_names'] = column_names
+            m_settings['project_name'] = settings['project_name']
             temp = lr.LogReader(os.path.join(
                 m_settings['output'], 'sim_data',
                 m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
@@ -368,7 +348,7 @@ class StructureOptimizer():
             else:
                 sup.create_csv_file_header(times, log_file)
 
-    def _define_response(self, settings, status, sim_values, **kwargs) -> None:
+    def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()
         measurements = list()
         data = {'alg_manag': settings['alg_manag'],

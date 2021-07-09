@@ -8,3 +8,4 @@ poc_processmining.*
 venv
 .idea
 *.egg-info
+.DS_Store

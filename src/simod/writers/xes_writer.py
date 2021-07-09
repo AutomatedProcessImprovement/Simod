@@ -16,8 +16,7 @@ class XesWriter(object):
         self.log = log
         self.one_timestamp = settings['read_options']['one_timestamp']
         self.column_names = settings['read_options']['column_names']
-        self.output_file = os.path.join(settings['output'],
-                                        settings['project_name'] + '.xes')
+        self.output_file = os.path.join(settings['output'], settings['project_name'] + '.xes')
         self.create_xes_file()
 
     def create_xes_file(self):
@@ -25,8 +24,7 @@ class XesWriter(object):
         log = XFactory.create_log()
         data = sorted(self.log.data, key=lambda x: x['caseid'])
         for key, group in it.groupby(data, key=lambda x: x['caseid']):
-            sort_key = ('end_timestamp'
-                        if self.one_timestamp else 'start_timestamp')
+            sort_key = ('end_timestamp' if self.one_timestamp else 'start_timestamp')
             csv_trace = sorted(list(group), key=lambda x: x[sort_key])
             events = list()
             for line in csv_trace:
@@ -71,28 +69,20 @@ class XesWriter(object):
                 attribute_type = csv_mapping[attr_type]
                 if attribute_type in ["Activity", "Resource"]:
                     if attribute_type == "Activity":
-                        attribute = XFactory.create_attribute_literal(
-                            'concept:name', attr_value, extension=None)
+                        attribute = XFactory.create_attribute_literal('concept:name', attr_value, extension=None)
                         attribute_map[attribute.get_key()] = attribute
                     if attribute_type == "Resource":
-                        attribute = XFactory.create_attribute_literal(
-                            'org:resource', attr_value, extension=None)
+                        attribute = XFactory.create_attribute_literal('org:resource', attr_value, extension=None)
                         attribute_map[attribute.get_key()] = attribute
                 elif attribute_type == transition['column']:
-                    attribute = XFactory.create_attribute_timestamp(
-                        "time:timestamp", attr_value, extension=None)
+                    attribute = XFactory.create_attribute_timestamp("time:timestamp", attr_value, extension=None)
                     attribute_map[attribute.get_key()] = attribute
-                    attribute2 = XFactory.create_attribute_literal(
-                        'lifecycle:transition',
-                        transition['value'],
-                        extension=xlc)
+                    attribute2 = XFactory.create_attribute_literal('lifecycle:transition', transition['value'], extension=xlc)
                     attribute_map[attribute2.get_key()] = attribute2
-                elif attribute_type in ['Case ID',
-                                        'Event ID', transition['skiped']]:
+                elif attribute_type in ['Case ID', 'Event ID', transition['skiped']]:
                     next
                 else:
-                    attribute = XFactory.create_attribute_discrete(
-                        attribute_type, int(attr_value))
+                    attribute = XFactory.create_attribute_discrete(attribute_type, int(attr_value))
                     attribute_map[attribute.get_key()] = attribute
             events.append(XFactory.create_event(attribute_map))
         return events

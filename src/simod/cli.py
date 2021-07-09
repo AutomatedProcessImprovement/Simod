@@ -124,8 +124,8 @@ def optimize(ctx, log_path, mining_alg):
         return settings
 
     settings = define_general_settings()
+    settings['gl']['project_name'], _ = os.path.splitext(os.path.basename(log_path))
     settings['gl']['input'] = os.path.dirname(log_path)
-    settings['gl']['file'] = os.path.basename(log_path)
     settings['gl']['file'] = os.path.basename(log_path)
     settings['gl']['mining_alg'] = mining_alg
     settings['gl']['exec_mode'] = 'optimizer'  # 'single', 'optimizer'
@@ -149,7 +149,8 @@ def optimize(ctx, log_path, mining_alg):
     settings['tm']['res_con_dis'] = [50, 85]  # [50..85]
     settings['tm']['arr_support'] = [0.01, 0.1]  # [0..1]
     settings['tm']['arr_confidence'] = [1, 10]  # [50..85]
-    settings.update(ctx.params)
+    settings['gl'].update(ctx.params)
+
     optimizer = DiscoveryOptimizer(settings)
     optimizer.execute_pipeline()
 

@@ -17,6 +17,7 @@ import readers.log_splitter as ls
 import utils.support as sup
 from tqdm import tqdm
 
+from .cli_formatter import *
 from .decorators import timeit
 from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
@@ -29,7 +30,6 @@ class DiscoveryOptimizer:
     """
 
     def __init__(self, settings):
-        """constructor"""
         self.settings = settings
         self.best_params = dict()
         self.log = types.SimpleNamespace()
@@ -39,22 +39,18 @@ class DiscoveryOptimizer:
             os.makedirs('outputs')
 
     def execute_pipeline(self) -> None:
+        print_section('Log Parsing')
         exec_times = dict()
         self.read_inputs(log_time=exec_times)
-        output_file = sup.file_id(prefix='SE_')
-        print('############ Structure optimization ############')
-        # Structure optimization
-        structure_optimizer = StructureOptimizer(
-            {**self.settings['gl'], **self.settings['strc']},
-            copy.deepcopy(self.log_train))
+
+        print_section('Structure Optimization')
+        structure_optimizer = StructureOptimizer({**self.settings['gl'], **self.settings['strc']}, copy.deepcopy(self.log_train))
         structure_optimizer.execute_trials()
         struc_model = structure_optimizer.best_output
         best_parms = structure_optimizer.best_parms
-        self.settings['gl']['alg_manag'] = (
-            self.settings['strc']['alg_manag'][best_parms['alg_manag']])
+        self.settings['gl']['alg_manag'] = (self.settings['strc']['alg_manag'][best_parms['alg_manag']])
         self.best_params['alg_manag'] = self.settings['gl']['alg_manag']
-        self.settings['gl']['gate_management'] = (
-            self.settings['strc']['gate_management'][best_parms['gate_management']])
+        self.settings['gl']['gate_management'] = (self.settings['strc']['gate_management'][best_parms['gate_management']])
         self.best_params['gate_management'] = self.settings['gl']['gate_management']
         # best structure mining parameters
         if self.settings['gl']['mining_alg'] in ['sm1', 'sm3']:
@@ -65,17 +61,12 @@ class DiscoveryOptimizer:
         elif self.settings['gl']['mining_alg'] == 'sm2':
             self.settings['gl']['concurrency'] = best_parms['concurrency']
             self.best_params['concurrency'] = best_parms['concurrency']
-        for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis',
-                    'res_con_dis', 'arr_support', 'arr_confidence',
-                    'res_cal_met', 'arr_cal_met']:
+        for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
+                    'arr_confidence', 'res_cal_met', 'arr_cal_met']:
             self.settings.pop(key, None)
-        # self._test_model(struc_model, output_file)
-        print('############ Times optimization ############')
-        times_optimizer = TimesOptimizer(
-            self.settings['gl'],
-            self.settings['tm'],
-            copy.deepcopy(self.log_train),
-            struc_model)
+
+        print_section('Times Optimization')
+        times_optimizer = TimesOptimizer(self.settings['gl'], self.settings['tm'], copy.deepcopy(self.log_train), struc_model)
         times_optimizer.execute_trials()
         # Discovery parameters
         if times_optimizer.best_parms['res_cal_met'] == 1:
@@ -97,16 +88,13 @@ class DiscoveryOptimizer:
             self.best_params['arr_confidence'] = (
                 times_optimizer.best_parms['arr_confidence'])
 
-        print('############ Final comparison ############')
-        self._test_model(times_optimizer.best_output,
-                         output_file,
-                         structure_optimizer.file_name,
-                         times_optimizer.file_name)
+        print_section('Final Comparison')
+        output_file = sup.file_id(prefix='SE_')
+        self._test_model(times_optimizer.best_output, output_file, structure_optimizer.file_name, times_optimizer.file_name)
         self._export_canonical_model(times_optimizer.best_output)
         shutil.rmtree(structure_optimizer.temp_output)
         shutil.rmtree(times_optimizer.temp_output)
-        print("-- End of trial --")
-        print(f"Output folder is at {self.settings['gl']['output']}")
+        print_asset(f"Output folder is at {self.settings['gl']['output']}")
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
         output_path = os.path.join('outputs', sup.folder_id())
@@ -151,12 +139,10 @@ class DiscoveryOptimizer:
     @timeit
     def read_inputs(self, **kwargs) -> None:
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings['gl']['input'],
-                                             self.settings['gl']['file']),
+        self.log = lr.LogReader(os.path.join(self.settings['gl']['input'], self.settings['gl']['file']),
                                 self.settings['gl']['read_options'])
         # Time splitting 80-20
-        self.split_timeline(0.8,
-                            self.settings['gl']['read_options']['one_timestamp'])
+        self.split_timeline(0.8, self.settings['gl']['read_options']['one_timestamp'])
 
     def split_timeline(self, size: float, one_ts: bool) -> None:
         """
@@ -182,26 +168,21 @@ class DiscoveryOptimizer:
         key = 'end_timestamp' if one_ts else 'start_timestamp'
         test = pd.DataFrame(test)
         train = pd.DataFrame(train)
-        self.log_test = (test.sort_values(key, ascending=True)
-                         .reset_index(drop=True))
+        self.log_test = (test.sort_values(key, ascending=True).reset_index(drop=True))
         self.log_train = copy.deepcopy(self.log)
-        self.log_train.set_data(train.sort_values(key, ascending=True)
-                                .reset_index(drop=True).to_dict('records'))
+        self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
     def _modify_simulation_model(self, model):
         """Modifies the number of instances of the BIMP simulation model
         to be equal to the number of instances in the testing log"""
         num_inst = len(self.log_test.caseid.unique())
         # Get minimum date
-        start_time = (self.log_test
-                      .start_timestamp
-                      .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+        start_time = (self.log_test.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
         mydoc = minidom.parse(model)
         items = mydoc.getElementsByTagName('qbp:processSimulationInfo')
         items[0].attributes['processInstances'].value = str(num_inst)
         items[0].attributes['startDateTime'].value = start_time
-        new_model_path = os.path.join(self.settings['gl']['output'],
-                                      os.path.split(model)[1])
+        new_model_path = os.path.join(self.settings['gl']['output'], os.path.split(model)[1])
         with open(new_model_path, 'wb') as f:
             f.write(mydoc.toxml().encode('utf-8'))
         f.close()
@@ -213,7 +194,6 @@ class DiscoveryOptimizer:
         self.process_stats['run_num'] = 0
 
     def _simulate(self, **kwargs) -> None:
-
         def pbar_async(p, msg):
             pbar = tqdm(total=reps, desc=msg)
             processed = 0
@@ -266,8 +246,7 @@ class DiscoveryOptimizer:
             # print(message)
             path = os.path.join(settings['output'], 'sim_data')
             log_name = settings['project_name'] + '_' + str(rep + 1) + '.csv'
-            rep_results = pd.read_csv(os.path.join(path, log_name),
-                                      dtype={'caseid': object})
+            rep_results = pd.read_csv(os.path.join(path, log_name), dtype={'caseid': object})
             rep_results['caseid'] = 'Case' + rep_results['caseid']
             rep_results['run_num'] = rep
             rep_results['source'] = 'simulation'
@@ -291,15 +270,10 @@ class DiscoveryOptimizer:
             # print('Reading repetition:', (rep+1), sep=' ')
             rep = (sim_log.iloc[0].run_num)
             sim_values = list()
-            evaluator = sim.SimilarityEvaluator(
-                process_stats,
-                sim_log,
-                settings,
-                max_cases=1000)
+            evaluator = sim.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
             metrics = [settings['sim_metric']]
             if 'add_metrics' in settings.keys():
-                metrics = list(set(list(settings['add_metrics']) +
-                                   metrics))
+                metrics = list(set(list(settings['add_metrics']) + metrics))
             for metric in metrics:
                 evaluator.measure_distance(metric)
                 sim_values.append({**{'run_num': rep}, **evaluator.similarity})
@@ -318,8 +292,7 @@ class DiscoveryOptimizer:
             # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
             # print(message)
             args = ['java', '-jar', settings['bimp_path'],
-                    os.path.join(settings['output'],
-                                 settings['project_name'] + '.bpmn'),
+                    os.path.join(settings['output'], settings['project_name'] + '.bpmn'),
                     '-csv',
                     os.path.join(settings['output'], 'sim_data',
                                  settings['project_name'] + '_' + str(rep + 1) + '.csv')]
@@ -336,8 +309,6 @@ class DiscoveryOptimizer:
         traces = list()
         for case in cases:
             order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
-            trace = sorted(
-                list(filter(lambda x: (x['caseid'] == case), data)),
-                key=itemgetter(order_key))
+            trace = sorted(list(filter(lambda x: (x['caseid'] == case), data)), key=itemgetter(order_key))
             traces.append(trace)
         return traces

@@ -6,40 +6,14 @@ from .extraction.log_replayer import LogReplayer
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
 
+from .decorators import safe_exec
+
 
 class StructureParametersMiner():
     """
     This class extracts all the BPS parameters
     """
-
-    class Decorators(object):
-
-        @classmethod
-        def safe_exec(cls, method):
-            """
-            Decorator to safe execute methods and return the state
-            ----------
-            method : Any method.
-            Returns
-            -------
-            dict : execution status
-            """
-
-            def safety_check(*args, **kw):
-                is_safe = kw.get('is_safe', method.__name__.upper())
-                if is_safe:
-                    try:
-                        method(*args)
-                    except Exception as e:
-                        print(e)
-                        traceback.print_exc()
-                        is_safe = False
-                return is_safe
-
-            return safety_check
-
     def __init__(self, log, bpmn, process_graph, settings):
-        """constructor"""
         self.log = log
         self.bpmn = bpmn
         self.process_graph = process_graph
@@ -66,8 +40,8 @@ class StructureParametersMiner():
         self.parameters['instances'] = num_inst
         self.parameters['start_time'] = start_time
 
-    @Decorators.safe_exec
-    def _replay_process(self) -> None:
+    @safe_exec
+    def _replay_process(self, **kwargs) -> None:
         """
         Process replaying
         """
@@ -79,7 +53,7 @@ class StructureParametersMiner():
         self.process_stats['role'] = 'SYSTEM'
         self.conformant_traces = replayer.conformant_traces
 
-    # @Decorators.safe_exec
+    # @safe_exec
     @staticmethod
     def mine_resources(settings, log) -> None:
         """
@@ -102,8 +76,8 @@ class StructureParametersMiner():
         parameters['time_table'] = ttcreator.time_table
         return parameters
 
-    @Decorators.safe_exec
-    def _mine_interarrival(self) -> None:
+    @safe_exec
+    def _mine_interarrival(self, **kwargs) -> None:
         """
         Calculates the inter-arrival rate
         """
@@ -112,8 +86,8 @@ class StructureParametersMiner():
                                                 self.settings)
         self.parameters['arrival_rate'] = inter_evaluator.dist
 
-    @Decorators.safe_exec
-    def _mine_gateways_probabilities(self) -> None:
+    @safe_exec
+    def _mine_gateways_probabilities(self, **kwargs) -> None:
         """
         Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
         """
@@ -125,8 +99,8 @@ class StructureParametersMiner():
                                                           seq['out_path_id'])
         self.parameters['sequences'] = sequences
 
-    @Decorators.safe_exec
-    def _process_tasks(self, resource_pool, ) -> None:
+    @safe_exec
+    def _process_tasks(self, resource_pool, **kwargs) -> None:
         """
         Tasks id information
         """
