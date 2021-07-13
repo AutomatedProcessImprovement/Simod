@@ -11,10 +11,10 @@ from multiprocessing import Pool
 import analyzers.sim_evaluator as sim
 import numpy as np
 import pandas as pd
-import readers.bpmn_reader as br
-import readers.log_reader as lr
-import readers.log_splitter as ls
-import readers.process_structure as gph
+from .readers import bpmn_reader as br
+from .readers import log_reader as lr
+from .readers import log_splitter as ls
+from .readers import process_structure as gph
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe

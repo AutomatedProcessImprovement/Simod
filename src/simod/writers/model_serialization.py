@@ -1,7 +1,8 @@
 import xml.etree.ElementTree as ET
 
-import readers.bpmn_reader as br
 import xmltodict as xtd
+
+from ..readers import bpmn_reader as br
 
 
 def serialize_model(filename):

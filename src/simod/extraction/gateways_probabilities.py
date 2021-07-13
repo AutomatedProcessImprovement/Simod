@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
-
 import utils.support as sup
 from tqdm import tqdm
+
+from ..configuration import GateManagement
 
 
 class GatewaysEvaluator():
@@ -11,8 +12,7 @@ class GatewaysEvaluator():
         an spcified method defined by the user
      """
 
-    def __init__(self, process_graph, method):
-        """constructor"""
+    def __init__(self, process_graph, method: GateManagement):
         self.process_graph = process_graph
         self.method = method
         self.probabilities = list()
@@ -25,11 +25,11 @@ class GatewaysEvaluator():
         """
         # sup.print_performed_task('Analysing gateways` probabilities')
         # Analisys of gateways probabilities
-        if self.method == 'discovery':
+        if self.method is GateManagement.DISCOVERY:
             gateways = self.analize_gateways()
-        elif self.method == 'random':
+        elif self.method is GateManagement.RANDOM:
             gateways = self.analize_gateways_random()
-        elif self.method == 'equiprobable':
+        elif self.method is GateManagement.EQUIPROBABLE:
             gateways = self.analize_gateways_equi()
         # Fix 0 probabilities and float error sums
         gateways = self.normalize_probabilities(gateways)
@@ -38,17 +38,14 @@ class GatewaysEvaluator():
         gateways['gatewayid'] = gateways.apply(gids, axis=1)
         gids = lambda x: self.process_graph.nodes[x['t_path']]['id']
         gateways['out_path_id'] = gateways.apply(gids, axis=1)
-        self.probabilities = gateways[['gatewayid',
-                                       'out_path_id',
-                                       'prob']].to_dict('records')
+        self.probabilities = gateways[['gatewayid', 'out_path_id', 'prob']].to_dict('records')
         # sup.print_done_task()
 
     @staticmethod
     def normalize_probabilities(nodes_list: pd.DataFrame) -> pd.DataFrame:
         temp_list = list()
         for key, group in nodes_list.groupby(by=['gate']):
-            probabilities = np.nan_to_num(
-                np.array(group.prob.tolist())).tolist()
+            probabilities = np.nan_to_num(np.array(group.prob.tolist())).tolist()
             probabilities = sup.round_preserve(probabilities, 1)
             probabilities = sup.avoid_zero_prob(probabilities)
             for i in range(0, len(probabilities)):
@@ -77,8 +74,7 @@ class GatewaysEvaluator():
             return tasks_list
 
         nodes_list = list()
-        for node in tqdm(self.process_graph.nodes,
-                         desc='analysing gateways probabilities:'):
+        for node in tqdm(self.process_graph.nodes, desc='analysing gateways probabilities:'):
             outs = list()
             if self.process_graph.nodes[node]['type'] == 'gate':
                 # Targets
@@ -89,8 +85,7 @@ class GatewaysEvaluator():
                     for task in tasks:
                         outs.append((node, path, task))
             nodes_list.extend(outs)
-        gateways = pd.DataFrame.from_records(
-            nodes_list, columns=['gate', 't_path', 't_task'])
+        gateways = pd.DataFrame.from_records(nodes_list, columns=['gate', 't_path', 't_task'])
         return gateways
 
     def analize_gateways(self) -> pd.DataFrame:
@@ -109,15 +104,11 @@ class GatewaysEvaluator():
         executions = lambda x: self.process_graph.nodes[x['t_task']]['executions']
         nodes_list['executions'] = nodes_list.apply(executions, axis=1)
         # Aggregate path executions
-        nodes_list = (nodes_list.groupby(by=['gate', 't_path'])['executions']
-                      .sum()
-                      .reset_index())
+        nodes_list = (nodes_list.groupby(by=['gate', 't_path'])['executions'].sum().reset_index())
         # Calculate probabilities
-        t_ocurrences = (nodes_list.groupby(by=['gate'])['executions']
-                        .sum().to_dict())
+        t_ocurrences = (nodes_list.groupby(by=['gate'])['executions'].sum().to_dict())
         with np.errstate(divide='ignore', invalid='ignore'):
-            rate = lambda x: round(
-                np.divide(x['executions'], t_ocurrences[x['gate']]), 2)
+            rate = lambda x: round(np.divide(x['executions'], t_ocurrences[x['gate']]), 2)
             nodes_list['prob'] = nodes_list.apply(rate, axis=1)
         return nodes_list
 
@@ -132,9 +123,7 @@ class GatewaysEvaluator():
         # Obtain gateways structure
         nodes_list = self.analize_gateway_structure()
         # Aggregate paths
-        nodes_list = (nodes_list.groupby(by=['gate', 't_path'])
-                      .count()
-                      .reset_index())
+        nodes_list = (nodes_list.groupby(by=['gate', 't_path']).count().reset_index())
         nodes_list['prob'] = 0.0
         # assign random probabilities
         temp_list = list()
@@ -157,9 +146,7 @@ class GatewaysEvaluator():
         # Obtain gateways structure
         nodes_list = self.analize_gateway_structure()
         # Aggregate paths
-        nodes_list = (nodes_list.groupby(by=['gate', 't_path'])
-                      .count()
-                      .reset_index())
+        nodes_list = (nodes_list.groupby(by=['gate', 't_path']).count().reset_index())
         nodes_list['prob'] = 0.0
         # assign probabilities
         temp_list = list()

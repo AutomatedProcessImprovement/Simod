@@ -1,5 +1,6 @@
 import os
 
+import simod.configuration as configuration
 import utils.support as sup
 from simod.cli_formatter import *
 from simod.discoverer import Discoverer
@@ -22,8 +23,8 @@ def main():
 @click.option('--arr_support', default=0.098, show_default=True, type=click.FloatRange(0.0, 1.0))
 @click.option('--epsilon', default=0.27747592754346484, show_default=True, type=float)
 @click.option('--eta', default=0.3475132024591636, show_default=True, type=float)
-@click.option('--gate_management', default='discovery', show_default=True,
-              type=click.Choice(['discovery', 'equiprobable'], case_sensitive=False))
+@click.option('--gate_management', default='discovered', show_default=True,
+              type=click.Choice(['discovered', 'equiprobable'], case_sensitive=False))
 @click.option('--res_confidence', default=56.03564752634776, show_default=True, type=float)
 @click.option('--res_support', default=0.07334543198001255, show_default=True,
               type=click.FloatRange(0.0, 1.0))
@@ -40,48 +41,59 @@ def main():
 def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, arr_support,
              arr_dtype, epsilon, eta, gate_management, res_confidence, res_support, res_cal_met,
              res_dtype, rp_similarity, pdef_method):
-    def define_general_settings(settings: dict = None) -> dict:
-        """ Sets the app general settings"""
-        if not settings:
-            settings = dict()
-        column_names = {'Case ID': 'caseid', 'Activity': 'task',
-                        'lifecycle:transition': 'event_type', 'Resource': 'user'}
-        # Event-log reading options
-        settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
-                                    'column_names': column_names,
-                                    'one_timestamp': False,
-                                    'filter_d_attrib': True}
-        # Folders structure
-        settings['output'] = os.path.join('outputs', sup.folder_id())
-        # External tools routes
-        settings['sm2_path'] = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
-        settings['sm1_path'] = os.path.join('external_tools', 'splitminer', 'splitminer.jar')
-        settings['sm3_path'] = os.path.join('external_tools', 'splitminer3', 'bpmtk.jar')
-        settings['bimp_path'] = os.path.join('external_tools', 'bimp', 'qbp-simulator-engine.jar')
-        settings['align_path'] = os.path.join('external_tools', 'proconformance',
-                                              'ProConformance2.jar')
-        settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
-        settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
-        settings['calender_path'] = os.path.join('external_tools', 'calenderimp', 'CalenderImp.jar')
-        settings['simulator'] = 'bimp'
-        settings['mining_alg'] = 'sm3'
-        return settings
+    # def define_general_settings(settings: dict = None) -> dict:
+    #     """ Sets the app general settings"""
+    #     if not settings:
+    #         settings = dict()
+    #     column_names = {'Case ID': 'caseid', 'Activity': 'task',
+    #                     'lifecycle:transition': 'event_type', 'Resource': 'user'}
+    #     # Event-log reading options
+    #     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
+    #                                 'column_names': column_names,
+    #                                 'one_timestamp': False,
+    #                                 'filter_d_attrib': True}
+    #     # Folders structure
+    #     settings['output'] = os.path.join('outputs', sup.folder_id())
+    #     # External tools routes
+    #     settings['sm2_path'] = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
+    #     settings['sm1_path'] = os.path.join('external_tools', 'splitminer', 'splitminer.jar')
+    #     settings['sm3_path'] = os.path.join('external_tools', 'splitminer3', 'bpmtk.jar')
+    #     settings['bimp_path'] = os.path.join('external_tools', 'bimp', 'qbp-simulator-engine.jar')
+    #     settings['align_path'] = os.path.join('external_tools', 'proconformance',
+    #                                           'ProConformance2.jar')
+    #     settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
+    #     settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
+    #     settings['calender_path'] = os.path.join('external_tools', 'calenderimp', 'CalenderImp.jar')
+    #     settings['simulator'] = 'bimp'
+    #     settings['mining_alg'] = 'sm3'
+    #     return settings
+    #
+    # if model_path is None:
+    #     print_notice("Model is missing. It will be dynamically discovered from the log file.")
+    #
+    # settings = define_general_settings()
+    # settings['project_name'], _ = os.path.splitext(os.path.basename(log_path))
+    # settings['repetitions'] = 1
+    # settings['simulation'] = True
+    # settings['sim_metric'] = 'tsd'
+    # settings['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
+    # settings['concurrency'] = 0.0
+    # settings['arr_cal_met'] = 'discovered'
+    # settings.update(ctx.params)
 
-    if model_path is None:
-        print_notice("Model is missing. It will be dynamically discovered from the log file.")
+    ctx.params['mining_alg'] = configuration.MiningAlgorithm.from_str(mining_alg)
+    ctx.params['alg_manag'] = configuration.AlgorithmManagement.from_str(alg_manag)
+    ctx.params['gate_management'] = configuration.GateManagement.from_str(gate_management)
+    ctx.params['res_cal_met'] = configuration.CalculationMethod.from_str(res_cal_met)
+    ctx.params['res_dtype'] = configuration.DataType.from_str(res_dtype)
+    ctx.params['arr_dtype'] = configuration.DataType.from_str(arr_dtype)
+    ctx.params['pdef_method'] = configuration.PDFMethod.from_str(pdef_method)
 
-    settings = define_general_settings()
-    settings['project_name'], _ = os.path.splitext(os.path.basename(log_path))
-    settings['repetitions'] = 1
-    settings['simulation'] = True
-    settings['sim_metric'] = 'tsd'
-    settings['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
-    settings['concurrency'] = 0.0
-    settings['arr_cal_met'] = 'discovered'
-    settings.update(ctx.params)
+    config = configuration.Configuration(**ctx.params)
+    config.fill_in_derived_fields()
 
-    optimizer = Discoverer(settings)
-    optimizer.execute_pipeline()
+    discoverer = Discoverer(config)
+    discoverer.execute_pipeline()
 
 
 @main.command()

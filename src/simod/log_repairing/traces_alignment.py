@@ -8,6 +8,7 @@ from operator import itemgetter
 import utils.support as sup
 
 from ..cli_formatter import *
+from ..configuration import Configuration
 
 
 class TracesAligner(object):
@@ -16,13 +17,12 @@ class TracesAligner(object):
     expected format .xes or .csv
     """
 
-    def __init__(self, log, not_conformant, settings):
-        """constructor"""
-        self.one_timestamp = settings['read_options']['one_timestamp']
+    def __init__(self, log, not_conformant, settings: Configuration):
+        self.one_timestamp = settings.read_options.one_timestamp
 
         self.evaluate_alignment(settings)
-        self.optimal_alignments = self.read_alignment_info(settings['aligninfo'])
-        self.traces_alignments = self.traces_alignment_type(settings['aligntype'])
+        self.optimal_alignments = self.read_alignment_info(settings.aligninfo)
+        self.traces_alignments = self.traces_alignment_type(settings.aligntype)
 
         self.traces = list()
         self.get_traces(log, not_conformant)
@@ -205,7 +205,7 @@ class TracesAligner(object):
     # TODO: modify this three methods to create just one that evaluates and merge
     # all the alignment data in just one structure
 
-    def evaluate_alignment(self, settings):
+    def evaluate_alignment(self, settings: Configuration):
         """
         Evaluate the traces alignment in relation with BPMN structure.
 
@@ -215,15 +215,15 @@ class TracesAligner(object):
 
         """
         print_subsection("Log Repairing")
-        file_name = settings['project_name']
+        file_name = settings.project_name
         args = ['java']
         if not pl.system().lower() == 'windows':
             args.append('-Xmx2G')
             args.append('-Xss8G')
-        args.extend(['-jar', settings['align_path'],
-                     settings['output'] + os.sep,
+        args.extend(['-jar', settings.align_path,
+                     settings.output + os.sep,
                      file_name + '.xes',
-                     settings['project_name'] + '.bpmn',
+                     settings.project_name + '.bpmn',
                      'true'])
         subprocess.call(args, bufsize=-1)
 

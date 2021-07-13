@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from .pdf_finder import DistributionFinder
 from .user_interface.manual_edition_ui import MainWindow
+from ..configuration import Configuration, PDFMethod
 
 
 class TaskEvaluator():
@@ -15,17 +16,17 @@ class TaskEvaluator():
         This class evaluates the tasks durations and associates resources to it
      """
 
-    def __init__(self, process_graph, process_stats, resource_pool, settings):
+    def __init__(self, process_graph, process_stats, resource_pool, settings: Configuration):
         """constructor"""
         self.tasks = self.get_task_list(process_graph)
         self.model_data = self.get_model_data(process_graph)
         self.process_stats = process_stats
         self.resource_pool = resource_pool
 
-        self.pdef_method = settings['pdef_method']
+        self.pdef_method = settings.pdef_method
         self.pdef_values = dict()
 
-        self.one_timestamp = settings['read_options']['one_timestamp']
+        self.one_timestamp = settings.read_options.one_timestamp
         self.elements_data = self.evaluate_tasks()
 
     def evaluate_tasks(self):
@@ -39,12 +40,12 @@ class TaskEvaluator():
         """
         elements_data = list()
         # processing time discovery method
-        if self.pdef_method == 'automatic':
+        if self.pdef_method is PDFMethod.AUTOMATIC:
             elements_data = self.mine_processing_time()
-        elif self.pdef_method in ['manual', 'semi-automatic']:
-            elements_data = self.define_distributions_manually()
-        elif self.pdef_method == 'default':
-            elements_data = self.default_processing_time()
+        # elif self.pdef_method in ['manual', 'semi-automatic']:
+        #     elements_data = self.define_distributions_manually()
+        # elif self.pdef_method == 'default':
+        #     elements_data = self.default_processing_time()
         else:
             raise ValueError(self.pdef_method)
         # Resource association
@@ -86,29 +87,29 @@ class TaskEvaluator():
             self.model_data[['name', 'elementid']], on='name', how='left')
         return elements_data
 
-    def define_distributions_manually(self):
-        """
-        Enable the manual edition of tasks duration
-
-        Returns
-        -------
-        elements_data : Dataframe
-
-        """
-        if self.pdef_method == 'semi-automatic':
-            elements_data = self.mine_processing_time().sort_values(by='name')
-            elements_data = elements_data.to_dict('records')
-        else:
-            elements_data = self.default_values()
-        root = tk.Tk()
-        window = MainWindow(root, elements_data)
-        root.mainloop()
-        new_elements = pd.DataFrame(window.new_elements)
-        elements_data = pd.DataFrame(elements_data)
-
-        elements_data = new_elements.merge(
-            elements_data[['id', 'name', 'elementid']], on='id', how='left')
-        return elements_data
+    # def define_distributions_manually(self):
+    #     """
+    #     Enable the manual edition of tasks duration
+    #
+    #     Returns
+    #     -------
+    #     elements_data : Dataframe
+    #
+    #     """
+    #     if self.pdef_method == 'semi-automatic':
+    #         elements_data = self.mine_processing_time().sort_values(by='name')
+    #         elements_data = elements_data.to_dict('records')
+    #     else:
+    #         elements_data = self.default_values()
+    #     root = tk.Tk()
+    #     window = MainWindow(root, elements_data)
+    #     root.mainloop()
+    #     new_elements = pd.DataFrame(window.new_elements)
+    #     elements_data = pd.DataFrame(elements_data)
+    #
+    #     elements_data = new_elements.merge(
+    #         elements_data[['id', 'name', 'elementid']], on='id', how='left')
+    #     return elements_data
 
     def default_values(self):
         """

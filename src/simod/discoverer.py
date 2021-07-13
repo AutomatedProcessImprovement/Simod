@@ -8,19 +8,20 @@ import types
 from multiprocessing import Pool
 from operator import itemgetter
 
-import analyzers.sim_evaluator as sim
 import pandas as pd
-import readers.log_reader as lr
-import readers.log_splitter as ls
 import utils.support as sup
 import xmltodict as xtd
 from lxml import etree
 from tqdm import tqdm
 
+from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
+from .configuration import Configuration, MiningAlgorithm, CalculationMethod
 from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer
 from .extraction.parameter_extraction import ParameterMiner
+from .readers import log_reader as lr
+from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
 from .writers import xml_writer as xml, xes_writer as xes
 
@@ -30,8 +31,7 @@ class Discoverer:
     Main class of the Simulation Models Discoverer
     """
 
-    def __init__(self, settings):
-        """constructor"""
+    def __init__(self, settings: Configuration):
         self.settings = settings
 
         self.log = types.SimpleNamespace()
@@ -49,31 +49,31 @@ class Discoverer:
         self.is_safe = self.temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.mine_structure(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.replay_process(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.extract_parameters(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self.extract_parameters(log_time=exec_times,
+                                               is_safe=self.is_safe)  # TODO: is this the only what stays after Orlenys integration?
         self.is_safe = self.simulate(log_time=exec_times, is_safe=self.is_safe)
         self.mannage_results()
         self.save_times(exec_times, self.settings)
         self.is_safe = self.export_canonical_model(is_safe=self.is_safe)
-        print_asset(f"Output folder is at {self.settings['output']}")
+        print_asset(f"Output folder is at {self.settings.output}")
 
     @timeit(rec_name='READ_INPUTS')
     @safe_exec
     def read_inputs(self, **kwargs) -> None:
         print_section("Log Parsing")
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings['log_path']),
-                                self.settings['read_options'])
+        self.log = lr.LogReader(os.path.join(self.settings.log_path), self.settings.read_options)
         # Time splitting 80-20
-        self.split_timeline(0.8, self.settings['read_options']['one_timestamp'])
+        self.split_timeline(0.8, self.settings.read_options.one_timestamp)
 
     @timeit(rec_name='PATH_DEF')
     @safe_exec
     def temp_path_creation(self, **kwargs) -> None:
         print_section("Log Customization")
         # Output folder creation
-        if not os.path.exists(self.settings['output']):
-            os.makedirs(self.settings['output'])
-            os.makedirs(os.path.join(self.settings['output'], 'sim_data'))
+        if not os.path.exists(self.settings.output):
+            os.makedirs(self.settings.output)
+            os.makedirs(os.path.join(self.settings.output, 'sim_data'))
         # Create customized event-log for the external tools
         xes.XesWriter(self.log_train, self.settings)
 
@@ -96,9 +96,7 @@ class Discoverer:
         Process replaying
         """
         print_section("Log Replaying")
-        replayer = LogReplayer(self.process_graph,
-                               self.log_train.get_traces(),
-                               self.settings,
+        replayer = LogReplayer(self.process_graph, self.log_train.get_traces(), self.settings,
                                msg='reading conformant training traces')
         self.process_stats = replayer.process_stats
         self.conformant_traces = replayer.conformant_traces
@@ -108,27 +106,20 @@ class Discoverer:
     def extract_parameters(self, **kwargs) -> None:
         # print("-- Mining Simulation Parameters --")
         print_section("Simulation Parameters Mining")
-        p_extractor = ParameterMiner(self.log_train,
-                                     self.bpmn,
-                                     self.process_graph,
-                                     self.settings)
+        p_extractor = ParameterMiner(self.log_train, self.bpmn, self.process_graph, self.settings)
         num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
-        start_time = (pd.DataFrame(self.log_test)
-                      .start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+        start_time = (pd.DataFrame(self.log_test).start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
         p_extractor.extract_parameters(num_inst, start_time)
         if p_extractor.is_safe:
-            self.process_stats = self.process_stats.merge(
-                p_extractor.resource_table[['resource', 'role']],
-                on='resource',
-                how='left')
+            self.process_stats = self.process_stats.merge(p_extractor.resource_table[['resource', 'role']],
+                                                          on='resource', how='left')
             # save parameters
             self.parameters = copy.deepcopy(p_extractor.parameters)
             # print parameters in xml bimp format
             xml.print_parameters(os.path.join(
-                self.settings['output'],
-                self.settings['project_name'] + '.bpmn'),
-                os.path.join(self.settings['output'],
-                             self.settings['project_name'] + '.bpmn'),
+                self.settings.output,
+                self.settings.project_name + '.bpmn'),
+                os.path.join(self.settings.output, self.settings.project_name + '.bpmn'),
                 p_extractor.parameters)
         else:
             raise RuntimeError('Parameters extraction error')
@@ -152,7 +143,7 @@ class Discoverer:
             p.wait()
             pbar.close()
 
-        reps = self.settings['repetitions']
+        reps = self.settings.repetitions
         cpu_count = multiprocessing.cpu_count()
         w_count = reps if reps <= cpu_count else cpu_count
         pool = Pool(processes=w_count)
@@ -180,7 +171,7 @@ class Discoverer:
 
     @staticmethod
     def read_stats(args):
-        def read(settings, rep):
+        def read(settings: Configuration, rep):
             """Reads the simulation results stats
             Args:
                 settings (dict): Path to jar and file names
@@ -188,10 +179,9 @@ class Discoverer:
             """
             # message = 'Reading log repetition: ' + str(rep+1)
             # print(message)
-            path = os.path.join(settings['output'], 'sim_data')
-            log_name = settings['project_name'] + '_' + str(rep + 1) + '.csv'
-            rep_results = pd.read_csv(os.path.join(path, log_name),
-                                      dtype={'caseid': object})
+            path = os.path.join(settings.output, 'sim_data')
+            log_name = settings.project_name + '_' + str(rep + 1) + '.csv'
+            rep_results = pd.read_csv(os.path.join(path, log_name), dtype={'caseid': object})
             rep_results['caseid'] = 'Case' + rep_results['caseid']
             rep_results['run_num'] = rep
             rep_results['source'] = 'simulation'
@@ -206,7 +196,7 @@ class Discoverer:
 
     @staticmethod
     def evaluate_logs(args):
-        def evaluate(settings, process_stats, sim_log):
+        def evaluate(settings: Configuration, process_stats, sim_log):
             """Reads the simulation results stats
             Args:
                 settings (dict): Path to jar and file names
@@ -215,15 +205,10 @@ class Discoverer:
             # print('Reading repetition:', (rep+1), sep=' ')
             rep = (sim_log.iloc[0].run_num)
             sim_values = list()
-            evaluator = sim.SimilarityEvaluator(
-                process_stats,
-                sim_log,
-                settings,
-                max_cases=1000)
-            metrics = [settings['sim_metric']]
-            if 'add_metrics' in settings.keys():
-                metrics = list(set(list(settings['add_metrics']) +
-                                   metrics))
+            evaluator = sim.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
+            metrics = [settings.sim_metric]
+            if settings.add_metrics:
+                metrics = list(set(settings.add_metrics + metrics))
             for metric in metrics:
                 evaluator.measure_distance(metric)
                 sim_values.append({**{'run_num': rep}, **evaluator.similarity})
@@ -233,7 +218,7 @@ class Discoverer:
 
     @staticmethod
     def execute_simulator(args):
-        def sim_call(settings, rep):
+        def sim_call(settings: Configuration, rep):
             """Executes BIMP Simulations.
             Args:
                 settings (dict): Path to jar and file names
@@ -241,12 +226,11 @@ class Discoverer:
             """
             # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
             # print(message)
-            args = ['java', '-jar', settings['bimp_path'],
-                    os.path.join(settings['output'],
-                                 settings['project_name'] + '.bpmn'),
+            args = ['java', '-jar', settings.bimp_path,
+                    os.path.join(settings.output, settings.project_name + '.bpmn'),
                     '-csv',
-                    os.path.join(settings['output'], 'sim_data',
-                                 settings['project_name'] + '_' + str(rep + 1) + '.csv')]
+                    os.path.join(settings.output, 'sim_data',
+                                 settings.project_name + '_' + str(rep + 1) + '.csv')]
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
         sim_call(*args)
@@ -268,12 +252,12 @@ class Discoverer:
 
     def mannage_results(self) -> None:
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
-        self.sim_values['output'] = self.settings['output']
-        self.sim_values.to_csv(os.path.join(self.settings['output'], self.output_file), index=False)
+        self.sim_values['output'] = self.settings.output
+        self.sim_values.to_csv(os.path.join(self.settings.output, self.output_file), index=False)
 
     @staticmethod
-    def save_times(times, settings):
-        times = [{**{'output': settings['output']}, **times}]
+    def save_times(times, settings: Configuration):
+        times = [{**{'output': settings.output}, **times}]
         log_file = os.path.join('outputs', 'execution_times.csv')
         if not os.path.exists(log_file):
             open(log_file, 'w').close()
@@ -285,40 +269,34 @@ class Discoverer:
     @safe_exec
     def export_canonical_model(self, **kwargs):
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
-        time_table = etree.tostring(self.parameters['time_table'],
-                                    pretty_print=True)
-        time_table = xtd.parse(time_table,
-                               process_namespaces=True,
-                               namespaces=ns)
+        time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
+        time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
         self.parameters['time_table'] = time_table
-        self.parameters['discovery_parameters'] = self.filter_dic_params(
-            self.settings)
-        sup.create_json(self.parameters, os.path.join(
-            self.settings['output'],
-            self.settings['project_name'] + '_canon.json'))
+        self.parameters['discovery_parameters'] = self.filter_dic_params(self.settings)
+        sup.create_json(self.parameters, os.path.join(self.settings.output, self.settings.project_name + '_canon.json'))
 
     @staticmethod
-    def filter_dic_params(settings):
+    def filter_dic_params(settings: Configuration):
         best_params = dict()
-        best_params['alg_manag'] = settings['alg_manag']
-        best_params['gate_management'] = settings['gate_management']
-        best_params['rp_similarity'] = str(settings['rp_similarity'])
+        best_params['alg_manag'] = settings.alg_manag.__str__().split('.')[1]
+        best_params['gate_management'] = settings.gate_management.__str__().split('.')[1]
+        best_params['rp_similarity'] = str(settings.rp_similarity)
         # best structure mining parameters
-        if settings['mining_alg'] in ['sm1', 'sm3']:
-            best_params['epsilon'] = str(settings['epsilon'])
-            best_params['eta'] = str(settings['eta'])
-        elif settings['mining_alg'] == 'sm2':
-            best_params['concurrency'] = str(settings['concurrency'])
-        if settings['res_cal_met'] == 'default':
-            best_params['res_dtype'] = settings['res_dtype']
+        if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+            best_params['epsilon'] = str(settings.epsilon)
+            best_params['eta'] = str(settings.eta)
+        elif settings.mining_alg == MiningAlgorithm.SM2:
+            best_params['concurrency'] = str(settings.concurrency)
+        if settings.res_cal_met == CalculationMethod.DEFAULT:
+            best_params['res_dtype'] = settings.res_dtype.__str__().split('.')[1]
         else:
-            best_params['res_support'] = str(settings['res_support'])
-            best_params['res_confidence'] = str(settings['res_confidence'])
-        if settings['arr_cal_met'] == 'default':
-            best_params['arr_dtype'] = settings['res_dtype']
+            best_params['res_support'] = str(settings.res_support)
+            best_params['res_confidence'] = str(settings.res_confidence)
+        if settings.arr_cal_met == CalculationMethod.DEFAULT:
+            best_params['arr_dtype'] = settings.res_dtype.__str__().split('.')[1]
         else:
-            best_params['arr_support'] = str(settings['arr_support'])
-            best_params['arr_confidence'] = str(settings['arr_confidence'])
+            best_params['arr_support'] = str(settings.arr_support)
+            best_params['arr_confidence'] = str(settings.arr_confidence)
         return best_params
 
     # =============================================================================

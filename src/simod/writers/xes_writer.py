@@ -5,18 +5,19 @@ from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 from opyenxes.factory.XFactory import XFactory
 
+from ..configuration import Configuration
+
 
 class XesWriter(object):
     """
     This class writes a process log in .xes format
     """
 
-    def __init__(self, log, settings):
-        """constructor"""
+    def __init__(self, log, settings: Configuration):
         self.log = log
-        self.one_timestamp = settings['read_options']['one_timestamp']
-        self.column_names = settings['read_options']['column_names']
-        self.output_file = os.path.join(settings['output'], settings['project_name'] + '.xes')
+        self.one_timestamp = settings.read_options.one_timestamp
+        self.column_names = settings.read_options.column_names
+        self.output_file = os.path.join(settings.output, settings.project_name + '.xes')
         self.create_xes_file()
 
     def create_xes_file(self):
@@ -77,7 +78,8 @@ class XesWriter(object):
                 elif attribute_type == transition['column']:
                     attribute = XFactory.create_attribute_timestamp("time:timestamp", attr_value, extension=None)
                     attribute_map[attribute.get_key()] = attribute
-                    attribute2 = XFactory.create_attribute_literal('lifecycle:transition', transition['value'], extension=xlc)
+                    attribute2 = XFactory.create_attribute_literal('lifecycle:transition', transition['value'],
+                                                                   extension=xlc)
                     attribute_map[attribute2.get_key()] = attribute2
                 elif attribute_type in ['Case ID', 'Event ID', transition['skiped']]:
                     next

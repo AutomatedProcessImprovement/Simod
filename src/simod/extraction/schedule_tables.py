@@ -1,12 +1,15 @@
 import datetime
 import os
 import subprocess
+from pathlib import Path
 
 import pandas as pd
 import utils.support as sup
 from lxml import etree
 from lxml.builder import ElementMaker  # lxml only !
 from tqdm import tqdm
+
+from ..configuration import Configuration, DataType, CalculationMethod
 
 
 class TimeTablesCreator():
@@ -15,8 +18,7 @@ class TimeTablesCreator():
         to the resource pools
      '''
 
-    def __init__(self, settings):
-        '''constructor'''
+    def __init__(self, settings: Configuration):
         self.settings = settings
 
     def create_timetables(self, args):
@@ -26,27 +28,27 @@ class TimeTablesCreator():
         else:
             return creator()
 
-    def _get_creator(self, res_cal_met, arr_cal_met):
-        if res_cal_met == 'default' and arr_cal_met == 'default':
+    def _get_creator(self, res_cal_met: CalculationMethod, arr_cal_met: CalculationMethod):
+        if res_cal_met is CalculationMethod.DEFAULT and arr_cal_met is CalculationMethod.DEFAULT:
             return self._def_timetables
-        elif res_cal_met == 'default' and arr_cal_met == 'discovered':
+        elif res_cal_met is CalculationMethod.DEFAULT and arr_cal_met is CalculationMethod.DISCOVERED:
             return self._defres_disarr
-        elif res_cal_met == 'discovered' and arr_cal_met == 'default':
+        elif res_cal_met is CalculationMethod.DISCOVERED and arr_cal_met is CalculationMethod.DEFAULT:
             return self._disres_defarr
-        elif res_cal_met == 'discovered' and arr_cal_met == 'discovered':
+        elif res_cal_met is CalculationMethod.DISCOVERED and arr_cal_met is CalculationMethod.DISCOVERED:
             return self._disres_disarr
-        elif res_cal_met == 'pool' and arr_cal_met == 'default':
+        elif res_cal_met is CalculationMethod.POOL and arr_cal_met is CalculationMethod.DEFAULT:
             return self._dispoolres_defarr
-        elif res_cal_met == 'pool' and arr_cal_met == 'discovered':
+        elif res_cal_met is CalculationMethod.POOL and arr_cal_met is CalculationMethod.DISCOVERED:
             return self._dispoolres_disarr
         else:
             raise ValueError(res_cal_met, arr_cal_met)
 
     def _def_timetables(self) -> None:
         pbar = tqdm(total=2, desc='mining calendars:')
-        xmlres = self._default_creator(self.settings['res_dtype'], 1)
+        xmlres = self._default_creator(self.settings.res_dtype, 1)
         pbar.update(1)
-        xmlarr = self._default_creator(self.settings['arr_dtype'], 2)
+        xmlarr = self._default_creator(self.settings.arr_dtype, 2)
         pbar.update(1)
 
         # merge timetables
@@ -65,13 +67,10 @@ class TimeTablesCreator():
 
     def _defres_disarr(self) -> None:
         pbar = tqdm(total=2, desc='mining calendars:')
-        xmlres = self._default_creator(self.settings['res_dtype'], 1)
+        xmlres = self._default_creator(self.settings.res_dtype, 1)
         pbar.update(1)
-        xmlarr = self._timetable_discoverer(
-            self.settings['calender_path'],
-            self.settings['log_path'],
-            str(self.settings['arr_support']),
-            str(self.settings['arr_confidence']), 2)
+        xmlarr = self._timetable_discoverer(self.settings.calender_path, self.settings.log_path,
+                                            str(self.settings.arr_support), str(self.settings.arr_confidence), 2)
         pbar.update(1)
         # merge timetables
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
@@ -89,12 +88,12 @@ class TimeTablesCreator():
     def _disres_defarr(self) -> None:
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
-            self.settings['calender_path'],
-            self.settings['log_path'],
-            str(self.settings['res_support']),
-            str(self.settings['res_confidence']), 1)
+            self.settings.calender_path,
+            self.settings.log_path,
+            str(self.settings.res_support),
+            str(self.settings.res_confidence), 1)
         pbar.update(1)
-        xmlarr = self._default_creator(self.settings['arr_dtype'], 2)
+        xmlarr = self._default_creator(self.settings.arr_dtype, 2)
         pbar.update(1)
         # merge timetables
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
@@ -112,16 +111,16 @@ class TimeTablesCreator():
     def _disres_disarr(self) -> None:
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
-            self.settings['calender_path'],
-            self.settings['log_path'],
-            str(self.settings['res_support']),
-            str(self.settings['res_confidence']), 1)
+            self.settings.calender_path,
+            self.settings.log_path,
+            str(self.settings.res_support),
+            str(self.settings.res_confidence), 1)
         pbar.update(1)
         xmlarr = self._timetable_discoverer(
-            self.settings['calender_path'],
-            self.settings['log_path'],
-            str(self.settings['arr_support']),
-            str(self.settings['arr_confidence']), 2)
+            self.settings.calender_path,
+            self.settings.log_path,
+            str(self.settings.arr_support),
+            str(self.settings.arr_confidence), 2)
         pbar.update(1)
         # merge timetables
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
@@ -132,27 +131,25 @@ class TimeTablesCreator():
 
         # save values
         self.time_table = xmlarr
-        self.res_ttable_name = {'arrival': arrivaltable[0].attrib['id'],
-                                'resources': restimetable.attrib['id']}
+        self.res_ttable_name = {'arrival': arrivaltable[0].attrib['id'], 'resources': restimetable.attrib['id']}
         pbar.close()
 
     def _dispoolres_defarr(self, timetable) -> None:
         pbar = tqdm(total=2, desc='mining calendars:')
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
-        xmlarr = self._default_creator(self.settings['arr_dtype'], 2)
+        xmlarr = self._default_creator(self.settings.arr_dtype, 2)
         pbar.update(1)
         arrivaltable = xmlarr.find('qbp:timetable', namespaces=ns)
 
         tablenames = {'arrival': arrivaltable.attrib['id']}
         for k, group in pd.DataFrame(timetable).groupby('role'):
-            temp_filename = os.path.join(self.settings['output'],
-                                         sup.file_id())
+            temp_filename = os.path.join(self.settings.output, sup.file_id())
             group[['resource']].to_csv(temp_filename, index=False)
             xmlres = self._timetable_discoverer(
-                self.settings['calender_path'],
-                self.settings['log_path'],
-                str(self.settings['res_support']),
-                str(self.settings['res_confidence']), 3, temp_filename)
+                self.settings.calender_path,
+                self.settings.log_path,
+                str(self.settings.res_support),
+                str(self.settings.res_confidence), 3, temp_filename)
             restimetable = xmlres.find('qbp:timetable', namespaces=ns)
             restimetable.attrib['id'] = 'QBP_RES_' + k.upper().replace(' ', '_') + '_TIMETABLE'
             restimetable.attrib['name'] = k.upper().replace(' ', '_') + '_TIMETABLE'
@@ -170,22 +167,21 @@ class TimeTablesCreator():
         pbar = tqdm(total=2, desc='mining calendars:')
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
         xmlarr = self._timetable_discoverer(
-            self.settings['calender_path'],
-            self.settings['log_path'],
-            str(self.settings['arr_support']),
-            str(self.settings['arr_confidence']), 2)
+            self.settings.calender_path,
+            self.settings.log_path,
+            str(self.settings.arr_support),
+            str(self.settings.arr_confidence), 2)
         pbar.update(1)
         arrivaltable = xmlarr.find('qbp:timetable', namespaces=ns)
         tablenames = {'arrival': arrivaltable.attrib['id']}
         for k, group in pd.DataFrame(timetable).groupby('role'):
-            temp_filename = os.path.join(self.settings['output'],
-                                         sup.file_id())
+            temp_filename = os.path.join(self.settings.output, sup.file_id())
             group[['resource']].to_csv(temp_filename, index=False)
             xmlres = self._timetable_discoverer(
-                self.settings['calender_path'],
-                self.settings['log_path'],
-                str(self.settings['res_support']),
-                str(self.settings['res_confidence']), 3, temp_filename)
+                self.settings.calender_path,
+                self.settings.log_path,
+                str(self.settings.res_support),
+                str(self.settings.res_confidence), 3, temp_filename)
             restimetable = xmlres.find('qbp:timetable', namespaces=ns)
             restimetable.attrib['id'] = 'QBP_RES_' + k.upper().replace(' ', '_') + '_TIMETABLE'
             restimetable.attrib['name'] = k.upper().replace(' ', '_') + '_TIMETABLE'
@@ -200,15 +196,14 @@ class TimeTablesCreator():
         pbar.close()
 
     @staticmethod
-    def _default_creator(dtype, mode) -> None:
+    def _default_creator(dtype: DataType, mode) -> None:
         """
         Creates predefined timetables for BIMP simulator
         """
 
         def print_xml_bimp(time_table) -> str:
             web = 'http://www.qbp-simulator.com/Schema201212'
-            E = ElementMaker(namespace=web,
-                             nsmap={'qbp': web})
+            E = ElementMaker(namespace=web, nsmap={'qbp': web})
             TIMETABLES = E.timetables
             TIMETABLE = E.timetable
             RULES = E.rules
@@ -233,7 +228,7 @@ class TimeTablesCreator():
                 if mode == 1 else 'QBP_ARR_DEFAULT_TIMETABLE')
         default = 'false' if mode == 1 else 'true'
         time_table = list()
-        if dtype == 'LV917':
+        if dtype == DataType.LV917:
             time_table.append({'id_t': name,
                                'default': default,
                                'name': 'Default',
@@ -241,7 +236,7 @@ class TimeTablesCreator():
                                'to_t': '17:00:00.000+00:00',
                                'from_w': 'MONDAY',
                                'to_w': 'FRIDAY'})
-        elif dtype == '247':
+        elif dtype == DataType.DT247:
             time_table.append({'id_t': name,
                                'default': default,
                                'name': '24/7',
@@ -252,13 +247,10 @@ class TimeTablesCreator():
         return print_xml_bimp(time_table)
 
     @staticmethod
-    def _timetable_discoverer(calendar_path, file, sup, conf, mode, file_name=None) -> None:
+    def _timetable_discoverer(calendar_path: Path, file: Path, sup, conf, mode, file_name=None) -> None:
         """Executes BIMP Simulations.
-        Args:
-            settings (dict): Path to jar and file names
-            rep (int): repetition number
         """
-        args = ['java', '-jar', calendar_path, file, sup, conf, str(mode)]
+        args = ['java', '-jar', calendar_path.__str__(), file.__str__(), sup, conf, str(mode)]
         if not file_name is None:
             args.append(file_name)
         process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
@@ -278,11 +270,9 @@ class TimeTablesCreator():
                  .findall('qbp:rule', namespaces=ns))
         for rule in rules:
             rule.attrib['fromTime'] = (
-                datetime.datetime.strptime(rule.attrib['fromTime'][:-6], "%H:%M:%S.%f")
-                    .strftime("%H:%M:%S.%f+00:00"))
+                datetime.datetime.strptime(rule.attrib['fromTime'][:-6], "%H:%M:%S.%f").strftime("%H:%M:%S.%f+00:00"))
             rule.attrib['toTime'] = (
-                datetime.datetime.strptime(rule.attrib['toTime'][:-6], "%H:%M:%S.%f")
-                    .strftime("%H:%M:%S.%f+00:00"))
+                datetime.datetime.strptime(rule.attrib['toTime'][:-6], "%H:%M:%S.%f").strftime("%H:%M:%S.%f+00:00"))
         if mode == 2:
             timetable = xml.find('qbp:timetable', namespaces=ns)
             timetable.attrib['default'] = "true"

@@ -12,8 +12,8 @@ from xml.dom import minidom
 
 import analyzers.sim_evaluator as sim
 import pandas as pd
-import readers.log_reader as lr
-import readers.log_splitter as ls
+from .readers import log_reader as lr
+from .readers import log_splitter as ls
 import utils.support as sup
 from tqdm import tqdm
 

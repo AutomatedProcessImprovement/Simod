@@ -12,32 +12,101 @@ class AlgorithmManagement(Enum):
     REPLACEMENT = auto()
     REMOVAL = auto()
 
+    @classmethod
+    def from_str(cls, value: str):
+        if value == 'repair':
+            return cls.REPAIR
+        elif value == 'removal':
+            return cls.REMOVAL
+        elif value == 'replacement':
+            return cls.REPLACEMENT
+        else:
+            raise ValueError(f'Unknown value {value}')
+
 
 class MiningAlgorithm(Enum):
     SM1 = auto()
     SM2 = auto()
     SM3 = auto()
 
+    @classmethod
+    def from_str(cls, value: str):
+        if value == 'sm1':
+            return cls.SM1
+        elif value == 'sm2':
+            return cls.SM2
+        elif value == 'sm3':
+            return cls.SM3
+        else:
+            raise ValueError(f'Unknown value {value}')
+
 
 class GateManagement(Enum):
     DISCOVERY = auto()
     EQUIPROBABLE = auto()
+    RANDOM = auto()
+
+    @classmethod
+    def from_str(cls, value: str):
+        if value == 'discovered':
+            return cls.DISCOVERY
+        elif value == 'equiprobable':
+            return cls.EQUIPROBABLE
+        elif value == 'random':
+            return cls.RANDOM
+        else:
+            raise ValueError(f'Unknown value {value}')
 
 
 class CalculationMethod(Enum):
     DEFAULT = auto()
     DISCOVERED = auto()
+    POOL = auto()
+
+    @classmethod
+    def from_str(cls, value: str):
+        if value == 'default':
+            return cls.DEFAULT
+        elif value == 'discovered':
+            return cls.DISCOVERED
+        elif value == 'pool':
+            return cls.POOL
+        else:
+            raise ValueError(f'Unknown value {value}')
 
 
 class DataType(Enum):
     DT247 = auto()
     LV917 = auto()
 
+    @classmethod
+    def from_str(cls, value: str):
+        if value == '247' or value == 'dt247':
+            return cls.DT247
+        elif value == 'LV917':
+            return cls.LV917
+        else:
+            raise ValueError(f'Unknown value {value}')
+
 
 class PDFMethod(Enum):
     AUTOMATIC = auto()
     SEMIAUTOMATIC = auto()
     MANUAL = auto()
+    DEFAULT = auto()
+
+    @classmethod
+    def from_str(cls, value: str):
+        if value == 'automatic':
+            return cls.AUTOMATIC
+        elif value == 'semiautomatic':
+            return cls.SEMIAUTOMATIC
+        elif value == 'manual':
+            return cls.MANUAL
+        elif value == 'default':
+            return cls.DEFAULT
+        else:
+            raise ValueError(f'Unknown value {value}')
 
 
 class SimulatorKind(Enum):
@@ -50,6 +119,10 @@ class Metric(Enum):
     LOG_MAE = auto()
     DL = auto()
     MAE = auto()
+    DAY_EMD = auto()
+    CAL_EMD = auto()
+    DL_MAE = auto()
+    HOUR_EMD = auto()
 
 
 class ExecutionMode(Enum):

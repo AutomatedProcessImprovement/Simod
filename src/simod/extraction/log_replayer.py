@@ -8,6 +8,8 @@ import pandas as pd
 import utils.support as sup
 from tqdm import tqdm
 
+from ..configuration import Configuration
+
 
 class LogReplayer():
     """
@@ -15,14 +17,13 @@ class LogReplayer():
     measures the global conformance and the KPI's related with times
     """
 
-    def __init__(self, model, log, settings, msg='',
-                 source='log', run_num=0, verbose=True, mode='multi', st=True):
+    def __init__(self, model, log, settings: Configuration, msg='', source='log', run_num=0, verbose=True, mode='multi',
+                 st=True):
         self.source = source
         self.run_num = run_num
-        self.one_timestamp = settings['read_options']['one_timestamp']
+        self.one_timestamp = settings.read_options.one_timestamp
         self.model = model
-        self.m_data = pd.DataFrame.from_dict(dict(model.nodes.data()),
-                                             orient='index')
+        self.m_data = pd.DataFrame.from_dict(dict(model.nodes.data()), orient='index')
         self.msg = msg
         self.verbose = verbose
         self.start_tasks_list = list()
