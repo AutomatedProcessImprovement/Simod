@@ -9,7 +9,7 @@ from .log_replayer import LogReplayer
 from .role_discovery import ResourcePoolAnalyser
 from .schedule_tables import TimeTablesCreator
 from .tasks_evaluator import TaskEvaluator
-from ..configuration import Configuration
+from ..configuration import Configuration, CalculationMethod
 
 
 class ParameterMiner():
@@ -43,7 +43,6 @@ class ParameterMiner():
             return safety_check
 
     def __init__(self, log, bpmn, process_graph, settings: Configuration):
-        """constructor"""
         self.log = log
         self.bpmn = bpmn
         self.process_graph = process_graph
@@ -87,6 +86,12 @@ class ParameterMiner():
         args = {'res_cal_met': self.settings.res_cal_met,
                 'arr_cal_met': self.settings.arr_cal_met,
                 'resource_table': res_analyzer.resource_table}
+
+        if not isinstance(args['res_cal_met'], CalculationMethod):
+            args['res_cal_met'] = CalculationMethod.from_str(self.settings.res_cal_met)
+        if not isinstance(args['arr_cal_met'], CalculationMethod):
+            args['arr_cal_met'] = CalculationMethod.from_str(self.settings.arr_cal_met)
+
         ttcreator.create_timetables(args)
         resource_pool = self.create_resource_pool(res_analyzer.resource_table, ttcreator.res_ttable_name)
         self.parameters['resource_pool'] = resource_pool

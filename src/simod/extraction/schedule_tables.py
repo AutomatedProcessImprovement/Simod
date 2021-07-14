@@ -23,7 +23,7 @@ class TimeTablesCreator():
 
     def create_timetables(self, args):
         creator = self._get_creator(args['res_cal_met'], args['arr_cal_met'])
-        if args['res_cal_met'] == 'pool':
+        if args['res_cal_met'] is CalculationMethod.POOL:
             return creator(args['resource_table'])
         else:
             return creator()

@@ -1,26 +1,24 @@
-import traceback
-
+from .configuration import Configuration, PDFMethod, CalculationMethod, DataType
+from .decorators import safe_exec
 from .extraction.gateways_probabilities import GatewaysEvaluator
 from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.log_replayer import LogReplayer
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
 
-from .decorators import safe_exec
-
 
 class StructureParametersMiner():
     """
     This class extracts all the BPS parameters
     """
-    def __init__(self, log, bpmn, process_graph, settings):
+    def __init__(self, log, bpmn, process_graph, settings: Configuration):
         self.log = log
         self.bpmn = bpmn
         self.process_graph = process_graph
         self.settings = settings
         # inter-arrival times and durations by default mean an exponential
         # 'manual', 'automatic', 'semi-automatic', 'default'
-        self.settings['pdef_method'] = 'default'
+        self.settings.pdef_method = PDFMethod.DEFAULT
         # self.settings['rp_similarity'] = 0.5
         self.process_stats = list()
         self.parameters = dict()
@@ -45,9 +43,7 @@ class StructureParametersMiner():
         """
         Process replaying
         """
-        replayer = LogReplayer(self.process_graph,
-                               self.log.get_traces(),
-                               self.settings,
+        replayer = LogReplayer(self.process_graph, self.log.get_traces(), self.settings,
                                msg='reading conformant training traces:')
         self.process_stats = replayer.process_stats
         self.process_stats['role'] = 'SYSTEM'
@@ -60,13 +56,18 @@ class StructureParametersMiner():
         Analysing resource pool LV917 or 247
         """
         parameters = dict()
-        settings['res_cal_met'] = 'default'
-        settings['res_dtype'] = '247'  # 'LV917', '247'
-        settings['arr_cal_met'] = 'default'
-        settings['arr_dtype'] = '247'  # 'LV917', '247'
+        settings.res_cal_met = CalculationMethod.DEFAULT
+        settings.res_dtype = DataType.DT247
+        settings.arr_cal_met = CalculationMethod.DEFAULT
+        settings.arr_dtype = DataType.DT247
         ttcreator = TimeTablesCreator(settings)
-        args = {'res_cal_met': settings['res_cal_met'],
-                'arr_cal_met': settings['arr_cal_met']}
+        args = {'res_cal_met': settings.res_cal_met, 'arr_cal_met': settings.arr_cal_met}
+
+        if not isinstance(args['res_cal_met'], CalculationMethod):
+            args['res_cal_met'] = CalculationMethod.from_str(args['res_cal_met'])
+        if not isinstance(args['arr_cal_met'], CalculationMethod):
+            args['arr_cal_met'] = CalculationMethod.from_str(args['arr_cal_met'])
+
         ttcreator.create_timetables(args)
         resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM',
                           'total_amount': '100000', 'costxhour': '20',
@@ -81,9 +82,7 @@ class StructureParametersMiner():
         """
         Calculates the inter-arrival rate
         """
-        inter_evaluator = InterArrivalEvaluator(self.process_graph,
-                                                self.conformant_traces,
-                                                self.settings)
+        inter_evaluator = InterArrivalEvaluator(self.process_graph, self.conformant_traces, self.settings)
         self.parameters['arrival_rate'] = inter_evaluator.dist
 
     @safe_exec
@@ -91,8 +90,7 @@ class StructureParametersMiner():
         """
         Gateways probabilities 1=Historical, 2=Random, 3=Equiprobable
         """
-        gevaluator = GatewaysEvaluator(self.process_graph,
-                                       self.settings['gate_management'])
+        gevaluator = GatewaysEvaluator(self.process_graph, self.settings.gate_management)
         sequences = gevaluator.probabilities
         for seq in sequences:
             seq['elementid'] = self.bpmn.find_sequence_id(seq['gatewayid'],
@@ -104,8 +102,5 @@ class StructureParametersMiner():
         """
         Tasks id information
         """
-        tevaluator = TaskEvaluator(self.process_graph,
-                                   self.process_stats,
-                                   resource_pool,
-                                   self.settings)
+        tevaluator = TaskEvaluator(self.process_graph, self.process_stats, resource_pool, self.settings)
         self.parameters['elements_data'] = tevaluator.elements_data

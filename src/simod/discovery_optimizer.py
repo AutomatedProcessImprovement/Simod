@@ -12,25 +12,27 @@ from xml.dom import minidom
 
 import analyzers.sim_evaluator as sim
 import pandas as pd
-from .readers import log_reader as lr
-from .readers import log_splitter as ls
 import utils.support as sup
 from tqdm import tqdm
 
 from .cli_formatter import *
+from .configuration import Configuration, MiningAlgorithm
 from .decorators import timeit
+from .readers import log_reader as lr
+from .readers import log_splitter as ls
 from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers.model_serialization import serialize_model
 
 
 class DiscoveryOptimizer:
-    """
-    Hyperparameter-optimizer class
-    """
+    """ Hyperparameter-optimizer class"""
 
     def __init__(self, settings):
         self.settings = settings
+        self.settings_global: Configuration = settings['gl']
+        self.settings_structure: Configuration = settings['strc']
+        self.settings_time: Configuration = settings['tm']
         self.best_params = dict()
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
@@ -44,87 +46,75 @@ class DiscoveryOptimizer:
         self.read_inputs(log_time=exec_times)
 
         print_section('Structure Optimization')
-        structure_optimizer = StructureOptimizer({**self.settings['gl'], **self.settings['strc']}, copy.deepcopy(self.log_train))
+        structure_optimizer = StructureOptimizer(self.settings_structure, copy.deepcopy(self.log_train))
         structure_optimizer.execute_trials()
         struc_model = structure_optimizer.best_output
         best_parms = structure_optimizer.best_parms
-        self.settings['gl']['alg_manag'] = (self.settings['strc']['alg_manag'][best_parms['alg_manag']])
-        self.best_params['alg_manag'] = self.settings['gl']['alg_manag']
-        self.settings['gl']['gate_management'] = (self.settings['strc']['gate_management'][best_parms['gate_management']])
-        self.best_params['gate_management'] = self.settings['gl']['gate_management']
+        self.settings_global.alg_manag = self.settings_structure.alg_manag[best_parms['alg_manag']]
+        self.best_params['alg_manag'] = self.settings_global.alg_manag
+        self.settings_global.gate_management = self.settings_structure.gate_management[best_parms['gate_management']]
+        self.best_params['gate_management'] = self.settings_global.gate_management
         # best structure mining parameters
-        if self.settings['gl']['mining_alg'] in ['sm1', 'sm3']:
-            self.settings['gl']['epsilon'] = best_parms['epsilon']
-            self.settings['gl']['eta'] = best_parms['eta']
+        if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+            self.settings_global.epsilon = best_parms['epsilon']
+            self.settings_global.eta = best_parms['eta']
             self.best_params['epsilon'] = best_parms['epsilon']
             self.best_params['eta'] = best_parms['eta']
-        elif self.settings['gl']['mining_alg'] == 'sm2':
-            self.settings['gl']['concurrency'] = best_parms['concurrency']
+        elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
+            self.settings_global.concurrency = best_parms['concurrency']
             self.best_params['concurrency'] = best_parms['concurrency']
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
                     'arr_confidence', 'res_cal_met', 'arr_cal_met']:
             self.settings.pop(key, None)
 
         print_section('Times Optimization')
-        times_optimizer = TimesOptimizer(self.settings['gl'], self.settings['tm'], copy.deepcopy(self.log_train), struc_model)
+        times_optimizer = TimesOptimizer(self.settings_global, self.settings_time, copy.deepcopy(self.log_train),
+                                         struc_model)
         times_optimizer.execute_trials()
         # Discovery parameters
         if times_optimizer.best_parms['res_cal_met'] == 1:
-            self.best_params['res_dtype'] = (
-                self.settings['tm']['res_dtype']
-                [times_optimizer.best_parms['res_dtype']])
+            self.best_params['res_dtype'] = (self.settings_time.res_dtype[times_optimizer.best_parms['res_dtype']])
         else:
-            self.best_params['res_support'] = (
-                times_optimizer.best_parms['res_support'])
-            self.best_params['res_confidence'] = (
-                times_optimizer.best_parms['res_confidence'])
+            self.best_params['res_support'] = (times_optimizer.best_parms['res_support'])
+            self.best_params['res_confidence'] = (times_optimizer.best_parms['res_confidence'])
         if times_optimizer.best_parms['arr_cal_met'] == 1:
-            self.best_params['arr_dtype'] = (
-                self.settings['tm']['res_dtype']
-                [times_optimizer.best_parms['arr_dtype']])
+            self.best_params['arr_dtype'] = (self.settings_time.res_dtype[times_optimizer.best_parms['arr_dtype']])
         else:
-            self.best_params['arr_support'] = (
-                times_optimizer.best_parms['arr_support'])
-            self.best_params['arr_confidence'] = (
-                times_optimizer.best_parms['arr_confidence'])
+            self.best_params['arr_support'] = (times_optimizer.best_parms['arr_support'])
+            self.best_params['arr_confidence'] = (times_optimizer.best_parms['arr_confidence'])
 
         print_section('Final Comparison')
         output_file = sup.file_id(prefix='SE_')
-        self._test_model(times_optimizer.best_output, output_file, structure_optimizer.file_name, times_optimizer.file_name)
+        self._test_model(times_optimizer.best_output, output_file, structure_optimizer.file_name,
+                         times_optimizer.file_name)
         self._export_canonical_model(times_optimizer.best_output)
         shutil.rmtree(structure_optimizer.temp_output)
         shutil.rmtree(times_optimizer.temp_output)
-        print_asset(f"Output folder is at {self.settings['gl']['output']}")
+        print_asset(f"Output folder is at {self.settings_global.output}")
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
         output_path = os.path.join('outputs', sup.folder_id())
         if not os.path.exists(output_path):
             os.makedirs(output_path)
             os.makedirs(os.path.join(output_path, 'sim_data'))
-        self.settings['gl'].pop('output', None)
-        self.settings['gl']['output'] = output_path
-        self._modify_simulation_model(
-            os.path.join(best_output,
-                         self.settings['gl']['file'].split('.')[0] + '.bpmn'))
+        self.settings_global.__dict__.pop('output', None)
+        self.settings_global.output = output_path
+        self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
         self._simulate()
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
-        self.sim_values.to_csv(os.path.join(output_path, output_file),
-                               index=False)
+        self.sim_values.to_csv(os.path.join(output_path, output_file), index=False)
         shutil.move(opt_strf, output_path)
         shutil.move(opt_timf, output_path)
 
     def _export_canonical_model(self, best_output):
-        print("Model file location:", os.path.join(
-            self.settings['gl']['output'],
-            self.settings['gl']['file'].split('.')[0] + '.bpmn'))
-        canonical_model = serialize_model(os.path.join(
-            self.settings['gl']['output'],
-            self.settings['gl']['file'].split('.')[0] + '.bpmn'))
+        print_asset(f"Model file location: "
+                    f"{os.path.join(self.settings_global.output, self.settings_global.project_name + '.bpmn')}")
+        canonical_model = serialize_model(
+            os.path.join(self.settings_global.output, self.settings_global.project_name + '.bpmn'))
         # Users in rol data
-        resource_table = pd.read_pickle(
-            os.path.join(best_output, 'resource_table.pkl'))
+        resource_table = pd.read_pickle(os.path.join(best_output, 'resource_table.pkl'))
         user_rol = dict()
         for key, group in resource_table.groupby('role'):
             user_rol[key] = list(group.resource)
@@ -133,16 +123,15 @@ class DiscoveryOptimizer:
         self.best_params = {k: str(v) for k, v in self.best_params.items()}
         canonical_model['discovery_parameters'] = self.best_params
         sup.create_json(canonical_model, os.path.join(
-            self.settings['gl']['output'],
-            self.settings['gl']['file'].split('.')[0] + '_canon.json'))
+            self.settings_global.output, self.settings_global.project_name + '_canon.json'))
 
     @timeit
     def read_inputs(self, **kwargs) -> None:
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings['gl']['input'], self.settings['gl']['file']),
-                                self.settings['gl']['read_options'])
+        global_config: Configuration = self.settings['gl']
+        self.log = lr.LogReader(os.path.join(global_config.input, global_config.file), global_config.read_options)
         # Time splitting 80-20
-        self.split_timeline(0.8, self.settings['gl']['read_options']['one_timestamp'])
+        self.split_timeline(0.8, global_config.read_options.one_timestamp)
 
     def split_timeline(self, size: float, one_ts: bool) -> None:
         """
@@ -182,7 +171,7 @@ class DiscoveryOptimizer:
         items = mydoc.getElementsByTagName('qbp:processSimulationInfo')
         items[0].attributes['processInstances'].value = str(num_inst)
         items[0].attributes['startDateTime'].value = start_time
-        new_model_path = os.path.join(self.settings['gl']['output'], os.path.split(model)[1])
+        new_model_path = os.path.join(self.settings_global.output, os.path.split(model)[1])
         with open(new_model_path, 'wb') as f:
             f.write(mydoc.toxml().encode('utf-8'))
         f.close()
@@ -208,20 +197,20 @@ class DiscoveryOptimizer:
             p.wait()
             pbar.close()
 
-        reps = self.settings['gl']['repetitions']
+        reps = self.settings_global.repetitions
         cpu_count = multiprocessing.cpu_count()
         w_count = reps if reps <= cpu_count else cpu_count
         pool = Pool(processes=w_count)
         # Simulate
-        args = [(self.settings['gl'], rep) for rep in range(reps)]
+        args = [(self.settings_global, rep) for rep in range(reps)]
         p = pool.map_async(self.execute_simulator, args)
         pbar_async(p, 'simulating:')
         # Read simulated logs
-        args = [(self.settings['gl'], rep) for rep in range(reps)]
+        args = [(self.settings_global, rep) for rep in range(reps)]
         p = pool.map_async(self.read_stats, args)
         pbar_async(p, 'reading simulated logs:')
         # Evaluate
-        args = [(self.settings['gl'], self.process_stats, log) for log in p.get()]
+        args = [(self.settings_global, self.process_stats, log) for log in p.get()]
         if len(self.log_test.caseid.unique()) > 1000:
             pool.close()
             results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
@@ -236,7 +225,7 @@ class DiscoveryOptimizer:
 
     @staticmethod
     def read_stats(args):
-        def read(settings, rep):
+        def read(settings: Configuration, rep):
             """Reads the simulation results stats
             Args:
                 settings (dict): Path to jar and file names
@@ -244,8 +233,8 @@ class DiscoveryOptimizer:
             """
             # message = 'Reading log repetition: ' + str(rep+1)
             # print(message)
-            path = os.path.join(settings['output'], 'sim_data')
-            log_name = settings['project_name'] + '_' + str(rep + 1) + '.csv'
+            path = os.path.join(settings.output, 'sim_data')
+            log_name = settings.project_name + '_' + str(rep + 1) + '.csv'
             rep_results = pd.read_csv(os.path.join(path, log_name), dtype={'caseid': object})
             rep_results['caseid'] = 'Case' + rep_results['caseid']
             rep_results['run_num'] = rep

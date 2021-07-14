@@ -168,7 +168,7 @@ class Configuration:
     sim_metric: Metric = Metric.TSD
     add_metrics: List[Metric] = field(
         default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])
-    concurrency: float = 0.0  # array
+    concurrency: float or List[float] = 0.0  # array
     arr_cal_met: CalculationMethod = CalculationMethod.DISCOVERED
     arr_confidence: float or List[float] = None
     arr_support: float or List[float] = None

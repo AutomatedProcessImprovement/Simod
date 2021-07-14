@@ -1,4 +1,6 @@
+import copy
 import os
+from pathlib import Path
 
 import simod.configuration as configuration
 import utils.support as sup
@@ -41,46 +43,6 @@ def main():
 def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, arr_support,
              arr_dtype, epsilon, eta, gate_management, res_confidence, res_support, res_cal_met,
              res_dtype, rp_similarity, pdef_method):
-    # def define_general_settings(settings: dict = None) -> dict:
-    #     """ Sets the app general settings"""
-    #     if not settings:
-    #         settings = dict()
-    #     column_names = {'Case ID': 'caseid', 'Activity': 'task',
-    #                     'lifecycle:transition': 'event_type', 'Resource': 'user'}
-    #     # Event-log reading options
-    #     settings['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
-    #                                 'column_names': column_names,
-    #                                 'one_timestamp': False,
-    #                                 'filter_d_attrib': True}
-    #     # Folders structure
-    #     settings['output'] = os.path.join('outputs', sup.folder_id())
-    #     # External tools routes
-    #     settings['sm2_path'] = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
-    #     settings['sm1_path'] = os.path.join('external_tools', 'splitminer', 'splitminer.jar')
-    #     settings['sm3_path'] = os.path.join('external_tools', 'splitminer3', 'bpmtk.jar')
-    #     settings['bimp_path'] = os.path.join('external_tools', 'bimp', 'qbp-simulator-engine.jar')
-    #     settings['align_path'] = os.path.join('external_tools', 'proconformance',
-    #                                           'ProConformance2.jar')
-    #     settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
-    #     settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
-    #     settings['calender_path'] = os.path.join('external_tools', 'calenderimp', 'CalenderImp.jar')
-    #     settings['simulator'] = 'bimp'
-    #     settings['mining_alg'] = 'sm3'
-    #     return settings
-    #
-    # if model_path is None:
-    #     print_notice("Model is missing. It will be dynamically discovered from the log file.")
-    #
-    # settings = define_general_settings()
-    # settings['project_name'], _ = os.path.splitext(os.path.basename(log_path))
-    # settings['repetitions'] = 1
-    # settings['simulation'] = True
-    # settings['sim_metric'] = 'tsd'
-    # settings['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
-    # settings['concurrency'] = 0.0
-    # settings['arr_cal_met'] = 'discovered'
-    # settings.update(ctx.params)
-
     ctx.params['mining_alg'] = configuration.MiningAlgorithm.from_str(mining_alg)
     ctx.params['alg_manag'] = configuration.AlgorithmManagement.from_str(alg_manag)
     ctx.params['gate_management'] = configuration.GateManagement.from_str(gate_management)
@@ -102,70 +64,52 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
               type=click.Choice(['sm1', 'sm2', 'sm3'], case_sensitive=False))
 @click.pass_context
 def optimize(ctx, log_path, mining_alg):
-    def define_general_settings(settings: dict = None) -> dict:
-        """ Sets the app general settings"""
-        if not settings:
-            settings = dict()
-        settings['gl'] = dict()
-        column_names = {'Case ID': 'caseid', 'Activity': 'task',
-                        'lifecycle:transition': 'event_type', 'Resource': 'user'}
-        # Event-log reading options
-        settings['gl']['read_options'] = {'timeformat': '%Y-%m-%dT%H:%M:%S.%f',
-                                          'column_names': column_names,
-                                          'one_timestamp': False,
-                                          'filter_d_attrib': True}
-        # Folders structure
-        settings['gl']['input'] = 'inputs'
-        settings['gl']['output'] = os.path.join('outputs', sup.folder_id())
-        # External tools routes
-        settings['gl']['sm2_path'] = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
-        settings['gl']['sm1_path'] = os.path.join('external_tools', 'splitminer',
-                                                  'splitminer.jar')
-        settings['gl']['sm3_path'] = os.path.join('external_tools', 'splitminer3', 'bpmtk.jar')
-        settings['gl']['bimp_path'] = os.path.join('external_tools', 'bimp',
-                                                   'qbp-simulator-engine.jar')
-        settings['gl']['align_path'] = os.path.join('external_tools', 'proconformance',
-                                                    'ProConformance2.jar')
-        settings['gl']['aligninfo'] = os.path.join(settings['gl']['output'],
-                                                   'CaseTypeAlignmentResults.csv')
-        settings['gl']['aligntype'] = os.path.join(settings['gl']['output'],
-                                                   'AlignmentStatistics.csv')
-        settings['gl']['calender_path'] = os.path.join('external_tools', 'calenderimp',
-                                                       'CalenderImp.jar')
-        settings['gl']['simulator'] = 'bimp'
-        return settings
+    ctx.params['mining_alg'] = configuration.MiningAlgorithm.from_str(mining_alg)
+    global_config = configuration.Configuration(input=Path('inputs'),
+                                                output=Path(os.path.join('outputs', sup.folder_id())),
+                                                exec_mode=configuration.ExecutionMode.OPTIMIZER,
+                                                # repetitions=1,
+                                                repetitions=5,
+                                                simulation=True,
+                                                # sim_metric=configuration.Metric.DL,
+                                                sim_metric=configuration.Metric.TSD,
+                                                # add_metrics=[],
+                                                add_metrics=[configuration.Metric.DAY_HOUR_EMD,
+                                                             configuration.Metric.LOG_MAE, configuration.Metric.DL,
+                                                             configuration.Metric.MAE],
+                                                **ctx.params)
+    global_config.fill_in_derived_fields()
 
-    settings = define_general_settings()
-    settings['gl']['project_name'], _ = os.path.splitext(os.path.basename(log_path))
-    settings['gl']['input'] = os.path.dirname(log_path)
-    settings['gl']['file'] = os.path.basename(log_path)
-    settings['gl']['mining_alg'] = mining_alg
-    settings['gl']['exec_mode'] = 'optimizer'  # 'single', 'optimizer'
-    settings['gl']['repetitions'] = 5
-    settings['gl']['simulation'] = True
-    settings['gl']['sim_metric'] = 'tsd'
-    settings['gl']['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
-    settings['strc'] = dict()
-    settings['strc']['max_eval_s'] = 15
-    settings['strc']['concurrency'] = [0.0, 1.0]
-    settings['strc']['epsilon'] = [0.0, 1.0]
-    settings['strc']['eta'] = [0.0, 1.0]
-    settings['strc']['alg_manag'] = ['replacement', 'repair', 'removal']
-    settings['strc']['gate_management'] = ['discovery', 'equiprobable']
-    settings['tm'] = dict()
-    settings['tm']['max_eval_t'] = 20
-    settings['tm']['rp_similarity'] = [0.5, 0.9]
-    settings['tm']['res_dtype'] = ['LV917', '247']
-    settings['tm']['arr_dtype'] = ['LV917', '247']
-    settings['tm']['res_sup_dis'] = [0.01, 0.3]  # [0..1]
-    settings['tm']['res_con_dis'] = [50, 85]  # [50..85]
-    settings['tm']['arr_support'] = [0.01, 0.1]  # [0..1]
-    settings['tm']['arr_confidence'] = [1, 10]  # [50..85]
-    settings['gl'].update(ctx.params)
+    structure_optimizer_config = copy.copy(global_config)
+    # structure_optimizer_config.max_eval_s = 2
+    structure_optimizer_config.max_eval_s = 15
+    structure_optimizer_config.concurrency = [0.0, 1.0]
+    structure_optimizer_config.epsilon = [0.0, 1.0]
+    structure_optimizer_config.eta = [0.0, 1.0]
+    # structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REMOVAL]
+    structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REPAIR,
+                                            configuration.AlgorithmManagement.REMOVAL,
+                                            configuration.AlgorithmManagement.REPLACEMENT]
+    # structure_optimizer_config.gate_management = [configuration.GateManagement.EQUIPROBABLE]
+    structure_optimizer_config.gate_management = [configuration.GateManagement.DISCOVERY,
+                                                  configuration.GateManagement.EQUIPROBABLE]
 
-    optimizer = DiscoveryOptimizer(settings)
+    time_optimizer_config = copy.copy(global_config)
+    # time_optimizer_config.max_eval_t = 2
+    time_optimizer_config.max_eval_t = 20
+    time_optimizer_config.rp_similarity = [0.5, 0.9]
+    time_optimizer_config.res_dtype = [configuration.DataType.DT247]
+    # [configuration.DataType.DT247, configuration.DataType.LV917]
+    time_optimizer_config.arr_dtype = [configuration.DataType.DT247]
+    # [configuration.DataType.DT247, configuration.DataType.LV917]
+    time_optimizer_config.res_sup_dis = [0.01, 0.3]
+    time_optimizer_config.res_con_dis = [50, 85]
+    time_optimizer_config.arr_support = [0.01, 0.1]
+    time_optimizer_config.arr_confidence = [1, 10]
+
+    optimizer = DiscoveryOptimizer(
+        {'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
     optimizer.execute_pipeline()
 
-
-if __name__ == "__main__":
-    main()
+    if __name__ == "__main__":
+        main()

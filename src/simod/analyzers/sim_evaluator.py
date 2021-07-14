@@ -23,7 +23,7 @@ from tqdm import tqdm
 
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
-from ..configuration import Configuration, Metric
+from simod.configuration import Configuration, Metric
 
 
 class SimilarityEvaluator():
@@ -100,7 +100,7 @@ class SimilarityEvaluator():
         if self.dtype == 'log':
             if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
                 return self._evaluate_seq_distance
-            elif metric == Metric.LOG_MAE:
+            elif metric is Metric.LOG_MAE:
                 return self.log_mae_metric
             elif metric in [Metric.HOUR_EMD, Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
                 return self.log_emd_metric

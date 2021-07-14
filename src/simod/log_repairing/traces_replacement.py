@@ -4,6 +4,8 @@ from operator import itemgetter
 import jellyfish as jf
 import numpy as np
 
+from ..configuration import Configuration
+
 
 def replacement(conformant, not_conformant, log, settings):
     alias = create_task_alias(log.data)
@@ -34,12 +36,10 @@ def measure_distance(not_conformant, conformant):
     similarity = list()
     temp_conformant = conformant.copy()
     for not_con_trace in not_conformant:
-        min_dist = jf.damerau_levenshtein_distance(not_con_trace['profile'],
-                                                   temp_conformant[0]['profile'])
+        min_dist = jf.damerau_levenshtein_distance(not_con_trace['profile'], temp_conformant[0]['profile'])
         min_index = 0
         for i in range(0, len(temp_conformant)):
-            sim = jf.damerau_levenshtein_distance(not_con_trace['profile'],
-                                                  temp_conformant[i]['profile'])
+            sim = jf.damerau_levenshtein_distance(not_con_trace['profile'], temp_conformant[i]['profile'])
             if min_dist > sim:
                 min_dist = sim
                 min_index = i
@@ -63,9 +63,9 @@ def create_task_alias(df):
     return alias
 
 
-def reformat_events(data, alias, settings):
+def reformat_events(data, alias, settings: Configuration):
     order_key = 'end_timestamp'
-    if not settings['read_options']['one_timestamp']:
+    if not settings.read_options.one_timestamp:
         order_key = 'start_timestamp'
     temp_data = list()
     for case in data:

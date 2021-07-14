@@ -49,8 +49,8 @@ class Discoverer:
         self.is_safe = self.temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.mine_structure(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.replay_process(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.extract_parameters(log_time=exec_times,
-                                               is_safe=self.is_safe)  # TODO: is this the only what stays after Orlenys integration?
+        # TODO: is this the only what stays after Orlenys integration?
+        self.is_safe = self.extract_parameters(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.simulate(log_time=exec_times, is_safe=self.is_safe)
         self.mannage_results()
         self.save_times(exec_times, self.settings)

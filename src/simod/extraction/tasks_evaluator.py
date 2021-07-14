@@ -44,8 +44,8 @@ class TaskEvaluator():
             elements_data = self.mine_processing_time()
         # elif self.pdef_method in ['manual', 'semi-automatic']:
         #     elements_data = self.define_distributions_manually()
-        # elif self.pdef_method == 'default':
-        #     elements_data = self.default_processing_time()
+        elif self.pdef_method == PDFMethod.DEFAULT:
+            elements_data = self.default_processing_time()
         else:
             raise ValueError(self.pdef_method)
         # Resource association
