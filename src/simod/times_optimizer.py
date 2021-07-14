@@ -440,7 +440,7 @@ class TimesOptimizer():
         tree = ET.parse(bpmn_file)
         root = tree.getroot()
         ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
-        parser = etree.XMLParser(remove_blank_text=True)
+        parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False, no_network=True)
         self.xml_bpmn = etree.parse(bpmn_file, parser)
         process_info = self.xml_bpmn.find('qbp:processSimulationInfo',
                                           namespaces=ns)

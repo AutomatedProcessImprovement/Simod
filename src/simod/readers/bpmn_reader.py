@@ -11,7 +11,8 @@ class BpmnReader(object):
         """constructor"""
         self.tree = ET.parse(input)
         self.root = self.tree.getroot()
-        self.ns = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
+        # TODO: Does this spec exist? At https://www.omg.org/spec/BPMN/ we have other, BPMN/20100501
+        self.ns = {'xmlns': 'https://www.omg.org/spec/BPMN/20100524/MODEL'}
 
 
     def get_tasks_info(self):
