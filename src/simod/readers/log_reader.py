@@ -47,40 +47,29 @@ class LogReader(object):
         # elif self.file_extension == '.mxml':
         #     self.data, self.raw_data = self.get_mxml_events_data()
 
-# =============================================================================
-# xes methods
-# =============================================================================
+    # =============================================================================
+    # xes methods
+    # =============================================================================
 
     def get_xes_events_data(self):
+        TIMESTEP_KEY = 'time:timestamp'
+
         log = pm4py.read_xes(self.input)
         try:
             source = log.attributes['source']
-        except:
+        except KeyError:
             source = ''
-        flattern_log = ([{**event, 
-                            **{'caseid': trace.attributes['concept:name']}} 
-                           for trace in log for event in trace])
+        flattern_log = ([{**event, 'caseid': trace.attributes['concept:name']} for trace in log for event in trace])
         temp_data = pd.DataFrame(flattern_log)
-        temp_data['time:timestamp'] = temp_data.apply(
-            lambda x: x['time:timestamp'].strftime(self.timeformat), axis=1)
-        temp_data['time:timestamp'] = pd.to_datetime(temp_data['time:timestamp'], 
-                                                format=self.timeformat)
-        temp_data.rename(columns={
-            'concept:name': 'task',
-            'lifecycle:transition': 'event_type',
-            'org:resource': 'user',
-            'time:timestamp': 'timestamp'}, inplace=True)
-        temp_data = (temp_data[~temp_data.task.isin(
-            ['Start','End', 'start', 'end'])].reset_index(drop=True))
-        temp_data = (
-            temp_data[temp_data.event_type.isin(['start', 'complete'])]
-            .reset_index(drop=True))
-        if source == 'com.qbpsimulator':
-            if len(temp_data.iloc[0].elementId.split('_'))>1: 
-                temp_data['etype'] = temp_data.apply(
-                    lambda x: x.elementId.split('_')[0], axis=1)
-                temp_data = (
-                    temp_data[temp_data.etype=='Task'].reset_index(drop=True))
+        temp_data[TIMESTEP_KEY] = temp_data.apply(lambda x: x[TIMESTEP_KEY].strftime(self.timeformat), axis=1)
+        temp_data[TIMESTEP_KEY] = pd.to_datetime(temp_data[TIMESTEP_KEY], format=self.timeformat)
+        temp_data.rename(columns={'concept:name': 'task', 'lifecycle:transition': 'event_type', 'org:resource': 'user',
+                                  ('%s' % TIMESTEP_KEY): 'timestamp'}, inplace=True)
+        temp_data = (temp_data[~temp_data.task.isin(['Start', 'End', 'start', 'end'])].reset_index(drop=True))
+        temp_data = (temp_data[temp_data.event_type.isin(['start', 'complete'])].reset_index(drop=True))
+        if source == 'com.qbpsimulator' and len(temp_data.iloc[0].elementId.split('_')) > 1:
+            temp_data['etype'] = temp_data.apply(lambda x: x.elementId.split('_')[0], axis=1)
+            temp_data = (temp_data[temp_data.etype == 'Task'].reset_index(drop=True))
         self.raw_data = temp_data.to_dict('records')
         if self.verbose:
             sup.print_performed_task('Rearranging log traces ')
@@ -88,7 +77,7 @@ class LogReader(object):
         self.append_csv_start_end()
         if self.verbose:
             sup.print_done_task()
-    
+
     def reorder_xes(self, temp_data):
         """
         this method match the duplicated events on the .xes log
@@ -105,22 +94,24 @@ class LogReader(object):
         else:
             self.column_names['Start Timestamp'] = 'start_timestamp'
             self.column_names['Complete Timestamp'] = 'end_timestamp'
-            for caseid, group in  temp_data.groupby(by=['caseid']):
+            for caseid, group in temp_data.groupby(by=['caseid']):
                 trace = group.to_dict('records')
                 temp_trace = list()
-                for i in range(0, len(trace)-1):
+                for i in range(0, len(trace) - 1):
                     incomplete = False
                     if trace[i]['event_type'] == 'start':
                         c_task_name = trace[i]['task']
-                        remaining = trace[i+1:]
-                        complete_event = next((event for event in remaining if (event['task'] == c_task_name and event['event_type'] == 'complete')), None)
+                        remaining = trace[i + 1:]
+                        complete_event = next((event for event in remaining if
+                                               (event['task'] == c_task_name and event['event_type'] == 'complete')),
+                                              None)
                         if complete_event:
                             temp_trace.append(
                                 {'caseid': caseid,
-                                  'task': trace[i]['task'],
-                                  'user': trace[i]['user'],
-                                  'start_timestamp': trace[i]['timestamp'],
-                                  'end_timestamp': complete_event['timestamp']})
+                                 'task': trace[i]['task'],
+                                 'user': trace[i]['user'],
+                                 'start_timestamp': trace[i]['timestamp'],
+                                 'end_timestamp': complete_event['timestamp']})
                         else:
                             incomplete = True
                             break
@@ -128,9 +119,9 @@ class LogReader(object):
                     ordered_event_log.extend(temp_trace)
         return ordered_event_log
 
-# =============================================================================
-# csv methods
-# =============================================================================
+    # =============================================================================
+    # csv methods
+    # =============================================================================
     def get_csv_events_data(self):
         """
         reads and parse all the events information from a csv file
@@ -194,9 +185,9 @@ class LogReader(object):
         end_start_times = dict()
         for case, group in pd.DataFrame(self.data).groupby('caseid'):
             end_start_times[(case, 'Start')] = (
-                group.start_timestamp.min()-timedelta(microseconds=1))
+                    group.start_timestamp.min() - timedelta(microseconds=1))
             end_start_times[(case, 'End')] = (
-                group.end_timestamp.max()+timedelta(microseconds=1))
+                    group.end_timestamp.max() + timedelta(microseconds=1))
         new_data = list()
         data = sorted(self.data, key=lambda x: x['caseid'])
         for key, group in it.groupby(data, key=lambda x: x['caseid']):
@@ -217,9 +208,9 @@ class LogReader(object):
             new_data.extend(trace)
         self.data = new_data
 
-# =============================================================================
-# Accesssor methods
-# =============================================================================
+    # =============================================================================
+    # Accesssor methods
+    # =============================================================================
     def get_traces(self):
         """
         returns the data splitted by caseid and ordered by start_timestamp
@@ -242,7 +233,7 @@ class LogReader(object):
         traces = list()
         for case in cases:
             trace = sorted(
-                list(filter(lambda x: (x['caseid'] == case), self.raw_data)),
+                list(filter(lambda x, case=case: (x['caseid'] == case), self.raw_data)),
                 key=itemgetter('timestamp'))
             traces.append(trace)
         return traces
@@ -253,14 +244,13 @@ class LogReader(object):
         """
         self.data = data
 
-# =============================================================================
-# Support Method
-# =============================================================================
+    # =============================================================================
+    # Support Method
+    # =============================================================================
     def define_ftype(self):
         filename, file_extension = os.path.splitext(self.input)
         if file_extension in ['.xes', '.csv', '.mxml']:
             filename = filename + file_extension
-            file_extension = file_extension
         elif file_extension == '.gz':
             outFileName = filename
             filename, file_extension = self.decompress_file_gzip(outFileName)
