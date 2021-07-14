@@ -477,7 +477,7 @@ class SimilarityEvaluator():
         variables = sorted(list(subsec_set))
         characters = string.ascii_letters + string.digits
         # characters = [chr(i) for i in range(0, len(variables))]
-        aliases = random.sample(characters, len(variables))
+        aliases = list(map(lambda i: characters[i], np.random.randint(0, len(characters), len(variables))))
         alias = dict()
         for i, _ in enumerate(variables):
             alias[variables[i]] = aliases[i]
