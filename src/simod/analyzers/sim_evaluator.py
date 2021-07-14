@@ -70,7 +70,9 @@ class SimilarityEvaluator():
         self.simulation_data = self.reformat_events(self.simulation_data.to_dict('records'), 'task')
         num_traces = int(len(self.simulation_data) * self.ramp_io_perc)
         self.simulation_data = self.simulation_data[num_traces:-num_traces]
-        self.log_data = random.sample(self.log_data, len(self.simulation_data))
+        self.log_data = list(map(lambda i: self.log_data[i],
+                                 np.random.randint(0, len(self.log_data), len(self.simulation_data))))
+
 
     def _preprocess_serie(self):
         # load data

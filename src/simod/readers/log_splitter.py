@@ -86,7 +86,7 @@ class LogSplitter(object):
     def _random(self, size: float, one_timestamp: bool) -> None:
         cases = list(self.log.caseid.unique())
         sample_sz = int(np.ceil(len(cases)*size))
-        scases = random.sample(cases, sample_sz)
+        scases = list(map(lambda i: cases[i], np.random.randint(0, len(cases), sample_sz)))
         df_train = self.log[self.log.caseid.isin(scases)]
         df_test = self.log[~self.log.caseid.isin(scases)]
         return df_train, df_test
