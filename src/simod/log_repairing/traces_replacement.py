@@ -7,7 +7,7 @@ import numpy as np
 from ..configuration import Configuration
 
 
-def replacement(conformant, not_conformant, log, settings):
+def replacement(conformant, not_conformant, log, settings: Configuration):
     alias = create_task_alias(log.data)
     similarity = measure_distance(reformat_events(not_conformant, alias, settings),
                                   reformat_events(conformant, alias, settings))
@@ -25,7 +25,7 @@ def replacement(conformant, not_conformant, log, settings):
                 'alias': event['alias'],
                 'end_timestamp': event['end_timestamp']
             }
-            if not settings['read_options']['one_timestamp']:
+            if not settings.read_options.one_timestamp:
                 new_event['start_timestamp'] = event['start_timestamp']
             similar_traces.append(new_event)
     conformant_reformated.extend(similar_traces)
