@@ -11,6 +11,5 @@ venv
 .DS_Store
 
 # Sonarqube files and folders
-sonarqube.sh
 .sonar_lock
 .scannerwork
