@@ -283,12 +283,8 @@ class LogReplayer():
         m_data = self.m_data.copy()
         start_node = m_data[m_data.type == 'start'].index.tolist()[0]
         end_node = m_data[m_data.type == 'end'].index.tolist()[0]
-        self.start_tasks_list = sup.reduce_list(
-            self.find_next_tasks(self.model,
-                                 start_node))
-        self.end_tasks_list = sup.reduce_list(
-            self.find_next_tasks(self.model.reverse(copy=True),
-                                 end_node))
+        self.start_tasks_list = sup.reduce_list(self.find_next_tasks(self.model, start_node))
+        self.end_tasks_list = sup.reduce_list(self.find_next_tasks(self.model.reverse(copy=True), end_node))
 
     def create_subsec_set(self) -> None:
         m_data = self.m_data.copy()

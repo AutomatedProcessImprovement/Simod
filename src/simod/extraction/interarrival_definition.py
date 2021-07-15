@@ -1,12 +1,10 @@
 import itertools
-import tkinter as tk
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from .pdf_finder import DistributionFinder
-from .user_interface.dist_manual_edition_ui import MainWindow
 from ..configuration import Configuration, PDFMethod
 
 

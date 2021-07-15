@@ -1,5 +1,3 @@
-import tkinter as tk
-
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -7,7 +5,6 @@ import utils.support as sup
 from tqdm import tqdm
 
 from .pdf_finder import DistributionFinder
-from .user_interface.manual_edition_ui import MainWindow
 from ..configuration import Configuration, PDFMethod
 
 
