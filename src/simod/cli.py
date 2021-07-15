@@ -68,35 +68,35 @@ def optimize(ctx, log_path, mining_alg):
     global_config = configuration.Configuration(input=Path('inputs'),
                                                 output=Path(os.path.join('outputs', sup.folder_id())),
                                                 exec_mode=configuration.ExecutionMode.OPTIMIZER,
-                                                # repetitions=1,
-                                                repetitions=5,
+                                                repetitions=1,
+                                                # repetitions=5,
                                                 simulation=True,
-                                                # sim_metric=configuration.Metric.DL,
-                                                sim_metric=configuration.Metric.TSD,
-                                                # add_metrics=[],
-                                                add_metrics=[configuration.Metric.DAY_HOUR_EMD,
-                                                             configuration.Metric.LOG_MAE, configuration.Metric.DL,
-                                                             configuration.Metric.MAE],
+                                                sim_metric=configuration.Metric.DL,
+                                                # sim_metric=configuration.Metric.TSD,
+                                                add_metrics=[],
+                                                # add_metrics=[configuration.Metric.DAY_HOUR_EMD,
+                                                #              configuration.Metric.LOG_MAE, configuration.Metric.DL,
+                                                #              configuration.Metric.MAE],
                                                 **ctx.params)
     global_config.fill_in_derived_fields()
 
     structure_optimizer_config = copy.copy(global_config)
-    # structure_optimizer_config.max_eval_s = 2
-    structure_optimizer_config.max_eval_s = 15
+    structure_optimizer_config.max_eval_s = 2
+    # structure_optimizer_config.max_eval_s = 15
     structure_optimizer_config.concurrency = [0.0, 1.0]
     structure_optimizer_config.epsilon = [0.0, 1.0]
     structure_optimizer_config.eta = [0.0, 1.0]
-    # structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REMOVAL]
-    structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REPAIR,
-                                            configuration.AlgorithmManagement.REMOVAL,
-                                            configuration.AlgorithmManagement.REPLACEMENT]
-    # structure_optimizer_config.gate_management = [configuration.GateManagement.EQUIPROBABLE]
-    structure_optimizer_config.gate_management = [configuration.GateManagement.DISCOVERY,
-                                                  configuration.GateManagement.EQUIPROBABLE]
+    structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REMOVAL]
+    # structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REPAIR,
+    #                                         configuration.AlgorithmManagement.REMOVAL,
+    #                                         configuration.AlgorithmManagement.REPLACEMENT]
+    structure_optimizer_config.gate_management = [configuration.GateManagement.EQUIPROBABLE]
+    # structure_optimizer_config.gate_management = [configuration.GateManagement.DISCOVERY,
+    #                                               configuration.GateManagement.EQUIPROBABLE]
 
     time_optimizer_config = copy.copy(global_config)
-    # time_optimizer_config.max_eval_t = 2
-    time_optimizer_config.max_eval_t = 20
+    time_optimizer_config.max_eval_t = 2
+    # time_optimizer_config.max_eval_t = 20
     time_optimizer_config.rp_similarity = [0.5, 0.9]
     time_optimizer_config.res_dtype = [configuration.DataType.DT247]
     # [configuration.DataType.DT247, configuration.DataType.LV917]
