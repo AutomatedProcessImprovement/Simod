@@ -17,7 +17,8 @@ Invoke the tool with either of these:
 ```shell
 $ simod
 $ simod optimize --log_path inputs/PurchasingExample.xes
-$ simod discover --log_path inputs/PurchasingExample.xes
+$ simod discover --log_path inputs/PurchasingExample.xes  # does automatic model discovery from the log
+$ simod discover --log_path inputs/PurchasingExample.xes --model_path <model-path>/PurchasingExample.bpmn  # no need for model discovery
 ```
 
 The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
