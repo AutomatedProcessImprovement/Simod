@@ -111,5 +111,6 @@ def optimize(ctx, log_path, mining_alg):
         {'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
     optimizer.execute_pipeline()
 
-    if __name__ == "__main__":
-        main()
+
+if __name__ == "__main__":
+    main()
