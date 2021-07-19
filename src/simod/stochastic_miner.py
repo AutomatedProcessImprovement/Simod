@@ -10,6 +10,7 @@ from collections import deque
 from datetime import timedelta
 from enum import Enum
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pytz
@@ -330,14 +331,14 @@ class BPMNGraph:
             random.shuffle(enabled_tasks)
         return enabled_tasks
 
-    def reply_trace(self, task_sequence, f_arcs_frequency):
+    def replay_trace(self, task_sequence: list, f_arcs_frequency: dict) -> (bool, List[bool], ProcessState):
         p_state = ProcessState(self)
         fired_tasks = list()
         fired_or_splits = set()
         for flow_id in self.element_info[self.starting_event].outgoing_flows:
             p_state.add_token(flow_id)
         pending_tasks = dict()
-        for current_index in range(0, len(task_sequence)):
+        for current_index in range(len(task_sequence)):
             fired_tasks.append(False)
             self.try_firing(current_index, current_index, task_sequence, fired_tasks, pending_tasks, p_state,
                             f_arcs_frequency, fired_or_splits)
@@ -348,10 +349,10 @@ class BPMNGraph:
                                     f_arcs_frequency, fired_or_splits)
 
         # Firing End Event
-        enabled_end, or_fired, path_decisions = self._find_enabled_predecessors(self.element_info[self.end_event],
-                                                                                p_state)
-        self._fire_enabled_predecessors(enabled_end, p_state, or_fired, path_decisions, f_arcs_frequency,
-                                        fired_or_splits)
+        enabled_end, or_fired, path_decisions = self._find_enabled_predecessors(
+            self.element_info[self.end_event], p_state)
+        self._fire_enabled_predecessors(
+            enabled_end, p_state, or_fired, path_decisions, f_arcs_frequency, fired_or_splits)
         end_flow = self.element_info[self.end_event].incoming_flows[0]
         if p_state.has_token(end_flow):
             p_state.tokens[end_flow] = 0
@@ -361,10 +362,6 @@ class BPMNGraph:
             if not fired_tasks[i]:
                 is_correct = False
                 break
-        # if not is_correct:
-        #     for i in range(0, len(task_sequence)):
-        #         # if not fired_tasks[i]:
-        #         print("%s: %s" % (str(fired_tasks[i]), task_sequence[i]))
 
         self.check_unfired_or_splits(fired_or_splits, f_arcs_frequency, p_state)
         return is_correct, fired_tasks, p_state.pending_tokens()
@@ -909,9 +906,50 @@ class StochasticProcessMiner:
         # read XES
         # read/discover BPMN
         self.bpmn_graph = self._parse_simulation_model(self.settings.model_path)
-        # enhance with replayer
+        arcs_frequencies = self._compute_arcs_frequencies(self.settings.log_path, self.bpmn_graph)
         # output JSON and BPMN
-        pass
+
+    @staticmethod
+    def _compute_arcs_frequencies(log_path: Path, bpmn_graph: BPMNGraph) -> dict:
+        flow_arcs_frequency = dict()
+
+        # local debug statistics
+        task_missed_tokens = 0
+        missed_tokens = dict()
+        correct_traces = 0
+        task_fired_ratio = dict()
+        correct_activities = 0
+
+        log_traces = xes_importer.apply(log_path)
+        for trace in log_traces:
+            task_sequence = list()
+            for event in trace:
+                task_name = event['concept:name']
+                state = event['lifecycle:transition'].lower()
+                if state in ["start", "assign"]:
+                    task_sequence.append(task_name)
+
+            is_correct, fired_tasks, pending_tokens = bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
+
+            if len(pending_tokens) > 0:
+                task_missed_tokens += 1
+                for flow_id in pending_tokens:
+                    if flow_id not in missed_tokens:
+                        missed_tokens[flow_id] = 0
+                    missed_tokens[flow_id] += 1
+
+            if is_correct:
+                correct_traces += 1
+
+            for i in range(0, len(task_sequence)):
+                if task_sequence[i] not in task_fired_ratio:
+                    task_fired_ratio[task_sequence[i]] = [0, 0]
+                if fired_tasks[i]:
+                    correct_activities += 1
+                    task_fired_ratio[task_sequence[i]][0] += 1
+                task_fired_ratio[task_sequence[i]][1] += 1
+
+        return flow_arcs_frequency
 
     @staticmethod
     def _parse_simulation_model(model_path: Path):
@@ -1034,7 +1072,7 @@ class StochasticProcessMiner:
                         if resource not in task_resource[task_name]:
                             task_resource[task_name][resource] = list()
                         task_resource[task_name][resource].append(event_info)
-            is_correct, fired_tasks, pending_tokens = bpmn_graph.reply_trace(task_sequence, flow_arcs_frequency)
+            is_correct, fired_tasks, pending_tokens = bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
             if len(pending_tokens) > 0:
                 task_missed_tokens += 1
                 for flow_id in pending_tokens:
