@@ -6,7 +6,7 @@ import simod.configuration as configuration
 import utils.support as sup
 from simod.cli_formatter import *
 from simod.discoverer import Discoverer
-from simod.discovery_optimizer import DiscoveryOptimizer
+from simod.optimizer import Optimizer
 
 
 @click.group()
@@ -107,7 +107,7 @@ def optimize(ctx, log_path, mining_alg):
     time_optimizer_config.arr_support = [0.01, 0.1]
     time_optimizer_config.arr_confidence = [1, 10]
 
-    optimizer = DiscoveryOptimizer(
+    optimizer = Optimizer(
         {'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
     optimizer.execute_pipeline()
 

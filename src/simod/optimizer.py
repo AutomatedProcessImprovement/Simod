@@ -25,7 +25,7 @@ from .times_optimizer import TimesOptimizer
 from .writers.model_serialization import serialize_model
 
 
-class DiscoveryOptimizer:
+class Optimizer:
     """ Hyperparameter-optimizer class"""
 
     def __init__(self, settings):
