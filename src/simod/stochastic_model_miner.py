@@ -22,7 +22,7 @@ class StochasticModelMiner:
         pass
 
 
-class BPMN(Enum):
+class BPMNNodeType(Enum):
     TASK = 'TASK'
     START_EVENT = 'START-EVENT'
     END_EVENT = 'END-EVENT',
@@ -33,7 +33,7 @@ class BPMN(Enum):
 
 
 class ElementInfo:
-    def __init__(self, element_type: BPMN, element_id: str, element_name: str):
+    def __init__(self, element_type: BPMNNodeType, element_id: str, element_name: str):
         self.id = element_id
         self.name = element_name
         self.type = element_type
@@ -47,7 +47,8 @@ class ElementInfo:
         return len(self.incoming_flows) > 1
 
     def is_gateway(self):
-        return self.type in [BPMN.EXCLUSIVE_GATEWAY, BPMN.PARALLEL_GATEWAY, BPMN.INCLUSIVE_GATEWAY]
+        return self.type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.PARALLEL_GATEWAY,
+                             BPMNNodeType.INCLUSIVE_GATEWAY]
 
 
 class ProcessState:
@@ -100,9 +101,9 @@ class BPMNGraph:
         self.task_resource_probability = task_resource_probability
 
     def add_bpmn_element(self, element_id, element_info):
-        if element_info.type == BPMN.START_EVENT:
+        if element_info.type == BPMNNodeType.START_EVENT:
             self.starting_event = element_id
-        if element_info.type == BPMN.END_EVENT:
+        if element_info.type == BPMNNodeType.END_EVENT:
             self.end_event = element_id
         self.element_info[element_id] = element_info
         self.from_name[element_info.name] = element_id
@@ -111,7 +112,7 @@ class BPMNGraph:
     def add_flow_arc(self, flow_id, source_id, target_id):
         for node_id in [source_id, target_id]:
             if node_id not in self.element_info:
-                self.element_info[node_id] = ElementInfo(BPMN.UNDEFINED, node_id, node_id)
+                self.element_info[node_id] = ElementInfo(BPMNNodeType.UNDEFINED, node_id, node_id)
         self.element_info[source_id].outgoing_flows.append(flow_id)
         self.element_info[target_id].incoming_flows.append(flow_id)
         self.flow_arcs[flow_id] = [source_id, target_id]
@@ -120,7 +121,7 @@ class BPMNGraph:
     def encode_or_join_predecessors(self):
         for e_id in self.element_info:
             element = self.element_info[e_id]
-            if element.type is BPMN.INCLUSIVE_GATEWAY and element.is_join():
+            if element.type is BPMNNodeType.INCLUSIVE_GATEWAY and element.is_join():
                 self.or_join_pred[e_id] = [0, 0]
                 self._find_or_conflicting_predecessors(e_id)
                 pred_queue = deque([e_id])
@@ -133,7 +134,7 @@ class BPMNGraph:
                         self.or_join_pred[e_id][0] |= self.nodes_bitset[prev_id]
                         if self.flow_arcs[flow_id][1] != e_id:
                             self.or_join_pred[e_id][1] |= self.arcs_bitset[flow_id]
-            if element.type in [BPMN.EXCLUSIVE_GATEWAY, BPMN.INCLUSIVE_GATEWAY] and element.is_split():
+            if element.type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and element.is_split():
                 self._find_decision_successors(element)
 
     def _find_decision_successors(self, split_info):
@@ -147,7 +148,7 @@ class BPMNGraph:
                 if next_info.id not in visited:
                     visited.add(next_info.id)
                     next_info = self.element_info[next_info.id]
-                    if next_info.type is BPMN.TASK:
+                    if next_info.type is BPMNNodeType.TASK:
                         self.decision_successors[split_info.id].add(next_info.id)
                     elif next_info.is_gateway():
                         suc_queue.append(next_info)
@@ -160,7 +161,7 @@ class BPMNGraph:
 
     def _dfs_from_or_join(self, or_id, flow_id, e_info, visited):
         visited.add(e_info.id)
-        if e_info.type in [BPMN.INCLUSIVE_GATEWAY, BPMN.EXCLUSIVE_GATEWAY] and e_info.is_split():
+        if e_info.type in [BPMNNodeType.INCLUSIVE_GATEWAY, BPMNNodeType.EXCLUSIVE_GATEWAY] and e_info.is_split():
             self.or_join_conflicting_pred[or_id].add(e_info.id)
         for in_flow in e_info.incoming_flows:
             prev_info = self._get_predecessor(in_flow)
@@ -194,17 +195,17 @@ class BPMNGraph:
         if e_id == self.starting_event:
             return True
         e_info = self.element_info[e_id]
-        if e_info.type in [BPMN.TASK, BPMN.END_EVENT, BPMN.PARALLEL_GATEWAY]:
+        if e_info.type in [BPMNNodeType.TASK, BPMNNodeType.END_EVENT, BPMNNodeType.PARALLEL_GATEWAY]:
             for f_arc in e_info.incoming_flows:
                 if p_state.tokens[f_arc] < 1:
                     return False
             return True
-        elif e_info.type == BPMN.EXCLUSIVE_GATEWAY:
+        elif e_info.type == BPMNNodeType.EXCLUSIVE_GATEWAY:
             for f_arc in e_info.incoming_flows:
                 if p_state.tokens[f_arc] > 0:
                     return True
             return False
-        elif e_info.type == BPMN.INCLUSIVE_GATEWAY:
+        elif e_info.type == BPMNNodeType.INCLUSIVE_GATEWAY:
             if e_info.is_split():
                 if p_state.has_token(e_info.incoming_flows[0]):
                     return True
@@ -238,12 +239,12 @@ class BPMNGraph:
                     p_state.state_mask &= ~self.arcs_bitset[in_flow]
             f_arcs = e_info.outgoing_flows
             if len(f_arcs) > 1:
-                if e_info.type is BPMN.EXCLUSIVE_GATEWAY:
+                if e_info.type is BPMNNodeType.EXCLUSIVE_GATEWAY:
                     f_arcs = [self.element_probability[e_info.id].get_outgoing_flow()]
                 else:
-                    if e_info.type in [BPMN.TASK, BPMN.PARALLEL_GATEWAY, BPMN.START_EVENT]:
+                    if e_info.type in [BPMNNodeType.TASK, BPMNNodeType.PARALLEL_GATEWAY, BPMNNodeType.START_EVENT]:
                         f_arcs = copy.deepcopy(e_info.outgoing_flows)
-                    elif e_info.type is BPMN.INCLUSIVE_GATEWAY:
+                    elif e_info.type is BPMNNodeType.INCLUSIVE_GATEWAY:
                         f_arcs = self.element_probability[e_info.id].get_multiple_flows()
                 random.shuffle(f_arcs)
             for f_arc in f_arcs:
@@ -317,16 +318,16 @@ class BPMNGraph:
             enabled_pred[dist].append([e_info, flow_id])
             min_dist[0] = max(min_dist[0], dist)
             return dist, enabled_pred, or_firing, path_split
-        elif e_info.type is BPMN.INCLUSIVE_GATEWAY and e_info.is_join():
+        elif e_info.type is BPMNNodeType.INCLUSIVE_GATEWAY and e_info.is_join():
             for in_or in e_info.incoming_flows:
                 if p_state.has_token(in_or):
                     or_firing[e_info.id] = dist
                     break
-        if e_info.type in [BPMN.INCLUSIVE_GATEWAY, BPMN.EXCLUSIVE_GATEWAY]:
+        if e_info.type in [BPMNNodeType.INCLUSIVE_GATEWAY, BPMNNodeType.EXCLUSIVE_GATEWAY]:
             path_split[e_info.id] = flow_id
         visited.add(e_info.id)
         if e_info.is_gateway():
-            if e_info.type is BPMN.EXCLUSIVE_GATEWAY and e_info.is_join():
+            if e_info.type is BPMNNodeType.EXCLUSIVE_GATEWAY and e_info.is_join():
                 closer_pred, temp_path, or_f = dict(), dict(), dict()
                 c_min = sys.maxsize
                 for in_flow in e_info.incoming_flows:
@@ -386,7 +387,7 @@ class BPMNGraph:
         conflicting_gateways = dict()
         is_conflicting = False
         for or_id in path_decisions:
-            if self.element_info[or_id].type is BPMN.INCLUSIVE_GATEWAY and self.element_info[or_id].is_join():
+            if self.element_info[or_id].type is BPMNNodeType.INCLUSIVE_GATEWAY and self.element_info[or_id].is_join():
                 conflicting_gateways[or_id] = set()
                 for enabled in enabled_pred:
                     e_info = enabled[0]
@@ -405,12 +406,12 @@ class BPMNGraph:
             [e_info, e_flow] = enabled_pred.popleft()
             if self._is_enabled(e_info.id, p_state):
                 visited_elements.add(e_info.id)
-                if e_info.type is BPMN.PARALLEL_GATEWAY:
+                if e_info.type is BPMNNodeType.PARALLEL_GATEWAY:
                     for out_flow in e_info.outgoing_flows:
                         self._update_next(out_flow, enabled_pred, p_state, or_firing, path_decisions, f_arcs_frequency)
-                elif e_info.type is BPMN.EXCLUSIVE_GATEWAY:
+                elif e_info.type is BPMNNodeType.EXCLUSIVE_GATEWAY:
                     self._update_next(e_flow, enabled_pred, p_state, or_firing, path_decisions, f_arcs_frequency)
-                elif e_info.type is BPMN.INCLUSIVE_GATEWAY:
+                elif e_info.type is BPMNNodeType.INCLUSIVE_GATEWAY:
                     self._update_next(e_flow, enabled_pred, p_state, or_firing, path_decisions, f_arcs_frequency)
                     if e_info.is_split():
                         fired_or_split.add(e_info.id)
@@ -459,10 +460,10 @@ class BPMNGraph:
         p_state.add_token(flow_id)
         if not from_or:
             next_info = self._get_successor(flow_id)
-            if next_info.type is BPMN.PARALLEL_GATEWAY and self._is_enabled(next_info.id, p_state):
+            if next_info.type is BPMNNodeType.PARALLEL_GATEWAY and self._is_enabled(next_info.id, p_state):
                 enabled_pred.appendleft([next_info, None])
             elif next_info.id in path_decisions:
-                if next_info.type is BPMN.INCLUSIVE_GATEWAY:
+                if next_info.type is BPMNNodeType.INCLUSIVE_GATEWAY:
                     if next_info.is_split():
                         enabled_pred.appendleft([next_info, path_decisions[next_info.id]])
                     else:
@@ -480,7 +481,7 @@ class BPMNGraph:
     def compute_branching_probability(self, flow_arcs_frequency):
         gateways_branching = dict()
         for e_id in self.element_info:
-            if self.element_info[e_id].type == BPMN.EXCLUSIVE_GATEWAY and len(
+            if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
                     self.element_info[e_id].outgoing_flows) > 1:
                 total_frequency = 0
                 for flow_id in self.element_info[e_id].outgoing_flows:
@@ -496,7 +497,7 @@ class BPMNGraph:
         p_state.state_mask |= self.arcs_bitset[f_arc]
         next_e = self.flow_arcs[f_arc][1]
         if self._is_enabled(next_e, p_state):
-            if self.element_info[next_e].type == BPMN.TASK:
+            if self.element_info[next_e].type == BPMNNodeType.TASK:
                 enabled_tasks.append(next_e)
             else:
                 to_execute.append(next_e)
@@ -506,12 +507,13 @@ def parse_simulation_model(model_path):
     bpmn_element_ns = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
     tree = ET.parse(model_path)
     root = tree.getroot()
-    to_extract = {'xmlns:task': BPMN.TASK,
-                  'xmlns:startEvent': BPMN.START_EVENT,
-                  'xmlns:endEvent': BPMN.END_EVENT,
-                  'xmlns:exclusiveGateway': BPMN.EXCLUSIVE_GATEWAY,
-                  'xmlns:parallelGateway': BPMN.PARALLEL_GATEWAY,  # NOTE: no parallel gateways in current Simod models
-                  'xmlns:inclusiveGateway': BPMN.INCLUSIVE_GATEWAY}
+    to_extract = {'xmlns:task': BPMNNodeType.TASK,
+                  'xmlns:startEvent': BPMNNodeType.START_EVENT,
+                  'xmlns:endEvent': BPMNNodeType.END_EVENT,
+                  'xmlns:exclusiveGateway': BPMNNodeType.EXCLUSIVE_GATEWAY,
+                  # NOTE: no parallel gateways in current Simod models
+                  'xmlns:parallelGateway': BPMNNodeType.PARALLEL_GATEWAY,
+                  'xmlns:inclusiveGateway': BPMNNodeType.INCLUSIVE_GATEWAY}
 
     bpmn_graph = BPMNGraph()
     for process in root.findall('xmlns:process', bpmn_element_ns):
