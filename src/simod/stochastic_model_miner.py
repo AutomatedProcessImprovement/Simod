@@ -898,7 +898,7 @@ def best_fit_distribution(data, bins=200):
     return {"distribution_name": best_distribution.name, "distribution_params": best_params}
 
 
-class StochasticModelMiner:  # StochasticProcessMiner
+class StochasticProcessMiner:
     settings: Configuration
     bpmn_graph: BPMNGraph
 
