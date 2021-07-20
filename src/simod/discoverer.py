@@ -103,7 +103,6 @@ class Discoverer:
     @timeit(rec_name='EXTRACTION')
     @safe_exec
     def extract_parameters(self, **kwargs) -> None:
-        # print("-- Mining Simulation Parameters --")
         print_section("Simulation Parameters Mining")
         p_extractor = ParameterMiner(self.log_train, self.bpmn, self.process_graph, self.settings)
         num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
@@ -115,11 +114,8 @@ class Discoverer:
             # save parameters
             self.parameters = copy.deepcopy(p_extractor.parameters)
             # print parameters in xml bimp format
-            xml.print_parameters(os.path.join(
-                self.settings.output,
-                self.settings.project_name + '.bpmn'),
-                os.path.join(self.settings.output, self.settings.project_name + '.bpmn'),
-                p_extractor.parameters)
+            bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
+            xml.print_parameters(bpmn_path, bpmn_path, p_extractor.parameters)
         else:
             raise RuntimeError('Parameters extraction error')
 

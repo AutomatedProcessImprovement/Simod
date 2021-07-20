@@ -922,8 +922,6 @@ class StochasticProcessMiner:
         print_step('Calculating sequence flow frequencies')
         arcs_frequencies = self._compute_sequence_flow_frequencies(self.settings.log_path, self.bpmn_graph)
         self.gateways_branching = self.bpmn_graph.compute_branching_probability(arcs_frequencies)
-        print_asset(f'Sequence flow frequencies: {self.gateways_branching}')
-
         print_step('Rewriting the model')
         sequences = []
         for gateway_id in self.gateways_branching:
@@ -932,8 +930,7 @@ class StochasticProcessMiner:
                 sequences.append({'elementid': seqflow_id, 'prob': probability})
         parameters = {'sequences': sequences}
         bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
-        bpmn_path_new = os.path.join(self.settings.output, self.settings.project_name + '_updated.bpmn')
-        xml_writer.print_parameters(bpmn_path, bpmn_path_new, parameters)
+        xml_writer.print_parameters(bpmn_path, bpmn_path, parameters)
 
     @staticmethod
     def _compute_sequence_flow_frequencies(log_path: Path, bpmn_graph: BPMNGraph) -> dict:

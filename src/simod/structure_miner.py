@@ -4,7 +4,7 @@ import shutil
 import subprocess
 
 from .readers import bpmn_reader as br
-from .readers import process_structure as gph
+from .readers import process_structure
 
 from .cli_formatter import *
 from .configuration import Configuration, MiningAlgorithm
@@ -136,5 +136,5 @@ class StructureMiner:
 
         """
         self.bpmn = br.BpmnReader(os.path.join(self.settings.output, self.settings.project_name + '.bpmn'))
-        self.process_graph = gph.create_process_structure(self.bpmn)
+        self.process_graph = process_structure.create_process_structure(self.bpmn)
         evaluate_alignment(self.process_graph, self.log, self.settings)

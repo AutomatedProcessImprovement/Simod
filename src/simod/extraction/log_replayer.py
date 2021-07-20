@@ -166,8 +166,7 @@ class LogReplayer():
                 record['start_timestamp'] = trace[index]['start_timestamp']
             return record
 
-        def replay(index, trace, model, start_tasks, end_tasks,
-                   parallel_gt_exec, subsec_set, st):
+        def replay(index, trace, model, start_tasks, end_tasks, parallel_gt_exec, subsec_set, st):
             t_times = list()
             # trace = traces[index][1:-1]  # remove start and end event
             trace = trace[1:-1]  # remove start and end event
@@ -177,7 +176,7 @@ class LogReplayer():
             try:
                 curr_node = find_task_node(model, trace[0]['task'])
                 last_node = find_task_node(model, trace[-1]['task'])
-            except:
+            except KeyError:
                 is_conformant = False
             if curr_node not in start_tasks or not is_conformant:
                 return False, index, []
