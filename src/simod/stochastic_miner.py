@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 import random
+import shutil
 import sys
 import warnings
 import xml.etree.ElementTree as ET
@@ -17,8 +18,9 @@ import pytz
 import scipy.stats as st
 from pm4py.objects.log.importer.xes import importer as xes_importer
 
+from .cli_formatter import print_section, print_asset, print_step
 from .configuration import Configuration
-from .cli_formatter import print_section, print_asset, print_step, print_message
+from .writers import xml_writer
 
 
 # BPMN Graph
@@ -899,30 +901,43 @@ def best_fit_distribution(data, bins=200):
 class StochasticProcessMiner:
     settings: Configuration
     bpmn_graph: BPMNGraph
+    gateways_branching: dict
 
     def __init__(self, settings: Configuration):
         self.settings = settings
 
     def execute_pipeline(self):
-        print_section(f'Parsing the given model')
-        print_message(f'Model is given at {self.settings.model_path}')
+        print_section('Preparing the environment')
+        if not os.path.exists(self.settings.output):
+            print_step(f'Creating output directories: {self.settings.output}')
+            os.makedirs(self.settings.output)
+        if self.settings.model_path:
+            print_step(f'Copying the model from {self.settings.model_path}')
+            shutil.copy(self.settings.model_path, self.settings.output)
+
+        print_section('Parsing the given model')
         self.bpmn_graph = self._parse_simulation_model(self.settings.model_path)
+
         print_section(f'Model parameters extraction')
-        print_step('Calculating flow arcs frequencies')
-        arcs_frequencies = self._compute_arcs_frequencies(self.settings.log_path, self.bpmn_graph)
-        # output JSON and BPMN
-        print_asset(f'Arcs frequencies: {arcs_frequencies}')
+        print_step('Calculating sequence flow frequencies')
+        arcs_frequencies = self._compute_sequence_flow_frequencies(self.settings.log_path, self.bpmn_graph)
+        self.gateways_branching = self.bpmn_graph.compute_branching_probability(arcs_frequencies)
+        print_asset(f'Sequence flow frequencies: {self.gateways_branching}')
+
+        print_step('Rewriting the model')
+        sequences = []
+        for gateway_id in self.gateways_branching:
+            for seqflow_id in self.gateways_branching[gateway_id]:
+                probability = self.gateways_branching[gateway_id][seqflow_id]
+                sequences.append({'elementid': seqflow_id, 'prob': probability})
+        parameters = {'sequences': sequences}
+        bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
+        bpmn_path_new = os.path.join(self.settings.output, self.settings.project_name + '_updated.bpmn')
+        xml_writer.print_parameters(bpmn_path, bpmn_path_new, parameters)
 
     @staticmethod
-    def _compute_arcs_frequencies(log_path: Path, bpmn_graph: BPMNGraph) -> dict:
+    def _compute_sequence_flow_frequencies(log_path: Path, bpmn_graph: BPMNGraph) -> dict:
         flow_arcs_frequency = dict()
-
-        # local debug statistics
-        task_missed_tokens = 0
-        missed_tokens = dict()
-        correct_traces = 0
-        task_fired_ratio = dict()
-        correct_activities = 0
 
         log_traces = xes_importer.apply(log_path.__str__())
         for trace in log_traces:
@@ -933,25 +948,7 @@ class StochasticProcessMiner:
                 if state in ["start", "assign"]:
                     task_sequence.append(task_name)
 
-            is_correct, fired_tasks, pending_tokens = bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
-
-            if len(pending_tokens) > 0:
-                task_missed_tokens += 1
-                for flow_id in pending_tokens:
-                    if flow_id not in missed_tokens:
-                        missed_tokens[flow_id] = 0
-                    missed_tokens[flow_id] += 1
-
-            if is_correct:
-                correct_traces += 1
-
-            for i in range(0, len(task_sequence)):
-                if task_sequence[i] not in task_fired_ratio:
-                    task_fired_ratio[task_sequence[i]] = [0, 0]
-                if fired_tasks[i]:
-                    correct_activities += 1
-                    task_fired_ratio[task_sequence[i]][0] += 1
-                task_fired_ratio[task_sequence[i]][1] += 1
+            bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
 
         return flow_arcs_frequency
 
