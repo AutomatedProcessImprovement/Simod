@@ -14,24 +14,27 @@ def create_file(output_file, element):
 
 # -------------- kernel --------------
 def print_parameters(bpmn_input, output_file, parameters):
-    my_doc = xml_template(parameters['arrival_rate'],
-                          parameters['resource_pool'],
-                          parameters['elements_data'],
-                          parameters['sequences'],
-                          parameters['instances'],
-                          parameters['start_time'])
+    my_doc = xml_template(parameters.get('arrival_rate'),
+                          parameters.get('resource_pool'),
+                          parameters.get('elements_data'),
+                          parameters.get('sequences'),
+                          parameters.get('instances'),
+                          parameters.get('start_time'))
     # insert timetable
-    ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
-    childs = parameters['time_table'].findall('qbp:timetable', namespaces=ns)
-    node = my_doc.find('qbp:timetables', namespaces=ns)
-    for i, child in enumerate(childs):
-        node.insert((i + 1), child)
+    if parameters.get('time_table') is not None:
+        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        childs = parameters['time_table'].findall('qbp:timetable', namespaces=ns)
+        node = my_doc.find('qbp:timetables', namespaces=ns)
+        for i, child in enumerate(childs):
+            node.insert((i + 1), child)
+
     # Append parameters to the bpmn model
     root = append_parameters(bpmn_input, my_doc)
     create_file(output_file, etree.tostring(root, pretty_print=True))
 
 
-def xml_template(arrival_rate, resource_pool, elements_data, sequences, instances, start_time):
+def xml_template(arrival_rate=None, resource_pool=None, elements_data=None, sequences=None, instances=None,
+                 start_time=None):
     E = ElementMaker(namespace="http://www.qbp-simulator.com/Schema201212",
                      nsmap={'qbp': "http://www.qbp-simulator.com/Schema201212"})
     PROCESSSIMULATIONINFO = E.processSimulationInfo
@@ -50,16 +53,18 @@ def xml_template(arrival_rate, resource_pool, elements_data, sequences, instance
 
     rootid = "qbp_" + str(uuid.uuid4())
 
-    my_doc = PROCESSSIMULATIONINFO(
-        ARRIVALRATEDISTRIBUTION(
+    arrival_doc = None
+    if arrival_rate:
+        arrival_doc = ARRIVALRATEDISTRIBUTION(
             TIMEUNIT("seconds"),
             type=arrival_rate['dname'],
             mean=str(arrival_rate['dparams']['mean']),
             arg1=str(arrival_rate['dparams']['arg1']),
-            arg2=str(arrival_rate['dparams']['arg2'])
-        ),
-        TIMETABLES(),
-        RESOURCES(
+            arg2=str(arrival_rate['dparams']['arg2']))
+
+    resources_doc = None
+    if resource_pool:
+        resources_doc = RESOURCES(
             *[
                 RESOURCE(
                     id=res['id'],
@@ -68,8 +73,11 @@ def xml_template(arrival_rate, resource_pool, elements_data, sequences, instance
                     costPerHour=res['costxhour'],
                     timetableId=res['timetable_id']) for res in resource_pool
             ]
-        ),
-        ELEMENTS(
+        )
+
+    elements_doc = None
+    if elements_data:
+        elements_doc = ELEMENTS(
             *[
                 ELEMENT(
                     DURATION(
@@ -85,16 +93,25 @@ def xml_template(arrival_rate, resource_pool, elements_data, sequences, instance
                     id=e['id'], elementId=e['elementid']
                 ) for e in elements_data
             ]
-        ),
-        SEQUENCEFLOWS(
+        )
+
+    sequences_doc = None
+    if sequences:
+        sequences_doc = SEQUENCEFLOWS(
             *[
                 SEQUENCEFLOW(
                     elementId=seq['elementid'],
                     executionProbability=str(seq['prob'])) for seq in sequences
             ]
-        ),
-        id=rootid, processInstances=str(instances),
-        startDateTime=start_time,
+        )
+
+    docs = list(filter(lambda doc: doc is not None, [arrival_doc, resources_doc, elements_doc, sequences_doc]))
+    my_doc = PROCESSSIMULATIONINFO(
+        TIMETABLES(),
+        *docs,
+        id=rootid,
+        processInstances=str(instances) if instances else "",
+        startDateTime=start_time if start_time else "",
         currency="EUR"
     )
     return my_doc
