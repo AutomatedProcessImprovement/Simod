@@ -18,6 +18,7 @@ import scipy.stats as st
 from pm4py.objects.log.importer.xes import importer as xes_importer
 
 from .configuration import Configuration
+from .cli_formatter import print_section, print_asset, print_step, print_message
 
 
 # BPMN Graph
@@ -903,11 +904,14 @@ class StochasticProcessMiner:
         self.settings = settings
 
     def execute_pipeline(self):
-        # read XES
-        # read/discover BPMN
+        print_section(f'Parsing the given model')
+        print_message(f'Model is given at {self.settings.model_path}')
         self.bpmn_graph = self._parse_simulation_model(self.settings.model_path)
+        print_section(f'Model parameters extraction')
+        print_step('Calculating flow arcs frequencies')
         arcs_frequencies = self._compute_arcs_frequencies(self.settings.log_path, self.bpmn_graph)
         # output JSON and BPMN
+        print_asset(f'Arcs frequencies: {arcs_frequencies}')
 
     @staticmethod
     def _compute_arcs_frequencies(log_path: Path, bpmn_graph: BPMNGraph) -> dict:
@@ -920,7 +924,7 @@ class StochasticProcessMiner:
         task_fired_ratio = dict()
         correct_activities = 0
 
-        log_traces = xes_importer.apply(log_path)
+        log_traces = xes_importer.apply(log_path.__str__())
         for trace in log_traces:
             task_sequence = list()
             for event in trace:
@@ -954,7 +958,7 @@ class StochasticProcessMiner:
     @staticmethod
     def _parse_simulation_model(model_path: Path):
         bpmn_element_ns = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
-        tree = ET.parse(model_path)
+        tree = ET.parse(model_path.absolute())
         root = tree.getroot()
         to_extract = {'xmlns:task': BPMNNodeType.TASK,
                       'xmlns:startEvent': BPMNNodeType.START_EVENT,

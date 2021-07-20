@@ -1,12 +1,15 @@
 import copy
 import os
+import pathlib
 from pathlib import Path
 
-import simod.configuration as configuration
 import utils.support as sup
 from simod.cli_formatter import *
+from simod.configuration import Configuration, MiningAlgorithm, AlgorithmManagement, CalculationMethod, DataType, \
+    PDFMethod, GateManagement, Metric, ExecutionMode
 from simod.discoverer import Discoverer
 from simod.optimizer import Optimizer
+from simod.stochastic_miner import StochasticProcessMiner
 
 
 @click.group()
@@ -43,15 +46,15 @@ def main():
 def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, arr_support,
              arr_dtype, epsilon, eta, gate_management, res_confidence, res_support, res_cal_met,
              res_dtype, rp_similarity, pdef_method):
-    ctx.params['mining_alg'] = configuration.MiningAlgorithm.from_str(mining_alg)
-    ctx.params['alg_manag'] = configuration.AlgorithmManagement.from_str(alg_manag)
-    ctx.params['gate_management'] = configuration.GateManagement.from_str(gate_management)
-    ctx.params['res_cal_met'] = configuration.CalculationMethod.from_str(res_cal_met)
-    ctx.params['res_dtype'] = configuration.DataType.from_str(res_dtype)
-    ctx.params['arr_dtype'] = configuration.DataType.from_str(arr_dtype)
-    ctx.params['pdef_method'] = configuration.PDFMethod.from_str(pdef_method)
+    ctx.params['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
+    ctx.params['alg_manag'] = AlgorithmManagement.from_str(alg_manag)
+    ctx.params['gate_management'] = GateManagement.from_str(gate_management)
+    ctx.params['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
+    ctx.params['res_dtype'] = DataType.from_str(res_dtype)
+    ctx.params['arr_dtype'] = DataType.from_str(arr_dtype)
+    ctx.params['pdef_method'] = PDFMethod.from_str(pdef_method)
 
-    config = configuration.Configuration(**ctx.params)
+    config = Configuration(**ctx.params)
     config.fill_in_derived_fields()
 
     discoverer = Discoverer(config)
@@ -64,20 +67,20 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
               type=click.Choice(['sm1', 'sm2', 'sm3'], case_sensitive=False))
 @click.pass_context
 def optimize(ctx, log_path, mining_alg):
-    ctx.params['mining_alg'] = configuration.MiningAlgorithm.from_str(mining_alg)
-    global_config = configuration.Configuration(input=Path('inputs'),
-                                                output=Path(os.path.join('outputs', sup.folder_id())),
-                                                exec_mode=configuration.ExecutionMode.OPTIMIZER,
-                                                repetitions=1,
-                                                # repetitions=5,
-                                                simulation=True,
-                                                sim_metric=configuration.Metric.DL,
-                                                # sim_metric=configuration.Metric.TSD,
-                                                add_metrics=[],
-                                                # add_metrics=[configuration.Metric.DAY_HOUR_EMD,
-                                                #              configuration.Metric.LOG_MAE, configuration.Metric.DL,
-                                                #              configuration.Metric.MAE],
-                                                **ctx.params)
+    ctx.params['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
+    global_config = Configuration(input=Path('inputs'),
+                                  output=Path(os.path.join('outputs', sup.folder_id())),
+                                  exec_mode=ExecutionMode.OPTIMIZER,
+                                  repetitions=1,
+                                  # repetitions=5,
+                                  simulation=True,
+                                  sim_metric=Metric.DL,
+                                  # sim_metric=Metric.TSD,
+                                  add_metrics=[],
+                                  # add_metrics=[Metric.DAY_HOUR_EMD,
+                                  #              Metric.LOG_MAE, Metric.DL,
+                                  #              Metric.MAE],
+                                  **ctx.params)
     global_config.fill_in_derived_fields()
 
     structure_optimizer_config = copy.copy(global_config)
@@ -86,22 +89,22 @@ def optimize(ctx, log_path, mining_alg):
     structure_optimizer_config.concurrency = [0.0, 1.0]
     structure_optimizer_config.epsilon = [0.0, 1.0]
     structure_optimizer_config.eta = [0.0, 1.0]
-    structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REMOVAL]
-    # structure_optimizer_config.alg_manag = [configuration.AlgorithmManagement.REPAIR,
-    #                                         configuration.AlgorithmManagement.REMOVAL,
-    #                                         configuration.AlgorithmManagement.REPLACEMENT]
-    structure_optimizer_config.gate_management = [configuration.GateManagement.EQUIPROBABLE]
-    # structure_optimizer_config.gate_management = [configuration.GateManagement.DISCOVERY,
-    #                                               configuration.GateManagement.EQUIPROBABLE]
+    structure_optimizer_config.alg_manag = [AlgorithmManagement.REMOVAL]
+    # structure_optimizer_config.alg_manag = [AlgorithmManagement.REPAIR,
+    #                                         AlgorithmManagement.REMOVAL,
+    #                                         AlgorithmManagement.REPLACEMENT]
+    structure_optimizer_config.gate_management = [GateManagement.EQUIPROBABLE]
+    # structure_optimizer_config.gate_management = [GateManagement.DISCOVERY,
+    #                                               GateManagement.EQUIPROBABLE]
 
     time_optimizer_config = copy.copy(global_config)
     time_optimizer_config.max_eval_t = 2
     # time_optimizer_config.max_eval_t = 20
     time_optimizer_config.rp_similarity = [0.5, 0.9]
-    time_optimizer_config.res_dtype = [configuration.DataType.DT247]
-    # [configuration.DataType.DT247, configuration.DataType.LV917]
-    time_optimizer_config.arr_dtype = [configuration.DataType.DT247]
-    # [configuration.DataType.DT247, configuration.DataType.LV917]
+    time_optimizer_config.res_dtype = [DataType.DT247]
+    # [DataType.DT247, DataType.LV917]
+    time_optimizer_config.arr_dtype = [DataType.DT247]
+    # [DataType.DT247, DataType.LV917]
     time_optimizer_config.res_sup_dis = [0.01, 0.3]
     time_optimizer_config.res_con_dis = [50, 85]
     time_optimizer_config.arr_support = [0.01, 0.1]
@@ -110,6 +113,21 @@ def optimize(ctx, log_path, mining_alg):
     optimizer = Optimizer(
         {'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
     optimizer.execute_pipeline()
+
+
+@main.command()
+@click.option('-l', '--log_path', required=True)
+@click.option('-m', '--model_path')
+@click.pass_context
+def optimize_with_new_replayer(ctx, log_path, model_path):
+    if model_path:
+        ctx.params['model_path'] = pathlib.Path(model_path)
+    if log_path:
+        ctx.params['log_path'] = pathlib.Path(log_path)
+
+    config = Configuration(input=Path('inputs'), output=Path(os.path.join('outputs', sup.folder_id())), **ctx.params)
+    miner = StochasticProcessMiner(config)
+    miner.execute_pipeline()
 
 
 if __name__ == "__main__":
