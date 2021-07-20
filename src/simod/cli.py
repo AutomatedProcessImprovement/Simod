@@ -126,6 +126,7 @@ def optimize_with_new_replayer(ctx, log_path, model_path):
         ctx.params['log_path'] = pathlib.Path(log_path)
 
     config = Configuration(input=Path('inputs'), output=Path(os.path.join('outputs', sup.folder_id())), **ctx.params)
+    config.fill_in_derived_fields()
     miner = StochasticProcessMiner(config)
     miner.execute_pipeline()
 
