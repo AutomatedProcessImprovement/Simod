@@ -14,12 +14,23 @@ import pandas as pd
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from networkx import DiGraph
+from simod.extraction.gateways_probabilities import GatewaysEvaluator
+from simod.extraction.interarrival_definition import InterArrivalEvaluator
+from simod.extraction.log_replayer import LogReplayer
+from simod.extraction.tasks_evaluator import TaskEvaluator
+from simod.readers.bpmn_reader import BpmnReader
+from simod.readers.log_reader import LogReader
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
-from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric
+from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, CalculationMethod, DataType, \
+    GateManagement, PDFMethod
 from .decorators import timeit
+from .extraction.schedule_tables import TimeTablesCreator
+from .parameter_extraction import GenericParameterExtraction, GenericResourceMiner, GenericInterArrivalMiner, \
+    GenericGatewaysProbabilitiesMiner, GenericTasksProcessor, GenericLogReplayer
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
@@ -27,7 +38,95 @@ from .structure_params_miner import StructureParametersMiner
 from .writers import xml_writer as xml, xes_writer as xes
 
 
-class StructureOptimizer():
+class LogReplayerForStructureOptimizer(GenericLogReplayer):
+    def __init__(self, process_graph: DiGraph, log_traces: list, settings: Configuration):
+        self.process_graph = process_graph
+        self.log_traces = log_traces
+        self.settings = settings
+        self._execute()
+
+    def _execute(self):
+        replayer = LogReplayer(self.process_graph, self.log_traces, self.settings,
+                               msg='reading conformant training traces')
+        self.process_stats = replayer.process_stats
+        self.conformant_traces = replayer.conformant_traces
+        self.process_stats['role'] = 'SYSTEM'  # TODO: what is this for?
+
+
+# NOTE: replaces StructureParametersMiner.miner_resources
+class ResourceMinerForStructureOptimizer(GenericResourceMiner):
+    def __init__(self, log: LogReader, rp_similarity: float, settings: Configuration):
+        self.settings = settings
+        self._mine()
+
+    def _mine(self):
+        """Analysing resource pool LV917 or 247"""
+        self.settings.res_cal_met = CalculationMethod.DEFAULT
+        self.settings.res_dtype = DataType.DT247
+        self.settings.arr_cal_met = CalculationMethod.DEFAULT
+        self.settings.arr_dtype = DataType.DT247
+        time_table_creator = TimeTablesCreator(self.settings)
+
+        args = {'res_cal_met': self.settings.res_cal_met, 'arr_cal_met': self.settings.arr_cal_met}
+        if not isinstance(args['res_cal_met'], CalculationMethod):
+            args['res_cal_met'] = CalculationMethod.from_str(args['res_cal_met'])
+        if not isinstance(args['arr_cal_met'], CalculationMethod):
+            args['arr_cal_met'] = CalculationMethod.from_str(args['arr_cal_met'])
+        time_table_creator.create_timetables(args)
+
+        resource_pool = [
+            {'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '100000', 'costxhour': '20',
+             'timetable_id': time_table_creator.res_ttable_name['arrival']}
+        ]
+
+        self.resource_pool = resource_pool
+        self.time_table = time_table_creator.time_table
+
+
+# NOTE: replaces StructureParametersMiner._mine_interarrival
+class InterArrivalMinerForStructureOptimizer(GenericInterArrivalMiner):
+    def __init__(self, process_graph: DiGraph, conformant_traces: list, settings: Configuration):
+        self.process_graph = process_graph
+        self.conformant_traces = conformant_traces  # conformant_traces?
+        self.settings = settings
+        self._mine()
+
+    def _mine(self):
+        inter_evaluator = InterArrivalEvaluator(self.process_graph, self.conformant_traces, self.settings)
+        self.arrival_rate = inter_evaluator.dist
+
+
+# NOTE: replaces StructureParametersMiner._mine_gateways_probabilities
+class GatewayProbabilitiesMinerForStructureOptimizer(GenericGatewaysProbabilitiesMiner):
+    def __init__(self, process_graph: DiGraph, bpmn: BpmnReader, gate_management: GateManagement):
+        self.process_graph = process_graph
+        self.bpmn = bpmn
+        self.gate_management = gate_management
+        self._mine()
+
+    def _mine(self):
+        evaluator = GatewaysEvaluator(self.process_graph, self.gate_management)
+        sequences = evaluator.probabilities
+        for seq in sequences:
+            seq['elementid'] = self.bpmn.find_sequence_id(seq['gatewayid'], seq['out_path_id'])
+        self.sequences = sequences
+
+
+# NOTE: replaces StructureParametersMiner._process_tasks
+class TasksProcessorForStructureOptimizer(GenericTasksProcessor):
+    def __init__(self, process_graph: DiGraph, process_stats: list, resource_pool: list, settings: Configuration):
+        self.process_graph = process_graph
+        self.process_stats = process_stats
+        self.resource_pool = resource_pool
+        self.settings = settings
+        self._mine()
+
+    def _mine(self):
+        evaluator = TaskEvaluator(self.process_graph, self.process_stats, self.resource_pool, self.settings)
+        self.elements_data = evaluator.elements_data
+
+
+class StructureOptimizer:
     """
     Hyperparameter-optimizer class
     """
@@ -99,7 +198,7 @@ class StructureOptimizer():
         return space
 
     def execute_trials(self):
-        parameters = (StructureParametersMiner.mine_resources(self.settings, self.log_train))
+        parameters = StructureParametersMiner.mine_resources(self.settings, self.log_train)
         self.log_train = copy.deepcopy(self.org_log_train)
 
         def exec_pipeline(trial_stg: Configuration):
@@ -144,10 +243,10 @@ class StructureOptimizer():
                     show_progressbar=False)
         # Save results
         try:
-            results = (pd.DataFrame(self.bayes_trials.results).sort_values('loss', ascending=bool))
-            self.best_output = (results[results.status == 'ok'].head(1).iloc[0].output)
+            results = pd.DataFrame(self.bayes_trials.results).sort_values('loss', ascending=bool)
+            self.best_output = results[results.status == 'ok'].head(1).iloc[0].output
             self.best_parms = best
-            self.best_similarity = (results[results.status == 'ok'].head(1).iloc[0].loss)
+            self.best_similarity = results[results.status == 'ok'].head(1).iloc[0].loss
         except Exception as e:
             print(e)
             pass
@@ -185,27 +284,50 @@ class StructureOptimizer():
             settings = Configuration(**settings)
 
         bpmn, process_graph = structure
-        p_extractor = StructureParametersMiner(self.log_train, bpmn, process_graph, settings)
         num_inst = len(self.log_valdn.caseid.unique())
-        # Get minimum date
-        start_time = (self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
-        p_extractor.extract_parameters(num_inst, start_time, parameters['resource_pool'])
-        if p_extractor.is_safe:
-            parameters = {**parameters, **p_extractor.parameters}
-            # print parameters in xml bimp format
-            xml.print_parameters(os.path.join(
-                settings.output, settings.project_name + '.bpmn'),
-                os.path.join(settings.output, settings.project_name + '.bpmn'),
-                parameters)
+        start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
-            self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
-            self.log_valdn['source'] = 'log'
-            self.log_valdn['run_num'] = 0
-            self.log_valdn['role'] = 'SYSTEM'
-            self.log_valdn = self.log_valdn[
-                ~self.log_valdn.task.isin(['Start', 'End'])]
-        else:
-            raise RuntimeError('Parameters extraction error')
+        # p_extractor = StructureParametersMiner(self.log_train, bpmn, process_graph, settings)
+        # p_extractor.extract_parameters(num_inst, start_time, parameters['resource_pool'])
+        #
+        # if p_extractor.is_safe:
+        #     parameters = {**parameters, **p_extractor.parameters}
+        #     # print parameters in xml bimp format
+        #     xml.print_parameters(os.path.join(
+        #         settings.output, settings.project_name + '.bpmn'),
+        #         os.path.join(settings.output, settings.project_name + '.bpmn'),
+        #         parameters)
+        #
+        #     self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
+        #     self.log_valdn['source'] = 'log'
+        #     self.log_valdn['run_num'] = 0
+        #     self.log_valdn['role'] = 'SYSTEM'
+        #     self.log_valdn = self.log_valdn[
+        #         ~self.log_valdn.task.isin(['Start', 'End'])]
+        # else:
+        #     raise RuntimeError('Parameters extraction error')
+
+        # alternative miner
+
+        settings.pdef_method = PDFMethod.DEFAULT
+        parameters_miner = GenericParameterExtraction(self.log_train, bpmn, process_graph, settings)
+        parameters_miner.setup_pipeline(log_replayer=LogReplayerForStructureOptimizer,
+                                        resource_miner=ResourceMinerForStructureOptimizer,
+                                        inter_arrival_miner=InterArrivalMinerForStructureOptimizer,
+                                        gateway_probabilities_miner=GatewayProbabilitiesMinerForStructureOptimizer,
+                                        tasks_processor=TasksProcessorForStructureOptimizer)
+        parameters_miner.set_output_parameters(instances=num_inst, start_time=start_time)
+        parameters_miner.execute()
+
+        parameters = {**parameters, **parameters_miner.output.parameters}
+        bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')
+        xml.print_parameters(bpmn_path, bpmn_path, parameters)
+
+        self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
+        self.log_valdn['source'] = 'log'
+        self.log_valdn['run_num'] = 0
+        self.log_valdn['role'] = 'SYSTEM'
+        self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
 
     @timeit(rec_name='SIMULATION_EVAL')
     @Decorators.safe_exec
@@ -331,7 +453,8 @@ class StructureOptimizer():
     def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()
         measurements = list()
-        data = {'alg_manag': settings['alg_manag'], 'gate_management': settings['gate_management'], 'output': settings['output']}
+        data = {'alg_manag': settings['alg_manag'], 'gate_management': settings['gate_management'],
+                'output': settings['output']}
         # Miner parms
         if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             data['epsilon'] = settings['epsilon']
