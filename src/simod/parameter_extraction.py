@@ -12,10 +12,10 @@ from .readers.bpmn_reader import BpmnReader
 @dataclass
 class ParameterExtractionInput:
     # log: LogReader
-    log_traces: list
-    bpmn: BpmnReader
-    process_graph: DiGraph
-    settings: Configuration
+    log_traces: list = None
+    bpmn: BpmnReader = None
+    process_graph: DiGraph = None
+    settings: Configuration = None
     # rp_similarity: float
 
 

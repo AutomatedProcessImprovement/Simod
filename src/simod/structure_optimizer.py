@@ -14,131 +14,20 @@ import pandas as pd
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from simod.extraction.gateways_probabilities import GatewaysEvaluator
-from simod.extraction.interarrival_definition import InterArrivalEvaluator
-from simod.extraction.log_replayer import LogReplayer
-from simod.extraction.tasks_evaluator import TaskEvaluator
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
-from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, CalculationMethod, DataType, \
-    PDFMethod
+from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod
 from .decorators import timeit
-from .extraction.schedule_tables import TimeTablesCreator
-from .parameter_extraction import Pipeline, Operator, \
-    ParameterExtractionOutput, ParameterExtractionInput
+from .parameter_extraction import Pipeline, ParameterExtractionOutput, ParameterExtractionInput
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
-from .structure_params_miner import StructureParametersMiner
+from .structure_params_miner import LogReplayerForStructureOptimizerPipeline, \
+    ResourceMinerForStructureOptimizerPipeline, InterArrivalMinerForStructureOptimizerPipeline, \
+    GatewayProbabilitiesMinerForStructureOptimizerPipeline, TasksProcessorForStructureOptimizerPipeline, mine_resources
 from .writers import xml_writer as xml, xes_writer as xes
-
-
-class LogReplayerForStructureOptimizerPipeline(Operator):
-    input: ParameterExtractionInput
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        print_step('Log Replayer')
-        replayer = LogReplayer(self.input.process_graph, self.input.log_traces, self.input.settings,
-                               msg='reading conformant training traces')
-        self.output.process_stats = replayer.process_stats
-        self.output.conformant_traces = replayer.conformant_traces
-        self.output.process_stats['role'] = 'SYSTEM'  # TODO: what is this for?
-
-
-# NOTE: replaces StructureParametersMiner.miner_resources
-class ResourceMinerForStructureOptimizerPipeline(Operator):
-    input: ParameterExtractionInput
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        """Analysing resource pool LV917 or 247"""
-        print_step('Resource Miner')
-        self.input.settings.res_cal_met = CalculationMethod.DEFAULT
-        self.input.settings.res_dtype = DataType.DT247
-        self.input.settings.arr_cal_met = CalculationMethod.DEFAULT
-        self.input.settings.arr_dtype = DataType.DT247
-        time_table_creator = TimeTablesCreator(self.input.settings)
-
-        args = {'res_cal_met': self.input.settings.res_cal_met, 'arr_cal_met': self.input.settings.arr_cal_met}
-        if not isinstance(args['res_cal_met'], CalculationMethod):
-            args['res_cal_met'] = CalculationMethod.from_str(args['res_cal_met'])
-        if not isinstance(args['arr_cal_met'], CalculationMethod):
-            args['arr_cal_met'] = CalculationMethod.from_str(args['arr_cal_met'])
-        time_table_creator.create_timetables(args)
-
-        resource_pool = [
-            {'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '100000', 'costxhour': '20',
-             'timetable_id': time_table_creator.res_ttable_name['arrival']}
-        ]
-
-        self.output.resource_pool = resource_pool
-        self.output.time_table = time_table_creator.time_table
-
-
-# NOTE: replaces StructureParametersMiner._mine_interarrival
-class InterArrivalMinerForStructureOptimizerPipeline(Operator):
-    input: ParameterExtractionInput
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        print_step('Inter-arrival Miner')
-        inter_evaluator = InterArrivalEvaluator(
-            self.input.process_graph, self.output.conformant_traces, self.input.settings)
-        self.output.arrival_rate = inter_evaluator.dist
-
-
-# NOTE: replaces StructureParametersMiner._mine_gateways_probabilities
-class GatewayProbabilitiesMinerForStructureOptimizerPipeline(Operator):
-    input: ParameterExtractionInput
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        print_step('Gateway Probabilities Miner')
-        evaluator = GatewaysEvaluator(self.input.process_graph, self.input.settings.gate_management)
-        sequences = evaluator.probabilities
-        for seq in sequences:
-            seq['elementid'] = self.input.bpmn.find_sequence_id(seq['gatewayid'], seq['out_path_id'])
-        self.output.sequences = sequences
-
-
-# NOTE: replaces StructureParametersMiner._process_tasks
-class TasksProcessorForStructureOptimizerPipeline(Operator):
-    input: ParameterExtractionInput
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        print_step('Tasks Processor')
-        evaluator = TaskEvaluator(
-            self.input.process_graph, self.output.process_stats, self.output.resource_pool, self.input.settings)
-        self.output.elements_data = evaluator.elements_data
 
 
 class StructureOptimizer:
@@ -211,7 +100,7 @@ class StructureOptimizer:
         return space
 
     def execute_trials(self):
-        parameters = StructureParametersMiner.mine_resources(self.settings, self.log_train)
+        parameters = mine_resources(self.settings)
         self.log_train = copy.deepcopy(self.org_log_train)
 
         def exec_pipeline(trial_stg: Configuration):
