@@ -14,20 +14,21 @@ import pandas as pd
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from simod.parameter_extraction import LogReplayerForStructureOptimizer, ResourceMinerForStructureOptimizer
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
-from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod
+from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod, DataType, \
+    CalculationMethod
 from .decorators import timeit
+from .extraction.schedule_tables import TimeTablesCreator
+from .parameter_extraction import ParameterExtractionInput, ParameterExtractionOutput, InterArrivalMiner, \
+    GatewayProbabilitiesMiner, TasksProcessor
 from .parameter_extraction import Pipeline
-from .structure_params_miner import ParameterExtractionOutput, ParameterExtractionInput
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
-from .structure_params_miner import LogReplayerForStructureOptimizerPipeline, \
-    ResourceMinerForStructureOptimizerPipeline, InterArrivalMinerForStructureOptimizerPipeline, \
-    GatewayProbabilitiesMinerForStructureOptimizerPipeline, TasksProcessorForStructureOptimizerPipeline, mine_resources
 from .writers import xml_writer as xml, xes_writer as xes
 
 
@@ -218,13 +219,14 @@ class StructureOptimizer:
         input = ParameterExtractionInput(
             log_traces=self.log_train.get_traces(), bpmn=bpmn, process_graph=process_graph, settings=settings)
         output = ParameterExtractionOutput()
+        output.process_stats['role'] = 'SYSTEM'  # TODO: what is this for?
         structure_mining_pipeline = Pipeline(input=input, output=output)
         structure_mining_pipeline.set_pipeline([
-            LogReplayerForStructureOptimizerPipeline,
-            ResourceMinerForStructureOptimizerPipeline,
-            InterArrivalMinerForStructureOptimizerPipeline,
-            GatewayProbabilitiesMinerForStructureOptimizerPipeline,
-            TasksProcessorForStructureOptimizerPipeline
+            LogReplayerForStructureOptimizer,
+            ResourceMinerForStructureOptimizer,
+            InterArrivalMiner,
+            GatewayProbabilitiesMiner,
+            TasksProcessor
         ])
         structure_mining_pipeline.execute()
 
@@ -468,3 +470,28 @@ class StructureOptimizer:
             scases = random.sample(cases, sample_sz)
             train = train[train.caseid.isin(scases)]
         return train
+
+
+def mine_resources(settings: Configuration):
+    parameters = dict()
+    settings.res_cal_met = CalculationMethod.DEFAULT
+    settings.res_dtype = DataType.DT247
+    settings.arr_cal_met = CalculationMethod.DEFAULT
+    settings.arr_dtype = DataType.DT247
+    time_table_creator = TimeTablesCreator(settings)
+    args = {'res_cal_met': settings.res_cal_met, 'arr_cal_met': settings.arr_cal_met}
+
+    if not isinstance(args['res_cal_met'], CalculationMethod):
+        args['res_cal_met'] = CalculationMethod.from_str(args['res_cal_met'])
+    if not isinstance(args['arr_cal_met'], CalculationMethod):
+        args['arr_cal_met'] = CalculationMethod.from_str(args['arr_cal_met'])
+
+    time_table_creator.create_timetables(args)
+    resource_pool = [
+        {'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '100000', 'costxhour': '20',
+         'timetable_id': time_table_creator.res_ttable_name['arrival']}
+    ]
+
+    parameters['resource_pool'] = resource_pool
+    parameters['time_table'] = time_table_creator.time_table
+    return parameters

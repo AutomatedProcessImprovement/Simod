@@ -12,10 +12,6 @@ import pandas as pd
 import utils.support as sup
 import xmltodict as xtd
 from lxml import etree
-from simod.parameter_extraction import Pipeline
-from simod.structure_params_miner import ParameterExtractionOutput, InterArrivalMinerForStructureOptimizerPipeline, \
-    GatewayProbabilitiesMinerForStructureOptimizerPipeline, \
-    TasksProcessorForStructureOptimizerPipeline
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
@@ -23,8 +19,8 @@ from .cli_formatter import *
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod
 from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer
-from .extraction.parameter_extraction import ParameterExtractionInput, \
-    ResourceMinerForExtractionPipeline, LogReplayerForExtractionPipeline
+from .parameter_extraction import Pipeline, ParameterExtractionInputForDiscoverer, LogReplayerForDiscoverer, \
+    ResourceMinerForDiscoverer, ParameterExtractionOutput, InterArrivalMiner, GatewayProbabilitiesMiner, TasksProcessor
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
@@ -128,16 +124,16 @@ class Discoverer:
 
         # alternative
 
-        input = ParameterExtractionInput(
+        input = ParameterExtractionInputForDiscoverer(
             log=self.log_train, bpmn=self.bpmn, process_graph=self.process_graph, settings=self.settings)
         output = ParameterExtractionOutput()
         parameters_extraction_pipeline = Pipeline(input=input, output=output)
         parameters_extraction_pipeline.set_pipeline([
-            LogReplayerForExtractionPipeline,
-            ResourceMinerForExtractionPipeline,
-            InterArrivalMinerForStructureOptimizerPipeline,
-            GatewayProbabilitiesMinerForStructureOptimizerPipeline,
-            TasksProcessorForStructureOptimizerPipeline
+            LogReplayerForDiscoverer,
+            ResourceMinerForDiscoverer,
+            InterArrivalMiner,
+            GatewayProbabilitiesMiner,
+            TasksProcessor
         ])
         parameters_extraction_pipeline.execute()
 
