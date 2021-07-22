@@ -20,7 +20,8 @@ from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
 from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod
 from .decorators import timeit
-from .parameter_extraction import Pipeline, ParameterExtractionOutput, ParameterExtractionInput
+from .parameter_extraction import Pipeline
+from .structure_params_miner import ParameterExtractionOutput, ParameterExtractionInput
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner

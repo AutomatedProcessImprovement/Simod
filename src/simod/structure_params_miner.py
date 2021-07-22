@@ -27,7 +27,7 @@ class ParameterExtractionInput:
 
 @dataclass
 class ParameterExtractionOutput:
-    process_stats: list = field(default_factory=list)
+    process_stats: pd.DataFrame = field(default_factory=pd.DataFrame)
     resource_table: pd.DataFrame = field(default_factory=pd.DataFrame)
     conformant_traces: list = field(default_factory=list)
     resource_pool: list = field(default_factory=list)
@@ -52,7 +52,6 @@ class LogReplayerForStructureOptimizerPipeline(Operator):
                                msg='reading conformant training traces')
         self.output.process_stats = replayer.process_stats
         self.output.conformant_traces = replayer.conformant_traces
-        self.output.process_stats['role'] = 'SYSTEM'  # TODO: what is this for?
 
 
 class ResourceMinerForStructureOptimizerPipeline(Operator):

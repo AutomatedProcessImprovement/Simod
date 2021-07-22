@@ -12,6 +12,10 @@ import pandas as pd
 import utils.support as sup
 import xmltodict as xtd
 from lxml import etree
+from simod.parameter_extraction import Pipeline
+from simod.structure_params_miner import ParameterExtractionOutput, InterArrivalMinerForStructureOptimizerPipeline, \
+    GatewayProbabilitiesMinerForStructureOptimizerPipeline, \
+    TasksProcessorForStructureOptimizerPipeline
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
@@ -19,11 +23,13 @@ from .cli_formatter import *
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod
 from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer
-from .extraction.parameter_extraction import ParameterMiner
+from .extraction.parameter_extraction import ParameterExtractionInput, \
+    ResourceMinerForExtractionPipeline, LogReplayerForExtractionPipeline
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
-from .writers import xml_writer as xml, xes_writer as xes
+from .writers import xes_writer as xes
+from .writers import xml_writer as xml
 
 
 class Discoverer:
@@ -104,20 +110,55 @@ class Discoverer:
     @safe_exec
     def extract_parameters(self, **kwargs) -> None:
         print_section("Simulation Parameters Mining")
-        p_extractor = ParameterMiner(self.log_train, self.bpmn, self.process_graph, self.settings)
+
+        # original
+
+        # p_extractor = ParameterMiner(self.log_train, self.bpmn, self.process_graph, self.settings)
+        # p_extractor.extract_parameters(num_inst, start_time)
+        # if p_extractor.is_safe:
+        #     self.process_stats = self.process_stats.merge(p_extractor.resource_table[['resource', 'role']],
+        #                                                   on='resource', how='left')
+        #     # save parameters
+        #     self.parameters = copy.deepcopy(p_extractor.parameters)
+        #     # print parameters in xml bimp format
+        #     bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
+        #     xml.print_parameters(bpmn_path, bpmn_path, p_extractor.parameters)
+        # else:
+        #     raise RuntimeError('Parameters extraction error')
+
+        # alternative
+
+        input = ParameterExtractionInput(
+            log=self.log_train, bpmn=self.bpmn, process_graph=self.process_graph, settings=self.settings)
+        output = ParameterExtractionOutput()
+        parameters_extraction_pipeline = Pipeline(input=input, output=output)
+        parameters_extraction_pipeline.set_pipeline([
+            LogReplayerForExtractionPipeline,
+            ResourceMinerForExtractionPipeline,
+            InterArrivalMinerForStructureOptimizerPipeline,
+            GatewayProbabilitiesMinerForStructureOptimizerPipeline,
+            TasksProcessorForStructureOptimizerPipeline
+        ])
+        parameters_extraction_pipeline.execute()
+
+        self.process_stats = self.process_stats.merge(
+            output.resource_table[['resource', 'role']], on='resource', how='left')
+
         num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
         start_time = (pd.DataFrame(self.log_test).start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
-        p_extractor.extract_parameters(num_inst, start_time)
-        if p_extractor.is_safe:
-            self.process_stats = self.process_stats.merge(p_extractor.resource_table[['resource', 'role']],
-                                                          on='resource', how='left')
-            # save parameters
-            self.parameters = copy.deepcopy(p_extractor.parameters)
-            # print parameters in xml bimp format
-            bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
-            xml.print_parameters(bpmn_path, bpmn_path, p_extractor.parameters)
-        else:
-            raise RuntimeError('Parameters extraction error')
+        parameters = {
+            'instances': num_inst,
+            'start_time': start_time,
+            'resource_pool': output.resource_pool,
+            'time_table': output.time_table,
+            'arrival_rate': output.arrival_rate,
+            'sequences': output.sequences,
+            'elements_data': output.elements_data
+        }
+        self.parameters = copy.deepcopy(parameters)
+
+        bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
+        xml.print_parameters(bpmn_path, bpmn_path, parameters)
 
     @timeit(rec_name='SIMULATION_EVAL')
     @safe_exec
