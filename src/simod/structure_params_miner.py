@@ -1,5 +1,11 @@
+from dataclasses import dataclass, field
+from typing import List
+
+import pandas as pd
+from networkx import DiGraph
 from simod.cli_formatter import print_step
-from simod.parameter_extraction import Operator, ParameterExtractionInput, ParameterExtractionOutput
+from simod.parameter_extraction import Operator
+from simod.readers.bpmn_reader import BpmnReader
 
 from .configuration import Configuration, CalculationMethod, DataType
 from .extraction.gateways_probabilities import GatewaysEvaluator
@@ -7,6 +13,28 @@ from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.log_replayer import LogReplayer
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
+
+
+@dataclass
+class ParameterExtractionInput:
+    # log: LogReader
+    log_traces: list = None
+    bpmn: BpmnReader = None
+    process_graph: DiGraph = None
+    settings: Configuration = None
+    # rp_similarity: float
+
+
+@dataclass
+class ParameterExtractionOutput:
+    process_stats: list = field(default_factory=list)
+    resource_table: pd.DataFrame = field(default_factory=pd.DataFrame)
+    conformant_traces: list = field(default_factory=list)
+    resource_pool: list = field(default_factory=list)
+    time_table: List[str] = field(default_factory=list)
+    arrival_rate: dict = field(default_factory=dict)
+    sequences: list = field(default_factory=list)
+    elements_data: list = field(default_factory=list)
 
 
 class LogReplayerForStructureOptimizerPipeline(Operator):

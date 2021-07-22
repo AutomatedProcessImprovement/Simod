@@ -1,34 +1,5 @@
 from abc import abstractmethod
-from dataclasses import dataclass, field
 from typing import Any, Protocol, List
-
-import pandas as pd
-from networkx import DiGraph
-
-from .configuration import Configuration
-from .readers.bpmn_reader import BpmnReader
-
-
-@dataclass
-class ParameterExtractionInput:
-    # log: LogReader
-    log_traces: list = None
-    bpmn: BpmnReader = None
-    process_graph: DiGraph = None
-    settings: Configuration = None
-    # rp_similarity: float
-
-
-@dataclass
-class ParameterExtractionOutput:
-    process_stats: list = field(default_factory=list)
-    resource_table: pd.DataFrame = field(default_factory=pd.DataFrame)
-    conformant_traces: list = field(default_factory=list)
-    resource_pool: list = field(default_factory=list)
-    time_table: List[str] = field(default_factory=list)
-    arrival_rate: dict = field(default_factory=dict)
-    sequences: list = field(default_factory=list)
-    elements_data: list = field(default_factory=list)
 
 
 class Operator(Protocol):
