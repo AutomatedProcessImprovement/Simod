@@ -22,7 +22,7 @@ from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
 from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod, DataType, \
     CalculationMethod
-from .decorators import timeit
+from .decorators import timeit, safe_exec_with_values_and_status
 from .extraction.schedule_tables import TimeTablesCreator
 from .parameter_extraction import Pipeline, ParameterExtractionInput, ParameterExtractionOutput, InterArrivalMiner, \
     GatewayProbabilitiesMiner, TasksProcessor
@@ -34,33 +34,6 @@ from .writers import xml_writer as xml, xes_writer as xes
 
 class StructureOptimizer:
     """Hyperparameter-optimizer class"""
-
-    class Decorators(object):
-
-        @classmethod
-        def safe_exec(cls, method):
-            """
-            Decorator to safe execute methods and return the state
-            ----------
-            method : Any method.
-            Returns
-            -------
-            dict : execution status
-            """
-
-            def safety_check(*args, **kw):
-                status = kw.get('status', method.__name__.upper())
-                response = {'values': [], 'status': status}
-                if status == STATUS_OK:
-                    try:
-                        response['values'] = method(*args)
-                    except Exception as e:
-                        print(e)
-                        traceback.print_exc()
-                        response['status'] = STATUS_FAIL
-                return response
-
-            return safety_check
 
     def __init__(self, settings: Configuration, log):
         self.space = self.define_search_space(settings)
@@ -156,7 +129,7 @@ class StructureOptimizer:
             pass
 
     @timeit(rec_name='PATH_DEF')
-    @Decorators.safe_exec
+    @safe_exec_with_values_and_status
     def _temp_path_redef(self, settings, **kwargs) -> None:
         # Paths redefinition
         settings['output'] = os.path.join(self.temp_output, sup.folder_id())
@@ -172,7 +145,7 @@ class StructureOptimizer:
         return settings
 
     @timeit(rec_name='MINING_STRUCTURE')
-    @Decorators.safe_exec
+    @safe_exec_with_values_and_status
     def _mine_structure(self, settings: Configuration, **kwargs) -> None:
         structure_miner = StructureMiner(settings, self.log_train)
         structure_miner.execute_pipeline()
@@ -182,7 +155,7 @@ class StructureOptimizer:
             raise RuntimeError('Mining Structure error')
 
     @timeit(rec_name='EXTRACTING_PARAMS')
-    @Decorators.safe_exec
+    @safe_exec_with_values_and_status
     def _extract_parameters(self, settings: Configuration, structure, parameters, **kwargs) -> None:
         if isinstance(settings, dict):
             settings = Configuration(**settings)
@@ -247,7 +220,7 @@ class StructureOptimizer:
         self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
 
     @timeit(rec_name='SIMULATION_EVAL')
-    @Decorators.safe_exec
+    @safe_exec_with_values_and_status
     def _simulate(self, settings: Configuration, data, **kwargs) -> list:
         if isinstance(settings, dict):
             settings = Configuration(**settings)

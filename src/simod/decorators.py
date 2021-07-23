@@ -2,6 +2,8 @@ import functools
 import time
 import traceback
 
+from hyperopt import STATUS_OK, STATUS_FAIL
+
 
 def timeit(func=None, rec_name=None):
     """
@@ -54,5 +56,30 @@ def safe_exec(method):
                 traceback.print_exc()
                 is_safe = False
         return is_safe
+
+    return safety_check
+
+
+def safe_exec_with_values_and_status(method):
+    """
+    Decorator to safe execute methods and return the state
+    ----------
+    method : Any method.
+    Returns
+    -------
+    dict : execution status
+    """
+
+    def safety_check(*args, **kw):
+        status = kw.get('status', method.__name__.upper())
+        response = {'values': [], 'status': status}
+        if status == STATUS_OK:
+            try:
+                response['values'] = method(*args)
+            except Exception as e:
+                print(e)
+                traceback.print_exc()
+                response['status'] = STATUS_FAIL
+        return response
 
     return safety_check
