@@ -14,7 +14,8 @@ import pandas as pd
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from simod.parameter_extraction import LogReplayerForStructureOptimizer, ResourceMinerForStructureOptimizer
+from simod.extraction.log_replayer import LogReplayer
+from simod.parameter_extraction import Operator
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
@@ -23,9 +24,8 @@ from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, 
     CalculationMethod
 from .decorators import timeit
 from .extraction.schedule_tables import TimeTablesCreator
-from .parameter_extraction import ParameterExtractionInput, ParameterExtractionOutput, InterArrivalMiner, \
+from .parameter_extraction import Pipeline, ParameterExtractionInput, ParameterExtractionOutput, InterArrivalMiner, \
     GatewayProbabilitiesMiner, TasksProcessor
-from .parameter_extraction import Pipeline
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
@@ -495,3 +495,39 @@ def mine_resources(settings: Configuration):
     parameters['resource_pool'] = resource_pool
     parameters['time_table'] = time_table_creator.time_table
     return parameters
+
+
+# Parameters Extraction Implementations: For Structure Optimizer
+
+class LogReplayerForStructureOptimizer(Operator):
+    input: ParameterExtractionInput
+    output: ParameterExtractionOutput
+
+    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
+        self.input = input
+        self.output = output
+        self._execute()
+
+    def _execute(self):
+        print_step('Log Replayer')
+        replayer = LogReplayer(self.input.process_graph, self.input.log_traces, self.input.settings,
+                               msg='reading conformant training traces')
+        self.output.process_stats = replayer.process_stats
+        self.output.conformant_traces = replayer.conformant_traces
+
+
+class ResourceMinerForStructureOptimizer(Operator):
+    input: ParameterExtractionInput
+    output: ParameterExtractionOutput
+
+    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
+        self.input = input
+        self.output = output
+        self._execute()
+
+    def _execute(self):
+        """Analysing resource pool LV917 or 247"""
+        print_step('Resource Miner')
+        parameters = mine_resources(self.input.settings)
+        self.output.resource_pool = parameters['resource_pool']
+        self.output.time_table = parameters['time_table']
