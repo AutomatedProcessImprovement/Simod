@@ -13,6 +13,7 @@ from xml.dom import minidom
 import analyzers.sim_evaluator as sim
 import pandas as pd
 import utils.support as sup
+from pm4py.objects.log.importer.xes import importer as xes_importer
 from tqdm import tqdm
 
 from .cli_formatter import *
@@ -40,16 +41,20 @@ class Optimizer:
         if not os.path.exists('outputs'):
             os.makedirs('outputs')
 
-    def execute_pipeline(self) -> None:
+    def execute_pipeline(self, structure_optimizer=StructureOptimizer) -> None:
         print_section('Log Parsing')
         exec_times = dict()
-        self.read_inputs(log_time=exec_times)
 
         print_section('Structure Optimization')
-        structure_optimizer = StructureOptimizer(self.settings_structure, copy.deepcopy(self.log_train))
-        structure_optimizer.execute_trials()
-        struc_model = structure_optimizer.best_output
-        best_parms = structure_optimizer.best_parms
+
+        print_step('Preparing log buckets')
+        self.set_log(log_time=exec_times)
+        self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)
+
+        strctr_optimizer = structure_optimizer(self.settings_structure, copy.deepcopy(self.log_train))
+        strctr_optimizer.execute_trials()
+        struc_model = strctr_optimizer.best_output
+        best_parms = strctr_optimizer.best_parms
         self.settings_global.alg_manag = self.settings_structure.alg_manag[best_parms['alg_manag']]
         self.best_params['alg_manag'] = self.settings_global.alg_manag
         self.settings_global.gate_management = self.settings_structure.gate_management[best_parms['gate_management']]
@@ -85,10 +90,10 @@ class Optimizer:
 
         print_section('Final Comparison')
         output_file = sup.file_id(prefix='SE_')
-        self._test_model(times_optimizer.best_output, output_file, structure_optimizer.file_name,
+        self._test_model(times_optimizer.best_output, output_file, strctr_optimizer.file_name,
                          times_optimizer.file_name)
         self._export_canonical_model(times_optimizer.best_output)
-        shutil.rmtree(structure_optimizer.temp_output)
+        shutil.rmtree(strctr_optimizer.temp_output)
         shutil.rmtree(times_optimizer.temp_output)
         print_asset(f"Output folder is at {self.settings_global.output}")
 
@@ -97,7 +102,7 @@ class Optimizer:
         if not os.path.exists(output_path):
             os.makedirs(output_path)
             os.makedirs(os.path.join(output_path, 'sim_data'))
-        self.settings_global.__dict__.pop('output', None)
+        # self.settings_global.__dict__.pop('output', None)
         self.settings_global.output = output_path
         self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
@@ -126,14 +131,12 @@ class Optimizer:
             self.settings_global.output, self.settings_global.project_name + '_canon.json'))
 
     @timeit
-    def read_inputs(self, **kwargs) -> None:
+    def set_log(self, **kwargs) -> None:
         # Event log reading
         global_config: Configuration = self.settings['gl']
         self.log = lr.LogReader(os.path.join(global_config.input, global_config.file), global_config.read_options)
-        # Time splitting 80-20
-        self.split_timeline(0.8, global_config.read_options.one_timestamp)
 
-    def split_timeline(self, size: float, one_ts: bool) -> None:
+    def split_and_set_log_buckets(self, size: float, one_ts: bool) -> None:
         """
         Split an event log dataframe by time to peform split-validation.
         prefered method time splitting removing incomplete traces.
@@ -166,7 +169,7 @@ class Optimizer:
         to be equal to the number of instances in the testing log"""
         num_inst = len(self.log_test.caseid.unique())
         # Get minimum date
-        start_time = (self.log_test.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+        start_time = self.log_test.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
         mydoc = minidom.parse(model)
         items = mydoc.getElementsByTagName('qbp:processSimulationInfo')
         items[0].attributes['processInstances'].value = str(num_inst)
@@ -250,7 +253,7 @@ class Optimizer:
 
     @staticmethod
     def evaluate_logs(args):
-        def evaluate(settings, process_stats, sim_log):
+        def evaluate(settings: Configuration, process_stats, sim_log):
             """Reads the simulation results stats
             Args:
                 settings (dict): Path to jar and file names
@@ -260,9 +263,9 @@ class Optimizer:
             rep = (sim_log.iloc[0].run_num)
             sim_values = list()
             evaluator = sim.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
-            metrics = [settings['sim_metric']]
-            if 'add_metrics' in settings.keys():
-                metrics = list(set(list(settings['add_metrics']) + metrics))
+            metrics = [settings.sim_metric]
+            if 'add_metrics' in settings.__dict__.keys():
+                metrics = list(set(list(settings.add_metrics) + metrics))
             for metric in metrics:
                 evaluator.measure_distance(metric)
                 sim_values.append({**{'run_num': rep}, **evaluator.similarity})
@@ -272,7 +275,7 @@ class Optimizer:
 
     @staticmethod
     def execute_simulator(args):
-        def sim_call(settings, rep):
+        def sim_call(settings: Configuration, rep):
             """Executes BIMP Simulations.
             Args:
                 settings (dict): Path to jar and file names
@@ -280,11 +283,10 @@ class Optimizer:
             """
             # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
             # print(message)
-            args = ['java', '-jar', settings['bimp_path'],
-                    os.path.join(settings['output'], settings['project_name'] + '.bpmn'),
+            args = ['java', '-jar', settings.bimp_path,
+                    os.path.join(settings.output, settings.project_name + '.bpmn'),
                     '-csv',
-                    os.path.join(settings['output'], 'sim_data',
-                                 settings['project_name'] + '_' + str(rep + 1) + '.csv')]
+                    os.path.join(settings.output, 'sim_data', settings.project_name + '_' + str(rep + 1) + '.csv')]
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
         sim_call(*args)

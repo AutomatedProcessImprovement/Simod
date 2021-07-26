@@ -6,7 +6,6 @@ import os
 import random
 import subprocess
 import time
-import traceback
 from multiprocessing import Pool
 
 import numpy as np
@@ -381,37 +380,32 @@ class StructureOptimizer:
 
     def _split_timeline(self, size: float, one_ts: bool) -> None:
         """
-        Split an event log dataframe by time to peform split-validation.
-        prefered method time splitting removing incomplete traces.
-        If the testing set is smaller than the 10% of the log size
-        the second method is sort by traces start and split taking the whole
-        traces no matter if they are contained in the timeframe or not
+        Split an event log dataframe by time to perform split-validation. preferred method time splitting removing
+        incomplete traces. If the testing set is smaller than the 10% of the log size the second method is sort by
+        traces start and split taking the whole traces no matter if they are contained in the timeframe or not
 
         Parameters
         ----------
-        size : float, validation percentage.
-        one_ts : bool, Support only one timestamp.
+        size: float, validation percentage.
+        one_ts: bool, Support only one timestamp.
         """
         # Split log data
         splitter = ls.LogSplitter(self.log.data)
-        # train, valdn = splitter.split_log('random', size, one_ts)
-        train, valdn = splitter.split_log('timeline_contained', size, one_ts)
+        train, validation = splitter.split_log('timeline_contained', size, one_ts)
         total_events = len(self.log.data)
-        # Check size and change time splitting method if necesary
-        if len(valdn) < int(total_events * 0.1):
-            train, valdn = splitter.split_log('timeline_trace', size, one_ts)
+        # Check size and change time splitting method if necessary
+        if len(validation) < int(total_events * 0.1):
+            train, validation = splitter.split_log('timeline_trace', size, one_ts)
         # Set splits
         key = 'end_timestamp' if one_ts else 'start_timestamp'
-        valdn = pd.DataFrame(valdn)
+        validation = pd.DataFrame(validation)
         train = pd.DataFrame(train)
         # If the log is big sample train partition
         train = self._sample_log(train)
         # Save partitions
-        self.log_valdn = (valdn.sort_values(key, ascending=True)
-                          .reset_index(drop=True))
+        self.log_valdn = (validation.sort_values(key, ascending=True).reset_index(drop=True))
         self.log_train = copy.deepcopy(self.log)
-        self.log_train.set_data(train.sort_values(key, ascending=True)
-                                .reset_index(drop=True).to_dict('records'))
+        self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
     @staticmethod
     def _sample_log(train):
