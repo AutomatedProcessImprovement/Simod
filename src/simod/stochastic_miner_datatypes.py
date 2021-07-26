@@ -2,9 +2,11 @@ import copy
 import datetime
 import random
 import sys
+import xml.etree.ElementTree as ET
 from collections import deque
 from datetime import timedelta
 from enum import Enum
+from pathlib import Path
 from typing import List
 
 import pytz
@@ -162,6 +164,35 @@ class BPMNGraph:
         self.decision_successors = dict()
         self.element_probability = None
         self.task_resource_probability = None
+
+    @staticmethod
+    def from_bpmn_path(model_path: Path):
+        bpmn_element_ns = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
+        tree = ET.parse(model_path.absolute())
+        root = tree.getroot()
+        to_extract = {'xmlns:task': BPMNNodeType.TASK,
+                      'xmlns:startEvent': BPMNNodeType.START_EVENT,
+                      'xmlns:endEvent': BPMNNodeType.END_EVENT,
+                      'xmlns:exclusiveGateway': BPMNNodeType.EXCLUSIVE_GATEWAY,
+                      # NOTE: no parallel gateways in current Simod models
+                      'xmlns:parallelGateway': BPMNNodeType.PARALLEL_GATEWAY,
+                      'xmlns:inclusiveGateway': BPMNNodeType.INCLUSIVE_GATEWAY}
+
+        bpmn_graph = BPMNGraph()
+        for process in root.findall('xmlns:process', bpmn_element_ns):
+            for xmlns_key in to_extract:
+                for bpmn_element in process.findall(xmlns_key, bpmn_element_ns):
+                    name = bpmn_element.attrib["name"] \
+                        if "name" in bpmn_element.attrib and len(bpmn_element.attrib["name"]) > 0 \
+                        else bpmn_element.attrib["id"]
+                    bpmn_graph.add_bpmn_element(bpmn_element.attrib["id"],
+                                                ElementInfo(to_extract[xmlns_key], bpmn_element.attrib["id"], name))
+            for flow_arc in process.findall('xmlns:sequenceFlow', bpmn_element_ns):
+                bpmn_graph.add_flow_arc(flow_arc.attrib["id"], flow_arc.attrib["sourceRef"],
+                                        flow_arc.attrib["targetRef"])
+        bpmn_graph.encode_or_join_predecessors()
+
+        return bpmn_graph
 
     def set_element_probabilities(self, element_probability, task_resource_probability):
         self.element_probability = element_probability
