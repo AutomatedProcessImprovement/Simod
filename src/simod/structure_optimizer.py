@@ -480,6 +480,7 @@ class LogReplayerForStructureOptimizer(Operator):
         replayer = LogReplayer(self.input.process_graph, self.input.log_traces, self.input.settings,
                                msg='reading conformant training traces')
         self.output.process_stats = replayer.process_stats
+        self.output.process_stats['role'] = 'SYSTEM'
         self.output.conformant_traces = replayer.conformant_traces
 
 
