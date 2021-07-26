@@ -1,6 +1,7 @@
 import copy
 import os
 import pathlib
+import sys
 from pathlib import Path
 
 import utils.support as sup
@@ -9,7 +10,7 @@ from simod.configuration import Configuration, MiningAlgorithm, AlgorithmManagem
     PDFMethod, GateManagement, Metric, ExecutionMode
 from simod.discoverer import Discoverer
 from simod.optimizer import Optimizer
-from simod.stochastic_miner import StochasticProcessMiner
+from simod.stochastic_miner import StructureOptimizerForStochasticProcessMiner
 
 
 @click.group()
@@ -63,11 +64,17 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
 
 @main.command()
 @click.option('-l', '--log_path', required=True)
+@click.option('-m', '--model_path', default=None)
 @click.option('--mining_alg', default='sm3', show_default=True,
               type=click.Choice(['sm1', 'sm2', 'sm3'], case_sensitive=False))
+@click.option('--new_replayer', is_flag=True, default=False)
 @click.pass_context
-def optimize(ctx, log_path, mining_alg):
+def optimize(ctx, log_path, model_path, mining_alg, new_replayer):
+    if model_path:
+        ctx.params['model_path'] = pathlib.Path(model_path)
+    ctx.params['log_path'] = pathlib.Path(log_path)
     ctx.params['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
+
     global_config = Configuration(input=Path('inputs'),
                                   output=Path(os.path.join('outputs', sup.folder_id())),
                                   exec_mode=ExecutionMode.OPTIMIZER,
@@ -110,25 +117,28 @@ def optimize(ctx, log_path, mining_alg):
     time_optimizer_config.arr_support = [0.01, 0.1]
     time_optimizer_config.arr_confidence = [1, 10]
 
-    optimizer = Optimizer(
-        {'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
-    optimizer.execute_pipeline()
+    optimizer = Optimizer({'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
+    if new_replayer:
+        if model_path is None:
+            print_notice('It is required to provide the --model_path argument for --new_replayer')
+            sys.exit()
+        optimizer.execute_pipeline(structure_optimizer=StructureOptimizerForStochasticProcessMiner)
+    else:
+        optimizer.execute_pipeline()
 
 
-@main.command()
-@click.option('-l', '--log_path', required=True)
-@click.option('-m', '--model_path')
-@click.pass_context
-def optimize_with_new_replayer(ctx, log_path, model_path):
-    if model_path:
-        ctx.params['model_path'] = pathlib.Path(model_path)
-    if log_path:
-        ctx.params['log_path'] = pathlib.Path(log_path)
-
-    config = Configuration(input=Path('inputs'), output=Path(os.path.join('outputs', sup.folder_id())), **ctx.params)
-    config.fill_in_derived_fields()
-    miner = StochasticProcessMiner(config)
-    miner.execute_pipeline()
+# @main.command()
+# @click.option('-l', '--log_path', required=True)
+# @click.option('-m', '--model_path', required=True)
+# @click.pass_context
+# def optimize_with_new_replayer(ctx, log_path, model_path):
+#     ctx.params['model_path'] = pathlib.Path(model_path)
+#     ctx.params['log_path'] = pathlib.Path(log_path)
+#
+#     config = Configuration(input=Path('inputs'), output=Path(os.path.join('outputs', sup.folder_id())), **ctx.params)
+#     config.fill_in_derived_fields()
+#     miner = StochasticProcessMiner(config)
+#     miner.execute_pipeline()
 
 
 if __name__ == "__main__":

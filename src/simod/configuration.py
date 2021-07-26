@@ -189,6 +189,7 @@ class Configuration:
     max_eval_t: int = None
     res_sup_dis: List[float] = None
     res_con_dis: List[float] = None
+    new_replayer: bool = False
 
     def fill_in_derived_fields(self):
         if self.log_path:
