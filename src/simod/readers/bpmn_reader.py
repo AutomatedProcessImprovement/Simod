@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import xml.etree.ElementTree as ET
 
+from simod.configuration import BPMN_NAMESPACE_URI
+
 
 class BpmnReader(object):
     """
@@ -11,7 +13,7 @@ class BpmnReader(object):
         """constructor"""
         self.tree = ET.parse(input)
         self.root = self.tree.getroot()
-        self.ns = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
+        self.ns = {'xmlns': BPMN_NAMESPACE_URI}
 
 
     def get_tasks_info(self):

@@ -13,6 +13,8 @@ import pytz
 
 
 # BPMN Graph
+from simod.configuration import BPMN_NAMESPACE_URI
+
 
 class BPMNNodeType(Enum):
     TASK = 'TASK'
@@ -167,7 +169,7 @@ class BPMNGraph:
 
     @staticmethod
     def from_bpmn_path(model_path: Path):
-        bpmn_element_ns = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
+        bpmn_element_ns = {'xmlns': BPMN_NAMESPACE_URI}
         tree = ET.parse(model_path.absolute())
         root = tree.getroot()
         to_extract = {'xmlns:task': BPMNNodeType.TASK,

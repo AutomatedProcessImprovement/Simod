@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 
 import xmltodict as xtd
+from simod.configuration import QBP_NAMESPACE_URI
 
 from ..readers import bpmn_reader as br
 
@@ -10,7 +11,7 @@ def serialize_model(filename):
     tasks = {x['task_id']: x['task_name'] for x in bpmn.get_tasks_info()}
     seqs = bpmn.get_edges_info()
 
-    ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+    ns = {'qbp': QBP_NAMESPACE_URI}
     tree = ET.parse(filename)
     root = tree.getroot()
     sim_model_xml = ET.tostring(root.find("qbp:processSimulationInfo",

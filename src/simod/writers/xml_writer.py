@@ -5,6 +5,9 @@ from lxml.builder import ElementMaker  # lxml only !
 
 
 # --------------- General methods ----------------
+from simod.configuration import QBP_NAMESPACE_URI
+
+
 def create_file(output_file, element):
     #    file_exist = os.path.exists(output_file)
     with open(output_file, 'wb') as f:
@@ -22,7 +25,7 @@ def print_parameters(bpmn_input, output_file, parameters):
                           parameters.get('start_time'))
     # insert timetable
     if parameters.get('time_table') is not None:
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         childs = parameters['time_table'].findall('qbp:timetable', namespaces=ns)
         node = my_doc.find('qbp:timetables', namespaces=ns)
         for i, child in enumerate(childs):
@@ -35,8 +38,8 @@ def print_parameters(bpmn_input, output_file, parameters):
 
 def xml_template(arrival_rate=None, resource_pool=None, elements_data=None, sequences=None, instances=None,
                  start_time=None):
-    E = ElementMaker(namespace="http://www.qbp-simulator.com/Schema201212",
-                     nsmap={'qbp': "http://www.qbp-simulator.com/Schema201212"})
+    E = ElementMaker(namespace=QBP_NAMESPACE_URI,
+                     nsmap={'qbp': QBP_NAMESPACE_URI})
     PROCESSSIMULATIONINFO = E.processSimulationInfo
     ARRIVALRATEDISTRIBUTION = E.arrivalRateDistribution
     TIMEUNIT = E.timeUnit

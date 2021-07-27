@@ -9,7 +9,7 @@ from lxml import etree
 from lxml.builder import ElementMaker  # lxml only !
 from tqdm import tqdm
 
-from ..configuration import Configuration, DataType, CalculationMethod
+from ..configuration import Configuration, DataType, CalculationMethod, QBP_NAMESPACE_URI
 
 
 class TimeTablesCreator():
@@ -52,7 +52,7 @@ class TimeTablesCreator():
         pbar.update(1)
 
         # merge timetables
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         restimetable = xmlres.find('qbp:timetable', namespaces=ns)
         arrivaltable = xmlarr.findall('qbp:timetable', namespaces=ns)
         index = len(arrivaltable)
@@ -73,7 +73,7 @@ class TimeTablesCreator():
                                             str(self.settings.arr_support), str(self.settings.arr_confidence), 2)
         pbar.update(1)
         # merge timetables
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         restimetable = xmlres.find('qbp:timetable', namespaces=ns)
         arrivaltable = xmlarr.findall('qbp:timetable', namespaces=ns)
         index = len(arrivaltable)
@@ -96,7 +96,7 @@ class TimeTablesCreator():
         xmlarr = self._default_creator(self.settings.arr_dtype, 2)
         pbar.update(1)
         # merge timetables
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         restimetable = xmlres.find('qbp:timetable', namespaces=ns)
         arrivaltable = xmlarr.findall('qbp:timetable', namespaces=ns)
         index = len(arrivaltable)
@@ -123,7 +123,7 @@ class TimeTablesCreator():
             str(self.settings.arr_confidence), 2)
         pbar.update(1)
         # merge timetables
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         restimetable = xmlres.find('qbp:timetable', namespaces=ns)
         arrivaltable = xmlarr.findall('qbp:timetable', namespaces=ns)
         index = len(arrivaltable)
@@ -136,7 +136,7 @@ class TimeTablesCreator():
 
     def _dispoolres_defarr(self, timetable) -> None:
         pbar = tqdm(total=2, desc='mining calendars:')
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         xmlarr = self._default_creator(self.settings.arr_dtype, 2)
         pbar.update(1)
         arrivaltable = xmlarr.find('qbp:timetable', namespaces=ns)
@@ -165,7 +165,7 @@ class TimeTablesCreator():
 
     def _dispoolres_disarr(self, timetable) -> None:
         pbar = tqdm(total=2, desc='mining calendars:')
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         xmlarr = self._timetable_discoverer(
             self.settings.calender_path,
             self.settings.log_path,
@@ -202,8 +202,7 @@ class TimeTablesCreator():
         """
 
         def print_xml_bimp(time_table) -> str:
-            web = 'http://www.qbp-simulator.com/Schema201212'
-            E = ElementMaker(namespace=web, nsmap={'qbp': web})
+            E = ElementMaker(namespace=QBP_NAMESPACE_URI, nsmap={'qbp': QBP_NAMESPACE_URI})
             TIMETABLES = E.timetables
             TIMETABLE = E.timetable
             RULES = E.rules
@@ -255,7 +254,7 @@ class TimeTablesCreator():
             args.append(file_name)
         process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
         found = False
-        xml = ['<qbp:timetables xmlns:qbp="http://www.qbp-simulator.com/Schema201212">']
+        xml = [f'<qbp:timetables xmlns:qbp="{QBP_NAMESPACE_URI}">']
         for line in process.stdout.decode('utf-8').splitlines():
             if 'BIMP' in line:
                 found = False if found else True
@@ -263,7 +262,7 @@ class TimeTablesCreator():
                 xml.append(line.strip())
         xml.append('</qbp:timetables>')
         xml = etree.fromstring(''.join(xml).strip())
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         # Fix timestamp format
         rules = (xml.find('qbp:timetable', namespaces=ns)
                  .find('qbp:rules', namespaces=ns)

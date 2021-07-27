@@ -6,6 +6,9 @@ from typing import List, Dict
 
 import utils.support as sup
 
+QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
+BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
+
 
 class AlgorithmManagement(Enum):
     REPAIR = auto()

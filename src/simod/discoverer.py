@@ -18,7 +18,7 @@ from utils import support as sup
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
-from .configuration import Configuration, MiningAlgorithm, CalculationMethod
+from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer
 from .extraction.role_discovery import ResourcePoolAnalyser
@@ -289,7 +289,7 @@ class Discoverer:
 
     @safe_exec
     def export_canonical_model(self, **kwargs):
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
         time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
         self.parameters['time_table'] = time_table

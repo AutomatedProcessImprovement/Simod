@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import *
-from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric
+from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
 from .decorators import timeit
 from .extraction.log_replayer import LogReplayer
 from .readers import bpmn_reader as br
@@ -347,7 +347,7 @@ class TimesOptimizer():
         sim_call(*args)
 
     def _xml_print(self, params, path) -> None:
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
 
         def print_xml_resources(parms) -> str:
             E = ElementMaker(namespace=ns['qbp'], nsmap=ns)
@@ -439,14 +439,14 @@ class TimesOptimizer():
                                  self.settings.project_name + '.bpmn')
         tree = ET.parse(bpmn_file)
         root = tree.getroot()
-        ns = {'qbp': "http://www.qbp-simulator.com/Schema201212"}
+        ns = {'qbp': QBP_NAMESPACE_URI}
         parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False, no_network=True)
         self.xml_bpmn = etree.parse(bpmn_file, parser)
         process_info = self.xml_bpmn.find('qbp:processSimulationInfo',
                                           namespaces=ns)
         process_info.getparent().remove(process_info)
 
-        ET.register_namespace('qbp', "http://www.qbp-simulator.com/Schema201212")
+        ET.register_namespace('qbp', QBP_NAMESPACE_URI)
         self.xml_sim_model = etree.fromstring(
             ET.tostring(root.find('qbp:processSimulationInfo', ns)), parser)
         # load bpmn model
