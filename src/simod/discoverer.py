@@ -8,6 +8,7 @@ import types
 from dataclasses import dataclass
 from multiprocessing import Pool
 from operator import itemgetter
+from typing import Optional
 
 import pandas as pd
 import xmltodict as xtd
@@ -360,9 +361,9 @@ class Discoverer:
 @dataclass
 class ParameterExtractionInputForDiscoverer:
     log: types.SimpleNamespace
-    bpmn: BpmnReader = None
-    process_graph: DiGraph = None
-    settings: Configuration = None
+    bpmn: Optional[BpmnReader] = None
+    process_graph: Optional[DiGraph] = None
+    settings: Optional[Configuration] = None
 
 
 class LogReplayerForDiscoverer(Operator):

@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import utils.support as sup
 
@@ -148,11 +148,11 @@ class ReadOptions:
 @dataclass
 class Configuration:
     # General
-    project_name: str = None
-    log_path: Path = None
-    model_path: Path = None
-    input: Path = None
-    file: Path = None
+    project_name: Optional[str] = None
+    log_path: Optional[Path] = None
+    model_path: Optional[Path] = None
+    input: Optional[Path] = None
+    file: Optional[Path] = None
     alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
     output: Path = os.path.join('outputs', sup.folder_id())
     sm1_path: Path = os.path.join('external_tools', 'splitminer2', 'sm2.jar')
@@ -173,25 +173,25 @@ class Configuration:
         default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])
     concurrency: float or List[float] = 0.0  # array
     arr_cal_met: CalculationMethod = CalculationMethod.DISCOVERED
-    arr_confidence: float or List[float] = None
-    arr_support: float or List[float] = None
-    epsilon: float or List[float] = None
-    eta: float or List[float] = None
-    gate_management: GateManagement or List[GateManagement] = None
-    res_confidence: float = None
-    res_support: float = None
-    res_cal_met: CalculationMethod = None
-    res_dtype: DataType or List[DataType] = None
-    arr_dtype: DataType or List[DataType] = None
-    rp_similarity: float or List[float] = None
-    pdef_method: PDFMethod = None
+    arr_confidence: Optional[float or List[float]] = None
+    arr_support: Optional[float or List[float]] = None
+    epsilon: Optional[float or List[float]] = None
+    eta: Optional[float or List[float]] = None
+    gate_management: Optional[GateManagement or List[GateManagement]] = None
+    res_confidence: Optional[float] = None
+    res_support: Optional[float] = None
+    res_cal_met: Optional[CalculationMethod] = None
+    res_dtype: Optional[DataType or List[DataType]] = None
+    arr_dtype: Optional[DataType or List[DataType]] = None
+    rp_similarity: Optional[float or List[float]] = None
+    pdef_method: Optional[PDFMethod] = None
 
     # Optimizer specific
     exec_mode: ExecutionMode = ExecutionMode.SINGLE
-    max_eval_s: int = None
-    max_eval_t: int = None
-    res_sup_dis: List[float] = None
-    res_con_dis: List[float] = None
+    max_eval_s: Optional[int] = None
+    max_eval_t: Optional[int] = None
+    res_sup_dis: Optional[List[float]] = None
+    res_con_dis: Optional[List[float]] = None
     new_replayer: bool = False
 
     def fill_in_derived_fields(self):
