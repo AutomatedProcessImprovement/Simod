@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 import utils.support as sup
 
@@ -171,19 +171,19 @@ class Configuration:
     sim_metric: Metric = Metric.TSD
     add_metrics: List[Metric] = field(
         default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])
-    concurrency: float or List[float] = 0.0  # array
+    concurrency: Union[float, List[float]] = 0.0  # array
     arr_cal_met: CalculationMethod = CalculationMethod.DISCOVERED
-    arr_confidence: Optional[float or List[float]] = None
-    arr_support: Optional[float or List[float]] = None
-    epsilon: Optional[float or List[float]] = None
-    eta: Optional[float or List[float]] = None
-    gate_management: Optional[GateManagement or List[GateManagement]] = None
+    arr_confidence: Optional[Union[float, List[float]]] = None
+    arr_support: Optional[Union[float, List[float]]] = None
+    epsilon: Optional[Union[float, List[float]]] = None
+    eta: Optional[Union[float, List[float]]] = None
+    gate_management: Optional[Union[GateManagement, List[GateManagement]]] = None
     res_confidence: Optional[float] = None
     res_support: Optional[float] = None
     res_cal_met: Optional[CalculationMethod] = None
-    res_dtype: Optional[DataType or List[DataType]] = None
-    arr_dtype: Optional[DataType or List[DataType]] = None
-    rp_similarity: Optional[float or List[float]] = None
+    res_dtype: Optional[Union[DataType, List[DataType]]] = None
+    arr_dtype: Optional[Union[DataType, List[DataType]]] = None
+    rp_similarity: Optional[Union[float, List[float]]] = None
     pdef_method: Optional[PDFMethod] = None
 
     # Optimizer specific
