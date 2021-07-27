@@ -82,7 +82,7 @@ class XesWriter(object):
                                                                    extension=xlc)
                     attribute_map[attribute2.get_key()] = attribute2
                 elif attribute_type in ['Case ID', 'Event ID', transition['skiped']]:
-                    next
+                    continue
                 else:
                     attribute = XFactory.create_attribute_discrete(attribute_type, int(attr_value))
                     attribute_map[attribute.get_key()] = attribute
