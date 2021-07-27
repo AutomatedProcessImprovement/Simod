@@ -163,30 +163,6 @@ class StructureOptimizer:
         num_inst = len(self.log_valdn.caseid.unique())
         start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
-        # original
-
-        # p_extractor = StructureParametersMiner(self.log_train, bpmn, process_graph, settings)
-        # p_extractor.extract_parameters(num_inst, start_time, parameters['resource_pool'])
-        #
-        # if p_extractor.is_safe:
-        #     parameters = {**parameters, **p_extractor.parameters}
-        #     # print parameters in xml bimp format
-        #     xml.print_parameters(os.path.join(
-        #         settings.output, settings.project_name + '.bpmn'),
-        #         os.path.join(settings.output, settings.project_name + '.bpmn'),
-        #         parameters)
-        #
-        #     self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
-        #     self.log_valdn['source'] = 'log'
-        #     self.log_valdn['run_num'] = 0
-        #     self.log_valdn['role'] = 'SYSTEM'
-        #     self.log_valdn = self.log_valdn[
-        #         ~self.log_valdn.task.isin(['Start', 'End'])]
-        # else:
-        #     raise RuntimeError('Parameters extraction error')
-
-        # alternative
-
         settings.pdef_method = PDFMethod.DEFAULT
         input = ParameterExtractionInput(
             log_traces=self.log_train.get_traces(), bpmn=bpmn, process_graph=process_graph, settings=settings)

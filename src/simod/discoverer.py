@@ -113,23 +113,6 @@ class Discoverer:
     def extract_parameters(self, **kwargs) -> None:
         print_section("Simulation Parameters Mining")
 
-        # original
-
-        # p_extractor = ParameterMiner(self.log_train, self.bpmn, self.process_graph, self.settings)
-        # p_extractor.extract_parameters(num_inst, start_time)
-        # if p_extractor.is_safe:
-        #     self.process_stats = self.process_stats.merge(p_extractor.resource_table[['resource', 'role']],
-        #                                                   on='resource', how='left')
-        #     # save parameters
-        #     self.parameters = copy.deepcopy(p_extractor.parameters)
-        #     # print parameters in xml bimp format
-        #     bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
-        #     xml.print_parameters(bpmn_path, bpmn_path, p_extractor.parameters)
-        # else:
-        #     raise RuntimeError('Parameters extraction error')
-
-        # alternative
-
         input = ParameterExtractionInputForDiscoverer(
             log=self.log_train, bpmn=self.bpmn, process_graph=self.process_graph, settings=self.settings)
         output = ParameterExtractionOutput()
