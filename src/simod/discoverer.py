@@ -17,7 +17,7 @@ from tqdm import tqdm
 from utils import support as sup
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import *
+from .cli_formatter import print_asset, print_section, print_step
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer

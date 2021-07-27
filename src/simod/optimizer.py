@@ -13,10 +13,9 @@ from xml.dom import minidom
 import analyzers.sim_evaluator as sim
 import pandas as pd
 import utils.support as sup
-from pm4py.objects.log.importer.xes import importer as xes_importer
 from tqdm import tqdm
 
-from .cli_formatter import *
+from .cli_formatter import print_section, print_step, print_asset
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import timeit
 from .readers import log_reader as lr

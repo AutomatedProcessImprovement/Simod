@@ -13,16 +13,16 @@ import pandas as pd
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from simod.extraction.log_replayer import LogReplayer
-from simod.parameter_extraction import Operator
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import *
+from .cli_formatter import print_section, print_message, print_step
 from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod, DataType, \
     CalculationMethod
 from .decorators import timeit, safe_exec_with_values_and_status
+from .extraction.log_replayer import LogReplayer
 from .extraction.schedule_tables import TimeTablesCreator
+from .parameter_extraction import Operator
 from .parameter_extraction import Pipeline, ParameterExtractionInput, ParameterExtractionOutput, InterArrivalMiner, \
     GatewayProbabilitiesMiner, TasksProcessor
 from .readers import log_reader as lr

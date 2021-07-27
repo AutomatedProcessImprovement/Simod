@@ -4,8 +4,9 @@ import pathlib
 import sys
 from pathlib import Path
 
+import click
 import utils.support as sup
-from simod.cli_formatter import *
+from simod.cli_formatter import print_notice
 from simod.configuration import Configuration, MiningAlgorithm, AlgorithmManagement, CalculationMethod, DataType, \
     PDFMethod, GateManagement, Metric, ExecutionMode
 from simod.discoverer import Discoverer
@@ -15,6 +16,7 @@ from simod.stochastic_miner import StructureOptimizerForStochasticProcessMiner
 
 @click.group()
 def main():
+    # This is a main group which includes other commands specified below.
     pass
 
 

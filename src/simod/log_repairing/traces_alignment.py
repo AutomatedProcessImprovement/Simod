@@ -6,8 +6,8 @@ import subprocess
 from operator import itemgetter
 
 import utils.support as sup
+from simod.cli_formatter import print_subsection
 
-from ..cli_formatter import *
 from ..configuration import Configuration
 
 

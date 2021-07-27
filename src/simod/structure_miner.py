@@ -3,13 +3,12 @@ import platform as pl
 import shutil
 import subprocess
 
-from .readers import bpmn_reader as br
-from .readers import process_structure
-
-from .cli_formatter import *
+from .cli_formatter import print_subsection, print_step
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import safe_exec
 from .log_repairing.conformance_checking import evaluate_alignment
+from .readers import bpmn_reader as br
+from .readers import process_structure
 
 
 class StructureMiner:

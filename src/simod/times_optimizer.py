@@ -18,7 +18,7 @@ from lxml.builder import ElementMaker
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import *
+from .cli_formatter import print_subsection, print_message
 from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
 from .decorators import timeit
 from .extraction.log_replayer import LogReplayer
