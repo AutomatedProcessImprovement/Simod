@@ -119,17 +119,14 @@ class LogReplayer():
                 lambda x: model.nodes[x]['type'] == 'task', cursor))
             shortest_path = list()
             pnode = 0
-            for pnode in reversed(tasks):
+            for local_pnode in reversed(tasks):
                 try:
-                    shortest_path = list(nx.shortest_path(model,
-                                                          pnode,
-                                                          nnode))[1:]
-                    pnode = pnode
+                    shortest_path = list(nx.shortest_path(model, local_pnode, nnode))[1:]
+                    pnode = local_pnode
                     break
                 except nx.NetworkXNoPath:
                     pass
-            if len(list(filter(lambda x: model.nodes[x]['type'] == 'task',
-                               shortest_path))) > 1:
+            if len(list(filter(lambda x: model.nodes[x]['type'] == 'task', shortest_path))) > 1:
                 raise Exception('Incoherent path')
             ap_list = cursor + shortest_path
             # Preserve order and leave only new
