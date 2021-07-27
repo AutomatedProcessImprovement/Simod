@@ -32,7 +32,7 @@ class Operator(Protocol):
 
 class Pipeline:
     input: dict = {}
-    pipeline: list = []
+    operators: list = []
     output: Any
 
     def __init__(self, input=None, output=None):
@@ -40,13 +40,13 @@ class Pipeline:
         self.output = output
 
     def set_pipeline(self, operators: List[Operator] = None):
-        self.pipeline = operators
+        self.operators = operators
 
     def execute(self):
-        if not self.pipeline:
+        if not self.operators:
             raise ValueError('Pipeline.pipeline is not specified')
 
-        for operator in self.pipeline:
+        for operator in self.operators:
             operator(input=self.input, output=self.output)
 
 
