@@ -9,6 +9,8 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 from networkx import DiGraph
+from simod.configuration import Configuration, CalculationMethod, DataType
+from simod.extraction.schedule_tables import TimeTablesCreator
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator
@@ -21,7 +23,6 @@ from .readers import bpmn_reader
 from .readers import process_structure
 from .readers.log_reader import LogReader
 from .stochastic_miner_datatypes import BPMNGraph
-from .structure_optimizer import mine_resources
 
 
 @dataclass
@@ -203,7 +204,6 @@ def execute_simulator(args):
         # NOTE: the call generates a CSV event log from a model
         # NOTE: might fail silently, because stderr or stdout aren't checked
         subprocess.run(args, check=True, stdout=subprocess.PIPE)
-
     sim_call(*args)
 
 
@@ -236,7 +236,25 @@ def read_stats(args):
         temp['run_num'] = rep + 1
         temp = temp[~temp.task.isin(['Start', 'End'])]
         return temp
+    return read(*args)
 
+
+# TODO: name properly or modify/merge read_stats and read_stats_alt
+def read_stats_alt(args):
+    # NOTE: extracted from Discoverer and Optimizer static method
+    def read(settings: Configuration, rep):
+        path = os.path.join(settings.output, 'sim_data')
+        log_name = settings.project_name + '_' + str(rep + 1) + '.csv'
+        rep_results = pd.read_csv(os.path.join(path, log_name), dtype={'caseid': object})
+        rep_results['caseid'] = 'Case' + rep_results['caseid']
+        rep_results['run_num'] = rep
+        rep_results['source'] = 'simulation'
+        rep_results.rename(columns={'resource': 'user'}, inplace=True)
+        rep_results['start_timestamp'] = pd.to_datetime(
+            rep_results['start_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+        rep_results['end_timestamp'] = pd.to_datetime(
+            rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+        return rep_results
     return read(*args)
 
 
@@ -254,5 +272,29 @@ def evaluate_logs(args):
         evaluator.measure_distance(Metric.DL)
         sim_values.append({**{'run_num': rep}, **evaluator.similarity})
         return sim_values
-
     return evaluate(*args)
+
+
+def mine_resources(settings: Configuration):
+    parameters = dict()
+    settings.res_cal_met = CalculationMethod.DEFAULT
+    settings.res_dtype = DataType.DT247
+    settings.arr_cal_met = CalculationMethod.DEFAULT
+    settings.arr_dtype = DataType.DT247
+    time_table_creator = TimeTablesCreator(settings)
+    args = {'res_cal_met': settings.res_cal_met, 'arr_cal_met': settings.arr_cal_met}
+
+    if not isinstance(args['res_cal_met'], CalculationMethod):
+        args['res_cal_met'] = CalculationMethod.from_str(args['res_cal_met'])
+    if not isinstance(args['arr_cal_met'], CalculationMethod):
+        args['arr_cal_met'] = CalculationMethod.from_str(args['arr_cal_met'])
+
+    time_table_creator.create_timetables(args)
+    resource_pool = [
+        {'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '100000', 'costxhour': '20',
+         'timetable_id': time_table_creator.res_ttable_name['arrival']}
+    ]
+
+    parameters['resource_pool'] = resource_pool
+    parameters['time_table'] = time_table_creator.time_table
+    return parameters

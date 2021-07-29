@@ -4,7 +4,6 @@ import math
 import multiprocessing
 import os
 import random
-import subprocess
 import time
 from multiprocessing import Pool
 
@@ -13,15 +12,15 @@ import pandas as pd
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from simod.common_routines import mine_resources
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_message, print_step
-from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod, DataType, \
-    CalculationMethod
+from .common_routines import execute_simulator
+from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod
 from .decorators import timeit, safe_exec_with_values_and_status
 from .extraction.log_replayer import LogReplayer
-from .extraction.schedule_tables import TimeTablesCreator
 from .parameter_extraction import Operator
 from .parameter_extraction import Pipeline, ParameterExtractionInput, ParameterExtractionOutput, InterArrivalMiner, \
     GatewayProbabilitiesMiner, TasksProcessor
@@ -220,7 +219,7 @@ class StructureOptimizer:
         pool = Pool(processes=w_count)
         # Simulate
         args = [(settings, rep) for rep in range(reps)]
-        p = pool.map_async(self.execute_simulator, args)
+        p = pool.map_async(execute_simulator, args)
         pbar_async(p, 'simulating:')
         # Read simulated logs
         p = pool.map_async(self.read_stats, args)
@@ -286,22 +285,6 @@ class StructureOptimizer:
             return sim_values
 
         return evaluate(*args)
-
-    @staticmethod
-    def execute_simulator(args):
-        def sim_call(settings: Configuration, rep):
-            """Executes BIMP Simulations.
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            args = ['java', '-jar', settings.bimp_path,
-                    os.path.join(settings.output, settings.project_name + '.bpmn'),
-                    '-csv',
-                    os.path.join(settings.output, 'sim_data', settings.project_name + '_' + str(rep + 1) + '.csv')]
-            subprocess.run(args, check=True, stdout=subprocess.PIPE)
-
-        sim_call(*args)
 
     @staticmethod
     def _save_times(times, settings, temp_output):
@@ -413,31 +396,6 @@ class StructureOptimizer:
             scases = random.sample(cases, sample_sz)
             train = train[train.caseid.isin(scases)]
         return train
-
-
-def mine_resources(settings: Configuration):
-    parameters = dict()
-    settings.res_cal_met = CalculationMethod.DEFAULT
-    settings.res_dtype = DataType.DT247
-    settings.arr_cal_met = CalculationMethod.DEFAULT
-    settings.arr_dtype = DataType.DT247
-    time_table_creator = TimeTablesCreator(settings)
-    args = {'res_cal_met': settings.res_cal_met, 'arr_cal_met': settings.arr_cal_met}
-
-    if not isinstance(args['res_cal_met'], CalculationMethod):
-        args['res_cal_met'] = CalculationMethod.from_str(args['res_cal_met'])
-    if not isinstance(args['arr_cal_met'], CalculationMethod):
-        args['arr_cal_met'] = CalculationMethod.from_str(args['arr_cal_met'])
-
-    time_table_creator.create_timetables(args)
-    resource_pool = [
-        {'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '100000', 'costxhour': '20',
-         'timetable_id': time_table_creator.res_ttable_name['arrival']}
-    ]
-
-    parameters['resource_pool'] = resource_pool
-    parameters['time_table'] = time_table_creator.time_table
-    return parameters
 
 
 # Parameters Extraction Implementations: For Structure Optimizer

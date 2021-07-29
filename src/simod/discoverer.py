@@ -2,7 +2,6 @@ import copy
 import itertools
 import multiprocessing
 import os
-import subprocess
 import time
 import types
 from dataclasses import dataclass
@@ -19,6 +18,7 @@ from utils import support as sup
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_asset, print_section, print_step
+from .common_routines import execute_simulator, read_stats_alt, simulate
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
 from .extraction.log_replayer import LogReplayer
@@ -150,71 +150,7 @@ class Discoverer:
     @safe_exec
     def simulate(self, **kwargs) -> None:
         print_section("Simulation")
-
-        def pbar_async(p, msg):
-            pbar = tqdm(total=reps, desc=msg)
-            processed = 0
-            while not p.ready():
-                cprocesed = (reps - p._number_left)
-                if processed < cprocesed:
-                    increment = cprocesed - processed
-                    pbar.update(n=increment)
-                    processed = cprocesed
-            time.sleep(1)
-            pbar.update(n=(reps - processed))
-            p.wait()
-            pbar.close()
-
-        reps = self.settings.repetitions
-        cpu_count = multiprocessing.cpu_count()
-        w_count = reps if reps <= cpu_count else cpu_count
-        pool = Pool(processes=w_count)
-        # Simulate
-        args = [(self.settings, rep) for rep in range(reps)]
-        p = pool.map_async(self.execute_simulator, args)
-        pbar_async(p, 'simulating:')
-        # Read simulated logs
-        args = [(self.settings, rep) for rep in range(reps)]
-        p = pool.map_async(self.read_stats, args)
-        pbar_async(p, 'reading simulated logs:')
-        # Evaluate
-        args = [(self.settings, self.process_stats, log) for log in p.get()]
-        if len(self.log_test.caseid.unique()) > 1000:
-            pool.close()
-            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
-            # Save results
-            self.sim_values = list(itertools.chain(*results))
-        else:
-            p = pool.map_async(self.evaluate_logs, args)
-            pbar_async(p, 'evaluating results:')
-            pool.close()
-            # Save results
-            self.sim_values = list(itertools.chain(*p.get()))
-
-    @staticmethod
-    def read_stats(args):
-        def read(settings: Configuration, rep):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            # message = 'Reading log repetition: ' + str(rep+1)
-            # print(message)
-            path = os.path.join(settings.output, 'sim_data')
-            log_name = settings.project_name + '_' + str(rep + 1) + '.csv'
-            rep_results = pd.read_csv(os.path.join(path, log_name), dtype={'caseid': object})
-            rep_results['caseid'] = 'Case' + rep_results['caseid']
-            rep_results['run_num'] = rep
-            rep_results['source'] = 'simulation'
-            rep_results.rename(columns={'resource': 'user'}, inplace=True)
-            rep_results['start_timestamp'] = pd.to_datetime(
-                rep_results['start_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
-            rep_results['end_timestamp'] = pd.to_datetime(
-                rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
-            return rep_results
-
-        return read(*args)
+        self.sim_values = simulate(self.settings, self.process_stats, self.log_test)
 
     @staticmethod
     def evaluate_logs(args):
@@ -237,25 +173,6 @@ class Discoverer:
             return sim_values
 
         return evaluate(*args)
-
-    @staticmethod
-    def execute_simulator(args):
-        def sim_call(settings: Configuration, rep):
-            """Executes BIMP Simulations.
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            # message = 'Executing BIMP Simulations Repetition: ' + str(rep+1)
-            # print(message)
-            args = ['java', '-jar', settings.bimp_path,
-                    os.path.join(settings.output, settings.project_name + '.bpmn'),
-                    '-csv',
-                    os.path.join(settings.output, 'sim_data',
-                                 settings.project_name + '_' + str(rep + 1) + '.csv')]
-            subprocess.run(args, check=True, stdout=subprocess.PIPE)
-
-        sim_call(*args)
 
     @staticmethod
     def get_traces(data, one_timestamp):
