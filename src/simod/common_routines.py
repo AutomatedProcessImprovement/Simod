@@ -9,22 +9,20 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 from networkx import DiGraph
-from simod.analyzers import sim_evaluator
-from simod.cli_formatter import print_step
-from simod.configuration import Configuration, PDFMethod, Metric
-from simod.extraction.interarrival_definition import InterArrivalEvaluator
-from simod.extraction.log_replayer import LogReplayer
-from simod.extraction.tasks_evaluator import TaskEvaluator
-from simod.readers import process_structure
-from simod.readers.log_reader import LogReader
-from simod.stochastic_miner_datatypes import BPMNGraph
-from simod.structure_optimizer import mine_resources
 from tqdm import tqdm
 
+from .analyzers import sim_evaluator
+from .cli_formatter import print_step
+from .configuration import Configuration, PDFMethod, Metric
+from .extraction.interarrival_definition import InterArrivalEvaluator
+from .extraction.log_replayer import LogReplayer
+from .extraction.tasks_evaluator import TaskEvaluator
 from .readers import bpmn_reader
+from .readers import process_structure
+from .readers.log_reader import LogReader
+from .stochastic_miner_datatypes import BPMNGraph
+from .structure_optimizer import mine_resources
 
-
-# Another functional approach to structure parameters extraction
 
 @dataclass
 class StructureParameters:
@@ -140,7 +138,7 @@ def mine_gateway_probabilities_stochastic(log_traces_raw: list, bpmn_graph: BPMN
 def process_tasks(process_graph: DiGraph, process_stats: Union[list, pd.DataFrame], resource_pool: list,
                   settings: Configuration):
     print_step('Tasks Processor')
-    process_stats['role'] = 'SYSTEM'  # TODO: why is this necessary?
+    process_stats['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
     evaluator = TaskEvaluator(process_graph, process_stats, resource_pool, settings)
     return evaluator.elements_data
 
@@ -150,8 +148,8 @@ def extract_process_graph(model_path) -> DiGraph:
     return process_structure.create_process_structure(bpmn)
 
 
-# NOTE: from Discoverer
 def simulate(settings: Configuration, process_stats, log_test):
+    # NOTE: from Discoverer
     def pbar_async(p, msg):
         pbar = tqdm(total=reps, desc=msg)
         processed = 0
@@ -195,66 +193,30 @@ def simulate(settings: Configuration, process_stats, log_test):
     return sim_values
 
 
-# NOTE: from Optimizer
-# def simulate(settings: Configuration, data) -> list:
-#     def pbar_async(p, msg):
-#         pbar = tqdm(total=settings.repetitions, desc=msg)
-#         processed = 0
-#         while not p.ready():
-#             cprocesed = (settings.repetitions - p._number_left)
-#             if processed < cprocesed:
-#                 increment = cprocesed - processed
-#                 pbar.update(n=increment)
-#                 processed = cprocesed
-#         time.sleep(1)
-#         pbar.update(n=(settings.repetitions - processed))
-#         p.wait()
-#         pbar.close()
-#
-#     cpu_count = multiprocessing.cpu_count()
-#     w_count = settings.repetitions if settings.repetitions <= cpu_count else cpu_count
-#     pool = multiprocessing.Pool(processes=w_count)
-#     # Simulate
-#     args = [(settings, rep) for rep in range(settings.repetitions)]
-#     p = pool.map_async(execute_simulator, args)
-#     pbar_async(p, 'simulating:')
-#     # Read simulated logs
-#     p = pool.map_async(read_stats, args)
-#     pbar_async(p, 'reading simulated logs:')
-#     # Evaluate
-#     args = [(settings, data, log) for log in p.get()]
-#     if len(log_valdn.caseid.unique()) > 1000:
-#         pool.close()
-#         results = [evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
-#         sim_values = list(itertools.chain(*results))
-#     else:
-#         p = pool.map_async(evaluate_logs, args)
-#         pbar_async(p, 'evaluating results:')
-#         pool.close()
-#         sim_values = list(itertools.chain(*p.get()))
-#     return sim_values
-
-
-# NOTE: extracted from StructureOptimizer static method
 def execute_simulator(args):
+    # NOTE: extracted from StructureOptimizer static method
     def sim_call(settings: Configuration, rep):
         args = ['java', '-jar', settings.bimp_path,
                 os.path.join(settings.output, settings.project_name + '.bpmn'),
                 '-csv',
                 os.path.join(settings.output, 'sim_data', settings.project_name + '_' + str(rep + 1) + '.csv')]
+        # NOTE: the call generates a CSV event log from a model
+        # NOTE: might fail silently, because stderr or stdout aren't checked
         subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
     sim_call(*args)
 
 
-def execute_simulator_simple(bimp_path, model_path, csv_output_path):
-    args = ['java', '-jar', bimp_path, model_path, '-csv', csv_output_path]
-    print('args', args)
-    subprocess.run(args, check=True, stdout=subprocess.PIPE)
+# def execute_simulator_simple(bimp_path, model_path, csv_output_path):
+#     args = ['java', '-jar', bimp_path, model_path, '-csv', csv_output_path]
+#     print('args', args)
+#     # NOTE: the call generates a CSV event log from a model
+#     # NOTE: might fail silently, because stderr or stdout aren't checked
+#     subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
 
-# NOTE: extracted from StructureOptimizer static method
 def read_stats(args):
+    # NOTE: extracted from StructureOptimizer static method
     def read(settings: Configuration, rep):
         m_settings = dict()
         m_settings['output'] = settings.output
@@ -278,8 +240,8 @@ def read_stats(args):
     return read(*args)
 
 
-# NOTE: extracted from StructureOptimizer static method
 def evaluate_logs(args):
+    # NOTE: extracted from StructureOptimizer static method
     def evaluate(settings: Configuration, data, sim_log):
         """Reads the simulation results stats
         Args:

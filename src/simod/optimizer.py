@@ -7,18 +7,17 @@ import subprocess
 import time
 import types
 from multiprocessing import Pool
-from operator import itemgetter
 from xml.dom import minidom
 
-import analyzers.sim_evaluator as sim
 import pandas as pd
 import utils.support as sup
 from tqdm import tqdm
 
+from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_step, print_asset
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import timeit
-from .parameter_extraction_alt import extract_structure_parameters, extract_process_graph, simulate
+from .common_routines import extract_structure_parameters, extract_process_graph, simulate
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_optimizer import StructureOptimizer
@@ -90,7 +89,6 @@ class Optimizer:
                 os.makedirs(self.settings_global.output)
             bpmn_path = os.path.join(self.settings_global.output, os.path.basename(model_path))
             shutil.copy(model_path, bpmn_path)
-            # TODO: do we need 'instances' and 'start_time' attributes
             xml_writer.print_parameters(bpmn_path, bpmn_path, parameters.__dict__)
             model_path = bpmn_path
             # simulation
@@ -102,7 +100,7 @@ class Optimizer:
         print_section('Times Optimization')
         times_optimizer = TimesOptimizer(
             self.settings_global, self.settings_time, copy.deepcopy(self.log_train), model_path)
-        times_optimizer.execute_trials()  # TODO: generated .csv is used there
+        times_optimizer.execute_trials()
         # Discovery parameters
         if times_optimizer.best_parms['res_cal_met'] == 1:
             self.best_params['res_dtype'] = (self.settings_time.res_dtype[times_optimizer.best_parms['res_dtype']])
@@ -289,7 +287,7 @@ class Optimizer:
                 rep (int): repetition number
             """
             # print('Reading repetition:', (rep+1), sep=' ')
-            rep = (sim_log.iloc[0].run_num)
+            rep = sim_log.iloc[0].run_num
             sim_values = list()
             evaluator = sim.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
             metrics = [settings.sim_metric]
@@ -319,16 +317,3 @@ class Optimizer:
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
 
         sim_call(*args)
-
-    @staticmethod
-    def get_traces(data, one_timestamp):
-        """
-        returns the data splitted by caseid and ordered by start_timestamp
-        """
-        cases = list(set([x['caseid'] for x in data]))
-        traces = list()
-        for case in cases:
-            order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
-            trace = sorted(list(filter(lambda x: (x['caseid'] == case), data)), key=itemgetter(order_key))
-            traces.append(trace)
-        return traces

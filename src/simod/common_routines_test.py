@@ -5,10 +5,10 @@ from pathlib import Path
 from simod.configuration import Configuration
 from simod.readers.log_reader import LogReader
 
-from .parameter_extraction_alt import replay_logs, extract_process_graph, execute_simulator_simple
+from .common_routines import replay_logs, extract_process_graph, execute_simulator_simple
 
 
-class TestParameterExtractionAlt(unittest.TestCase):
+class TestCommonRoutines(unittest.TestCase):
     def test_replay_logs(self):
         model_path = os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.bpmn'
         log_path = os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.xes'
@@ -30,19 +30,18 @@ class TestParameterExtractionAlt(unittest.TestCase):
 
     def test_execute_simulator_simple(self):
         bimp_path = os.path.dirname(__file__) + '/../../external_tools/bimp/qbp-simulator-engine.jar'
-        model_path = os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.bpmn'
+        model_path = os.path.dirname(__file__) + '/../../test_assets/PurchasingExampleQBPWithStartDate.bpmn'
         csv_output_path = os.path.dirname(__file__) + '/../../test_assets/execute_simulator_simple_output.csv'
 
-        # TODO: add instances and start date attributes for QBP
-        # <qbp:processSimulationInfo xmlns:qbp="http://www.qbp-simulator.com/Schema201212" id="qbp_f2e10713-29f3-427a-823e-6fbca3ef94f2" processInstances="94" startDateTime="2011-04-05T07:06:59.999999+00:00" currency="EUR">
         try:
             execute_simulator_simple(bimp_path, model_path, csv_output_path)
         except Exception as e:
             self.fail(f'Should not fail, failed with: {e}')
 
         print("CSV saved to", csv_output_path)
-        # clean up
-        # os.remove(csv_output_path)
+
+        if os.path.exists(csv_output_path):
+            os.remove(csv_output_path)
 
 
 if __name__ == '__main__':
