@@ -121,10 +121,9 @@ def optimize(ctx, log_path, model_path, mining_alg, new_replayer):
 
     optimizer = Optimizer({'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
     if new_replayer:
-        if model_path is None:
-            print_notice('It is required to provide the --model_path argument for --new_replayer')
-            sys.exit()
-        optimizer.execute_pipeline(structure_optimizer=StructureOptimizerForStochasticProcessMiner)
+        optimizer.execute_pipeline(
+            structure_optimizer=StructureOptimizerForStochasticProcessMiner,
+            discover_model=model_path is None)
     else:
         optimizer.execute_pipeline()
 

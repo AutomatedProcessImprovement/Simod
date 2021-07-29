@@ -34,7 +34,7 @@ from .writers import xml_writer as xml, xes_writer as xes
 class StructureOptimizer:
     """Hyperparameter-optimizer class"""
 
-    def __init__(self, settings: Configuration, log):
+    def __init__(self, settings: Configuration, log, **kwargs):
         self.space = self.define_search_space(settings)
         # Read inputs
         self.log = log
@@ -167,16 +167,16 @@ class StructureOptimizer:
         input = ParameterExtractionInput(
             log_traces=self.log_train.get_traces(), bpmn=bpmn, process_graph=process_graph, settings=settings)
         output = ParameterExtractionOutput()
-        output.process_stats['role'] = 'SYSTEM'  # TODO: what is this for?
-        structure_mining_pipeline = Pipeline(input=input, output=output)
-        structure_mining_pipeline.set_pipeline([
+        output.process_stats['role'] = 'SYSTEM'
+        structure_parameters_miner = Pipeline(input=input, output=output)
+        structure_parameters_miner.set_pipeline([
             LogReplayerForStructureOptimizer,
             ResourceMinerForStructureOptimizer,
             InterArrivalMiner,
             GatewayProbabilitiesMiner,
             TasksProcessor
         ])
-        structure_mining_pipeline.execute()
+        structure_parameters_miner.execute()
 
         parameters = {**parameters, **{'resource_pool': output.resource_pool,
                                        'time_table': output.time_table,
@@ -379,7 +379,7 @@ class StructureOptimizer:
         # If the log is big sample train partition
         train = self._sample_log(train)
         # Save partitions
-        self.log_valdn = (validation.sort_values(key, ascending=True).reset_index(drop=True))
+        self.log_valdn = validation.sort_values(key, ascending=True).reset_index(drop=True)
         self.log_train = copy.deepcopy(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 

@@ -61,7 +61,7 @@ class TimesOptimizer():
 
             return safety_check
 
-    def __init__(self, settings: Configuration, args: Configuration, log, struc_model):
+    def __init__(self, settings: Configuration, args: Configuration, log, model_path):
         self.space = self.define_search_space(settings, args)
         # read inputs
         self.log = log
@@ -71,7 +71,7 @@ class TimesOptimizer():
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
         # Load settings
         self.settings: Configuration = settings
-        self._load_sim_model(struc_model)
+        self._load_sim_model(model_path)
         self._replay_process()
         # Temp folder
         self.temp_output = os.path.join('outputs', sup.folder_id())
@@ -434,23 +434,20 @@ class TimesOptimizer():
         # Print model
         create_file(path, etree.tostring(self.xml_bpmn, pretty_print=True))
 
-    def _load_sim_model(self, struc_model) -> None:
-        bpmn_file = os.path.join(struc_model,
-                                 self.settings.project_name + '.bpmn')
-        tree = ET.parse(bpmn_file)
+    def _load_sim_model(self, model_path) -> None:
+        tree = ET.parse(model_path)
         root = tree.getroot()
         ns = {'qbp': QBP_NAMESPACE_URI}
         parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False, no_network=True)
-        self.xml_bpmn = etree.parse(bpmn_file, parser)
-        process_info = self.xml_bpmn.find('qbp:processSimulationInfo',
-                                          namespaces=ns)
+        self.xml_bpmn = etree.parse(model_path, parser)
+        process_info = self.xml_bpmn.find('qbp:processSimulationInfo', namespaces=ns)
         process_info.getparent().remove(process_info)
 
         ET.register_namespace('qbp', QBP_NAMESPACE_URI)
         self.xml_sim_model = etree.fromstring(
             ET.tostring(root.find('qbp:processSimulationInfo', ns)), parser)
         # load bpmn model
-        self.bpmn = br.BpmnReader(bpmn_file)
+        self.bpmn = br.BpmnReader(model_path)
         self.process_graph = gph.create_process_structure(self.bpmn)
 
     def _replay_process(self) -> None:

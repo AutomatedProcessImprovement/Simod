@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from .cli_formatter import print_step
 from .configuration import Configuration, PDFMethod
@@ -15,12 +16,11 @@ from .writers import xml_writer
 
 class StructureOptimizerForStochasticProcessMiner(StructureOptimizer):
     bpmn_graph: BPMNGraph
+    discover_model: bool
 
-    def __init__(self, settings: Configuration, log):
+    def __init__(self, settings: Configuration, log, discover_model: bool):
         super().__init__(settings, log)
-
-        print_step('Parsing the given model')
-        self.bpmn_graph = BPMNGraph.from_bpmn_path(self.settings.model_path)
+        self.discover_model = discover_model
 
     @timeit(rec_name='EXTRACTING_PARAMS')
     @safe_exec_with_values_and_status
@@ -32,21 +32,30 @@ class StructureOptimizerForStochasticProcessMiner(StructureOptimizer):
         num_inst = len(self.log_valdn.caseid.unique())
         start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
+        print_step('Parsing the BPMN model')
+        if self.discover_model:
+            # SplitMiner output path
+            model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
+        else:
+            # Provided model path
+            model_path = self.settings.model_path
+        self.bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+
         settings.pdef_method = PDFMethod.DEFAULT
         input = ParameterExtractionInputForStochasticMiner(
             log_traces=self.log_train.get_traces(), log_traces_raw=self.log_train.get_raw_traces(), bpmn=bpmn,
             bpmn_graph=self.bpmn_graph, process_graph=process_graph, settings=settings)
         output = ParameterExtractionOutput()
-        output.process_stats['role'] = 'SYSTEM'  # TODO: what is this for?
-        structure_mining_pipeline = Pipeline(input=input, output=output)
-        structure_mining_pipeline.set_pipeline([
+        output.process_stats['role'] = 'SYSTEM'
+        structure_parameters_miner = Pipeline(input=input, output=output)
+        structure_parameters_miner.set_pipeline([
             LogReplayerForStructureOptimizer,
             ResourceMinerForStructureOptimizer,
             InterArrivalMiner,
             GatewayProbabilitiesMinerForStochasticMiner,
             TasksProcessor
         ])
-        structure_mining_pipeline.execute()
+        structure_parameters_miner.execute()
 
         parameters = {**parameters, **{'resource_pool': output.resource_pool,
                                        'time_table': output.time_table,

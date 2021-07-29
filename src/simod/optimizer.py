@@ -18,15 +18,17 @@ from tqdm import tqdm
 from .cli_formatter import print_section, print_step, print_asset
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import timeit
+from .parameter_extraction_alt import extract_structure_parameters, extract_process_graph, simulate
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
+from .writers import xml_writer
 from .writers.model_serialization import serialize_model
 
 
 class Optimizer:
-    """ Hyperparameter-optimizer class"""
+    """Hyper-parameter Optimizer class"""
 
     def __init__(self, settings):
         self.settings = settings
@@ -40,7 +42,7 @@ class Optimizer:
         if not os.path.exists('outputs'):
             os.makedirs('outputs')
 
-    def execute_pipeline(self, structure_optimizer=StructureOptimizer) -> None:
+    def execute_pipeline(self, structure_optimizer=StructureOptimizer, discover_model: bool = True) -> None:
         print_section('Log Parsing')
         exec_times = dict()
 
@@ -50,31 +52,57 @@ class Optimizer:
         self.set_log(log_time=exec_times)
         self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)
 
-        strctr_optimizer = structure_optimizer(self.settings_structure, copy.deepcopy(self.log_train))
-        strctr_optimizer.execute_trials()
-        struc_model = strctr_optimizer.best_output
-        best_parms = strctr_optimizer.best_parms
-        self.settings_global.alg_manag = self.settings_structure.alg_manag[best_parms['alg_manag']]
-        self.best_params['alg_manag'] = self.settings_global.alg_manag
-        self.settings_global.gate_management = self.settings_structure.gate_management[best_parms['gate_management']]
-        self.best_params['gate_management'] = self.settings_global.gate_management
-        # best structure mining parameters
-        if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
-            self.settings_global.epsilon = best_parms['epsilon']
-            self.settings_global.eta = best_parms['eta']
-            self.best_params['epsilon'] = best_parms['epsilon']
-            self.best_params['eta'] = best_parms['eta']
-        elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
-            self.settings_global.concurrency = best_parms['concurrency']
-            self.best_params['concurrency'] = best_parms['concurrency']
-        for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
-                    'arr_confidence', 'res_cal_met', 'arr_cal_met']:
-            self.settings.pop(key, None)
+        strctr_optimizer_file_name = None
+        strctr_optimizer_temp_output = None
+
+        if discover_model:
+            strctr_optimizer = structure_optimizer(
+                self.settings_structure, copy.deepcopy(self.log_train), discover_model=discover_model)
+            strctr_optimizer.execute_trials()
+            model_path = os.path.join(strctr_optimizer.best_output, self.settings_global.project_name + '.bpmn')
+            best_parms = strctr_optimizer.best_parms
+            strctr_optimizer_file_name = strctr_optimizer.file_name
+            strctr_optimizer_temp_output = strctr_optimizer.temp_output
+            self.settings_global.alg_manag = self.settings_structure.alg_manag[best_parms['alg_manag']]
+            self.best_params['alg_manag'] = self.settings_global.alg_manag
+            self.settings_global.gate_management = self.settings_structure.gate_management[
+                best_parms['gate_management']]
+            self.best_params['gate_management'] = self.settings_global.gate_management
+            # best structure mining parameters
+            if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+                self.settings_global.epsilon = best_parms['epsilon']
+                self.settings_global.eta = best_parms['eta']
+                self.best_params['epsilon'] = best_parms['epsilon']
+                self.best_params['eta'] = best_parms['eta']
+            elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
+                self.settings_global.concurrency = best_parms['concurrency']
+                self.best_params['concurrency'] = best_parms['concurrency']
+            for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
+                        'arr_confidence', 'res_cal_met', 'arr_cal_met']:  # TODO: seems like this is unnecessary
+                self.settings.pop(key, None)
+        else:
+            # extract_parameters
+            model_path = self.settings_global.model_path
+            process_graph = extract_process_graph(model_path)
+            parameters = extract_structure_parameters(self.settings_global, process_graph, self.log, model_path)
+            # copy the original model and rewrite with extracted parameters
+            if not os.path.exists(self.settings_global.output):
+                os.makedirs(self.settings_global.output)
+            bpmn_path = os.path.join(self.settings_global.output, os.path.basename(model_path))
+            shutil.copy(model_path, bpmn_path)
+            # TODO: do we need 'instances' and 'start_time' attributes
+            xml_writer.print_parameters(bpmn_path, bpmn_path, parameters.__dict__)
+            model_path = bpmn_path
+            # simulation
+            sim_data_path = os.path.join(self.settings_global.output, 'sim_data')
+            if not os.path.exists(sim_data_path):
+                os.makedirs(sim_data_path)
+            _ = simulate(self.settings_global, parameters.process_stats, self.log_test)
 
         print_section('Times Optimization')
-        times_optimizer = TimesOptimizer(self.settings_global, self.settings_time, copy.deepcopy(self.log_train),
-                                         struc_model)
-        times_optimizer.execute_trials()
+        times_optimizer = TimesOptimizer(
+            self.settings_global, self.settings_time, copy.deepcopy(self.log_train), model_path)
+        times_optimizer.execute_trials()  # TODO: generated .csv is used there
         # Discovery parameters
         if times_optimizer.best_parms['res_cal_met'] == 1:
             self.best_params['res_dtype'] = (self.settings_time.res_dtype[times_optimizer.best_parms['res_dtype']])
@@ -89,10 +117,11 @@ class Optimizer:
 
         print_section('Final Comparison')
         output_file = sup.file_id(prefix='SE_')
-        self._test_model(times_optimizer.best_output, output_file, strctr_optimizer.file_name,
-                         times_optimizer.file_name)
+        self._test_model(
+            times_optimizer.best_output, output_file, strctr_optimizer_file_name, times_optimizer.file_name)
         self._export_canonical_model(times_optimizer.best_output)
-        shutil.rmtree(strctr_optimizer.temp_output)
+        if strctr_optimizer_temp_output:
+            shutil.rmtree(strctr_optimizer_temp_output)
         shutil.rmtree(times_optimizer.temp_output)
         print_asset(f"Output folder is at {self.settings_global.output}")
 
@@ -109,7 +138,8 @@ class Optimizer:
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
         self.sim_values.to_csv(os.path.join(output_path, output_file), index=False)
-        shutil.move(opt_strf, output_path)
+        if opt_strf:
+            shutil.move(opt_strf, output_path)
         shutil.move(opt_timf, output_path)
 
     def _export_canonical_model(self, best_output):
