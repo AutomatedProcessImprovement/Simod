@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Union
 
 import utils.support as sup
+import yaml
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
 BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
@@ -16,7 +17,14 @@ class AlgorithmManagement(Enum):
     REMOVAL = auto()
 
     @classmethod
-    def from_str(cls, value: str):
+    def from_str(cls, value: Union[str, List[str]]) -> 'Union[AlgorithmManagement, List[AlgorithmManagement]]':
+        if isinstance(value, str):
+            return AlgorithmManagement._from_str(value)
+        elif isinstance(value, list):
+            return [AlgorithmManagement._from_str(v) for v in value]
+
+    @classmethod
+    def _from_str(cls, value: str) -> 'AlgorithmManagement':
         if value == 'repair':
             return cls.REPAIR
         elif value == 'removal':
@@ -33,7 +41,7 @@ class MiningAlgorithm(Enum):
     SM3 = auto()
 
     @classmethod
-    def from_str(cls, value: str):
+    def from_str(cls, value: str) -> 'MiningAlgorithm':
         if value == 'sm1':
             return cls.SM1
         elif value == 'sm2':
@@ -50,7 +58,14 @@ class GateManagement(Enum):
     RANDOM = auto()
 
     @classmethod
-    def from_str(cls, value: str):
+    def from_str(cls, value: str) -> 'Union[GateManagement, List[GateManagement]]':
+        if isinstance(value, str):
+            return GateManagement._from_str(value)
+        elif isinstance(value, list):
+            return [GateManagement._from_str(v) for v in value]
+
+    @classmethod
+    def _from_str(cls, value: str) -> 'GateManagement':
         if value == 'discovered':
             return cls.DISCOVERY
         elif value == 'equiprobable':
@@ -67,7 +82,7 @@ class CalculationMethod(Enum):
     POOL = auto()
 
     @classmethod
-    def from_str(cls, value: str):
+    def from_str(cls, value: str) -> 'CalculationMethod':
         if value == 'default':
             return cls.DEFAULT
         elif value == 'discovered':
@@ -83,7 +98,14 @@ class DataType(Enum):
     LV917 = auto()
 
     @classmethod
-    def from_str(cls, value: str):
+    def from_str(cls, value: str) -> 'Union[DataType, List[DataType]]':
+        if isinstance(value, str):
+            return DataType._from_str(value)
+        elif isinstance(value, list):
+            return [DataType._from_str(v) for v in value]
+
+    @classmethod
+    def _from_str(cls, value: str) -> 'DataType':
         if value == '247' or value == 'dt247':
             return cls.DT247
         elif value == 'LV917':
@@ -99,7 +121,7 @@ class PDFMethod(Enum):
     DEFAULT = auto()
 
     @classmethod
-    def from_str(cls, value: str):
+    def from_str(cls, value: str) -> 'PDFMethod':
         if value == 'automatic':
             return cls.AUTOMATIC
         elif value == 'semiautomatic':
@@ -127,10 +149,49 @@ class Metric(Enum):
     DL_MAE = auto()
     HOUR_EMD = auto()
 
+    @classmethod
+    def from_str(cls, value: Union[str, List[str]]) -> 'Union[Metric, List[Metric]]':
+        if isinstance(value, str):
+            return Metric._from_str(value)
+        elif isinstance(value, list):
+            return [Metric._from_str(v) for v in value]
+
+    @classmethod
+    def _from_str(cls, value: str) -> 'Metric':
+        if value == 'tsd':
+            return cls.TSD
+        elif value == 'day_hour_emd':
+            return cls.DAY_HOUR_EMD
+        elif value == 'log_mae':
+            return cls.LOG_MAE
+        elif value == 'dl':
+            return cls.DL
+        elif value == 'mae':
+            return cls.MAE
+        elif value == 'day_emd':
+            return cls.DAY_EMD
+        elif value == 'cal_emd':
+            return cls.CAL_EMD
+        elif value == 'dl_mae':
+            return cls.DL_MAE
+        elif value == 'hour_emd':
+            return cls.HOUR_EMD
+        else:
+            raise ValueError(f'Unknown value {value}')
+
 
 class ExecutionMode(Enum):
     SINGLE = auto()
     OPTIMIZER = auto()
+
+    @classmethod
+    def from_str(cls, value: str) -> 'ExecutionMode':
+        if value == 'single':
+            return cls.SINGLE
+        elif value == 'optimizer':
+            return cls.OPTIMIZER
+        else:
+            raise ValueError(f'Unknown value {value}')
 
 
 @dataclass
@@ -151,6 +212,7 @@ class Configuration:
     project_name: Optional[str] = None
     log_path: Optional[Path] = None
     model_path: Optional[Path] = None
+    config_path: Optional[Path] = None
     input: Optional[Path] = None
     file: Optional[Path] = None
     alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
@@ -158,9 +220,12 @@ class Configuration:
     sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
     sm2_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
     sm3_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer3', 'bpmtk.jar')
-    bimp_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'bimp', 'qbp-simulator-engine.jar')
-    align_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'proconformance', 'ProConformance2.jar')
-    calender_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'calenderimp', 'CalenderImp.jar')
+    bimp_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'bimp',
+                                   'qbp-simulator-engine.jar')
+    align_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'proconformance',
+                                    'ProConformance2.jar')
+    calender_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'calenderimp',
+                                       'CalenderImp.jar')
     aligninfo: Path = os.path.join(output, 'CaseTypeAlignmentResults.csv')
     aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
@@ -199,3 +264,90 @@ class Configuration:
             self.input = os.path.dirname(self.log_path)
             self.file = os.path.basename(self.log_path)
             self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
+
+
+def config_data_from_file(config_path) -> dict:
+    def _update_fields(data: dict):
+        repository_dir = os.path.join(os.path.dirname(__file__), '../../')
+
+        model_path = data.get('model_path')
+        if model_path:
+            if not os.path.isabs(model_path):
+                data['model_path'] = Path(os.path.join(repository_dir, model_path))
+            else:
+                data['model_path'] = Path(model_path)
+
+        log_path = data.get('log_path')
+        if log_path:
+            if not os.path.isabs(log_path):
+                data['log_path'] = Path(os.path.join(repository_dir, log_path))
+            else:
+                data['log_path'] = Path(log_path)
+
+        input = data.get('input')
+        if input:
+            if not os.path.isabs(input):
+                data['input'] = Path(os.path.join(repository_dir, input))
+            else:
+                data['input'] = Path(input)
+
+        mining_alg = data.get('mining_alg')
+        if mining_alg:
+            data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
+
+        alg_manag = data.get('alg_manag')
+        if alg_manag:
+            data['alg_manag'] = AlgorithmManagement.from_str(alg_manag)
+
+        gate_management = data.get('gate_management')
+        if gate_management:
+            data['gate_management'] = GateManagement.from_str(gate_management)
+
+        res_cal_met = data.get('res_cal_met')
+        if res_cal_met:
+            data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
+
+        res_dtype = data.get('res_dtype')
+        if res_dtype:
+            data['res_dtype'] = DataType.from_str(res_dtype)
+
+        arr_dtype = data.get('arr_dtype')
+        if arr_dtype:
+            data['arr_dtype'] = DataType.from_str(arr_dtype)
+
+        pdef_method = data.get('pdef_method')
+        if pdef_method:
+            data['pdef_method'] = PDFMethod.from_str(pdef_method)
+
+        is_output = data.get('output')
+        if is_output:
+            data['output'] = Path(os.path.join(repository_dir, 'outputs', sup.folder_id()))
+
+        exec_mode = data.get('exec_mode')
+        if exec_mode:
+            data['exec_mode'] = ExecutionMode.from_str(exec_mode)
+
+        sim_metric = data.get('sim_metric')
+        if sim_metric:
+            data['sim_metric'] = Metric.from_str(sim_metric)
+
+    with open(config_path, 'r') as f:
+        config_data = yaml.load(f, Loader=yaml.FullLoader)
+
+    _update_fields(config_data)
+
+    structure_optimizer = config_data.get('structure_optimizer')
+    if structure_optimizer:
+        _update_fields(structure_optimizer)
+        # the rest of the software uses 'strc' key
+        config_data.pop('structure_optimizer')
+        config_data['strc'] = structure_optimizer
+
+    time_optimizer = config_data.get('time_optimizer')
+    if time_optimizer:
+        _update_fields(time_optimizer)
+        # the rest of the software uses 'tm' key
+        config_data.pop('time_optimizer')
+        config_data['tm'] = time_optimizer
+
+    return config_data

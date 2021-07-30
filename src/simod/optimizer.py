@@ -1,21 +1,15 @@
 import copy
-import itertools
-import multiprocessing
 import os
 import shutil
-import time
 import types
-from multiprocessing import Pool
 from xml.dom import minidom
 
 import pandas as pd
 import utils.support as sup
-from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_step, print_asset
-from .common_routines import extract_structure_parameters, extract_process_graph, simulate, execute_simulator, \
-    read_stats_alt
+from .common_routines import extract_structure_parameters, extract_process_graph, simulate
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import timeit
 from .readers import log_reader as lr
