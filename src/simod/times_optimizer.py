@@ -74,7 +74,7 @@ class TimesOptimizer():
         self._load_sim_model(model_path)
         self._replay_process()
         # Temp folder
-        self.temp_output = os.path.join('outputs', sup.folder_id())
+        self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
         if not os.path.exists(self.temp_output):
             os.makedirs(self.temp_output)
         self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))

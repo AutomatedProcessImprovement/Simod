@@ -11,7 +11,7 @@ from simod.cli_formatter import print_subsection
 from ..configuration import Configuration
 
 
-class TracesAligner(object):
+class TracesAligner:
     """
     This class reads and parse the elements of a given event-log
     expected format .xes or .csv
@@ -221,7 +221,7 @@ class TracesAligner(object):
             args.append('-Xmx2G')
             args.append('-Xss8G')
         args.extend(['-jar', settings.align_path,
-                     settings.output + os.sep,
+                     settings.output.__str__() + os.sep,
                      file_name + '.xes',
                      settings.project_name + '.bpmn',
                      'true'])

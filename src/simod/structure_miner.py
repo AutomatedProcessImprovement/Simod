@@ -115,7 +115,7 @@ class StructureMiner:
         if not pl.system().lower() == 'windows':
             args.extend(['-Xmx2G', '-Xms1024M'])
         args.extend(['-cp',
-                     (settings.sm3_path.__str__() + sep + os.path.join('external_tools', 'splitminer3', 'lib', '*')),
+                     (settings.sm3_path.__str__() + sep + os.path.join(os.path.dirname(settings.sm3_path), 'lib', '*')),
                      'au.edu.unimelb.services.ServiceProvider',
                      'SMD',
                      str(settings.epsilon), str(settings.eta),

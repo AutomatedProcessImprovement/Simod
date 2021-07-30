@@ -72,13 +72,23 @@ def discover(ctx, log_path, model_path, mining_alg, alg_manag, arr_confidence, a
 @click.option('--new_replayer', is_flag=True, default=False)
 @click.pass_context
 def optimize(ctx, log_path, model_path, mining_alg, new_replayer):
+    repository_dir = os.path.join(os.path.dirname(__file__), '../../')
+
     if model_path:
-        ctx.params['model_path'] = pathlib.Path(model_path)
-    ctx.params['log_path'] = pathlib.Path(log_path)
+        if not os.path.isabs(model_path):
+            ctx.params['model_path'] = pathlib.Path(os.path.join(repository_dir, model_path))
+        else:
+            ctx.params['model_path'] = pathlib.Path(model_path)
+
+    if not os.path.isabs(log_path):
+        ctx.params['log_path'] = pathlib.Path(os.path.join(repository_dir, log_path))
+    else:
+        ctx.params['log_path'] = pathlib.Path(log_path)
+
     ctx.params['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
 
-    global_config = Configuration(input=Path('inputs'),
-                                  output=Path(os.path.join('outputs', sup.folder_id())),
+    global_config = Configuration(input=Path(os.path.join(repository_dir, 'inputs')),
+                                  output=Path(os.path.join(repository_dir, 'outputs', sup.folder_id())),
                                   exec_mode=ExecutionMode.OPTIMIZER,
                                   repetitions=1,
                                   # repetitions=5,

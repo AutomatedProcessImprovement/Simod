@@ -9,7 +9,7 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 from networkx import DiGraph
-from simod.configuration import Configuration, CalculationMethod, DataType
+from simod.configuration import CalculationMethod, DataType
 from simod.extraction.schedule_tables import TimeTablesCreator
 from tqdm import tqdm
 
