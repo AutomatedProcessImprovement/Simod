@@ -1,14 +1,19 @@
-log_path: test_assets/PurchasingExample.xes
+log_path: inputs/PurchasingExample.xes
 mining_alg: sm3
 new_replayer: false
 input: inputs
 output: true
 exec_mode: optimizer
-repetitions: 1
+repetitions: 5
 simulation: true
-sim_metric: dl
+sim_metric: tsd
+add_metrics:
+  - day_hour_emd
+  - log_mae
+  - dl
+  - mae
 structure_optimizer:
-  max_eval_s: 2
+  max_eval_s: 15
   concurrency:
     - 0.0
     - 1.0
@@ -20,17 +25,22 @@ structure_optimizer:
     - 1.0
   alg_manag:
     - removal
+    - repair
+    - replacement
   gate_management:
     - equiprobable
+    - discovery
 time_optimizer:
-  max_eval_t: 2
+  max_eval_t: 20
   rp_similarity:
     - 0.5
     - 0.9
   res_dtype:
     - dt247
+    - lv917
   arr_dtype:
     - dt247
+    - lv917
   res_sup_dis:
     - 0.01
     - 0.3

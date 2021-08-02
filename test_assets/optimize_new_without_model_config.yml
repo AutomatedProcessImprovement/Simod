@@ -1,4 +1,4 @@
-log_path: test_assets/PurchasingExample.xes
+log_path: inputs/PurchasingExample.xes
 mining_alg: sm3
 new_replayer: true
 input: inputs

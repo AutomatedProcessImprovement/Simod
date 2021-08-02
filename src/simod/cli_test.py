@@ -49,7 +49,7 @@ class TestCLICommands(unittest.TestCase):
 
         print(result.output)
         self.assertTrue(result.exit_code == 0)
-        self.assertTrue('Error:' not in result.output)
+        self.assertTrue('Error:' not in result.output)  # TODO: this run can fail and it's okay in some cases
         self.assertTrue('Event log could not be imported' not in result.output)
 
     def test_optimizer_new_without_model(self):
@@ -77,7 +77,7 @@ class TestCLICommands(unittest.TestCase):
 
         print(result.output)
         self.assertTrue(result.exit_code == 0)
-        self.assertTrue('Error:' not in result.output)
+        self.assertTrue('Error:' not in result.output)  # TODO: this run can fail and it's okay in some cases
         self.assertTrue('Event log could not be imported' not in result.output)
 
 
