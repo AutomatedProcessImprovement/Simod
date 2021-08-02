@@ -25,14 +25,23 @@ class AlgorithmManagement(Enum):
 
     @classmethod
     def _from_str(cls, value: str) -> 'AlgorithmManagement':
-        if value == 'repair':
+        if value.lower() == 'repair':
             return cls.REPAIR
-        elif value == 'removal':
+        elif value.lower() == 'removal':
             return cls.REMOVAL
-        elif value == 'replacement':
+        elif value.lower() == 'replacement':
             return cls.REPLACEMENT
         else:
             raise ValueError(f'Unknown value {value}')
+
+    def __str__(self):
+        if self == AlgorithmManagement.REPAIR:
+            return 'repair'
+        elif self == AlgorithmManagement.REMOVAL:
+            return 'removal'
+        elif self == AlgorithmManagement.REPLACEMENT:
+            return 'replacement'
+        return f'Unknown AlgorithmManagement {str(self)}'
 
 
 class MiningAlgorithm(Enum):
@@ -42,11 +51,11 @@ class MiningAlgorithm(Enum):
 
     @classmethod
     def from_str(cls, value: str) -> 'MiningAlgorithm':
-        if value == 'sm1':
+        if value.lower() == 'sm1':
             return cls.SM1
-        elif value == 'sm2':
+        elif value.lower() == 'sm2':
             return cls.SM2
-        elif value == 'sm3':
+        elif value.lower() == 'sm3':
             return cls.SM3
         else:
             raise ValueError(f'Unknown value {value}')
@@ -58,7 +67,7 @@ class GateManagement(Enum):
     RANDOM = auto()
 
     @classmethod
-    def from_str(cls, value: str) -> 'Union[GateManagement, List[GateManagement]]':
+    def from_str(cls, value: Union[str, List[str]]) -> 'Union[GateManagement, List[GateManagement]]':
         if isinstance(value, str):
             return GateManagement._from_str(value)
         elif isinstance(value, list):
@@ -66,15 +75,23 @@ class GateManagement(Enum):
 
     @classmethod
     def _from_str(cls, value: str) -> 'GateManagement':
-        if value == 'discovered':
+        if value.lower() == 'discovery':
             return cls.DISCOVERY
-        elif value == 'equiprobable':
+        elif value.lower() == 'equiprobable':
             return cls.EQUIPROBABLE
-        elif value == 'random':
+        elif value.lower() == 'random':
             return cls.RANDOM
         else:
             raise ValueError(f'Unknown value {value}')
 
+    def __str__(self):
+        if self == GateManagement.DISCOVERY:
+            return 'discovery'
+        elif self == GateManagement.EQUIPROBABLE:
+            return 'equiprobable'
+        elif self == GateManagement.RANDOM:
+            return 'random'
+        return f'Unknown GateManagement {str(self)}'
 
 class CalculationMethod(Enum):
     DEFAULT = auto()
@@ -83,11 +100,11 @@ class CalculationMethod(Enum):
 
     @classmethod
     def from_str(cls, value: str) -> 'CalculationMethod':
-        if value == 'default':
+        if value.lower() == 'default':
             return cls.DEFAULT
-        elif value == 'discovered':
+        elif value.lower() == 'discovered':
             return cls.DISCOVERED
-        elif value == 'pool':
+        elif value.lower() == 'pool':
             return cls.POOL
         else:
             raise ValueError(f'Unknown value {value}')
@@ -98,7 +115,7 @@ class DataType(Enum):
     LV917 = auto()
 
     @classmethod
-    def from_str(cls, value: str) -> 'Union[DataType, List[DataType]]':
+    def from_str(cls, value: Union[str, List[str]]) -> 'Union[DataType, List[DataType]]':
         if isinstance(value, str):
             return DataType._from_str(value)
         elif isinstance(value, list):
@@ -106,9 +123,9 @@ class DataType(Enum):
 
     @classmethod
     def _from_str(cls, value: str) -> 'DataType':
-        if value == '247' or value == 'dt247':
+        if value == '247' or value.lower() == 'dt247':
             return cls.DT247
-        elif value == 'LV917':
+        elif value == '917' or value.lower() == 'lv917':
             return cls.LV917
         else:
             raise ValueError(f'Unknown value {value}')
@@ -122,13 +139,13 @@ class PDFMethod(Enum):
 
     @classmethod
     def from_str(cls, value: str) -> 'PDFMethod':
-        if value == 'automatic':
+        if value.lower() == 'automatic':
             return cls.AUTOMATIC
-        elif value == 'semiautomatic':
+        elif value.lower() == 'semiautomatic':
             return cls.SEMIAUTOMATIC
-        elif value == 'manual':
+        elif value.lower() == 'manual':
             return cls.MANUAL
-        elif value == 'default':
+        elif value.lower() == 'default':
             return cls.DEFAULT
         else:
             raise ValueError(f'Unknown value {value}')
@@ -158,23 +175,23 @@ class Metric(Enum):
 
     @classmethod
     def _from_str(cls, value: str) -> 'Metric':
-        if value == 'tsd':
+        if value.lower() == 'tsd':
             return cls.TSD
-        elif value == 'day_hour_emd':
+        elif value.lower() == 'day_hour_emd':
             return cls.DAY_HOUR_EMD
-        elif value == 'log_mae':
+        elif value.lower() == 'log_mae':
             return cls.LOG_MAE
-        elif value == 'dl':
+        elif value.lower() == 'dl':
             return cls.DL
-        elif value == 'mae':
+        elif value.lower() == 'mae':
             return cls.MAE
-        elif value == 'day_emd':
+        elif value.lower() == 'day_emd':
             return cls.DAY_EMD
-        elif value == 'cal_emd':
+        elif value.lower() == 'cal_emd':
             return cls.CAL_EMD
-        elif value == 'dl_mae':
+        elif value.lower() == 'dl_mae':
             return cls.DL_MAE
-        elif value == 'hour_emd':
+        elif value.lower() == 'hour_emd':
             return cls.HOUR_EMD
         else:
             raise ValueError(f'Unknown value {value}')
@@ -186,9 +203,9 @@ class ExecutionMode(Enum):
 
     @classmethod
     def from_str(cls, value: str) -> 'ExecutionMode':
-        if value == 'single':
+        if value.lower() == 'single':
             return cls.SINGLE
-        elif value == 'optimizer':
+        elif value.lower() == 'optimizer':
             return cls.OPTIMIZER
         else:
             raise ValueError(f'Unknown value {value}')
