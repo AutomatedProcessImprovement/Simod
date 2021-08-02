@@ -1,16 +1,12 @@
 import os
-from dataclasses import dataclass
 from pathlib import Path
 
-from .cli_formatter import print_step
-from .configuration import Configuration, PDFMethod
+from simod.common_routines import extract_structure_parameters
+
+from .configuration import Configuration
 from .decorators import safe_exec_with_values_and_status, timeit
-from .parameter_extraction import Operator, TasksProcessor, InterArrivalMiner, \
-    ParameterExtractionOutput, ParameterExtractionInput
-from .parameter_extraction import Pipeline
 from .stochastic_miner_datatypes import BPMNGraph
-from .structure_optimizer import StructureOptimizer, LogReplayerForStructureOptimizer, \
-    ResourceMinerForStructureOptimizer
+from .structure_optimizer import StructureOptimizer
 from .writers import xml_writer
 
 
@@ -28,11 +24,39 @@ class StructureOptimizerForStochasticProcessMiner(StructureOptimizer):
         if isinstance(settings, dict):
             settings = Configuration(**settings)
 
-        bpmn, process_graph = structure
-        num_inst = len(self.log_valdn.caseid.unique())
-        start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
+        # Pipeline approach
 
-        print_step('Parsing the BPMN model')
+        # bpmn, process_graph = structure
+        # num_inst = len(self.log_valdn.caseid.unique())  # TODO: shouldn't we use self.log_train here?
+        # start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
+        #
+        # print_step('Parsing the BPMN model')
+        # if self.discover_model:
+        #     # SplitMiner output path
+        #     model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
+        # else:
+        #     # Provided model path
+        #     model_path = self.settings.model_path
+        # self.bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+        #
+        # settings.pdef_method = PDFMethod.DEFAULT
+        # input = ParameterExtractionInputForStochasticMiner(
+        #     log_traces=self.log_train.get_traces(), log_traces_raw=self.log_train.get_raw_traces(), bpmn=bpmn,
+        #     bpmn_graph=self.bpmn_graph, process_graph=process_graph, settings=settings)
+        # output = ParameterExtractionOutput()
+        # output.process_stats['role'] = 'SYSTEM'
+        # structure_parameters_miner = Pipeline(input=input, output=output)
+        # structure_parameters_miner.set_pipeline([
+        #     LogReplayerForStructureOptimizer,
+        #     ResourceMinerForStructureOptimizer,
+        #     InterArrivalMiner,
+        #     GatewayProbabilitiesMinerForStochasticMiner,
+        #     TasksProcessor
+        # ])
+        # structure_parameters_miner.execute()
+
+        # Functional approach
+
         if self.discover_model:
             # SplitMiner output path
             model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
@@ -40,28 +64,18 @@ class StructureOptimizerForStochasticProcessMiner(StructureOptimizer):
             # Provided model path
             model_path = self.settings.model_path
         self.bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+        bpmn, process_graph = structure
+        num_inst = len(self.log_valdn.caseid.unique())  # TODO: shouldn't we use self.log_train here?
+        start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
-        settings.pdef_method = PDFMethod.DEFAULT
-        input = ParameterExtractionInputForStochasticMiner(
-            log_traces=self.log_train.get_traces(), log_traces_raw=self.log_train.get_raw_traces(), bpmn=bpmn,
-            bpmn_graph=self.bpmn_graph, process_graph=process_graph, settings=settings)
-        output = ParameterExtractionOutput()
-        output.process_stats['role'] = 'SYSTEM'
-        structure_parameters_miner = Pipeline(input=input, output=output)
-        structure_parameters_miner.set_pipeline([
-            LogReplayerForStructureOptimizer,
-            ResourceMinerForStructureOptimizer,
-            InterArrivalMiner,
-            GatewayProbabilitiesMinerForStochasticMiner,
-            TasksProcessor
-        ])
-        structure_parameters_miner.execute()
+        structure_parameters = extract_structure_parameters(
+            settings=settings, process_graph=process_graph, log=self.log_train, model_path=model_path)
 
-        parameters = {**parameters, **{'resource_pool': output.resource_pool,
-                                       'time_table': output.time_table,
-                                       'arrival_rate': output.arrival_rate,
-                                       'sequences': output.sequences,
-                                       'elements_data': output.elements_data,
+        parameters = {**parameters, **{'resource_pool': structure_parameters.resource_pool,
+                                       'time_table': structure_parameters.time_table,
+                                       'arrival_rate': structure_parameters.arrival_rate,
+                                       'sequences': structure_parameters.sequences,
+                                       'elements_data': structure_parameters.elements_data,
                                        'instances': num_inst,
                                        'start_time': start_time}}
         bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')
@@ -76,44 +90,44 @@ class StructureOptimizerForStochasticProcessMiner(StructureOptimizer):
 
 # Parameters Extraction Implementations: For Stochastic Process Miner
 
-@dataclass
-class ParameterExtractionInputForStochasticMiner(ParameterExtractionInput):
-    log_traces_raw: list = None
-    bpmn_graph: BPMNGraph = None
+# @dataclass
+# class ParameterExtractionInputForStochasticMiner(ParameterExtractionInput):
+#     log_traces_raw: list = None
+#     bpmn_graph: BPMNGraph = None
 
 
-class GatewayProbabilitiesMinerForStochasticMiner(Operator):
-    input: ParameterExtractionInputForStochasticMiner
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInputForStochasticMiner,
-                 output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        print_step('Mining gateway probabilities')
-
-        arcs_frequencies = self._compute_sequence_flow_frequencies()
-        gateways_branching = self.input.bpmn_graph.compute_branching_probability(arcs_frequencies)
-
-        sequences = []
-        for gateway_id in gateways_branching:
-            for seqflow_id in gateways_branching[gateway_id]:
-                probability = gateways_branching[gateway_id][seqflow_id]
-                sequences.append({'elementid': seqflow_id, 'prob': probability})
-
-        self.output.sequences = sequences
-
-    def _compute_sequence_flow_frequencies(self):
-        flow_arcs_frequency = dict()
-        for trace in self.input.log_traces_raw:
-            task_sequence = list()
-            for event in trace:
-                task_name = event['task']  # original: concept:name
-                state = event['event_type'].lower()  # original: lifecycle:transition
-                if state in ["start", "assign"]:
-                    task_sequence.append(task_name)
-            self.input.bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
-        return flow_arcs_frequency
+# class GatewayProbabilitiesMinerForStochasticMiner(Operator):
+#     input: ParameterExtractionInputForStochasticMiner
+#     output: ParameterExtractionOutput
+#
+#     def __init__(self, input: ParameterExtractionInputForStochasticMiner,
+#                  output: ParameterExtractionOutput):
+#         self.input = input
+#         self.output = output
+#         self._execute()
+#
+#     def _execute(self):
+#         print_step('Mining gateway probabilities')
+#
+#         arcs_frequencies = self._compute_sequence_flow_frequencies()
+#         gateways_branching = self.input.bpmn_graph.compute_branching_probability(arcs_frequencies)
+#
+#         sequences = []
+#         for gateway_id in gateways_branching:
+#             for seqflow_id in gateways_branching[gateway_id]:
+#                 probability = gateways_branching[gateway_id][seqflow_id]
+#                 sequences.append({'elementid': seqflow_id, 'prob': probability})
+#
+#         self.output.sequences = sequences
+#
+#     def _compute_sequence_flow_frequencies(self):
+#         flow_arcs_frequency = dict()
+#         for trace in self.input.log_traces_raw:
+#             task_sequence = list()
+#             for event in trace:
+#                 task_name = event['task']  # original: concept:name
+#                 state = event['event_type'].lower()  # original: lifecycle:transition
+#                 if state in ["start", "assign"]:
+#                     task_sequence.append(task_name)
+#             self.input.bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
+#         return flow_arcs_frequency

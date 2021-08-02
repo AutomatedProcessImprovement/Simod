@@ -12,18 +12,17 @@ import pandas as pd
 import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from simod.common_routines import mine_resources
+from simod.common_routines import mine_resources, extract_structure_parameters
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_message, print_step
 from .common_routines import execute_simulator
-from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric, PDFMethod
+from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric
 from .decorators import timeit, safe_exec_with_values_and_status
 from .extraction.log_replayer import LogReplayer
 from .parameter_extraction import Operator
-from .parameter_extraction import Pipeline, ParameterExtractionInput, ParameterExtractionOutput, InterArrivalMiner, \
-    GatewayProbabilitiesMiner, TasksProcessor
+from .parameter_extraction import ParameterExtractionInput, ParameterExtractionOutput
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
@@ -159,29 +158,32 @@ class StructureOptimizer:
             settings = Configuration(**settings)
 
         bpmn, process_graph = structure
-        num_inst = len(self.log_valdn.caseid.unique())
+        num_inst = len(self.log_valdn.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
         start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
-        settings.pdef_method = PDFMethod.DEFAULT
-        input = ParameterExtractionInput(
-            log_traces=self.log_train.get_traces(), bpmn=bpmn, process_graph=process_graph, settings=settings)
-        output = ParameterExtractionOutput()
-        output.process_stats['role'] = 'SYSTEM'
-        structure_parameters_miner = Pipeline(input=input, output=output)
-        structure_parameters_miner.set_pipeline([
-            LogReplayerForStructureOptimizer,
-            ResourceMinerForStructureOptimizer,
-            InterArrivalMiner,
-            GatewayProbabilitiesMiner,
-            TasksProcessor
-        ])
-        structure_parameters_miner.execute()
+        # settings.pdef_method = PDFMethod.DEFAULT
+        # input = ParameterExtractionInput(
+        #     log_traces=self.log_train.get_traces(), bpmn=bpmn, process_graph=process_graph, settings=settings)
+        # output = ParameterExtractionOutput()
+        # output.process_stats['role'] = 'SYSTEM'
+        # structure_parameters_miner = Pipeline(input=input, output=output)
+        # structure_parameters_miner.set_pipeline([
+        #     LogReplayerForStructureOptimizer,
+        #     ResourceMinerForStructureOptimizer,
+        #     InterArrivalMiner,
+        #     GatewayProbabilitiesMiner,  # TODO: refactor this
+        #     TasksProcessor
+        # ])
+        # structure_parameters_miner.execute()
 
-        parameters = {**parameters, **{'resource_pool': output.resource_pool,
-                                       'time_table': output.time_table,
-                                       'arrival_rate': output.arrival_rate,
-                                       'sequences': output.sequences,
-                                       'elements_data': output.elements_data,
+        structure_parameters = extract_structure_parameters(
+            settings=settings, process_graph=process_graph, log=self.log_train, bpmn=bpmn)
+
+        parameters = {**parameters, **{'resource_pool': structure_parameters.resource_pool,
+                                       'time_table': structure_parameters.time_table,
+                                       'arrival_rate': structure_parameters.arrival_rate,
+                                       'sequences': structure_parameters.sequences,
+                                       'elements_data': structure_parameters.elements_data,
                                        'instances': num_inst,
                                        'start_time': start_time}}
         bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')

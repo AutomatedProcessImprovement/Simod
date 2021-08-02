@@ -9,8 +9,10 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 from networkx import DiGraph
-from simod.configuration import CalculationMethod, DataType
+from simod.configuration import CalculationMethod, DataType, GateManagement
+from simod.extraction.gateways_probabilities import GatewaysEvaluator
 from simod.extraction.schedule_tables import TimeTablesCreator
+from simod.readers.bpmn_reader import BpmnReader
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator
@@ -40,38 +42,23 @@ class StructureParameters:
 
 
 def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
-                                 model_path: Path) -> StructureParameters:
-    print_step('Parsing the BPMN model')
-
-    bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-    settings.pdef_method = PDFMethod.DEFAULT
-
-    # Pipeline approach
-
-    # input = ParameterExtractionInputForStochasticMiner(
-    #     log_traces=log_train.get_traces(), log_traces_raw=log_train.get_raw_traces(), bpmn=bpmn,
-    #     bpmn_graph=bpmn_graph, process_graph=process_graph, settings=settings)
-    # output = ParameterExtractionOutput()
-    # output.process_stats['role'] = 'SYSTEM'
-    # structure_parameters_miner = Pipeline(input=input, output=output)
-    # structure_parameters_miner.set_pipeline([
-    #     LogReplayerForStructureOptimizer,
-    #     ResourceMinerForStructureOptimizer,
-    #     InterArrivalMiner,
-    #     GatewayProbabilitiesMinerForStochasticMiner,
-    #     TasksProcessor
-    # ])
-    # structure_parameters_miner.execute()
-
-    # Functional approach
-
+                                 model_path: Union[Path, None] = None,
+                                 bpmn: Union[BpmnReader, None] = None) -> StructureParameters:
+    settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
     traces = log.get_traces()  # NOTE: long operation
     traces_raw = log.get_raw_traces()  # NOTE: long operation
 
     process_stats, conformant_traces = replay_logs(process_graph, traces, settings)
-    resource_pool, time_table = mine_resources_local(settings)
+    resource_pool, time_table = mine_resources_wrapper(settings)
     arrival_rate = mine_inter_arrival(process_graph, conformant_traces, settings)
-    sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
+    if model_path:
+        bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+        sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
+    elif bpmn:
+        sequences = mine_gateway_probabilities(bpmn, process_graph, settings.gate_management)
+    else:
+        raise Exception('Either BPMNGraph or BpmnReader must be used to mine gateway probabilities')
+    process_stats['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
     elements_data = process_tasks(process_graph, process_stats, resource_pool, settings)
 
     log_df = pd.DataFrame(log.data)
@@ -90,13 +77,14 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     )
 
 
-def replay_logs(process_graph: DiGraph, log_traces: list, settings: Configuration) -> Tuple[list, list]:
+def replay_logs(process_graph: DiGraph, log_traces: list, settings: Configuration) -> Tuple[
+    Union[list, pd.DataFrame], list]:
     print_step('Log Replayer')
     replayer = LogReplayer(process_graph, log_traces, settings, msg='reading conformant training traces')
     return replayer.process_stats, replayer.conformant_traces
 
 
-def mine_resources_local(settings: Configuration) -> Tuple[list, List[str]]:  # TODO: maybe this one is unnecessary
+def mine_resources_wrapper(settings: Configuration) -> Tuple[list, List[str]]:  # TODO: maybe this one is unnecessary
     """Analysing resource pool LV917 or 247"""
     print_step('Resource Miner')
     parameters = mine_resources(settings)
@@ -136,10 +124,19 @@ def mine_gateway_probabilities_stochastic(log_traces_raw: list, bpmn_graph: BPMN
     return sequences
 
 
+def mine_gateway_probabilities(bpmn: BpmnReader, process_graph, gate_management: GateManagement) -> list:
+    print_step('Mining gateway probabilities')
+
+    evaluator = GatewaysEvaluator(process_graph, gate_management)
+    sequences = evaluator.probabilities
+    for seq in sequences:
+        seq['elementid'] = bpmn.find_sequence_id(seq['gatewayid'], seq['out_path_id'])
+    return sequences
+
+
 def process_tasks(process_graph: DiGraph, process_stats: Union[list, pd.DataFrame], resource_pool: list,
                   settings: Configuration):
     print_step('Tasks Processor')
-    process_stats['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
     evaluator = TaskEvaluator(process_graph, process_stats, resource_pool, settings)
     return evaluator.elements_data
 
@@ -204,6 +201,7 @@ def execute_simulator(args):
         # NOTE: the call generates a CSV event log from a model
         # NOTE: might fail silently, because stderr or stdout aren't checked
         subprocess.run(args, check=True, stdout=subprocess.PIPE)
+
     sim_call(*args)
 
 
@@ -236,6 +234,7 @@ def read_stats(args):
         temp['run_num'] = rep + 1
         temp = temp[~temp.task.isin(['Start', 'End'])]
         return temp
+
     return read(*args)
 
 
@@ -255,6 +254,7 @@ def read_stats_alt(args):
         rep_results['end_timestamp'] = pd.to_datetime(
             rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
         return rep_results
+
     return read(*args)
 
 
@@ -272,6 +272,7 @@ def evaluate_logs(args):
         evaluator.measure_distance(Metric.DL)
         sim_values.append({**{'run_num': rep}, **evaluator.similarity})
         return sim_values
+
     return evaluate(*args)
 
 
