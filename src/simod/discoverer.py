@@ -217,8 +217,8 @@ class Discoverer:
     @staticmethod
     def filter_dic_params(settings: Configuration):
         best_params = dict()
-        best_params['alg_manag'] = settings.alg_manag.__str__().split('.')[1]
-        best_params['gate_management'] = settings.gate_management.__str__().split('.')[1]
+        best_params['alg_manag'] = str(settings.alg_manag)
+        best_params['gate_management'] = str(settings.gate_management)
         best_params['rp_similarity'] = str(settings.rp_similarity)
         # best structure mining parameters
         if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
