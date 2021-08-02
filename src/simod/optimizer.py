@@ -48,64 +48,27 @@ class Optimizer:
         strctr_optimizer_file_name = None
         strctr_optimizer_temp_output = None
 
+        # optional model discovery if model is not provided
         if discover_model:
+            # mining the structure
             strctr_optimizer = structure_optimizer(
                 self.settings_structure, copy.deepcopy(self.log_train), discover_model=discover_model)
             strctr_optimizer.execute_trials()
-            model_path = os.path.join(strctr_optimizer.best_output, self.settings_global.project_name + '.bpmn')
-            best_parms = strctr_optimizer.best_parms
+            # redefining local variables
+            self._redefine_best_params_after_structure_optimization(strctr_optimizer)
             strctr_optimizer_file_name = strctr_optimizer.file_name
             strctr_optimizer_temp_output = strctr_optimizer.temp_output
-            self.settings_global.alg_manag = self.settings_structure.alg_manag[best_parms['alg_manag']]
-            self.best_params['alg_manag'] = self.settings_global.alg_manag
-            self.settings_global.gate_management = self.settings_structure.gate_management[
-                best_parms['gate_management']]
-            self.best_params['gate_management'] = self.settings_global.gate_management
-            # best structure mining parameters
-            if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
-                self.settings_global.epsilon = best_parms['epsilon']
-                self.settings_global.eta = best_parms['eta']
-                self.best_params['epsilon'] = best_parms['epsilon']
-                self.best_params['eta'] = best_parms['eta']
-            elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
-                self.settings_global.concurrency = best_parms['concurrency']
-                self.best_params['concurrency'] = best_parms['concurrency']
-            for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
-                        'arr_confidence', 'res_cal_met', 'arr_cal_met']:  # TODO: seems like this is unnecessary
-                self.settings.pop(key, None)
+            model_path = os.path.join(strctr_optimizer.best_output, self.settings_global.project_name + '.bpmn')
         else:
-            # extract_parameters
-            model_path = self.settings_global.model_path
-            process_graph = extract_process_graph(model_path)
-            parameters = extract_structure_parameters(self.settings_global, process_graph, self.log, model_path)
-            # copy the original model and rewrite with extracted parameters
-            if not os.path.exists(self.settings_global.output):
-                os.makedirs(self.settings_global.output)
-            bpmn_path = os.path.join(self.settings_global.output, os.path.basename(model_path))
-            shutil.copy(model_path, bpmn_path)
-            xml_writer.print_parameters(bpmn_path, bpmn_path, parameters.__dict__)
-            model_path = bpmn_path
-            # simulation
-            sim_data_path = os.path.join(self.settings_global.output, 'sim_data')
-            if not os.path.exists(sim_data_path):
-                os.makedirs(sim_data_path)
-            _ = simulate(self.settings_global, parameters.process_stats, self.log_test)
+            model_path = self._extract_parameters_and_rewrite_mode()
 
         print_section('Times Optimization')
+        # mining times
         times_optimizer = TimesOptimizer(
             self.settings_global, self.settings_time, copy.deepcopy(self.log_train), model_path)
         times_optimizer.execute_trials()
-        # Discovery parameters
-        if times_optimizer.best_parms['res_cal_met'] == 1:
-            self.best_params['res_dtype'] = (self.settings_time.res_dtype[times_optimizer.best_parms['res_dtype']])
-        else:
-            self.best_params['res_support'] = (times_optimizer.best_parms['res_support'])
-            self.best_params['res_confidence'] = (times_optimizer.best_parms['res_confidence'])
-        if times_optimizer.best_parms['arr_cal_met'] == 1:
-            self.best_params['arr_dtype'] = (self.settings_time.res_dtype[times_optimizer.best_parms['arr_dtype']])
-        else:
-            self.best_params['arr_support'] = (times_optimizer.best_parms['arr_support'])
-            self.best_params['arr_confidence'] = (times_optimizer.best_parms['arr_confidence'])
+        # redefining local variables
+        self._redefine_best_params_after_times_optimization(times_optimizer)
 
         print_section('Final Comparison')
         output_file = sup.file_id(prefix='SE_')
@@ -116,6 +79,65 @@ class Optimizer:
             shutil.rmtree(strctr_optimizer_temp_output)
         shutil.rmtree(times_optimizer.temp_output)
         print_asset(f"Output folder is at {self.settings_global.output}")
+
+    def _redefine_best_params_after_structure_optimization(self, strctr_optimizer):
+        # receiving mined results and redefining local variables
+
+        best_parms = strctr_optimizer.best_parms
+
+        self.settings_global.alg_manag = self.settings_structure.alg_manag[best_parms['alg_manag']]
+        self.best_params['alg_manag'] = self.settings_global.alg_manag
+        self.settings_global.gate_management = self.settings_structure.gate_management[
+            best_parms['gate_management']]
+        self.best_params['gate_management'] = self.settings_global.gate_management
+        # best structure mining parameters
+        if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+            self.settings_global.epsilon = best_parms['epsilon']
+            self.settings_global.eta = best_parms['eta']
+            self.best_params['epsilon'] = best_parms['epsilon']
+            self.best_params['eta'] = best_parms['eta']
+        elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
+            self.settings_global.concurrency = best_parms['concurrency']
+            self.best_params['concurrency'] = best_parms['concurrency']
+        for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
+                    'arr_confidence', 'res_cal_met', 'arr_cal_met']:  # TODO: seems like this is unnecessary
+            self.settings.pop(key, None)
+        return
+
+    def _redefine_best_params_after_times_optimization(self, times_optimizer):
+        # redefining parameters after times optimizer
+        if times_optimizer.best_parms['res_cal_met'] == 1:
+            self.best_params['res_dtype'] = self.settings_time.res_dtype[times_optimizer.best_parms['res_dtype']]
+        else:
+            self.best_params['res_support'] = times_optimizer.best_parms['res_support']
+            self.best_params['res_confidence'] = times_optimizer.best_parms['res_confidence']
+        if times_optimizer.best_parms['arr_cal_met'] == 1:
+            self.best_params['arr_dtype'] = self.settings_time.res_dtype[times_optimizer.best_parms['arr_dtype']]
+        else:
+            self.best_params['arr_support'] = (times_optimizer.best_parms['arr_support'])
+            self.best_params['arr_confidence'] = (times_optimizer.best_parms['arr_confidence'])
+
+    def _extract_parameters_and_rewrite_mode(self):
+        # extracting parameters
+        model_path = self.settings_global.model_path
+        process_graph = extract_process_graph(model_path)
+        parameters = extract_structure_parameters(
+            settings=self.settings_global, process_graph=process_graph, log=self.log, model_path=model_path)
+
+        # copying the original model and rewriting it with extracted parameters
+        if not os.path.exists(self.settings_global.output):
+            os.makedirs(self.settings_global.output)
+        bpmn_path = os.path.join(self.settings_global.output, os.path.basename(model_path))
+        shutil.copy(model_path, bpmn_path)
+        xml_writer.print_parameters(bpmn_path, bpmn_path, parameters.__dict__)
+        model_path = bpmn_path
+
+        # simulation
+        sim_data_path = os.path.join(self.settings_global.output, 'sim_data')
+        if not os.path.exists(sim_data_path):
+            os.makedirs(sim_data_path)
+        _ = simulate(self.settings_global, parameters.process_stats, self.log_test)
+        return model_path
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
         output_path = os.path.join('outputs', sup.folder_id())

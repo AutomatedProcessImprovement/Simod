@@ -51,10 +51,10 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     process_stats, conformant_traces = replay_logs(process_graph, traces, settings)
     resource_pool, time_table = mine_resources_wrapper(settings)
     arrival_rate = mine_inter_arrival(process_graph, conformant_traces, settings)
-    if model_path:
+    if model_path:  # new replayer
         bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
         sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
-    elif bpmn:
+    elif bpmn:  # old replayer
         sequences = mine_gateway_probabilities(bpmn, process_graph, settings.gate_management)
     else:
         raise Exception('Either BPMNGraph or BpmnReader must be used to mine gateway probabilities')
