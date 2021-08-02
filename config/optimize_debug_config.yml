@@ -4,16 +4,11 @@ new_replayer: false
 input: inputs
 output: true
 exec_mode: optimizer
-repetitions: 5
+repetitions: 1
 simulation: true
-sim_metric: tsd
-add_metrics:
-  - day_hour_emd
-  - log_mae
-  - dl
-  - mae
+sim_metric: dl
 structure_optimizer:
-  max_eval_s: 15
+  max_eval_s: 2
   concurrency:
     - 0.0
     - 1.0
@@ -25,22 +20,17 @@ structure_optimizer:
     - 1.0
   alg_manag:
     - removal
-    - repair
-    - replacement
   gate_management:
     - equiprobable
-    - discovery
 time_optimizer:
-  max_eval_t: 20
+  max_eval_t: 2
   rp_similarity:
     - 0.5
     - 0.9
   res_dtype:
     - dt247
-    - lv917
   arr_dtype:
     - dt247
-    - lv917
   res_sup_dis:
     - 0.01
     - 0.3

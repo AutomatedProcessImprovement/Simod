@@ -39,7 +39,7 @@ class TestCLICommands(unittest.TestCase):
         self.assertTrue('Event log could not be imported' not in result.output)
 
     def test_optimizer_without_model(self):
-        config_path = os.path.join(self.entry_point, 'optimize_config.yml')
+        config_path = os.path.join(self.entry_point, 'optimize_debug_config.yml')
 
         runner = CliRunner()
         try:
