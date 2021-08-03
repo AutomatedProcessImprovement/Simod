@@ -49,31 +49,25 @@ class StructureParameters:
 
 
 def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
-                                 model_path: Union[Path, None] = None,
-                                 bpmn: Union[BpmnReader, None] = None) -> StructureParameters:
+                                 model_path: Path) -> StructureParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
-    traces = log.get_traces()  # NOTE: long operation
     traces_raw = log.get_raw_traces()  # NOTE: long operation
+    log_df = pd.DataFrame(log.data)
 
-    process_stats, conformant_traces = replay_logs(process_graph, traces, settings)
+    # process_stats, conformant_traces = replay_logs(process_graph, traces, settings)
     resource_pool, time_table = mine_resources_wrapper(settings)
-    arrival_rate = mine_inter_arrival(process_graph, conformant_traces, settings)
-    if model_path:  # new replayer
-        bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-        sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
-    elif bpmn:  # old replayer
-        sequences = mine_gateway_probabilities(bpmn, process_graph, settings.gate_management)
-    else:
-        raise Exception('Either BPMNGraph or BpmnReader must be used to mine gateway probabilities')
-    process_stats['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
-    elements_data = process_tasks(process_graph, process_stats, resource_pool, settings)
+    arrival_rate = mine_inter_arrival(process_graph, log_df, settings)
+    bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+    sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
+    log_df['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
+    elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
 
     log_df = pd.DataFrame(log.data)
     num_inst = len(log_df.caseid.unique())
     start_time = log_df.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
 
     return StructureParameters(
-        process_stats=process_stats,
+        process_stats=log_df,
         resource_pool=resource_pool,
         time_table=time_table,
         arrival_rate=arrival_rate,
@@ -84,13 +78,13 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     )
 
 
-# TODO: make it more general and allow new replayer with a flag everywhere
-def replay_logs(process_graph: DiGraph,
-                log_traces: list,
-                settings: Configuration) -> Tuple[Union[list, pd.DataFrame], list]:
-    print_step('Log Replayer')
-    replayer = LogReplayer(process_graph, log_traces, settings, msg='reading conformant training traces')
-    return replayer.process_stats, replayer.conformant_traces
+# # TODO: make it more general and allow new replayer with a flag everywhere
+# def replay_logs(process_graph: DiGraph,
+#                 log_traces: list,
+#                 settings: Configuration) -> Tuple[Union[list, pd.DataFrame], list]:
+#     print_step('Log Replayer')
+#     replayer = LogReplayer(process_graph, log_traces, settings, msg='reading conformant training traces')
+#     return replayer.process_stats, replayer.conformant_traces
 
 
 def mine_resources_wrapper(settings: Configuration) -> Tuple[list, List[str]]:  # TODO: maybe this one is unnecessary
@@ -100,7 +94,7 @@ def mine_resources_wrapper(settings: Configuration) -> Tuple[list, List[str]]:  
     return parameters['resource_pool'], parameters['time_table']
 
 
-def mine_inter_arrival(process_graph: DiGraph, conformant_traces: list, settings: Configuration) -> dict:
+def mine_inter_arrival(process_graph: DiGraph, conformant_traces: pd.DataFrame, settings: Configuration) -> dict:
     print_step('Inter-arrival Miner')
     inter_evaluator = InterArrivalEvaluator(process_graph, conformant_traces, settings)
     return inter_evaluator.dist
@@ -143,7 +137,7 @@ def mine_gateway_probabilities(bpmn: BpmnReader, process_graph, gate_management:
     return sequences
 
 
-def process_tasks(process_graph: DiGraph, process_stats: Union[list, pd.DataFrame], resource_pool: list,
+def process_tasks(process_graph: DiGraph, process_stats: pd.DataFrame, resource_pool: list,
                   settings: Configuration):
     print_step('Tasks Processor')
     evaluator = TaskEvaluator(process_graph, process_stats, resource_pool, settings)

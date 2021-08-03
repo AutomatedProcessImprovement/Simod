@@ -24,39 +24,6 @@ class StructureOptimizerForStochasticProcessMiner(StructureOptimizer):
         if isinstance(settings, dict):
             settings = Configuration(**settings)
 
-        # Pipeline approach
-
-        # bpmn, process_graph = structure
-        # num_inst = len(self.log_valdn.caseid.unique())  # TODO: shouldn't we use self.log_train here?
-        # start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
-        #
-        # print_step('Parsing the BPMN model')
-        # if self.discover_model:
-        #     # SplitMiner output path
-        #     model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
-        # else:
-        #     # Provided model path
-        #     model_path = self.settings.model_path
-        # self.bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-        #
-        # settings.pdef_method = PDFMethod.DEFAULT
-        # input = ParameterExtractionInputForStochasticMiner(
-        #     log_traces=self.log_train.get_traces(), log_traces_raw=self.log_train.get_raw_traces(), bpmn=bpmn,
-        #     bpmn_graph=self.bpmn_graph, process_graph=process_graph, settings=settings)
-        # output = ParameterExtractionOutput()
-        # output.process_stats['role'] = 'SYSTEM'
-        # structure_parameters_miner = Pipeline(input=input, output=output)
-        # structure_parameters_miner.set_pipeline([
-        #     LogReplayerForStructureOptimizer,
-        #     ResourceMinerForStructureOptimizer,
-        #     InterArrivalMiner,
-        #     GatewayProbabilitiesMinerForStochasticMiner,
-        #     TasksProcessor
-        # ])
-        # structure_parameters_miner.execute()
-
-        # Functional approach
-
         if self.discover_model:
             # SplitMiner output path
             model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))

@@ -13,11 +13,17 @@ class TaskEvaluator():
         This class evaluates the tasks durations and associates resources to it
      """
 
-    def __init__(self, process_graph, process_stats, resource_pool, settings: Configuration):
+    def __init__(self, process_graph, process_stats: pd.DataFrame, resource_pool, settings: Configuration):
         """constructor"""
         self.tasks = self.get_task_list(process_graph)
         self.model_data = self.get_model_data(process_graph)
+
+        # calculating processing time
+        time_delta = process_stats['end_timestamp'] - process_stats['start_timestamp']
+        time_delta_in_seconds = list(map(lambda x: x.total_seconds(), time_delta))
+        process_stats['processing_time'] = time_delta_in_seconds
         self.process_stats = process_stats
+
         self.resource_pool = resource_pool
 
         self.pdef_method = settings.pdef_method

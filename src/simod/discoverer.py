@@ -95,9 +95,6 @@ class Discoverer:
         traces_raw = self.log_train.get_raw_traces()
         sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
 
-        time_delta = log_train_df['end_timestamp'] - log_train_df['start_timestamp']
-        time_delta_in_seconds = list(map(lambda x: x.total_seconds(), time_delta))
-        log_train_df['processing_time'] = time_delta_in_seconds
         self.process_stats = log_train_df.merge(resource_table[['resource', 'role']],
                                                 left_on='user', right_on='resource', how='left')
         elements_data = process_tasks(self.process_graph, self.process_stats, resource_pool, self.settings)

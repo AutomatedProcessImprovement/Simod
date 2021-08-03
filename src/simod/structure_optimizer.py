@@ -6,6 +6,7 @@ import os
 import random
 import time
 from multiprocessing import Pool
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -176,8 +177,9 @@ class StructureOptimizer:
         # ])
         # structure_parameters_miner.execute()
 
+        model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
         structure_parameters = extract_structure_parameters(
-            settings=settings, process_graph=process_graph, log=self.log_train, bpmn=bpmn)
+            settings=settings, process_graph=process_graph, log=self.log_train, model_path=model_path)
 
         parameters = {**parameters, **{'resource_pool': structure_parameters.resource_pool,
                                        'time_table': structure_parameters.time_table,
@@ -402,36 +404,36 @@ class StructureOptimizer:
 
 # Parameters Extraction Implementations: For Structure Optimizer
 
-class LogReplayerForStructureOptimizer(Operator):
-    input: ParameterExtractionInput
-    output: ParameterExtractionOutput
+# class LogReplayerForStructureOptimizer(Operator):
+#     input: ParameterExtractionInput
+#     output: ParameterExtractionOutput
+#
+#     def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
+#         self.input = input
+#         self.output = output
+#         self._execute()
+#
+#     def _execute(self):
+#         print_step('Log Replayer')
+#         replayer = LogReplayer(self.input.process_graph, self.input.log_traces, self.input.settings,
+#                                msg='reading conformant training traces')
+#         self.output.process_stats = replayer.process_stats
+#         self.output.process_stats['role'] = 'SYSTEM'
+#         self.output.conformant_traces = replayer.conformant_traces
 
-    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
 
-    def _execute(self):
-        print_step('Log Replayer')
-        replayer = LogReplayer(self.input.process_graph, self.input.log_traces, self.input.settings,
-                               msg='reading conformant training traces')
-        self.output.process_stats = replayer.process_stats
-        self.output.process_stats['role'] = 'SYSTEM'
-        self.output.conformant_traces = replayer.conformant_traces
-
-
-class ResourceMinerForStructureOptimizer(Operator):
-    input: ParameterExtractionInput
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        """Analysing resource pool LV917 or 247"""
-        print_step('Resource Miner')
-        parameters = mine_resources(self.input.settings)
-        self.output.resource_pool = parameters['resource_pool']
-        self.output.time_table = parameters['time_table']
+# class ResourceMinerForStructureOptimizer(Operator):
+#     input: ParameterExtractionInput
+#     output: ParameterExtractionOutput
+#
+#     def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
+#         self.input = input
+#         self.output = output
+#         self._execute()
+#
+#     def _execute(self):
+#         """Analysing resource pool LV917 or 247"""
+#         print_step('Resource Miner')
+#         parameters = mine_resources(self.input.settings)
+#         self.output.resource_pool = parameters['resource_pool']
+#         self.output.time_table = parameters['time_table']

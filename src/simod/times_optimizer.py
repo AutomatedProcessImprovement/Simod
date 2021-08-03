@@ -293,10 +293,12 @@ class TimesOptimizer():
             read_options.column_names = column_names
             m_settings['read_options'] = read_options
             m_settings['project_name'] = settings['project_name']
-            temp = lr.LogReader(os.path.join(
-                m_settings['output'], 'sim_data', m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                m_settings['read_options'],
-                verbose=False)
+            file_path = os.path.join(m_settings['output'], 'sim_data',
+                                     m_settings['project_name'] + '_' + str(rep + 1) + '.csv')
+            if not os.path.exists(file_path):
+                print(f'File does not exist at {file_path}')
+                return
+            temp = lr.LogReader(file_path, m_settings['read_options'], verbose=False)
             temp = pd.DataFrame(temp.data)
             temp.rename(columns={'user': 'resource'}, inplace=True)
             temp['role'] = temp['resource']
