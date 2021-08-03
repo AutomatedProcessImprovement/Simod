@@ -11,9 +11,11 @@ import pandas as pd
 from networkx import DiGraph
 from simod.configuration import CalculationMethod, DataType, GateManagement
 from simod.extraction.gateways_probabilities import GatewaysEvaluator
+from simod.extraction.role_discovery import ResourcePoolAnalyser
 from simod.extraction.schedule_tables import TimeTablesCreator
 from simod.readers.bpmn_reader import BpmnReader
 from tqdm import tqdm
+from utils import support as sup
 
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step
@@ -27,12 +29,17 @@ from .readers.log_reader import LogReader
 from .stochastic_miner_datatypes import BPMNGraph
 
 
+# NOTE: This module needs better name and possible refactoring. At the moment it contains API, which is suitable
+# for discovery and optimization. Before function from here were implemented often as static methods on specific classes
+# introducing code duplication. We can stay with the functional approach, like I'm proposing at the moment, or create
+# a more general class for Discoverer and Optimizer for them to inherit from it all the general routines.
+
 @dataclass
 class StructureParameters:
     instances: int
     start_time: str
     process_stats: pd.DataFrame = field(default_factory=pd.DataFrame)
-    # resource_table: pd.DataFrame = field(default_factory=pd.DataFrame)
+    # resource_table: pd.DataFrame = field(default_factory=pd.DataFrame)  # TODO: should be active
     # conformant_traces: list = field(default_factory=list)
     resource_pool: list = field(default_factory=list)
     time_table: List[str] = field(default_factory=list)
@@ -77,8 +84,10 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     )
 
 
-def replay_logs(process_graph: DiGraph, log_traces: list, settings: Configuration) -> Tuple[
-    Union[list, pd.DataFrame], list]:
+# TODO: make it more general and allow new replayer with a flag everywhere
+def replay_logs(process_graph: DiGraph,
+                log_traces: list,
+                settings: Configuration) -> Tuple[Union[list, pd.DataFrame], list]:
     print_step('Log Replayer')
     replayer = LogReplayer(process_graph, log_traces, settings, msg='reading conformant training traces')
     return replayer.process_stats, replayer.conformant_traces
@@ -146,7 +155,7 @@ def extract_process_graph(model_path) -> DiGraph:
     return process_structure.create_process_structure(bpmn)
 
 
-def simulate(settings: Configuration, process_stats, log_test):
+def simulate(settings: Configuration, process_stats: pd.DataFrame, log_test):
     # NOTE: from Discoverer
     def pbar_async(p, msg):
         pbar = tqdm(total=reps, desc=msg)
@@ -260,12 +269,8 @@ def read_stats_alt(args):
 
 def evaluate_logs(args):
     # NOTE: extracted from StructureOptimizer static method
-    def evaluate(settings: Configuration, data, sim_log):
-        """Reads the simulation results stats
-        Args:
-            settings (dict): Path to jar and file names
-            rep (int): repetition number
-        """
+    def evaluate(settings: Configuration, data: pd.DataFrame, sim_log):
+        """Reads the simulation results stats"""
         rep = sim_log.iloc[0].run_num
         sim_values = list()
         evaluator = sim_evaluator.SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
@@ -299,3 +304,42 @@ def mine_resources(settings: Configuration):
     parameters['resource_pool'] = resource_pool
     parameters['time_table'] = time_table_creator.time_table
     return parameters
+
+
+def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
+    def create_resource_pool(resource_table, table_name) -> list:
+        """Creates resource pools and associate them the default timetable in BIMP format"""
+        resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '20', 'costxhour': '20',
+                          'timetable_id': table_name['arrival']}]
+        data = sorted(resource_table, key=lambda x: x['role'])
+        for key, group in itertools.groupby(data, key=lambda x: x['role']):
+            res_group = [x['resource'] for x in list(group)]
+            r_pool_size = str(len(res_group))
+            name = (table_name['resources'] if 'resources' in table_name.keys() else table_name[key])
+            resource_pool.append(
+                {'id': sup.gen_id(), 'name': key, 'total_amount': r_pool_size, 'costxhour': '20', 'timetable_id': name})
+        return resource_pool
+
+    print_step('Resource Miner')
+
+    res_analyzer = ResourcePoolAnalyser(log, sim_threshold=settings.rp_similarity)
+    ttcreator = TimeTablesCreator(settings)
+
+    args = {'res_cal_met': settings.res_cal_met,
+            'arr_cal_met': settings.arr_cal_met,
+            'resource_table': res_analyzer.resource_table}
+
+    if not isinstance(args['res_cal_met'], CalculationMethod):
+        args['res_cal_met'] = CalculationMethod.from_str(settings.res_cal_met)
+    if not isinstance(args['arr_cal_met'], CalculationMethod):
+        args['arr_cal_met'] = CalculationMethod.from_str(settings.arr_cal_met)
+
+    ttcreator.create_timetables(args)
+    resource_pool = create_resource_pool(res_analyzer.resource_table, ttcreator.res_ttable_name)
+    resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
+
+    # TODO: do it after execution of this func
+    # Adding role to process stats
+    # self.output.process_stats = self.output.process_stats.merge(resource_table, on='resource', how='left')
+
+    return ttcreator.time_table, resource_pool, resource_table

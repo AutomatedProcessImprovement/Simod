@@ -6,15 +6,12 @@ import subprocess
 from .cli_formatter import print_subsection, print_step
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import safe_exec
-from .log_repairing.conformance_checking import evaluate_alignment
 from .readers import bpmn_reader as br
 from .readers import process_structure
 
 
 class StructureMiner:
-    """
-    This class extracts all the BPS parameters
-    """
+    """This class extracts all the BPS parameters"""
 
     def __init__(self, settings: Configuration, log):
         self.log = log
@@ -22,17 +19,15 @@ class StructureMiner:
         self.settings = settings
 
     def execute_pipeline(self) -> None:
-        """
-        Main method for mining structure
-        """
         print_subsection("Split Mining")
         if self.settings.model_path is None:
             self.is_safe = self._mining_structure(is_safe=self.is_safe)
         else:
             print_step("Copying The Model")
             shutil.copy(self.settings.model_path, self.settings.output)
-        print_subsection("Alignment Evaluation")
-        self.is_safe = self._evaluate_alignment(is_safe=self.is_safe, model_path=self.settings.model_path)
+
+        self.bpmn = br.BpmnReader(os.path.join(self.settings.output, self.settings.project_name + '.bpmn'))
+        self.process_graph = process_structure.create_process_structure(self.bpmn)
 
     @safe_exec
     def _mining_structure(self, **kwargs) -> None:
@@ -123,17 +118,3 @@ class StructureMiner:
                      input_route,
                      os.path.join(settings.output, file_name)])
         subprocess.call(args)
-
-    @safe_exec
-    def _evaluate_alignment(self, **kwargs) -> None:
-        """
-        Evaluates alignment
-        Returns
-        -------
-        None
-            DESCRIPTION.
-
-        """
-        self.bpmn = br.BpmnReader(os.path.join(self.settings.output, self.settings.project_name + '.bpmn'))
-        self.process_graph = process_structure.create_process_structure(self.bpmn)
-        evaluate_alignment(self.process_graph, self.log, self.settings)

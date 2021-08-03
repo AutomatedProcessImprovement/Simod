@@ -1,44 +1,30 @@
 import copy
-import itertools
-import multiprocessing
 import os
-import time
 import types
-from dataclasses import dataclass
-from multiprocessing import Pool
 from operator import itemgetter
-from typing import Optional
+from pathlib import Path
 
 import pandas as pd
 import xmltodict as xtd
 from lxml import etree
-from networkx import DiGraph
-from tqdm import tqdm
+from simod.stochastic_miner_datatypes import BPMNGraph
 from utils import support as sup
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_asset, print_section, print_step
-from .common_routines import execute_simulator, read_stats_alt, simulate
+from .cli_formatter import print_asset, print_section
+from .common_routines import simulate, mine_resources_with_resource_table, \
+    mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
-from .extraction.log_replayer import LogReplayer
-from .extraction.role_discovery import ResourcePoolAnalyser
-from .extraction.schedule_tables import TimeTablesCreator
-from .parameter_extraction import Operator
-from .parameter_extraction import Pipeline, ParameterExtractionOutput, InterArrivalMiner, GatewayProbabilitiesMiner, \
-    TasksProcessor
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
-from .readers.bpmn_reader import BpmnReader
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
 from .writers import xml_writer as xml
 
 
 class Discoverer:
-    """
-    Main class of the Simulation Models Discoverer
-    """
+    """Main class of the Simulation Models Discoverer"""
 
     def __init__(self, settings: Configuration):
         self.settings = settings
@@ -57,7 +43,6 @@ class Discoverer:
         self.is_safe = self.read_inputs(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.mine_structure(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.replay_process(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.extract_parameters(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.simulate(log_time=exec_times, is_safe=self.is_safe)
         self.mannage_results()
@@ -90,60 +75,49 @@ class Discoverer:
     def mine_structure(self, **kwargs) -> None:
         print_section("Process Structure Mining")
         structure_miner = StructureMiner(self.settings, self.log_train)
-        structure_miner.execute_pipeline()
+        structure_miner.execute_pipeline()  # TODO: don't need repair log and evaluate with new replayer
         if structure_miner.is_safe:
             self.bpmn = structure_miner.bpmn
             self.process_graph = structure_miner.process_graph
         else:
             raise RuntimeError('Structure Mining error')
 
-    @timeit(rec_name='REPLAY_PROCESS')
-    @safe_exec
-    def replay_process(self, **kwargs) -> None:
-        """
-        Process replaying
-        """
-        print_section("Log Replaying")
-        replayer = LogReplayer(self.process_graph, self.log_train.get_traces(), self.settings,
-                               msg='reading conformant training traces')
-        self.process_stats = replayer.process_stats
-        self.conformant_traces = replayer.conformant_traces
-
     @timeit(rec_name='EXTRACTION')
     @safe_exec
     def extract_parameters(self, **kwargs) -> None:
         print_section("Simulation Parameters Mining")
 
-        input = ParameterExtractionInputForDiscoverer(
-            log=self.log_train, bpmn=self.bpmn, process_graph=self.process_graph, settings=self.settings)
-        output = ParameterExtractionOutput()
-        parameters_extraction_pipeline = Pipeline(input=input, output=output)
-        parameters_extraction_pipeline.set_pipeline([
-            LogReplayerForDiscoverer,
-            ResourceMinerForDiscoverer,
-            InterArrivalMiner,
-            GatewayProbabilitiesMiner,
-            TasksProcessor
-        ])
-        parameters_extraction_pipeline.execute()
+        time_table, resource_pool, resource_table = mine_resources_with_resource_table(self.log_train, self.settings)
 
-        self.process_stats = self.process_stats.merge(
-            output.resource_table[['resource', 'role']], on='resource', how='left')
+        log_train_df = pd.DataFrame(self.log_train.data)
+        arrival_rate = mine_inter_arrival(self.process_graph, log_train_df, self.settings)
 
-        num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
-        start_time = (pd.DataFrame(self.log_test).start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+        bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
+        bpmn_graph = BPMNGraph.from_bpmn_path(Path(bpmn_path))
+        traces_raw = self.log_train.get_raw_traces()
+        sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
+
+        time_delta = log_train_df['end_timestamp'] - log_train_df['start_timestamp']
+        time_delta_in_seconds = list(map(lambda x: x.total_seconds(), time_delta))
+        log_train_df['processing_time'] = time_delta_in_seconds
+        self.process_stats = log_train_df.merge(resource_table[['resource', 'role']],
+                                                left_on='user', right_on='resource', how='left')
+        elements_data = process_tasks(self.process_graph, self.process_stats, resource_pool, self.settings)
+
+        # rewriting the model file
+        num_inst = len(log_train_df.caseid.unique())
+        start_time = log_train_df.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
         parameters = {
             'instances': num_inst,
             'start_time': start_time,
-            'resource_pool': output.resource_pool,
-            'time_table': output.time_table,
-            'arrival_rate': output.arrival_rate,
-            'sequences': output.sequences,
-            'elements_data': output.elements_data
+            'resource_pool': resource_pool,
+            'time_table': time_table,
+            'arrival_rate': arrival_rate,
+            'sequences': sequences,
+            'elements_data': elements_data
         }
         self.parameters = copy.deepcopy(parameters)
 
-        bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
         xml.print_parameters(bpmn_path, bpmn_path, parameters)
 
     @timeit(rec_name='SIMULATION_EVAL')
@@ -266,85 +240,9 @@ class Discoverer:
         key = 'end_timestamp' if one_ts else 'start_timestamp'
         test = pd.DataFrame(test)
         train = pd.DataFrame(train)
-        self.log_test = (test.sort_values(key, ascending=True)
-                         .reset_index(drop=True))
+        self.log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
         self.log_train = copy.deepcopy(self.log)
-        self.log_train.set_data(train.sort_values(key, ascending=True)
-                                .reset_index(drop=True).to_dict('records'))
-
-
-# Parameters Extraction Implementations: For Discoverer
-
-@dataclass
-class ParameterExtractionInputForDiscoverer:
-    log: types.SimpleNamespace
-    bpmn: Optional[BpmnReader] = None
-    process_graph: Optional[DiGraph] = None
-    settings: Optional[Configuration] = None
-
-
-class LogReplayerForDiscoverer(Operator):
-    input: ParameterExtractionInputForDiscoverer
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInputForDiscoverer, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        print_step('Log Replayer')
-        replayer = LogReplayer(self.input.process_graph, self.input.log.get_traces(), self.input.settings,
-                               msg='reading conformant training traces')
-        self.output.process_stats = replayer.process_stats
-        self.output.conformant_traces = replayer.conformant_traces
-
-
-class ResourceMinerForDiscoverer(Operator):
-    input: ParameterExtractionInputForDiscoverer
-    output: ParameterExtractionOutput
-
-    def __init__(self, input: ParameterExtractionInputForDiscoverer, output: ParameterExtractionOutput):
-        self.input = input
-        self.output = output
-        self._execute()
-
-    def _execute(self):
-        """Analysing resource pool LV917 or 247"""
-
-        def create_resource_pool(resource_table, table_name) -> list:
-            """Creates resource pools and associate them the default timetable in BIMP format"""
-            resource_pool = [{'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '20', 'costxhour': '20',
-                              'timetable_id': table_name['arrival']}]
-            data = sorted(resource_table, key=lambda x: x['role'])
-            for key, group in itertools.groupby(data, key=lambda x: x['role']):
-                res_group = [x['resource'] for x in list(group)]
-                r_pool_size = str(len(res_group))
-                name = (table_name['resources'] if 'resources' in table_name.keys() else table_name[key])
-                resource_pool.append(
-                    {'id': sup.gen_id(), 'name': key, 'total_amount': r_pool_size, 'costxhour': '20',
-                     'timetable_id': name})
-            return resource_pool
-
-        print_step('Resource Miner')
-
-        res_analyzer = ResourcePoolAnalyser(self.input.log, sim_threshold=self.input.settings.rp_similarity)
-        ttcreator = TimeTablesCreator(self.input.settings)
-        args = {'res_cal_met': self.input.settings.res_cal_met,
-                'arr_cal_met': self.input.settings.arr_cal_met,
-                'resource_table': res_analyzer.resource_table}
-
-        if not isinstance(args['res_cal_met'], CalculationMethod):
-            args['res_cal_met'] = self.input.settings.res_cal_met
-        if not isinstance(args['arr_cal_met'], CalculationMethod):
-            args['arr_cal_met'] = self.input.settings.arr_cal_met
-
-        ttcreator.create_timetables(args)
-        resource_pool = create_resource_pool(res_analyzer.resource_table, ttcreator.res_ttable_name)
-        self.output.resource_pool = resource_pool
-        self.output.time_table = ttcreator.time_table
-
-        # Adding role to process stats
-        resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
-        self.output.process_stats = self.output.process_stats.merge(resource_table, on='resource', how='left')
-        self.output.resource_table = resource_table
+        self.log_train.set_data(train
+                                .sort_values(key, ascending=True)
+                                .reset_index(drop=True)
+                                .to_dict('records'))

@@ -31,7 +31,7 @@ class SimilarityEvaluator():
         This class evaluates the similarity of two event-logs
      """
 
-    def __init__(self, log_data, simulation_data, settings: Configuration, max_cases=500, dtype='log'):
+    def __init__(self, log_data: pd.DataFrame, simulation_data, settings: Configuration, max_cases=500, dtype='log'):
         self.dtype = dtype
         self.log_data = copy.deepcopy(log_data)
         self.simulation_data = copy.deepcopy(simulation_data)
