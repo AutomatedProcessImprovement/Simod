@@ -1,7 +1,6 @@
 import copy
 import os
 import types
-from operator import itemgetter
 from pathlib import Path
 
 import pandas as pd
@@ -10,7 +9,6 @@ from lxml import etree
 from simod.stochastic_miner_datatypes import BPMNGraph
 from utils import support as sup
 
-from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_asset, print_section
 from .common_routines import simulate, mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks
@@ -126,43 +124,6 @@ class Discoverer:
         print_section("Simulation")
         self.sim_values = simulate(self.settings, self.process_stats, self.log_test)
 
-    @staticmethod
-    def evaluate_logs(args):
-        def evaluate(settings: Configuration, process_stats, sim_log):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            # print('Reading repetition:', (rep+1), sep=' ')
-            rep = (sim_log.iloc[0].run_num)
-            sim_values = list()
-            evaluator = sim.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
-            metrics = [settings.sim_metric]
-            if settings.add_metrics:
-                metrics = list(set(settings.add_metrics + metrics))
-            for metric in metrics:
-                evaluator.measure_distance(metric)
-                sim_values.append({**{'run_num': rep}, **evaluator.similarity})
-            return sim_values
-
-        return evaluate(*args)
-
-    @staticmethod
-    def get_traces(data, one_timestamp):
-        """
-        returns the data splitted by caseid and ordered by start_timestamp
-        """
-        cases = list(set([x['caseid'] for x in data]))
-        traces = list()
-        for case in cases:
-            order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
-            trace = sorted(
-                list(filter(lambda x: (x['caseid'] == case), data)),
-                key=itemgetter(order_key))
-            traces.append(trace)
-        return traces
-
     def mannage_results(self) -> None:
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = self.settings.output
@@ -211,10 +172,6 @@ class Discoverer:
             best_params['arr_support'] = str(settings.arr_support)
             best_params['arr_confidence'] = str(settings.arr_confidence)
         return best_params
-
-    # =============================================================================
-    # Support methods
-    # =============================================================================
 
     def split_timeline(self, size: float, one_ts: bool) -> None:
         """
