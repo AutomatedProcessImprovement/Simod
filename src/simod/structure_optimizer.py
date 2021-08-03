@@ -158,24 +158,9 @@ class StructureOptimizer:
         if isinstance(settings, dict):
             settings = Configuration(**settings)
 
-        bpmn, process_graph = structure
+        _, process_graph = structure
         num_inst = len(self.log_valdn.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
         start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
-
-        # settings.pdef_method = PDFMethod.DEFAULT
-        # input = ParameterExtractionInput(
-        #     log_traces=self.log_train.get_traces(), bpmn=bpmn, process_graph=process_graph, settings=settings)
-        # output = ParameterExtractionOutput()
-        # output.process_stats['role'] = 'SYSTEM'
-        # structure_parameters_miner = Pipeline(input=input, output=output)
-        # structure_parameters_miner.set_pipeline([
-        #     LogReplayerForStructureOptimizer,
-        #     ResourceMinerForStructureOptimizer,
-        #     InterArrivalMiner,
-        #     GatewayProbabilitiesMiner,  # TODO: refactor this
-        #     TasksProcessor
-        # ])
-        # structure_parameters_miner.execute()
 
         model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
         structure_parameters = extract_structure_parameters(

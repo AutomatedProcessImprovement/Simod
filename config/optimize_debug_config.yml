@@ -1,6 +1,5 @@
 log_path: inputs/PurchasingExample.xes
 mining_alg: sm3
-new_replayer: false
 input: inputs
 output: true
 exec_mode: optimizer

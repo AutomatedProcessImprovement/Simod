@@ -5,7 +5,6 @@ import click
 from simod.configuration import Configuration, config_data_from_file
 from simod.discoverer import Discoverer
 from simod.optimizer import Optimizer
-from simod.stochastic_miner import StructureOptimizerForStochasticProcessMiner
 
 
 @click.group()
@@ -56,12 +55,7 @@ def optimize(ctx, config_path):
     time_optimizer_config.fill_in_derived_fields()
 
     optimizer = Optimizer({'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
-    if global_config.new_replayer:
-        optimizer.execute_pipeline(
-            structure_optimizer=StructureOptimizerForStochasticProcessMiner,
-            discover_model=global_config.model_path is None)
-    else:
-        optimizer.execute_pipeline()
+    optimizer.execute_pipeline(discover_model=global_config.model_path is None)
 
 
 if __name__ == "__main__":

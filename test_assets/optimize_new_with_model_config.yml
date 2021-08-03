@@ -1,7 +1,6 @@
 log_path: inputs/PurchasingExample.xes
 model_path: inputs/PurchasingExample.bpmn
 mining_alg: sm3
-new_replayer: true
 input: inputs
 output: true
 exec_mode: optimizer

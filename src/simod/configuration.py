@@ -274,7 +274,6 @@ class Configuration:
     max_eval_t: Optional[int] = None
     res_sup_dis: Optional[List[float]] = None
     res_con_dis: Optional[List[float]] = None
-    new_replayer: bool = False
 
     def fill_in_derived_fields(self):
         if self.log_path:
