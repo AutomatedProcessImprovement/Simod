@@ -20,6 +20,8 @@ class TestCLICommands(unittest.TestCase):
             self.fail(f'Failed with {e}')
 
         print(result.output)
+        print(result.exc_info)
+        print(result.exception)
         self.assertTrue(result.exit_code == 0)
         self.assertTrue('Error:' not in result.output)
         self.assertTrue('Event log could not be imported' not in result.output)
@@ -34,6 +36,8 @@ class TestCLICommands(unittest.TestCase):
             self.fail(f'Failed with {e}')
 
         print(result.output)
+        print(result.exc_info)
+        print(result.exception)
         self.assertTrue(result.exit_code == 0)
         self.assertTrue('Error:' not in result.output)
         self.assertTrue('Event log could not be imported' not in result.output)
@@ -48,6 +52,8 @@ class TestCLICommands(unittest.TestCase):
             self.fail(f'Failed with {e}')
 
         print(result.output)
+        print(result.exc_info)
+        print(result.exception)
         # self.assertTrue(result.exit_code == 0)
         self.assertTrue('Output folder is at' in result.output)
         self.assertTrue('Event log could not be imported' not in result.output)
@@ -62,6 +68,8 @@ class TestCLICommands(unittest.TestCase):
             self.fail(f'Failed with {e}')
 
         print(result.output)
+        print(result.exc_info)
+        print(result.exception)
         # self.assertTrue(result.exit_code == 0)
         self.assertTrue('Output folder is at' in result.output)
         self.assertTrue('Event log could not be imported' not in result.output)
