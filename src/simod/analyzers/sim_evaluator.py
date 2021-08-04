@@ -120,7 +120,7 @@ class SimilarityEvaluator():
     # Timed string distance
     # =============================================================================
 
-    def _evaluate_seq_distance(self, log_data, simulation_data, metric):
+    def _evaluate_seq_distance(self, log_data, simulation_data, metric: Metric):
         """
         Timed string distance calculation
 
@@ -172,13 +172,13 @@ class SimilarityEvaluator():
                      r) for r in ranges]
             p = pool.map_async(self._compare_traces, args)
             if self.verbose:
-                pbar_async(p, 'evaluating ' + metric + ':')
+                pbar_async(p, f'evaluating {metric}:')
             pool.close()
             # Save results
             df_matrix = pd.concat(list(p.get()), axis=0, ignore_index=True)
         df_matrix.sort_values(by=['i', 'j'], inplace=True)
         df_matrix = df_matrix.reset_index().set_index(['i', 'j'])
-        if metric == 'dl_mae':
+        if metric == Metric.DL_MAE:
             dl_matrix = df_matrix[['dl_distance']].unstack().to_numpy()
             mae_matrix = df_matrix[['mae_distance']].unstack().to_numpy()
             # MAE normalized
@@ -198,7 +198,7 @@ class SimilarityEvaluator():
                                    sim_order=simulation_data[idx]['profile'],
                                    log_order=log_data[idy]['profile'],
                                    sim_score=(cost_matrix[idx][idy]
-                                              if metric == 'mae' else
+                                              if metric == Metric.MAE else
                                               (1 - (cost_matrix[idx][idy])))
                                    )
                               )

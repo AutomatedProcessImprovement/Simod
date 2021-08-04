@@ -270,7 +270,7 @@ class TimesOptimizer():
                      **data})
         else:
             response['status'] = status
-            measurements.append({'similarity': 0, 'sim_metric': 'day_hour_emd', 'status': response['status'], **data})
+            measurements.append({'similarity': 0, 'sim_metric': Metric.DAY_HOUR_EMD, 'status': response['status'], **data})
         if os.path.getsize(self.file_name) > 0:
             sup.create_csv_file(measurements, self.file_name, mode='a')
         else:

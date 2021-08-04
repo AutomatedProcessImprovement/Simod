@@ -317,7 +317,7 @@ class StructureOptimizer:
         else:
             response['status'] = status
             measurements.append({**{'similarity': 0,
-                                    'sim_metric': 'dl',
+                                    'sim_metric': Metric.DL,
                                     'status': response['status']},
                                  **data})
         if os.path.getsize(self.file_name) > 0:
