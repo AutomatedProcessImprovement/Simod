@@ -279,13 +279,13 @@ def evaluate_logs(args):
 
 
 def evaluate_logs_with_add_metrics(args):
-    def evaluate(settings, process_stats, sim_log):
+    def evaluate(settings: Configuration, process_stats: pd.DataFrame, sim_log: pd.DataFrame):
         rep = sim_log.iloc[0].run_num
         sim_values = list()
         evaluator = sim_evaluator.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
-        metrics = [settings['sim_metric']]
-        if 'add_metrics' in settings.keys():
-            metrics = list(set(list(settings['add_metrics']) + metrics))
+        metrics = [settings.sim_metric]
+        if settings.add_metrics:
+            metrics = list(set(list(settings.add_metrics) + metrics))
         for metric in metrics:
             evaluator.measure_distance(metric)
             sim_values.append({**{'run_num': rep}, **evaluator.similarity})
