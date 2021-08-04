@@ -33,8 +33,8 @@ class Optimizer:
         self.log = types.SimpleNamespace()
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
-        if not os.path.exists('outputs'):
-            os.makedirs('outputs')
+        if not os.path.exists(self.settings_global.output.parent):
+            os.makedirs(self.settings_global.output.parent)
 
     def execute_pipeline(self, structure_optimizer=StructureOptimizer, discover_model: bool = True) -> None:
         print_section('Log Parsing')
@@ -139,7 +139,7 @@ class Optimizer:
         return model_path
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
-        output_path = os.path.join('outputs', sup.folder_id())
+        output_path = os.path.join(self.settings_global.output.parent, sup.folder_id())
         if not os.path.exists(output_path):
             os.makedirs(output_path)
             os.makedirs(os.path.join(output_path, 'sim_data'))
