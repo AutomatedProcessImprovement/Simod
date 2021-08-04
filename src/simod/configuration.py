@@ -11,37 +11,37 @@ QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
 BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
 
 
-class AlgorithmManagement(Enum):
-    REPAIR = auto()
-    REPLACEMENT = auto()
-    REMOVAL = auto()
-
-    @classmethod
-    def from_str(cls, value: Union[str, List[str]]) -> 'Union[AlgorithmManagement, List[AlgorithmManagement]]':
-        if isinstance(value, str):
-            return AlgorithmManagement._from_str(value)
-        elif isinstance(value, list):
-            return [AlgorithmManagement._from_str(v) for v in value]
-
-    @classmethod
-    def _from_str(cls, value: str) -> 'AlgorithmManagement':
-        if value.lower() == 'repair':
-            return cls.REPAIR
-        elif value.lower() == 'removal':
-            return cls.REMOVAL
-        elif value.lower() == 'replacement':
-            return cls.REPLACEMENT
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-    def __str__(self):
-        if self == AlgorithmManagement.REPAIR:
-            return 'repair'
-        elif self == AlgorithmManagement.REMOVAL:
-            return 'removal'
-        elif self == AlgorithmManagement.REPLACEMENT:
-            return 'replacement'
-        return f'Unknown AlgorithmManagement {str(self)}'
+# class AlgorithmManagement(Enum):
+#     REPAIR = auto()
+#     REPLACEMENT = auto()
+#     REMOVAL = auto()
+#
+#     @classmethod
+#     def from_str(cls, value: Union[str, List[str]]) -> 'Union[AlgorithmManagement, List[AlgorithmManagement]]':
+#         if isinstance(value, str):
+#             return AlgorithmManagement._from_str(value)
+#         elif isinstance(value, list):
+#             return [AlgorithmManagement._from_str(v) for v in value]
+#
+#     @classmethod
+#     def _from_str(cls, value: str) -> 'AlgorithmManagement':
+#         if value.lower() == 'repair':
+#             return cls.REPAIR
+#         elif value.lower() == 'removal':
+#             return cls.REMOVAL
+#         elif value.lower() == 'replacement':
+#             return cls.REPLACEMENT
+#         else:
+#             raise ValueError(f'Unknown value {value}')
+#
+#     def __str__(self):
+#         if self == AlgorithmManagement.REPAIR:
+#             return 'repair'
+#         elif self == AlgorithmManagement.REMOVAL:
+#             return 'removal'
+#         elif self == AlgorithmManagement.REPLACEMENT:
+#             return 'replacement'
+#         return f'Unknown AlgorithmManagement {str(self)}'
 
 
 class MiningAlgorithm(Enum):
@@ -232,7 +232,7 @@ class Configuration:
     config_path: Optional[Path] = None
     input: Optional[Path] = None
     file: Optional[Path] = None
-    alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
+    # alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
     output: Path = Path(os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id()))
     sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
     sm2_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
@@ -311,9 +311,9 @@ def config_data_from_file(config_path) -> dict:
         if mining_alg:
             data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
 
-        alg_manag = data.get('alg_manag')
-        if alg_manag:
-            data['alg_manag'] = AlgorithmManagement.from_str(alg_manag)
+        # alg_manag = data.get('alg_manag')
+        # if alg_manag:
+        #     data['alg_manag'] = AlgorithmManagement.from_str(alg_manag)
 
         gate_management = data.get('gate_management')
         if gate_management:

@@ -2,39 +2,6 @@ from operator import itemgetter
 
 import utils.support as sup
 
-from .traces_alignment import TracesAligner
-from .traces_replacement import replacement
-from ..configuration import Configuration, AlgorithmManagement
-from ..extraction.log_replayer import LogReplayer
-
-
-def evaluate_alignment(process_graph, log, settings: Configuration):
-    traces = log.get_traces()
-    test_replayer = LogReplayer(process_graph, traces, settings, msg='evaluating train partition conformance:')
-    conformant = get_traces(test_replayer.conformant_traces, False)
-    not_conformant = get_traces(test_replayer.not_conformant_traces, False)
-    # ------conformance percentage before repair------------------
-    print_stats(log, conformant, traces)
-    if settings.alg_manag is AlgorithmManagement.REPLACEMENT:
-        log.set_data(replacement(conformant, not_conformant, log, settings))
-    elif settings.alg_manag is AlgorithmManagement.REPAIR:
-        repaired_event_log = list()
-        [repaired_event_log.extend(x) for x in conformant]
-        trace_aligner = TracesAligner(log, not_conformant, settings)
-        repaired_event_log.extend(trace_aligner.aligned_traces)
-        log.set_data(repaired_event_log)
-    elif settings.alg_manag is AlgorithmManagement.REMOVAL:
-        ref_conformant = list()
-        for trace in conformant:
-            ref_conformant.extend(trace)
-        log.set_data(ref_conformant)
-    # ------conformance percentage after repair------------------
-    aligned_traces = log.get_traces()
-    test_replayer = LogReplayer(process_graph, aligned_traces, settings,
-                                msg='evaluating conformance after ' + settings.alg_manag.__str__() + ':')
-    conformant = get_traces(test_replayer.conformant_traces, False)
-    print_stats(log, conformant, aligned_traces)
-
 
 def print_stats(log, conformant, traces):
     print('complete traces:', str(len(traces)),

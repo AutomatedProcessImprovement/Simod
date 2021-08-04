@@ -130,7 +130,7 @@ class Discoverer:
     @staticmethod
     def save_times(times, settings: Configuration):
         times = [{**{'output': settings.output}, **times}]
-        log_file = os.path.join('outputs', 'execution_times.csv')
+        log_file = os.path.join(settings.output.parent, 'execution_times.csv')
         if not os.path.exists(log_file):
             open(log_file, 'w').close()
         if os.path.getsize(log_file) > 0:
@@ -150,7 +150,7 @@ class Discoverer:
     @staticmethod
     def filter_dic_params(settings: Configuration):
         best_params = dict()
-        best_params['alg_manag'] = str(settings.alg_manag)
+        # best_params['alg_manag'] = str(settings.alg_manag)
         best_params['gate_management'] = str(settings.gate_management)
         best_params['rp_similarity'] = str(settings.rp_similarity)
         # best structure mining parameters

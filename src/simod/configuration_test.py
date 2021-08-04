@@ -1,27 +1,10 @@
 import unittest
 
-from simod.configuration import AlgorithmManagement, MiningAlgorithm, GateManagement, CalculationMethod, DataType, \
+from simod.configuration import MiningAlgorithm, GateManagement, CalculationMethod, DataType, \
     PDFMethod, Metric, ExecutionMode
 
 
 class TestConfigurationFromStringConversion(unittest.TestCase):
-    def test_AlgorithmManagement_from_str(self):
-        args = {
-            'repair': AlgorithmManagement.REPAIR,
-            'removal': AlgorithmManagement.REMOVAL,
-            'replacement': AlgorithmManagement.REPLACEMENT,
-            'REPAIR': AlgorithmManagement.REPAIR,
-            'REMOVAL': AlgorithmManagement.REMOVAL,
-            'REPLACEMENT': AlgorithmManagement.REPLACEMENT,
-        }
-
-        for arg in args:
-            result = AlgorithmManagement.from_str(arg)
-            self.assertTrue(result == args[arg])
-
-        result = AlgorithmManagement.from_str(list(args.keys()))
-        self.assertTrue(result == list(list(args.values())))
-
     def test_MiningAlgorithm_from_str(self):
         args = {
             'sm1': MiningAlgorithm.SM1,
@@ -143,17 +126,6 @@ class TestConfigurationFromStringConversion(unittest.TestCase):
 
 
 class TestConfigurationStringRepresentation(unittest.TestCase):
-    def test_AlgorithmManagement_str(self):
-        args = {
-            AlgorithmManagement.REPAIR: "repair",
-            AlgorithmManagement.REPLACEMENT: "replacement",
-            AlgorithmManagement.REMOVAL: "removal",
-        }
-
-        for arg in args:
-            result = str(arg)
-            self.assertTrue(result == args[arg])
-
     def test_GateManagement_str(self):
         args = {
             GateManagement.DISCOVERY: "discovery",

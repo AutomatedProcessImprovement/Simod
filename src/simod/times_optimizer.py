@@ -244,8 +244,7 @@ class TimesOptimizer():
     def _define_response(self, settings, status, sim_values, **kwargs) -> None:
         response = dict()
         measurements = list()
-        data = {'alg_manag': settings['alg_manag'],
-                'rp_similarity': settings['rp_similarity'],
+        data = {'rp_similarity': settings['rp_similarity'],
                 'gate_management': settings['gate_management'],
                 'output': settings['output']}
         # Miner parms

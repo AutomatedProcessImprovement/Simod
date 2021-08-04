@@ -17,8 +17,6 @@ structure_optimizer:
   eta:
     - 0.0
     - 1.0
-  alg_manag:
-    - removal
   gate_management:
     - equiprobable
 time_optimizer:

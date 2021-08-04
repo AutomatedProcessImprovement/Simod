@@ -86,8 +86,6 @@ class Optimizer:
 
         best_parms = strctr_optimizer.best_parms
 
-        self.settings_global.alg_manag = self.settings_structure.alg_manag[best_parms['alg_manag']]
-        self.best_params['alg_manag'] = self.settings_global.alg_manag
         self.settings_global.gate_management = self.settings_structure.gate_management[
             best_parms['gate_management']]
         self.best_params['gate_management'] = self.settings_global.gate_management

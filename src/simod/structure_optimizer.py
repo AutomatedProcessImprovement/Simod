@@ -17,13 +17,10 @@ from simod.common_routines import mine_resources, extract_structure_parameters
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_section, print_message, print_step
+from .cli_formatter import print_section, print_message
 from .common_routines import execute_simulator
-from .configuration import Configuration, MiningAlgorithm, AlgorithmManagement, Metric
+from .configuration import Configuration, MiningAlgorithm, Metric
 from .decorators import timeit, safe_exec_with_values_and_status
-from .extraction.log_replayer import LogReplayer
-from .parameter_extraction import Operator
-from .parameter_extraction import ParameterExtractionInput, ParameterExtractionOutput
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
@@ -59,8 +56,7 @@ class StructureOptimizer:
 
     @staticmethod
     def define_search_space(settings: Configuration):
-        var_dim = {'alg_manag': hp.choice('alg_manag', settings.alg_manag),
-                   'gate_management': hp.choice('gate_management', settings.gate_management)}
+        var_dim = {'gate_management': hp.choice('gate_management', settings.gate_management)}
         if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             var_dim['epsilon'] = hp.uniform('epsilon', settings.epsilon[0], settings.epsilon[1])
             var_dim['eta'] = hp.uniform('eta', settings.eta[0], settings.eta[1])
@@ -131,9 +127,6 @@ class StructureOptimizer:
     def _temp_path_redef(self, settings, **kwargs) -> None:
         # Paths redefinition
         settings['output'] = os.path.join(self.temp_output, sup.folder_id())
-        if settings['alg_manag'] is AlgorithmManagement.REPAIR:
-            settings['aligninfo'] = os.path.join(settings['output'], 'CaseTypeAlignmentResults.csv')
-            settings['aligntype'] = os.path.join(settings['output'], 'AlignmentStatistics.csv')
         # Output folder creation
         if not os.path.exists(settings['output']):
             os.makedirs(settings['output'])
@@ -290,8 +283,7 @@ class StructureOptimizer:
     def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()
         measurements = list()
-        data = {'alg_manag': settings['alg_manag'], 'gate_management': settings['gate_management'],
-                'output': settings['output']}
+        data = {'gate_management': settings['gate_management'], 'output': settings['output']}
         # Miner parms
         if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             data['epsilon'] = settings['epsilon']
@@ -385,40 +377,3 @@ class StructureOptimizer:
             scases = random.sample(cases, sample_sz)
             train = train[train.caseid.isin(scases)]
         return train
-
-
-# Parameters Extraction Implementations: For Structure Optimizer
-
-# class LogReplayerForStructureOptimizer(Operator):
-#     input: ParameterExtractionInput
-#     output: ParameterExtractionOutput
-#
-#     def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-#         self.input = input
-#         self.output = output
-#         self._execute()
-#
-#     def _execute(self):
-#         print_step('Log Replayer')
-#         replayer = LogReplayer(self.input.process_graph, self.input.log_traces, self.input.settings,
-#                                msg='reading conformant training traces')
-#         self.output.process_stats = replayer.process_stats
-#         self.output.process_stats['role'] = 'SYSTEM'
-#         self.output.conformant_traces = replayer.conformant_traces
-
-
-# class ResourceMinerForStructureOptimizer(Operator):
-#     input: ParameterExtractionInput
-#     output: ParameterExtractionOutput
-#
-#     def __init__(self, input: ParameterExtractionInput, output: ParameterExtractionOutput):
-#         self.input = input
-#         self.output = output
-#         self._execute()
-#
-#     def _execute(self):
-#         """Analysing resource pool LV917 or 247"""
-#         print_step('Resource Miner')
-#         parameters = mine_resources(self.input.settings)
-#         self.output.resource_pool = parameters['resource_pool']
-#         self.output.time_table = parameters['time_table']

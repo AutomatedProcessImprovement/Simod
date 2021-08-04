@@ -1,6 +1,5 @@
 log_path: inputs/PurchasingExample.xes
 mining_alg: sm3
-alg_manag: repair
 arr_confidence: 9.2
 arr_support: 0.098
 epsilon: 0.27747592754346484
