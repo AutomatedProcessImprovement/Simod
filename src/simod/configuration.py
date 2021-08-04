@@ -347,6 +347,10 @@ def config_data_from_file(config_path) -> dict:
         if sim_metric:
             data['sim_metric'] = Metric.from_str(sim_metric)
 
+        add_metrics = data.get('add_metrics')
+        if add_metrics:
+            data['add_metrics'] = Metric.from_str(add_metrics)
+
     with open(config_path, 'r') as f:
         config_data = yaml.load(f, Loader=yaml.FullLoader)
 

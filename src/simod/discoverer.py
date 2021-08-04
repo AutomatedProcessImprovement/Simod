@@ -11,7 +11,7 @@ from utils import support as sup
 
 from .cli_formatter import print_asset, print_section
 from .common_routines import simulate, mine_resources_with_resource_table, \
-    mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks
+    mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks, evaluate_logs_with_add_metrics
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
 from .readers import log_reader as lr
@@ -119,7 +119,8 @@ class Discoverer:
     @safe_exec
     def simulate(self, **kwargs) -> None:
         print_section("Simulation")
-        self.sim_values = simulate(self.settings, self.process_stats, self.log_test)
+        self.sim_values = simulate(self.settings, self.process_stats, self.log_test,
+                                   evaluate_fn=evaluate_logs_with_add_metrics)
 
     def mannage_results(self) -> None:
         self.sim_values = pd.DataFrame.from_records(self.sim_values)

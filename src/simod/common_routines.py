@@ -5,7 +5,7 @@ import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Callable
 
 import pandas as pd
 from networkx import DiGraph
@@ -149,7 +149,10 @@ def extract_process_graph(model_path) -> DiGraph:
     return process_structure.create_process_structure(bpmn)
 
 
-def simulate(settings: Configuration, process_stats: pd.DataFrame, log_test):
+def simulate(settings: Configuration, process_stats: pd.DataFrame, log_test, evaluate_fn: Callable = None):
+    if evaluate_fn is None:
+        evaluate_fn = evaluate_logs
+
     # NOTE: from Discoverer
     def pbar_async(p, msg):
         pbar = tqdm(total=reps, desc=msg)
@@ -184,10 +187,10 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_test):
     args = [(settings, process_stats, log) for log in p.get()]
     if len(log_test.caseid.unique()) > 1000:
         pool.close()
-        results = [evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+        results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results:')]
         sim_values = list(itertools.chain(*results))
     else:
-        p = pool.map_async(evaluate_logs, args)
+        p = pool.map_async(evaluate_fn, args)
         pbar_async(p, 'evaluating results:')
         pool.close()
         sim_values = list(itertools.chain(*p.get()))
@@ -270,6 +273,22 @@ def evaluate_logs(args):
         evaluator = sim_evaluator.SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
         evaluator.measure_distance(Metric.DL)
         sim_values.append({**{'run_num': rep}, **evaluator.similarity})
+        return sim_values
+
+    return evaluate(*args)
+
+
+def evaluate_logs_with_add_metrics(args):
+    def evaluate(settings, process_stats, sim_log):
+        rep = sim_log.iloc[0].run_num
+        sim_values = list()
+        evaluator = sim_evaluator.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
+        metrics = [settings['sim_metric']]
+        if 'add_metrics' in settings.keys():
+            metrics = list(set(list(settings['add_metrics']) + metrics))
+        for metric in metrics:
+            evaluator.measure_distance(metric)
+            sim_values.append({**{'run_num': rep}, **evaluator.similarity})
         return sim_values
 
     return evaluate(*args)

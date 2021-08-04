@@ -9,7 +9,8 @@ import utils.support as sup
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_step, print_asset
-from .common_routines import extract_structure_parameters, extract_process_graph, simulate
+from .common_routines import extract_structure_parameters, extract_process_graph, simulate, \
+    evaluate_logs_with_add_metrics
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import timeit
 from .readers import log_reader as lr
@@ -149,7 +150,8 @@ class Optimizer:
         self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
         print_section("Simulation")
-        self.sim_values = simulate(self.settings_global, self.process_stats, self.log_test)
+        self.sim_values = simulate(self.settings_global, self.process_stats, self.log_test,
+                                   evaluate_fn=evaluate_logs_with_add_metrics)
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
         self.sim_values.to_csv(os.path.join(output_path, output_file), index=False)
