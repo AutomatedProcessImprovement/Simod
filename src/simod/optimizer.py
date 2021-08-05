@@ -61,7 +61,7 @@ class Optimizer:
             strctr_optimizer_temp_output = strctr_optimizer.temp_output
             model_path = os.path.join(strctr_optimizer.best_output, self.settings_global.project_name + '.bpmn')
         else:
-            model_path = self._extract_parameters_and_rewrite_mode()
+            model_path = self._extract_parameters_and_rewrite_model()
 
         print_section('Times Optimization')
         # mining times
@@ -116,7 +116,7 @@ class Optimizer:
             self.best_params['arr_support'] = (times_optimizer.best_parms['arr_support'])
             self.best_params['arr_confidence'] = (times_optimizer.best_parms['arr_confidence'])
 
-    def _extract_parameters_and_rewrite_mode(self):
+    def _extract_parameters_and_rewrite_model(self):
         # extracting parameters
         model_path = self.settings_global.model_path
         process_graph = extract_process_graph(model_path)

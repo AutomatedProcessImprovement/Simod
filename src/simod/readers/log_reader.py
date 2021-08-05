@@ -4,6 +4,8 @@ import os
 import zipfile as zf
 from datetime import timedelta
 from operator import itemgetter
+from pathlib import Path
+from typing import Union
 
 import pandas as pd
 import pm4py
@@ -18,9 +20,11 @@ class LogReader(object):
     expected format .xes or .csv
     """
 
-    def __init__(self, input, settings: ReadOptions, verbose=True):
-        """constructor"""
-        self.input = input
+    def __init__(self, input: Union[Path, str], settings: ReadOptions, verbose=True):
+        if isinstance(input, Path):
+            self.input = input.absolute().__str__()
+        else:
+            self.input = input
         self.file_name, self.file_extension = self.define_ftype()
 
         self.timeformat = settings.timeformat
