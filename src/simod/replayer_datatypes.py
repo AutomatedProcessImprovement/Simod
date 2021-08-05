@@ -10,9 +10,6 @@ from pathlib import Path
 from typing import List
 
 import pytz
-
-
-# BPMN Graph
 from simod.configuration import BPMN_NAMESPACE_URI
 
 

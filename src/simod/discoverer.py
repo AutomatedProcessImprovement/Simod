@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import xmltodict as xtd
 from lxml import etree
-from simod.stochastic_miner_datatypes import BPMNGraph
+from simod.replayer_datatypes import BPMNGraph
 from utils import support as sup
 
 from .cli_formatter import print_asset, print_section

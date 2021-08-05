@@ -26,7 +26,7 @@ from .extraction.tasks_evaluator import TaskEvaluator
 from .readers import bpmn_reader
 from .readers import process_structure
 from .readers.log_reader import LogReader
-from .stochastic_miner_datatypes import BPMNGraph
+from .replayer_datatypes import BPMNGraph
 
 
 # NOTE: This module needs better name and possible refactoring. At the moment it contains API, which is suitable
