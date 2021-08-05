@@ -585,6 +585,52 @@ class BPMNGraph:
                 gateways_branching[e_id] = flow_arc_probability
         return gateways_branching
 
+    def compute_branching_probability_alternative(self, flow_arcs_frequency):
+        gateways_branching = dict()
+
+        gateways = filter(lambda e_id: self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
+            self.element_info[e_id].outgoing_flows) > 1, self.element_info)
+
+        for e_id in self.element_info:
+            if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
+                    self.element_info[e_id].outgoing_flows) > 1:
+                flow_arcs_probability, total_frequency = self._calculate_arcs_probabilities(e_id, flow_arcs_frequency)
+                if 0 in flow_arcs_probability.values():
+                    self._recalculate_arcs_probabilities(flow_arcs_frequency, flow_arcs_probability, total_frequency)
+                gateways_branching[e_id] = flow_arcs_probability
+        return gateways_branching
+
+    def _recalculate_arcs_probabilities(self, flow_arcs_frequency, flow_arcs_probability, total_frequency):
+        # recalculating probabilities because of missing arcs
+        number_of_missing_arcs = list(flow_arcs_probability.values()).count(0)
+        number_of_valid_arcs = len(flow_arcs_probability) - number_of_missing_arcs
+        if number_of_valid_arcs == 0:
+            for flow_id in flow_arcs_probability:
+                flow_arcs_probability[flow_id] = 0.01
+        else:
+            average_frequency_to_subtract = 1 / number_of_valid_arcs
+            for flow_id in flow_arcs_probability:
+                if flow_arcs_probability[flow_id] == 0:
+                    probability = 1 / total_frequency
+                else:
+                    probability = (flow_arcs_frequency[flow_id] - average_frequency_to_subtract) / total_frequency
+                flow_arcs_probability[flow_id] = probability
+
+    def _calculate_arcs_probabilities(self, e_id, flow_arcs_frequency):
+        total_frequency = 0
+        for flow_id in self.element_info[e_id].outgoing_flows:
+            frequency = flow_arcs_frequency.get(flow_id)
+            total_frequency += frequency if frequency else 0
+        flow_arcs_probability = dict()
+        for flow_id in self.element_info[e_id].outgoing_flows:
+            frequency = flow_arcs_frequency.get(flow_id)
+            if frequency:
+                probability = frequency / total_frequency
+            else:
+                probability = 0
+            flow_arcs_probability[flow_id] = probability
+        return flow_arcs_probability, total_frequency
+
     def _find_next(self, f_arc, p_state, enabled_tasks, to_execute):
         p_state.tokens[f_arc] += 1
         p_state.state_mask |= self.arcs_bitset[f_arc]

@@ -5,7 +5,7 @@ import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union, Callable
+from typing import List, Tuple, Callable
 
 import pandas as pd
 from networkx import DiGraph
@@ -21,7 +21,6 @@ from .analyzers import sim_evaluator
 from .cli_formatter import print_step
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
-from .extraction.log_replayer import LogReplayer
 from .extraction.tasks_evaluator import TaskEvaluator
 from .readers import bpmn_reader
 from .readers import process_structure
@@ -100,23 +99,37 @@ def mine_inter_arrival(process_graph: DiGraph, conformant_traces: pd.DataFrame, 
     return inter_evaluator.dist
 
 
+def compute_sequence_flow_frequencies(log_traces_raw: list, bpmn_graph: BPMNGraph):
+    flow_arcs_frequency = dict()
+    for trace in log_traces_raw:
+        task_sequence = list()
+        for event in trace:
+            task_name = event['task']  # original: concept:name
+            state = event['event_type'].lower()  # original: lifecycle:transition
+            if state in ["start", "assign"]:
+                task_sequence.append(task_name)
+        bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
+    return flow_arcs_frequency
+
+
 def mine_gateway_probabilities_stochastic(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
     print_step('Mining gateway probabilities')
-
-    def _compute_sequence_flow_frequencies(log_traces_raw: list, bpmn_graph: BPMNGraph):
-        flow_arcs_frequency = dict()
-        for trace in log_traces_raw:
-            task_sequence = list()
-            for event in trace:
-                task_name = event['task']  # original: concept:name
-                state = event['event_type'].lower()  # original: lifecycle:transition
-                if state in ["start", "assign"]:
-                    task_sequence.append(task_name)
-            bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
-        return flow_arcs_frequency
-
-    arcs_frequencies = _compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
+    arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
     gateways_branching = bpmn_graph.compute_branching_probability(arcs_frequencies)
+
+    sequences = []
+    for gateway_id in gateways_branching:
+        for seqflow_id in gateways_branching[gateway_id]:
+            probability = gateways_branching[gateway_id][seqflow_id]
+            sequences.append({'elementid': seqflow_id, 'prob': probability})
+
+    return sequences
+
+
+def mine_gateway_probabilities_stochastic_alternative(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
+    print_step('Mining gateway probabilities')
+    arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
+    gateways_branching = bpmn_graph.compute_branching_probability_alternative(arcs_frequencies)
 
     sequences = []
     for gateway_id in gateways_branching:
