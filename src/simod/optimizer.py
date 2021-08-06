@@ -8,7 +8,7 @@ import pandas as pd
 import utils.support as sup
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_section, print_step, print_asset, print_subsection
+from .cli_formatter import print_section, print_step, print_asset, print_subsection, print_notice
 from .common_routines import extract_structure_parameters, extract_process_graph, simulate, \
     evaluate_logs_with_add_metrics
 from .configuration import Configuration, MiningAlgorithm
@@ -37,6 +37,7 @@ class Optimizer:
             os.makedirs(self.settings_global.output.parent)
 
     def execute_pipeline(self, discover_model: bool = True) -> None:
+        print_notice(f'Log path: {self.settings_global.log_path}')
         self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)
 
         strctr_optimizer_file_name = None

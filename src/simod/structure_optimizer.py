@@ -17,7 +17,7 @@ from simod.common_routines import mine_resources, extract_structure_parameters
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_section, print_message
+from .cli_formatter import print_message, print_subsection
 from .common_routines import execute_simulator
 from .configuration import Configuration, MiningAlgorithm, Metric
 from .decorators import timeit, safe_exec_with_values_and_status
@@ -73,7 +73,7 @@ class StructureOptimizer:
         self.log_train = copy.deepcopy(self.org_log_train)
 
         def exec_pipeline(trial_stg: Configuration):
-            print_section("Trial")
+            print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
                           f'validation split: {len(pd.DataFrame(self.log_valdn).caseid.unique())}')
             # Vars initialization

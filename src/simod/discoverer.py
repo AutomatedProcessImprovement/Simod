@@ -9,7 +9,7 @@ from lxml import etree
 from simod.replayer_datatypes import BPMNGraph
 from utils import support as sup
 
-from .cli_formatter import print_asset, print_section
+from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import simulate, mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks, evaluate_logs_with_add_metrics
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
@@ -37,6 +37,7 @@ class Discoverer:
         self.output_file = sup.file_id(prefix='SE_')
 
     def execute_pipeline(self, can=False) -> None:
+        print_notice(f'Log path: {self.settings.log_path}')
         exec_times = dict()
         self.is_safe = self.read_inputs(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self.temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
