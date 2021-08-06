@@ -8,7 +8,7 @@ import pandas as pd
 import utils.support as sup
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_section, print_step, print_asset
+from .cli_formatter import print_section, print_step, print_asset, print_subsection
 from .common_routines import extract_structure_parameters, extract_process_graph, simulate, \
     evaluate_logs_with_add_metrics
 from .configuration import Configuration, MiningAlgorithm
@@ -30,20 +30,13 @@ class Optimizer:
         self.settings_structure: Configuration = settings['strc']
         self.settings_time: Configuration = settings['tm']
         self.best_params = dict()
-        self.log = types.SimpleNamespace()
+        self.log = lr.LogReader(self.settings_global.log_path, self.settings_global.read_options)
         self.log_train = types.SimpleNamespace()
         self.log_test = types.SimpleNamespace()
         if not os.path.exists(self.settings_global.output.parent):
             os.makedirs(self.settings_global.output.parent)
 
-    def execute_pipeline(self, structure_optimizer=StructureOptimizer, discover_model: bool = True) -> None:
-        print_section('Log Parsing')
-        exec_times = dict()
-
-        print_section('Structure Optimization')
-
-        print_step('Preparing log buckets')
-        self.set_log(log_time=exec_times)
+    def execute_pipeline(self, discover_model: bool = True) -> None:
         self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)
 
         strctr_optimizer_file_name = None
@@ -51,8 +44,9 @@ class Optimizer:
 
         # optional model discovery if model is not provided
         if discover_model:
+            print_section('Model Discovery and Parameters Extraction')
             # mining the structure
-            strctr_optimizer = structure_optimizer(
+            strctr_optimizer = StructureOptimizer(
                 self.settings_structure, copy.deepcopy(self.log_train), discover_model=discover_model)
             strctr_optimizer.execute_trials()
             # redefining local variables
@@ -61,6 +55,7 @@ class Optimizer:
             strctr_optimizer_temp_output = strctr_optimizer.temp_output
             model_path = os.path.join(strctr_optimizer.best_output, self.settings_global.project_name + '.bpmn')
         else:
+            print_section('Parameters Extraction')
             model_path = self._extract_parameters_and_rewrite_model()
 
         print_section('Times Optimization')
@@ -147,7 +142,7 @@ class Optimizer:
         self.settings_global.output = output_path
         self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
-        print_section("Simulation")
+        print_subsection("Simulation")
         self.sim_values = simulate(self.settings_global, self.process_stats, self.log_test,
                                    evaluate_fn=evaluate_logs_with_add_metrics)
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
@@ -174,11 +169,11 @@ class Optimizer:
         sup.create_json(canonical_model, os.path.join(
             self.settings_global.output, self.settings_global.project_name + '_canon.json'))
 
-    @timeit
-    def set_log(self, **kwargs) -> None:
-        # Event log reading
-        global_config: Configuration = self.settings['gl']
-        self.log = lr.LogReader(os.path.join(global_config.input, global_config.file), global_config.read_options)
+    # @timeit
+    # def set_log(self, **kwargs) -> None:
+    #     # Event log reading
+    #     global_config: Configuration = self.settings['gl']
+    #     self.log = lr.LogReader(os.path.join(global_config.input, global_config.file), global_config.read_options)
 
     def split_and_set_log_buckets(self, size: float, one_ts: bool) -> None:
         """

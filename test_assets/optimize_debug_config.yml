@@ -1,6 +1,5 @@
 log_path: test_assets/PurchasingExample.xes
 mining_alg: sm3
-input: inputs
 output: true
 exec_mode: optimizer
 repetitions: 1

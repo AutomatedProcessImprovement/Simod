@@ -230,8 +230,8 @@ class Configuration:
     log_path: Optional[Path] = None
     model_path: Optional[Path] = None
     config_path: Optional[Path] = None
-    input: Optional[Path] = None
-    file: Optional[Path] = None
+    # input: Optional[Path] = None
+    # file: Optional[Path] = None
     # alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
     output: Path = Path(os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id()))
     sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
@@ -277,8 +277,8 @@ class Configuration:
 
     def fill_in_derived_fields(self):
         if self.log_path:
-            self.input = os.path.dirname(self.log_path)
-            self.file = os.path.basename(self.log_path)
+            # self.input = os.path.dirname(self.log_path)
+            # self.file = os.path.basename(self.log_path)
             self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
 
 
