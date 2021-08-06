@@ -360,13 +360,19 @@ class BPMNGraph:
         pending_tasks = dict()
         for current_index in range(len(task_sequence)):
             fired_tasks.append(False)
-            self.try_firing(current_index, current_index, task_sequence, fired_tasks, pending_tasks, p_state,
-                            f_arcs_frequency, fired_or_splits)
-            p_state.add_token(self.element_info[self.from_name[task_sequence[current_index]]].outgoing_flows[0])
+            # NOTE: changing self.try_firing to self.try_firing_alternative to avoid no such element
+            # in self.from_name error
+            self.try_firing_alternative(current_index, current_index, task_sequence, fired_tasks, pending_tasks,
+                                        p_state, f_arcs_frequency, fired_or_splits)
+            el_id = self.from_name.get(task_sequence[current_index])
+            if el_id is None:  # NOTE: skipping if no such element in self.from_name
+                continue
+            p_state.add_token(self.element_info[el_id].outgoing_flows[0])
             if current_index in pending_tasks:
                 for pending_index in pending_tasks[current_index]:
-                    self.try_firing(pending_index, current_index, task_sequence, fired_tasks, pending_tasks, p_state,
-                                    f_arcs_frequency, fired_or_splits)
+                    self.try_firing_alternative(pending_index, current_index, task_sequence, fired_tasks, pending_tasks,
+                                                p_state,
+                                                f_arcs_frequency, fired_or_splits)
 
         # Firing End Event
         enabled_end, or_fired, path_decisions = self._find_enabled_predecessors(
@@ -389,6 +395,26 @@ class BPMNGraph:
     def try_firing(self, task_index, from_index, task_sequence, fired_tasks, pending_tasks, p_state,
                    f_arcs_frequency, fired_or_splits):
         task_info = self.element_info[self.from_name[task_sequence[task_index]]]
+        if not p_state.has_token(task_info.incoming_flows[0]):
+            enabled_pred, or_fired, path_decisions = self._find_enabled_predecessors(task_info, p_state)
+            firing_index = self.find_firing_index(task_index, from_index, task_sequence, path_decisions, enabled_pred)
+            if firing_index == from_index:
+                self._fire_enabled_predecessors(enabled_pred, p_state, or_fired, path_decisions, f_arcs_frequency,
+                                                fired_or_splits)
+            elif firing_index not in pending_tasks:
+                pending_tasks[firing_index] = [task_index]
+            else:
+                pending_tasks[firing_index].append(task_index)
+        if p_state.has_token(task_info.incoming_flows[0]):
+            p_state.remove_token(task_info.incoming_flows[0])
+            fired_tasks[task_index] = True
+
+    def try_firing_alternative(self, task_index, from_index, task_sequence, fired_tasks, pending_tasks, p_state,
+                               f_arcs_frequency, fired_or_splits):
+        el_id = self.from_name.get(task_sequence[task_index])
+        if el_id is None:
+            return
+        task_info = self.element_info[el_id]
         if not p_state.has_token(task_info.incoming_flows[0]):
             enabled_pred, or_fired, path_decisions = self._find_enabled_predecessors(task_info, p_state)
             firing_index = self.find_firing_index(task_index, from_index, task_sequence, path_decisions, enabled_pred)
@@ -587,10 +613,6 @@ class BPMNGraph:
 
     def compute_branching_probability_alternative(self, flow_arcs_frequency):
         gateways_branching = dict()
-
-        gateways = filter(lambda e_id: self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
-            self.element_info[e_id].outgoing_flows) > 1, self.element_info)
-
         for e_id in self.element_info:
             if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
                     self.element_info[e_id].outgoing_flows) > 1:

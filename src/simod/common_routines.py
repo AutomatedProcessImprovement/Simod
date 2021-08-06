@@ -57,7 +57,8 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     resource_pool, time_table = mine_resources_wrapper(settings)
     arrival_rate = mine_inter_arrival(process_graph, log_df, settings)
     bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-    sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
+    # sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
+    sequences = mine_gateway_probabilities_stochastic_alternative(traces_raw, bpmn_graph)
     log_df['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
 
