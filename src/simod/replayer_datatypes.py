@@ -626,10 +626,11 @@ class BPMNGraph:
         # recalculating probabilities because of missing arcs
         number_of_missing_arcs = list(flow_arcs_probability.values()).count(0)
         number_of_valid_arcs = len(flow_arcs_probability) - number_of_missing_arcs
-        if number_of_valid_arcs == 0:
+        if number_of_valid_arcs == 0:  # if all arcs are missing, we make the probability equiprobable
+            probability = 1.0 / float(number_of_missing_arcs)
             for flow_id in flow_arcs_probability:
-                flow_arcs_probability[flow_id] = 0.01
-        else:
+                flow_arcs_probability[flow_id] = probability
+        else:  # otherwise, we set 0.01 instead of zero and balance probabilities for valid arcs
             average_frequency_to_subtract = 1 / number_of_valid_arcs
             for flow_id in flow_arcs_probability:
                 if flow_arcs_probability[flow_id] == 0:
