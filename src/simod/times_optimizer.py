@@ -18,7 +18,7 @@ from lxml.builder import ElementMaker
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_subsection, print_message
+from .cli_formatter import print_subsection, print_message, print_notice
 from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
 from .decorators import timeit
 from .extraction.log_replayer import LogReplayer
@@ -217,8 +217,7 @@ class TimesOptimizer():
         args = [(settings, data, log) for log in p.get()]
         if len(self.log_valdn.caseid.unique()) > 1000:
             pool.close()
-            results = [self.evaluate_logs(arg)
-                       for arg in tqdm(args, 'evaluating results:')]
+            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
             # Save results
             sim_values = list(itertools.chain(*results))
         else:
@@ -295,7 +294,7 @@ class TimesOptimizer():
             file_path = os.path.join(m_settings['output'], 'sim_data',
                                      m_settings['project_name'] + '_' + str(rep + 1) + '.csv')
             if not os.path.exists(file_path):
-                print(f'File does not exist at {file_path}')
+                print_notice(f'File does not exist at {file_path}')
                 return
             temp = lr.LogReader(file_path, m_settings['read_options'], verbose=False)
             temp = pd.DataFrame(temp.data)
@@ -317,10 +316,13 @@ class TimesOptimizer():
                 settings (dict): Path to jar and file names
                 rep (int): repetition number
             """
+            if sim_log is None:
+                return
+
             if isinstance(settings, dict):
                 settings = Configuration(**settings)
 
-            rep = (sim_log.iloc[0].run_num) - 1
+            rep = sim_log.iloc[0].run_num - 1
             sim_values = list()
             evaluator = sim.SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
             evaluator.measure_distance(Metric.DAY_HOUR_EMD)
