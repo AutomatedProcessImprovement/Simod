@@ -9,6 +9,7 @@ venv
 .idea
 *.egg-info
 .DS_Store
+test_assets/validation_*
 
 # Sonarqube files and folders
 .sonar_lock
