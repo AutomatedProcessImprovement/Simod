@@ -18,7 +18,7 @@ from tqdm import tqdm
 from utils import support as sup
 
 from .analyzers import sim_evaluator
-from .cli_formatter import print_step
+from .cli_formatter import print_step, print_notice
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.tasks_evaluator import TaskEvaluator
@@ -220,7 +220,12 @@ def execute_simulator(args):
                 os.path.join(settings.output, 'sim_data', settings.project_name + '_' + str(rep + 1) + '.csv')]
         # NOTE: the call generates a CSV event log from a model
         # NOTE: might fail silently, because stderr or stdout aren't checked
-        subprocess.run(args, check=True, stdout=subprocess.PIPE)
+        completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+        message = f'Simulator debug information:' \
+                  f'\n\targs = {completed_process.args()}' \
+                  f'\n\tstdout = {completed_process.stdout.__str__()}' \
+                  f'\n\tstderr = {completed_process.stderr.__str__()}'
+        print_notice(message)
 
     sim_call(*args)
 
