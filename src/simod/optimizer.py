@@ -8,11 +8,10 @@ import pandas as pd
 import utils.support as sup
 
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_section, print_step, print_asset, print_subsection, print_notice
+from .cli_formatter import print_section, print_asset, print_subsection, print_notice
 from .common_routines import extract_structure_parameters, extract_process_graph, simulate, \
     evaluate_logs_with_add_metrics
 from .configuration import Configuration, MiningAlgorithm
-from .decorators import timeit
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .structure_optimizer import StructureOptimizer

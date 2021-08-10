@@ -626,19 +626,22 @@ class BPMNGraph:
 
     def _recalculate_arcs_probabilities(self, flow_arcs_frequency, flow_arcs_probability, total_frequency):
         # recalculating probabilities because of missing arcs
-        number_of_missing_arcs = (np.array(list(flow_arcs_probability.values())) <= 0.005).sum()
-        number_of_valid_arcs = len(flow_arcs_probability) - number_of_missing_arcs
+        number_of_invalid_arcs = (np.array(list(flow_arcs_probability.values())) <= 0.005).sum()
+        number_of_valid_arcs = len(flow_arcs_probability) - number_of_invalid_arcs
+        min_probability = 0.01
         if number_of_valid_arcs == 0:  # if all arcs are missing, we make the probability equiprobable
-            probability = 1.0 / float(number_of_missing_arcs)
+            probability = 1.0 / float(number_of_invalid_arcs)
             for flow_id in flow_arcs_probability:
                 flow_arcs_probability[flow_id] = probability
-        else:  # otherwise, we set 0.01 instead of zero and balance probabilities for valid arcs
-            average_frequency_to_subtract = 1 / number_of_valid_arcs
+        else:  # otherwise, we set min_probability instead of zero and balance probabilities for valid arcs
+            average_probability_to_balance = number_of_invalid_arcs * min_probability / number_of_valid_arcs
             for flow_id in flow_arcs_probability:
                 if flow_arcs_probability[flow_id] <= 0.005:
-                    probability = 1 / total_frequency
+                    # enforcing the minimum possible probability
+                    probability = min_probability
                 else:
-                    probability = (flow_arcs_frequency[flow_id] - average_frequency_to_subtract) / total_frequency
+                    # balancing valid probabilities
+                    probability = flow_arcs_probability[flow_id] - average_probability_to_balance
                 flow_arcs_probability[flow_id] = probability
 
     def _calculate_arcs_probabilities(self, e_id, flow_arcs_frequency):
