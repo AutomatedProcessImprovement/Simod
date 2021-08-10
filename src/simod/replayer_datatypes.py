@@ -3,6 +3,7 @@ import datetime
 import random
 import sys
 import xml.etree.ElementTree as ET
+import numpy as np
 from collections import deque
 from datetime import timedelta
 from enum import Enum
@@ -617,14 +618,15 @@ class BPMNGraph:
             if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
                     self.element_info[e_id].outgoing_flows) > 1:
                 flow_arcs_probability, total_frequency = self._calculate_arcs_probabilities(e_id, flow_arcs_frequency)
-                if 0 in flow_arcs_probability.values():
+                # recalculate not only pure zeros, but also low probabilities
+                if min(flow_arcs_probability.values()) <= 0.005:
                     self._recalculate_arcs_probabilities(flow_arcs_frequency, flow_arcs_probability, total_frequency)
                 gateways_branching[e_id] = flow_arcs_probability
         return gateways_branching
 
     def _recalculate_arcs_probabilities(self, flow_arcs_frequency, flow_arcs_probability, total_frequency):
         # recalculating probabilities because of missing arcs
-        number_of_missing_arcs = list(flow_arcs_probability.values()).count(0)
+        number_of_missing_arcs = (np.array(list(flow_arcs_probability.values())) <= 0.005).sum()
         number_of_valid_arcs = len(flow_arcs_probability) - number_of_missing_arcs
         if number_of_valid_arcs == 0:  # if all arcs are missing, we make the probability equiprobable
             probability = 1.0 / float(number_of_missing_arcs)
@@ -633,7 +635,7 @@ class BPMNGraph:
         else:  # otherwise, we set 0.01 instead of zero and balance probabilities for valid arcs
             average_frequency_to_subtract = 1 / number_of_valid_arcs
             for flow_id in flow_arcs_probability:
-                if flow_arcs_probability[flow_id] == 0:
+                if flow_arcs_probability[flow_id] <= 0.005:
                     probability = 1 / total_frequency
                 else:
                     probability = (flow_arcs_frequency[flow_id] - average_frequency_to_subtract) / total_frequency
