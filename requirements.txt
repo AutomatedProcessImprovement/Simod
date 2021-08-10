@@ -37,6 +37,7 @@ lxml==4.6.3
 MarkupSafe==2.0.1
 matplotlib==3.4.2
 matplotlib-inline==0.1.2
+memory-profiler==0.58.0
 mistune==0.8.4
 mpmath==1.2.1
 nbclient==0.5.3
@@ -58,6 +59,7 @@ Pillow==8.3.0
 pm4py==2.2.9
 prometheus-client==0.11.0
 prompt-toolkit==3.0.19
+psutil==5.8.0
 ptyprocess==0.7.0
 PuLP==2.1
 pycallgraph3==1.1.4
@@ -75,7 +77,7 @@ scikit-learn==0.24.2
 scipy==1.7.0
 seaborn==0.11.1
 Send2Trash==1.7.1
--e git+https://github.com/AdaptiveBProcess/Simod@646b5cd649ae23d87dd63ed4cfec2baba1887433#egg=simod
+-e git+https://github.com/AdaptiveBProcess/Simod@0622cde2224a2e4e30ee5f7b61afdfe7f4adb1de#egg=simod
 six==1.16.0
 sortedcontainers==2.4.0
 StringDist==1.0.9
