@@ -21,7 +21,6 @@ from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_subsection, print_message, print_notice
 from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
 from .decorators import timeit
-from .extraction.log_replayer import LogReplayer
 from .readers import bpmn_reader as br
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
@@ -72,7 +71,13 @@ class TimesOptimizer():
         # Load settings
         self.settings: Configuration = settings
         self._load_sim_model(model_path)
-        self._replay_process()
+
+        # NOTE: with new replayer, we don't need conformant_traces or process_stats
+        # self._replay_process()
+        log_df = pd.DataFrame(self.log_train.data)
+        self.conformant_traces = log_df
+        self.process_stats = log_df
+
         # Temp folder
         self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
         if not os.path.exists(self.temp_output):
@@ -453,14 +458,14 @@ class TimesOptimizer():
         self.bpmn = br.BpmnReader(model_path)
         self.process_graph = gph.create_process_structure(self.bpmn)
 
-    def _replay_process(self) -> None:
-        """
-        Process replaying
-        """
-        replayer = LogReplayer(self.process_graph, self.log_train.get_traces(), self.settings,
-                               msg='reading conformant training traces')
-        self.process_stats = replayer.process_stats
-        self.conformant_traces = replayer.conformant_traces
+    # def _replay_process(self) -> None:
+    #     """
+    #     Process replaying
+    #     """
+    #     replayer = LogReplayer(self.process_graph, self.log_train.get_traces(), self.settings,
+    #                            msg='reading conformant training traces')
+    #     self.process_stats = replayer.process_stats
+    #     self.conformant_traces = replayer.conformant_traces
 
     @staticmethod
     def _filter_parms(parms):

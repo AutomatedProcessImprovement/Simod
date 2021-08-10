@@ -64,7 +64,8 @@ class TimesParametersMiner():
         self.parameters['time_table'] = ttcreator.time_table
         # Adding role to process stats
         resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
-        self.process_stats = self.process_stats.merge(resource_table, on='resource', how='left')
+        # self.process_stats = self.process_stats.merge(resource_table, on='resource', how='left')
+        self.process_stats = self.process_stats.merge(resource_table, left_on='user', right_on='resource', how='left')
         self.resource_table = resource_table
 
     @safe_exec
