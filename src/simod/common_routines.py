@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Tuple, Callable
 
 import pandas as pd
+from memory_profiler import profile
 from networkx import DiGraph
 from simod.configuration import CalculationMethod, DataType, GateManagement
 from simod.extraction.gateways_probabilities import GatewaysEvaluator
@@ -47,6 +48,7 @@ class StructureParameters:
     elements_data: list = field(default_factory=list)
 
 
+@profile
 def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
                                  model_path: Path) -> StructureParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?

@@ -6,6 +6,7 @@ from xml.dom import minidom
 
 import pandas as pd
 import utils.support as sup
+from memory_profiler import profile
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_asset, print_subsection, print_notice
@@ -23,6 +24,7 @@ from .writers.model_serialization import serialize_model
 class Optimizer:
     """Hyper-parameter Optimizer class"""
 
+    @profile
     def __init__(self, settings):
         self.settings = settings
         self.settings_global: Configuration = settings['gl']
@@ -35,6 +37,7 @@ class Optimizer:
         if not os.path.exists(self.settings_global.output.parent):
             os.makedirs(self.settings_global.output.parent)
 
+    @profile
     def execute_pipeline(self, discover_model: bool = True) -> None:
         print_notice(f'Log path: {self.settings_global.log_path}')
         self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)

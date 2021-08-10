@@ -1,6 +1,7 @@
 import itertools as it
 import os
 
+from memory_profiler import profile
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 from opyenxes.factory.XFactory import XFactory
@@ -20,6 +21,7 @@ class XesWriter(object):
         self.output_file = os.path.join(settings.output, settings.project_name + '.xes')
         self.create_xes_file()
 
+    @profile
     def create_xes_file(self):
         csv_mapping = {v: k for k, v in self.column_names.items()}
         log = XFactory.create_log()
