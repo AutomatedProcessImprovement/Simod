@@ -1,4 +1,4 @@
-log_path: test_assets/PurchasingExample.xes
+log_path: "test_assets/validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes"
 mining_alg: sm3
 output: true
 exec_mode: optimizer

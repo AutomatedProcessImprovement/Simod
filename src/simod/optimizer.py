@@ -119,7 +119,14 @@ class Optimizer:
         model_path = self.settings_global.model_path
         process_graph = extract_process_graph(model_path)
         parameters = extract_structure_parameters(
-            settings=self.settings_global, process_graph=process_graph, log=self.log, model_path=model_path)
+            settings=self.settings_global, process_graph=process_graph, log=self.log_train, model_path=model_path)
+
+        # TODO: usually, self.log_valdn is used, but we don't have it here, in Discoverer,
+        #  self.log_test is used instead. What whould be used here?
+        num_inst = len(self.log_test.caseid.unique())
+        start_time = self.log_test.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+        parameters.instances = num_inst
+        parameters.start_time = start_time
 
         # copying the original model and rewriting it with extracted parameters
         if not os.path.exists(self.settings_global.output):

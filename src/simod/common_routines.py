@@ -5,7 +5,7 @@ import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Union
 
 import pandas as pd
 from memory_profiler import profile
@@ -35,11 +35,11 @@ from .replayer_datatypes import BPMNGraph
 # a more general class for Discoverer and Optimizer for them to inherit from it all the general routines.
 
 @dataclass
-class StructureParameters:
-    instances: int
-    start_time: str
+class ProcessParameters:
+    instances: Union[int, None] = None
+    start_time: Union[str, None] = None
     process_stats: pd.DataFrame = field(default_factory=pd.DataFrame)
-    # resource_table: pd.DataFrame = field(default_factory=pd.DataFrame)  # TODO: should be active
+    resource_table: pd.DataFrame = field(default_factory=pd.DataFrame)
     # conformant_traces: list = field(default_factory=list)
     resource_pool: list = field(default_factory=list)
     time_table: List[str] = field(default_factory=list)
@@ -50,7 +50,7 @@ class StructureParameters:
 
 @profile
 def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
-                                 model_path: Path) -> StructureParameters:
+                                 model_path: Path) -> ProcessParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
     traces_raw = log.get_raw_traces()  # NOTE: long operation
     log_df = pd.DataFrame(log.data)
@@ -65,18 +65,35 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
 
     log_df = pd.DataFrame(log.data)
-    num_inst = len(log_df.caseid.unique())
-    start_time = log_df.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+    # num_inst = len(log_df.caseid.unique())  # TODO: should it be log_train or log_valdn
+    # start_time = log_df.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
 
-    return StructureParameters(
+    return ProcessParameters(
         process_stats=log_df,
         resource_pool=resource_pool,
         time_table=time_table,
         arrival_rate=arrival_rate,
         sequences=sequences,
         elements_data=elements_data,
-        instances=num_inst,
-        start_time=start_time
+    )
+
+
+def extract_times_parameters(settings: Configuration, process_graph, log: LogReader, conformant_traces,
+                             process_stats) -> ProcessParameters:
+    settings.pdef_method = PDFMethod.AUTOMATIC
+
+    time_table, resource_pool, resource_table = mine_resources_with_resource_table(log, settings)
+    arrival_rate = mine_inter_arrival(process_graph, conformant_traces, settings)
+
+    process_stats = process_stats.merge(resource_table, left_on='user', right_on='resource', how='left')
+    elements_data = process_tasks(process_graph, process_stats, resource_pool, settings)
+
+    return ProcessParameters(
+        time_table=time_table,
+        resource_pool=resource_pool,
+        resource_table=resource_table,
+        arrival_rate=arrival_rate,
+        elements_data=elements_data,
     )
 
 

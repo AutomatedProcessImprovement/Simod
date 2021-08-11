@@ -15,8 +15,10 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
+from simod.common_routines import extract_times_parameters
 from tqdm import tqdm
 
+from .times_params_miner import TimesParametersMiner
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_subsection, print_message, print_notice
 from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
@@ -25,7 +27,6 @@ from .readers import bpmn_reader as br
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
 from .readers import process_structure as gph
-from .times_params_miner import TimesParametersMiner
 
 
 class TimesOptimizer():
@@ -167,28 +168,49 @@ class TimesOptimizer():
             os.makedirs(os.path.join(settings['output'], 'sim_data'))
         return settings
 
+    # @timeit(rec_name='EXTRACTING_PARAMS')
+    # @Decorators.safe_exec
+    # def _extract_parameters(self, settings: Configuration, **kwargs) -> None:
+    #     p_extractor = TimesParametersMiner(self.log_train, self.bpmn, self.process_graph, self.conformant_traces,
+    #                                        self.process_stats, settings)
+    #     num_inst = len(self.log_valdn.caseid.unique())
+    #     # Get minimum date
+    #     start_time = (self.log_valdn
+    #                   .start_timestamp
+    #                   .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
+    #     p_extractor.extract_parameters(num_inst, start_time)
+    #     if p_extractor.is_safe:
+    #         self._xml_print(p_extractor.parameters, os.path.join(settings.output, settings.project_name + '.bpmn'))
+    #         self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
+    #         self.log_valdn['source'] = 'log'
+    #         self.log_valdn['run_num'] = 0
+    #         self.log_valdn = self.log_valdn.merge(p_extractor.resource_table[['resource', 'role']],
+    #                                               on='resource', how='left')
+    #         self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
+    #         p_extractor.resource_table.to_pickle(os.path.join(settings.output, 'resource_table.pkl'))
+    #     else:
+    #         raise RuntimeError('Parameters extraction error')
+
     @timeit(rec_name='EXTRACTING_PARAMS')
     @Decorators.safe_exec
     def _extract_parameters(self, settings: Configuration, **kwargs) -> None:
-        p_extractor = TimesParametersMiner(self.log_train, self.bpmn, self.process_graph, self.conformant_traces,
-                                           self.process_stats, settings)
         num_inst = len(self.log_valdn.caseid.unique())
-        # Get minimum date
-        start_time = (self.log_valdn
-                      .start_timestamp
-                      .min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
-        p_extractor.extract_parameters(num_inst, start_time)
-        if p_extractor.is_safe:
-            self._xml_print(p_extractor.parameters, os.path.join(settings.output, settings.project_name + '.bpmn'))
-            self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
-            self.log_valdn['source'] = 'log'
-            self.log_valdn['run_num'] = 0
-            self.log_valdn = self.log_valdn.merge(p_extractor.resource_table[['resource', 'role']],
-                                                  on='resource', how='left')
-            self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
-            p_extractor.resource_table.to_pickle(os.path.join(settings.output, 'resource_table.pkl'))
-        else:
-            raise RuntimeError('Parameters extraction error')
+        start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+
+        parameters = extract_times_parameters(
+            settings, self.process_graph, self.log_train, self.conformant_traces, self.process_stats)
+
+        parameters.instances = num_inst
+        parameters.start_time = start_time
+
+        self._xml_print(parameters.__dict__, os.path.join(settings.output, settings.project_name + '.bpmn'))
+        self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
+        self.log_valdn['source'] = 'log'
+        self.log_valdn['run_num'] = 0
+        self.log_valdn = self.log_valdn.merge(parameters.resource_table[['resource', 'role']],
+                                              on='resource', how='left')
+        self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
+        parameters.resource_table.to_pickle(os.path.join(settings.output, 'resource_table.pkl'))
 
     @timeit(rec_name='SIMULATION_EVAL')
     @Decorators.safe_exec
@@ -273,7 +295,8 @@ class TimesOptimizer():
                      **data})
         else:
             response['status'] = status
-            measurements.append({'similarity': 0, 'sim_metric': Metric.DAY_HOUR_EMD, 'status': response['status'], **data})
+            measurements.append(
+                {'similarity': 0, 'sim_metric': Metric.DAY_HOUR_EMD, 'status': response['status'], **data})
         if os.path.getsize(self.file_name) > 0:
             sup.create_csv_file(measurements, self.file_name, mode='a')
         else:

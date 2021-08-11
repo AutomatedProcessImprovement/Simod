@@ -9,6 +9,7 @@ from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.role_discovery import ResourcePoolAnalyser
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
+from .readers.log_reader import LogReader
 
 
 class TimesParametersMiner():
@@ -16,7 +17,7 @@ class TimesParametersMiner():
     This class extracts all the BPS parameters
     """
 
-    def __init__(self, log, bpmn, process_graph, conformant_traces, process_stats, settings: Configuration):
+    def __init__(self, log: LogReader, bpmn, process_graph, conformant_traces, process_stats, settings: Configuration):
         self.log = log
         self.bpmn = bpmn
         self.process_graph = process_graph
@@ -42,7 +43,7 @@ class TimesParametersMiner():
         self.parameters['start_time'] = start_time
 
     @safe_exec
-    def _mine_resources(self, **kwargs) -> None:
+    def _mine_resources(self, **kwargs) -> None:  # TODO: replace with mine_resources_with_resource_table()
         """
         Analysing resource pool LV917 or 247
         """
@@ -69,7 +70,7 @@ class TimesParametersMiner():
         self.resource_table = resource_table
 
     @safe_exec
-    def _mine_interarrival(self, **kwargs) -> None:
+    def _mine_interarrival(self, **kwargs) -> None:  # TODO: replace with mine_inter_arrival
         """
         Calculates the inter-arrival rate
         """
@@ -77,7 +78,7 @@ class TimesParametersMiner():
         self.parameters['arrival_rate'] = inter_evaluator.dist
 
     @safe_exec
-    def _process_tasks(self, **kwargs) -> None:
+    def _process_tasks(self, **kwargs) -> None:  # TODO: replace with process_tasks
         """
         Tasks id information
         """
@@ -86,7 +87,7 @@ class TimesParametersMiner():
         self.parameters['elements_data'] = tevaluator.elements_data
 
     @staticmethod
-    def _create_resource_pool(resource_table, table_name) -> list():
+    def _create_resource_pool(resource_table, table_name) -> list():  # TODO: replace with mine_resources_with_resource_table
         """
         Creates resource pools and associate them the default timetable
         in BIMP format
