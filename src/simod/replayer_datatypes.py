@@ -3,14 +3,15 @@ import datetime
 import random
 import sys
 import xml.etree.ElementTree as ET
-import numpy as np
 from collections import deque
 from datetime import timedelta
 from enum import Enum
 from pathlib import Path
 from typing import List
 
+import numpy as np
 import pytz
+from simod.cli_formatter import print_warning, print_notice
 from simod.configuration import BPMN_NAMESPACE_URI
 
 
@@ -621,28 +622,41 @@ class BPMNGraph:
                 # recalculate not only pure zeros, but also low probabilities
                 if min(flow_arcs_probability.values()) <= 0.005:
                     self._recalculate_arcs_probabilities(flow_arcs_frequency, flow_arcs_probability, total_frequency)
+                self._check_probabilities(flow_arcs_probability)
                 gateways_branching[e_id] = flow_arcs_probability
         return gateways_branching
 
-    def _recalculate_arcs_probabilities(self, flow_arcs_frequency, flow_arcs_probability, total_frequency):
-        # recalculating probabilities because of missing arcs
-        number_of_invalid_arcs = (np.array(list(flow_arcs_probability.values())) <= 0.005).sum()
-        number_of_valid_arcs = len(flow_arcs_probability) - number_of_invalid_arcs
+    @staticmethod
+    def _recalculate_arcs_probabilities(flow_arcs_frequency, flow_arcs_probability, total_frequency):
+        # recalculating probabilities because of missing arcs or very small probabilities for them
+        arcs_probabilities = np.array(list(flow_arcs_probability.values()))
+        valid_probability_threshold = 0.005
         min_probability = 0.01
+        number_of_invalid_arcs = (arcs_probabilities <= valid_probability_threshold).sum()
+        number_of_valid_arcs = len(flow_arcs_probability) - number_of_invalid_arcs
         if number_of_valid_arcs == 0:  # if all arcs are missing, we make the probability equiprobable
             probability = 1.0 / float(number_of_invalid_arcs)
             for flow_id in flow_arcs_probability:
                 flow_arcs_probability[flow_id] = probability
         else:  # otherwise, we set min_probability instead of zero and balance probabilities for valid arcs
-            average_probability_to_balance = number_of_invalid_arcs * min_probability / number_of_valid_arcs
+            valid_probabilities = arcs_probabilities[arcs_probabilities > valid_probability_threshold].sum()
+            average_probability_to_balance = (1 - valid_probabilities - number_of_invalid_arcs * min_probability) / number_of_valid_arcs
             for flow_id in flow_arcs_probability:
-                if flow_arcs_probability[flow_id] <= 0.005:
+                if flow_arcs_probability[flow_id] <= valid_probability_threshold:
                     # enforcing the minimum possible probability
                     probability = min_probability
                 else:
                     # balancing valid probabilities
-                    probability = flow_arcs_probability[flow_id] - average_probability_to_balance
+                    probability = flow_arcs_probability[flow_id] + average_probability_to_balance
                 flow_arcs_probability[flow_id] = probability
+
+    @staticmethod
+    def _check_probabilities(flow_arcs_probability):
+        # checking probabilities sum up to 1.0
+        tolerance = 0.001
+        probabilities_sum = sum(flow_arcs_probability.values())
+        if 1.0 - probabilities_sum >= tolerance:
+            print_warning(f'Sum of outgoing flow arcs does not sum up to {1.0 - tolerance}: {probabilities_sum}')
 
     def _calculate_arcs_probabilities(self, e_id, flow_arcs_frequency):
         total_frequency = 0

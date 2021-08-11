@@ -23,5 +23,9 @@ def print_notice(message: str):
     click.secho(f'● {message}', bold=True)
 
 
+def print_warning(message: str):
+    click.secho(f'▲ {message}', bold=True)
+
+
 def print_step(message: str):
     click.echo(f'➜ {message}')
