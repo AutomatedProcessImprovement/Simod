@@ -15,13 +15,13 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
-from simod.common_routines import extract_times_parameters
+from simod.common_routines import extract_times_parameters, split_timeline
 from tqdm import tqdm
 
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_subsection, print_message, print_notice
 from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
-from .decorators import timeit
+from .decorators import timeit, safe_exec_with_values_and_status
 from .readers import bpmn_reader as br
 from .readers import log_reader as lr
 from .readers import log_splitter as ls
@@ -30,33 +30,6 @@ from .readers import process_structure as gph
 
 class TimesOptimizer:
     """Hyperparameter-optimizer class"""
-
-    class Decorators(object):
-
-        @classmethod
-        def safe_exec(cls, method):
-            """
-            Decorator to safe execute methods and return the state
-            ----------
-            method : Any method.
-            Returns
-            -------
-            dict : execution status
-            """
-
-            def safety_check(*args, **kw):
-                status = kw.get('status', method.__name__.upper())
-                response = {'values': [], 'status': status}
-                if status == STATUS_OK:
-                    try:
-                        response['values'] = method(*args, **kw)
-                    except Exception as e:
-                        print(e)
-                        traceback.print_exc()
-                        response['status'] = STATUS_FAIL
-                return response
-
-            return safety_check
 
     def __init__(self, settings: Configuration, args: Configuration, log, model_path):
         self.space = self.define_search_space(settings, args)
@@ -155,7 +128,7 @@ class TimesOptimizer:
             pass
 
     @timeit(rec_name='PATH_DEF')
-    @Decorators.safe_exec
+    @safe_exec_with_values_and_status
     def _temp_path_redef(self, settings, **kwargs) -> None:
         # Paths redefinition
         settings['output'] = os.path.join(self.temp_output, sup.folder_id())
@@ -166,7 +139,7 @@ class TimesOptimizer:
         return settings
 
     @timeit(rec_name='EXTRACTING_PARAMS')
-    @Decorators.safe_exec
+    @safe_exec_with_values_and_status
     def _extract_parameters(self, settings: Configuration, **kwargs) -> None:
         num_inst = len(self.log_valdn.caseid.unique())
         start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
@@ -187,7 +160,7 @@ class TimesOptimizer:
         parameters.resource_table.to_pickle(os.path.join(settings.output, 'resource_table.pkl'))
 
     @timeit(rec_name='SIMULATION_EVAL')
-    @Decorators.safe_exec
+    @safe_exec_with_values_and_status
     def _simulate(self, settings, data, **kwargs) -> list:
         def pbar_async(p, msg):
             pbar = tqdm(total=reps, desc=msg)
@@ -485,31 +458,7 @@ class TimesOptimizer:
         return parms
 
     def _split_timeline(self, size: float, one_ts: bool) -> None:
-        """
-        Split an event log dataframe by time to peform split-validation.
-        prefered method time splitting removing incomplete traces.
-        If the testing set is smaller than the 10% of the log size
-        the second method is sort by traces start and split taking the whole
-        traces no matter if they are contained in the timeframe or not
-
-        Parameters
-        ----------
-        size : float, validation percentage.
-        one_ts : bool, Support only one timestamp.
-        """
-        # Split log data
-        splitter = ls.LogSplitter(self.log.data)
-        train, valdn = splitter.split_log('timeline_contained', size, one_ts)
-        total_events = len(self.log.data)
-        # Check size and change time splitting method if necesary
-        if len(valdn) < int(total_events * 0.1):
-            train, valdn = splitter.split_log('timeline_trace', size, one_ts)
-        # Set splits
-        key = 'end_timestamp' if one_ts else 'start_timestamp'
-        valdn = pd.DataFrame(valdn)
-        train = pd.DataFrame(train)
-        self.log_valdn = (valdn.sort_values(key, ascending=True)
-                          .reset_index(drop=True))
+        train, valdn, key = split_timeline(self.log, size, one_ts)
+        self.log_valdn = valdn.sort_values(key, ascending=True).reset_index(drop=True)
         self.log_train = copy.deepcopy(self.log)
-        self.log_train.set_data(train.sort_values(key, ascending=True)
-                                .reset_index(drop=True).to_dict('records'))
+        self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))

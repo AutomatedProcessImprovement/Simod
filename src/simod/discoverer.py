@@ -11,11 +11,11 @@ from utils import support as sup
 
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import simulate, mine_resources_with_resource_table, \
-    mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks, evaluate_logs_with_add_metrics
+    mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks, evaluate_logs_with_add_metrics, \
+    split_timeline
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
 from .readers import log_reader as lr
-from .readers import log_splitter as ls
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
 from .writers import xml_writer as xml
@@ -56,7 +56,7 @@ class Discoverer:
         # Event log reading
         self.log = lr.LogReader(os.path.join(self.settings.log_path), self.settings.read_options)
         # Time splitting 80-20
-        self.split_timeline(0.8, self.settings.read_options.one_timestamp)
+        self._split_timeline(0.8, self.settings.read_options.one_timestamp)
 
     @timeit(rec_name='PATH_DEF')
     @safe_exec
@@ -172,33 +172,8 @@ class Discoverer:
             best_params['arr_confidence'] = str(settings.arr_confidence)
         return best_params
 
-    def split_timeline(self, size: float, one_ts: bool) -> None:
-        """
-        Split an event log dataframe by time to peform split-validation.
-        prefered method time splitting removing incomplete traces.
-        If the testing set is smaller than the 10% of the log size
-        the second method is sort by traces start and split taking the whole
-        traces no matter if they are contained in the timeframe or not
-
-        Parameters
-        ----------
-        size : float, validation percentage.
-        one_ts : bool, Support only one timestamp.
-        """
-        # Split log data
-        splitter = ls.LogSplitter(self.log.data)
-        train, test = splitter.split_log('timeline_contained', size, one_ts)
-        total_events = len(self.log.data)
-        # Check size and change time splitting method if necesary
-        if len(test) < int(total_events * 0.1):
-            train, test = splitter.split_log('timeline_trace', size, one_ts)
-        # Set splits
-        key = 'end_timestamp' if one_ts else 'start_timestamp'
-        test = pd.DataFrame(test)
-        train = pd.DataFrame(train)
+    def _split_timeline(self, size: float, one_ts: bool) -> None:
+        train, test, key = split_timeline(self.log, size, one_ts)
         self.log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
         self.log_train = copy.deepcopy(self.log)
-        self.log_train.set_data(train
-                                .sort_values(key, ascending=True)
-                                .reset_index(drop=True)
-                                .to_dict('records'))
+        self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))

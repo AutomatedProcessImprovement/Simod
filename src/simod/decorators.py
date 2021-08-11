@@ -75,7 +75,7 @@ def safe_exec_with_values_and_status(method):
         response = {'values': [], 'status': status}
         if status == STATUS_OK:
             try:
-                response['values'] = method(*args)
+                response['values'] = method(*args, **kw)
             except Exception as e:
                 print(e)
                 traceback.print_exc()

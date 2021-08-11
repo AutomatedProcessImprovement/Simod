@@ -10,6 +10,7 @@ from typing import List, Tuple, Callable, Union
 import pandas as pd
 from memory_profiler import profile
 from networkx import DiGraph
+from simod.readers.log_splitter import LogSplitter
 from tqdm import tqdm
 from utils import support as sup
 
@@ -382,3 +383,33 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     # self.output.process_stats = self.output.process_stats.merge(resource_table, on='resource', how='left')
 
     return ttcreator.time_table, resource_pool, resource_table
+
+
+def split_timeline(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
+    """
+    Split an event log dataframe by time to perform split-validation.
+    preferred method time splitting removing incomplete traces.
+    If the testing set is smaller than the 10% of the log size
+    the second method is sort by traces start and split taking the whole
+    traces no matter if they are contained in the timeframe or not
+
+    Parameters
+    ----------
+    log: LogRead, log to split.
+    size: float, validation percentage.
+    one_ts: bool, Support only one timestamp.
+    """
+    # Split log data
+    splitter = LogSplitter(log.data)
+    partition1, partition2 = splitter.split_log('timeline_contained', size, one_ts)
+    total_events = len(log.data)
+
+    # Check size and change time splitting method if necesary
+    if len(partition2) < int(total_events * 0.1):
+        partition1, partition2 = splitter.split_log('timeline_trace', size, one_ts)
+
+    # Set splits
+    key = 'end_timestamp' if one_ts else 'start_timestamp'
+    partition1 = pd.DataFrame(partition1)
+    partition2 = pd.DataFrame(partition2)
+    return partition1, partition2, key
