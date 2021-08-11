@@ -10,18 +10,16 @@ from typing import List, Tuple, Callable, Union
 import pandas as pd
 from memory_profiler import profile
 from networkx import DiGraph
-from simod.configuration import CalculationMethod, DataType, GateManagement
-from simod.extraction.gateways_probabilities import GatewaysEvaluator
-from simod.extraction.role_discovery import ResourcePoolAnalyser
-from simod.extraction.schedule_tables import TimeTablesCreator
-from simod.readers.bpmn_reader import BpmnReader
 from tqdm import tqdm
 from utils import support as sup
 
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step, print_notice
+from .configuration import CalculationMethod, DataType
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
+from .extraction.role_discovery import ResourcePoolAnalyser
+from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
 from .readers import bpmn_reader
 from .readers import process_structure
@@ -157,16 +155,6 @@ def mine_gateway_probabilities_stochastic_alternative(log_traces_raw: list, bpmn
             probability = gateways_branching[gateway_id][seqflow_id]
             sequences.append({'elementid': seqflow_id, 'prob': probability})
 
-    return sequences
-
-
-def mine_gateway_probabilities(bpmn: BpmnReader, process_graph, gate_management: GateManagement) -> list:
-    print_step('Mining gateway probabilities')
-
-    evaluator = GatewaysEvaluator(process_graph, gate_management)
-    sequences = evaluator.probabilities
-    for seq in sequences:
-        seq['elementid'] = bpmn.find_sequence_id(seq['gatewayid'], seq['out_path_id'])
     return sequences
 
 
