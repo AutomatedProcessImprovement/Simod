@@ -21,7 +21,6 @@ class XesWriter(object):
         self.output_file = os.path.join(settings.output, settings.project_name + '.xes')
         self.create_xes_file()
 
-    @profile
     def create_xes_file(self):
         csv_mapping = {v: k for k, v in self.column_names.items()}
         log = XFactory.create_log()

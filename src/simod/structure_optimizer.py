@@ -69,12 +69,10 @@ class StructureOptimizer:
         space = {**var_dim, **csettings}
         return space
 
-    @profile
     def execute_trials(self):
         parameters = mine_resources(self.settings)
         self.log_train = copy.deepcopy(self.org_log_train)
 
-        @profile
         def exec_pipeline(trial_stg: Configuration):
             print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
@@ -127,7 +125,6 @@ class StructureOptimizer:
 
     @timeit(rec_name='PATH_DEF')
     @safe_exec_with_values_and_status
-    @profile
     def _temp_path_redef(self, settings, **kwargs) -> None:
         # Paths redefinition
         settings['output'] = os.path.join(self.temp_output, sup.folder_id())

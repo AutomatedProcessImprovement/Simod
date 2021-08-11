@@ -47,7 +47,6 @@ class ProcessParameters:
     elements_data: list = field(default_factory=list)
 
 
-@profile
 def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
                                  model_path: Path) -> ProcessParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
