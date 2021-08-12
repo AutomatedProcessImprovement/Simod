@@ -36,22 +36,22 @@ class Discoverer:
         self.is_safe = True
         self.output_file = sup.file_id(prefix='SE_')
 
-    def execute_pipeline(self, can=False) -> None:
+    def execute_pipeline(self) -> None:
         print_notice(f'Log path: {self.settings.log_path}')
         exec_times = dict()
-        self.is_safe = self.read_inputs(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.mine_structure(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.extract_parameters(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self.simulate(log_time=exec_times, is_safe=self.is_safe)
-        self.mannage_results()
-        self.save_times(exec_times, self.settings)
-        self.is_safe = self.export_canonical_model(is_safe=self.is_safe)
+        self.is_safe = self._read_inputs(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self._temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self._mine_structure(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self._extract_parameters(log_time=exec_times, is_safe=self.is_safe)
+        self.is_safe = self._simulate(log_time=exec_times, is_safe=self.is_safe)
+        self._manage_results()
+        self._save_times(exec_times, self.settings)
+        self.is_safe = self._export_canonical_model(is_safe=self.is_safe)
         print_asset(f"Output folder is at {self.settings.output}")
 
     @timeit(rec_name='READ_INPUTS')
     @safe_exec
-    def read_inputs(self, **kwargs) -> None:
+    def _read_inputs(self, **kwargs) -> None:
         print_section("Log Parsing")
         # Event log reading
         self.log = lr.LogReader(os.path.join(self.settings.log_path), self.settings.read_options)
@@ -60,7 +60,7 @@ class Discoverer:
 
     @timeit(rec_name='PATH_DEF')
     @safe_exec
-    def temp_path_creation(self, **kwargs) -> None:
+    def _temp_path_creation(self, **kwargs) -> None:
         print_section("Log Customization")
         # Output folder creation
         if not os.path.exists(self.settings.output):
@@ -71,10 +71,10 @@ class Discoverer:
 
     @timeit(rec_name='MINING_STRUCTURE')
     @safe_exec
-    def mine_structure(self, **kwargs) -> None:
+    def _mine_structure(self, **kwargs) -> None:
         print_section("Process Structure Mining")
         structure_miner = StructureMiner(self.settings, self.log_train)
-        structure_miner.execute_pipeline()  # TODO: don't need repair log and evaluate with new replayer
+        structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             self.bpmn = structure_miner.bpmn
             self.process_graph = structure_miner.process_graph
@@ -83,7 +83,7 @@ class Discoverer:
 
     @timeit(rec_name='EXTRACTION')
     @safe_exec
-    def extract_parameters(self, **kwargs) -> None:
+    def _extract_parameters(self, **kwargs) -> None:
         print_section("Simulation Parameters Mining")
 
         time_table, resource_pool, resource_table = mine_resources_with_resource_table(self.log_train, self.settings)
@@ -118,18 +118,18 @@ class Discoverer:
 
     @timeit(rec_name='SIMULATION_EVAL')
     @safe_exec
-    def simulate(self, **kwargs) -> None:
+    def _simulate(self, **kwargs):
         print_section("Simulation")
         self.sim_values = simulate(self.settings, self.process_stats, self.log_test,
                                    evaluate_fn=evaluate_logs_with_add_metrics)
 
-    def mannage_results(self) -> None:
+    def _manage_results(self):
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = self.settings.output
         self.sim_values.to_csv(os.path.join(self.settings.output, self.output_file), index=False)
 
     @staticmethod
-    def save_times(times, settings: Configuration):
+    def _save_times(times, settings: Configuration):
         times = [{**{'output': settings.output}, **times}]
         log_file = os.path.join(settings.output.parent, 'execution_times.csv')
         if not os.path.exists(log_file):
@@ -140,18 +140,17 @@ class Discoverer:
             sup.create_csv_file_header(times, log_file)
 
     @safe_exec
-    def export_canonical_model(self, **kwargs):
+    def _export_canonical_model(self, **kwargs):
         ns = {'qbp': QBP_NAMESPACE_URI}
         time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
         time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
         self.parameters['time_table'] = time_table
-        self.parameters['discovery_parameters'] = self.filter_dic_params(self.settings)
+        self.parameters['discovery_parameters'] = self._filter_dic_params(self.settings)
         sup.create_json(self.parameters, os.path.join(self.settings.output, self.settings.project_name + '_canon.json'))
 
     @staticmethod
-    def filter_dic_params(settings: Configuration):
+    def _filter_dic_params(settings: Configuration) -> dict:
         best_params = dict()
-        # best_params['alg_manag'] = str(settings.alg_manag)
         best_params['gate_management'] = str(settings.gate_management)
         best_params['rp_similarity'] = str(settings.rp_similarity)
         # best structure mining parameters
@@ -172,7 +171,7 @@ class Discoverer:
             best_params['arr_confidence'] = str(settings.arr_confidence)
         return best_params
 
-    def _split_timeline(self, size: float, one_ts: bool) -> None:
+    def _split_timeline(self, size: float, one_ts: bool):
         train, test, key = split_timeline(self.log, size, one_ts)
         self.log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
         self.log_train = copy.deepcopy(self.log)
