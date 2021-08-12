@@ -4,7 +4,8 @@ Simod combines several process mining techniques to automate the generation and 
 
 ## Requirements
 
-- Python 3.8+
+- **Python 3.8**+
+- **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
 - For dependencies, please, check `requirements.txt` or `simod.yml`
 
 ## Getting Started
@@ -27,6 +28,19 @@ $ simod discover --config_path config/discover_with_model_config.yml     # no ne
 ```
 
 The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
+
+## Getting Started with New Replayer
+
+```shell
+$ git clone https://github.com/AutomatedProcessImprovement/Simod.git simod
+$ cd simod
+$ git checkout new_replayer
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ python -m pip install --upgrade pip
+$ pip install -r requirements.txt
+$ pip install -e .
+```
 
 ## Data format
  
