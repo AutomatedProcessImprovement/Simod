@@ -4,7 +4,8 @@ Simod combines several process mining techniques to automate the generation and 
 
 ## Requirements
 
-- Python 3.8+
+- **Python 3.8**+
+- **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
 - For dependencies, please, check `requirements.txt` or `simod.yml`
 
 ## Getting Started
