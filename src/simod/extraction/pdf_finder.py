@@ -3,7 +3,8 @@
 import numpy as np
 import pandas as pd
 import scipy.stats as st
-import utils.support as sup
+
+from .. import support_utils as sup
 
 
 # import support as sup

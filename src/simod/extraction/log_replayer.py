@@ -5,9 +5,9 @@ from multiprocessing import Pool
 
 import networkx as nx
 import pandas as pd
-import utils.support as sup
 from tqdm import tqdm
 
+from .. import support_utils as sup
 from ..configuration import Configuration
 
 

@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 import pandas as pd
-import utils.support as sup
+from .. import support_utils as sup
 from tqdm import tqdm
 
 from .pdf_finder import DistributionFinder

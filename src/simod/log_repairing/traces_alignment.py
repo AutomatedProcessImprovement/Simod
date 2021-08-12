@@ -5,9 +5,9 @@ import re
 import subprocess
 from operator import itemgetter
 
-import utils.support as sup
 from simod.cli_formatter import print_subsection
 
+from .. import support_utils as sup
 from ..configuration import Configuration
 
 

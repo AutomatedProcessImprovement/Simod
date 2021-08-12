@@ -10,13 +10,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from memory_profiler import profile
 from simod.common_routines import mine_resources, extract_structure_parameters
 from tqdm import tqdm
 
+from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_message, print_subsection
 from .common_routines import execute_simulator

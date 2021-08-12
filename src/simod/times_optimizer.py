@@ -4,13 +4,11 @@ import multiprocessing
 import os
 import subprocess
 import time
-import traceback
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
-import utils.support as sup
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from lxml import etree
@@ -18,13 +16,13 @@ from lxml.builder import ElementMaker
 from simod.common_routines import extract_times_parameters, split_timeline
 from tqdm import tqdm
 
+from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_subsection, print_message, print_notice
 from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
 from .decorators import timeit, safe_exec_with_values_and_status
 from .readers import bpmn_reader as br
 from .readers import log_reader as lr
-from .readers import log_splitter as ls
 from .readers import process_structure as gph
 
 

@@ -4,8 +4,9 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import List, Dict, Optional, Union
 
-import utils.support as sup
 import yaml
+
+from . import support_utils as sup
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
 BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'

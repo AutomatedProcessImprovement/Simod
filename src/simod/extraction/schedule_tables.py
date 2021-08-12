@@ -4,19 +4,16 @@ import subprocess
 from pathlib import Path
 
 import pandas as pd
-import utils.support as sup
 from lxml import etree
 from lxml.builder import ElementMaker  # lxml only !
 from tqdm import tqdm
 
+from .. import support_utils as sup
 from ..configuration import Configuration, DataType, CalculationMethod, QBP_NAMESPACE_URI
 
 
 class TimeTablesCreator():
-    '''
-        This class creates the resources timetables and associates them
-        to the resource pools
-     '''
+    """This class creates the resources timetables and associates them to the resource pools"""
 
     def __init__(self, settings: Configuration):
         self.settings = settings

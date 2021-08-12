@@ -9,8 +9,8 @@ from typing import Union
 
 import pandas as pd
 import pm4py
-import utils.support as sup
 
+from .. import support_utils as sup
 from ..configuration import ReadOptions
 
 

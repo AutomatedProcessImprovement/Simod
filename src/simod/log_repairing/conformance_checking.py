@@ -1,6 +1,6 @@
 from operator import itemgetter
 
-import utils.support as sup
+from .. import support_utils as sup
 
 
 def print_stats(log, conformant, traces):
