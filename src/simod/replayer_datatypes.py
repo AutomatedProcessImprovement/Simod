@@ -12,7 +12,7 @@ from typing import List
 import numpy as np
 import pytz
 from simod.cli_formatter import print_warning, print_notice
-from simod.configuration import BPMN_NAMESPACE_URI
+from simod.configuration import BPMN_NAMESPACE_URI, GateManagement
 
 
 class BPMNNodeType(Enum):
@@ -613,7 +613,7 @@ class BPMNGraph:
                 gateways_branching[e_id] = flow_arc_probability
         return gateways_branching
 
-    def compute_branching_probability_alternative(self, flow_arcs_frequency):
+    def compute_branching_probability_alternative_discovery(self, flow_arcs_frequency):
         gateways_branching = dict()
         for e_id in self.element_info:
             if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
@@ -624,6 +624,18 @@ class BPMNGraph:
                     self._recalculate_arcs_probabilities(flow_arcs_frequency, flow_arcs_probability, total_frequency)
                 self._check_probabilities(flow_arcs_probability)
                 gateways_branching[e_id] = flow_arcs_probability
+        return gateways_branching
+
+    def compute_branching_probability_alternative_equiprobable(self):
+        gateways_branching = dict()
+        for e_id in self.element_info:
+            if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
+                    self.element_info[e_id].outgoing_flows) > 1:
+                average_probability = 1.0 / len(self.element_info[e_id].outgoing_flows)
+                probabilities = dict()
+                for flow_id in self.element_info[e_id].outgoing_flows:
+                    probabilities[flow_id] = average_probability
+                gateways_branching[e_id] = probabilities
         return gateways_branching
 
     @staticmethod

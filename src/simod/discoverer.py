@@ -11,7 +11,7 @@ from simod.replayer_datatypes import BPMNGraph
 from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import simulate, mine_resources_with_resource_table, \
-    mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks, evaluate_logs_with_add_metrics, \
+    mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
     split_timeline
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
@@ -94,7 +94,7 @@ class Discoverer:
         bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
         bpmn_graph = BPMNGraph.from_bpmn_path(Path(bpmn_path))
         traces_raw = self.log_train.get_raw_traces()
-        sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
+        sequences = mine_gateway_probabilities(traces_raw, bpmn_graph)
 
         self.process_stats = log_train_df.merge(resource_table[['resource', 'role']],
                                                 left_on='user', right_on='resource', how='left')

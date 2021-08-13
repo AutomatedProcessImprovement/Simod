@@ -15,7 +15,7 @@ from tqdm import tqdm
 from . import support_utils as sup
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step, print_notice
-from .configuration import CalculationMethod, DataType
+from .configuration import CalculationMethod, DataType, GateManagement
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.role_discovery import ResourcePoolAnalyser
@@ -57,7 +57,9 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     arrival_rate = mine_inter_arrival(process_graph, log_df, settings)
     bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
     # sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
-    sequences = mine_gateway_probabilities_stochastic_alternative(traces_raw, bpmn_graph)
+    # sequences = mine_gateway_probabilities_alternative(traces_raw, bpmn_graph)
+    sequences = mine_gateway_probabilities_alternative_with_gateway_management(
+        traces_raw, bpmn_graph, settings.gate_management)
     log_df['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
 
@@ -129,7 +131,7 @@ def compute_sequence_flow_frequencies(log_traces_raw: list, bpmn_graph: BPMNGrap
     return flow_arcs_frequency
 
 
-def mine_gateway_probabilities_stochastic(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
+def mine_gateway_probabilities(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
     print_step('Mining gateway probabilities')
     arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
     gateways_branching = bpmn_graph.compute_branching_probability(arcs_frequencies)
@@ -143,10 +145,31 @@ def mine_gateway_probabilities_stochastic(log_traces_raw: list, bpmn_graph: BPMN
     return sequences
 
 
-def mine_gateway_probabilities_stochastic_alternative(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
+# TODO: make it accept gate_management option
+def mine_gateway_probabilities_alternative(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
     print_step('Mining gateway probabilities')
     arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
-    gateways_branching = bpmn_graph.compute_branching_probability_alternative(arcs_frequencies)
+    gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
+
+    sequences = []
+    for gateway_id in gateways_branching:
+        for seqflow_id in gateways_branching[gateway_id]:
+            probability = gateways_branching[gateway_id][seqflow_id]
+            sequences.append({'elementid': seqflow_id, 'prob': probability})
+
+    return sequences
+
+
+def mine_gateway_probabilities_alternative_with_gateway_management(log_traces_raw: list, bpmn_graph: BPMNGraph,
+                                                                   gate_management: GateManagement) -> list:
+    print_step(f'Mining gateway probabilities with {gate_management}')
+    if gate_management is GateManagement.EQUIPROBABLE:
+        gateways_branching = bpmn_graph.compute_branching_probability_alternative_equiprobable()
+    elif gate_management is GateManagement.DISCOVERY:
+        arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
+        gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
+    else:
+        raise Exception('Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported')
 
     sequences = []
     for gateway_id in gateways_branching:

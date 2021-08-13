@@ -9,7 +9,8 @@ from typing import List, Tuple
 
 import pandas as pd
 from simod.common_routines import compute_sequence_flow_frequencies, extract_structure_parameters, \
-    extract_process_graph, mine_gateway_probabilities_stochastic_alternative
+    extract_process_graph, mine_gateway_probabilities_alternative, \
+    mine_gateway_probabilities_alternative_with_gateway_management
 from simod.configuration import Configuration, GateManagement
 from simod.readers.log_reader import LogReader
 from simod.readers.log_splitter import LogSplitter
@@ -29,10 +30,10 @@ class TestReplayer(unittest.TestCase):
             __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_672EE52F_F905_4860_9CD2_57F95917D1C9/ConsultaDataMining201618.bpmn'),
          'log_path': Path(os.path.dirname(
              __file__) + '/../../test_assets/validation_1/complete logs/ConsultaDataMining201618.xes')},
-        {'model_path': Path(os.path.dirname(
-            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_E7C625FF_E3CA_4AB3_A386_901182018864/BPI_Challenge_2012_W_Two_TS.bpmn'),
-         'log_path': Path(os.path.dirname(
-             __file__) + '/../../test_assets/validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes')},
+        # {'model_path': Path(os.path.dirname(
+        #     __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_E7C625FF_E3CA_4AB3_A386_901182018864/BPI_Challenge_2012_W_Two_TS.bpmn'),
+        #  'log_path': Path(os.path.dirname(
+        #      __file__) + '/../../test_assets/validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes')},
     ]
 
     validation_2_args: List[dict] = [
@@ -192,13 +193,32 @@ class TestReplayer(unittest.TestCase):
             traces = log.get_raw_traces()
 
             try:
-                sequences = mine_gateway_probabilities_stochastic_alternative(traces, graph)
+                sequences = mine_gateway_probabilities_alternative(traces, graph)
             except Exception as e:
                 logging.exception(e)
                 self.fail(f'Should not fail, failed with: {e}')
 
             print(sequences)
             self.assertFalse(len(sequences) == 0)
+
+    def test_mine_gateway_probabilities_alternative_with_gateway_management(self):
+        for arg in self.validation_1_args:
+            model_path = arg['model_path']
+            log_path = arg['log_path']
+            print(f'\nTesting {log_path.name}')
+
+            graph, log, _ = TestReplayer.setup_data(model_path, log_path)
+            traces = log.get_raw_traces()
+
+            for gateway_management in [GateManagement.DISCOVERY, GateManagement.EQUIPROBABLE]:
+                try:
+                    sequences = mine_gateway_probabilities_alternative_with_gateway_management(
+                        traces, graph, gateway_management)
+                except Exception as e:
+                    logging.exception(e)
+                    self.fail(f'Should not fail, failed with: {e}')
+                print(sequences)
+                self.assertFalse(len(sequences) == 0)
 
     def test_extract_structure_parameters(self):
         for arg in self.validation_2_args:
