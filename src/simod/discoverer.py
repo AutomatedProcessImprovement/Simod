@@ -7,8 +7,8 @@ import pandas as pd
 import xmltodict as xtd
 from lxml import etree
 from simod.replayer_datatypes import BPMNGraph
-from utils import support as sup
 
+from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import simulate, mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities_stochastic, process_tasks, evaluate_logs_with_add_metrics, \
