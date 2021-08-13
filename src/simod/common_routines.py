@@ -8,12 +8,11 @@ from pathlib import Path
 from typing import List, Tuple, Callable, Union
 
 import pandas as pd
-from memory_profiler import profile
 from networkx import DiGraph
 from simod.readers.log_splitter import LogSplitter
 from tqdm import tqdm
-from utils import support as sup
 
+from . import support_utils as sup
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step, print_notice
 from .configuration import CalculationMethod, DataType
