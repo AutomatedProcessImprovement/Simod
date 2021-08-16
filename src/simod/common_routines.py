@@ -162,6 +162,10 @@ def mine_gateway_probabilities_alternative(log_traces_raw: list, bpmn_graph: BPM
 
 def mine_gateway_probabilities_alternative_with_gateway_management(log_traces_raw: list, bpmn_graph: BPMNGraph,
                                                                    gate_management: GateManagement) -> list:
+    if isinstance(gate_management, list) and len(gate_management) >= 1:
+        print_notice(f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
+        gate_management = gate_management[0]
+
     print_step(f'Mining gateway probabilities with {gate_management}')
     if gate_management is GateManagement.EQUIPROBABLE:
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_equiprobable()
@@ -406,7 +410,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     return ttcreator.time_table, resource_pool, resource_table
 
 
-def split_timeline(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
+def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
     """
     Split an event log dataframe by time to perform split-validation.
     preferred method time splitting removing incomplete traces.
@@ -420,10 +424,13 @@ def split_timeline(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.DataFr
     size: float, validation percentage.
     one_ts: bool, Support only one timestamp.
     """
+    if isinstance(log, LogReader):
+        log = pd.DataFrame(log.data)
+
     # Split log data
-    splitter = LogSplitter(log.data)
+    splitter = LogSplitter(log)
     partition1, partition2 = splitter.split_log('timeline_contained', size, one_ts)
-    total_events = len(log.data)
+    total_events = len(log)
 
     # Check size and change time splitting method if necesary
     if len(partition2) < int(total_events * 0.1):
@@ -434,3 +441,29 @@ def split_timeline(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.DataFr
     partition1 = pd.DataFrame(partition1)
     partition2 = pd.DataFrame(partition2)
     return partition1, partition2, key
+
+
+def remove_outliers(log: Union[LogReader, pd.DataFrame]) -> pd.DataFrame:
+    if isinstance(log, LogReader):
+        event_log = pd.DataFrame(log.data)
+    else:
+        event_log = log
+
+    # calculating case durations
+    cases_durations = list()
+    for id, trace in event_log.groupby('caseid'):
+        duration = (trace['end_timestamp'].max() - trace['start_timestamp'].min()).total_seconds()
+        cases_durations.append({'caseid': id, 'duration_seconds': duration})
+    cases_durations = pd.DataFrame(cases_durations)
+
+    # merging data
+    event_log = event_log.merge(cases_durations, how='left', on='caseid')
+
+    # filtering rare events
+    unique_cases_durations = event_log[['caseid', 'duration_seconds']].drop_duplicates()
+    first_quantile = unique_cases_durations.quantile(0.1)
+    last_quantile = unique_cases_durations.quantile(0.9)
+    event_log = event_log[(event_log.duration_seconds <= last_quantile.duration_seconds) & (event_log.duration_seconds >= first_quantile.duration_seconds)]
+    event_log = event_log.drop(columns=['duration_seconds'])
+
+    return event_log
