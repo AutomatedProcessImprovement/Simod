@@ -213,7 +213,7 @@ class LogReader(object):
         self.data = new_data
 
     # =============================================================================
-    # Accesssor methods
+    # Accessor methods
     # =============================================================================
     def get_traces(self):
         """

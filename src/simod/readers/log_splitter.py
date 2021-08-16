@@ -18,9 +18,8 @@ class LogSplitter(object):
     expected format .xes or .csv
     """
 
-    def __init__(self, log, verbose=True):
-        """constructor"""
-        self.log = pd.DataFrame(log)
+    def __init__(self, log: pd.DataFrame, verbose=True):
+        self.log = log
         self._sort_log()
 
     def split_log(self, method: str, size: float, one_timestamp: bool):
