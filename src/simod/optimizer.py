@@ -1,19 +1,18 @@
 import copy
 import os
 import shutil
-import types
 from xml.dom import minidom
 
 import pandas as pd
 
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_section, print_asset, print_subsection, print_notice
+from .cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
 from .common_routines import extract_structure_parameters, extract_process_graph, simulate, \
-    evaluate_logs_with_add_metrics
+    evaluate_logs_with_add_metrics, remove_outliers
 from .configuration import Configuration, MiningAlgorithm
-from .readers import log_reader as lr
 from .readers import log_splitter as ls
+from .readers.log_reader import LogReader
 from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers import xml_writer
@@ -22,6 +21,8 @@ from .writers.model_serialization import serialize_model
 
 class Optimizer:
     """Hyper-parameter Optimizer class"""
+    log_train: LogReader
+    log_test: LogReader
 
     def __init__(self, settings):
         self.settings = settings
@@ -29,15 +30,18 @@ class Optimizer:
         self.settings_structure: Configuration = settings['strc']
         self.settings_time: Configuration = settings['tm']
         self.best_params = dict()
-        self.log = lr.LogReader(self.settings_global.log_path, self.settings_global.read_options)
-        self.log_train = types.SimpleNamespace()
-        self.log_test = types.SimpleNamespace()
+        self.log = LogReader(self.settings_global.log_path, self.settings_global.read_options)
+        # self.log_train = types.SimpleNamespace()
+        # self.log_test = types.SimpleNamespace()
         if not os.path.exists(self.settings_global.output.parent):
             os.makedirs(self.settings_global.output.parent)
 
     def execute_pipeline(self, discover_model: bool = True) -> None:
         print_notice(f'Log path: {self.settings_global.log_path}')
         self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)
+
+        print_step('Removing outliers from the training partition')
+        self._remove_outliers()
 
         strctr_optimizer_file_name = None
         strctr_optimizer_temp_output = None
@@ -75,6 +79,14 @@ class Optimizer:
             shutil.rmtree(strctr_optimizer_temp_output)
         shutil.rmtree(times_optimizer.temp_output)
         print_asset(f"Output folder is at {self.settings_global.output}")
+
+    def _remove_outliers(self):
+        # removing outliers
+        log_train_df = pd.DataFrame(self.log_train.data)
+        log_train_df = remove_outliers(log_train_df)
+        # converting data back to LogReader format
+        key = 'end_timestamp' if self.settings['gl'].read_options.one_timestamp else 'start_timestamp'
+        self.log_train.set_data(log_train_df.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
     def _redefine_best_params_after_structure_optimization(self, strctr_optimizer):
         # receiving mined results and redefining local variables
@@ -116,7 +128,7 @@ class Optimizer:
         model_path = self.settings_global.model_path
         process_graph = extract_process_graph(model_path)
         parameters = extract_structure_parameters(
-            settings=self.settings_global, process_graph=process_graph, log=self.log_train, model_path=model_path)
+            settings=self.settings_structure, process_graph=process_graph, log=self.log_train, model_path=model_path)
 
         # TODO: usually, self.log_valdn is used, but we don't have it here, in Discoverer,
         #  self.log_test is used instead. What whould be used here?
@@ -180,7 +192,7 @@ class Optimizer:
     # def set_log(self, **kwargs) -> None:
     #     # Event log reading
     #     global_config: Configuration = self.settings['gl']
-    #     self.log = lr.LogReader(os.path.join(global_config.input, global_config.file), global_config.read_options)
+    #     self.log = LogReader(os.path.join(global_config.input, global_config.file), global_config.read_options)
 
     def split_and_set_log_buckets(self, size: float, one_ts: bool) -> None:
         """
@@ -196,7 +208,7 @@ class Optimizer:
         one_ts : bool, Support only one timestamp.
         """
         # Split log data
-        splitter = ls.LogSplitter(self.log.data)
+        splitter = ls.LogSplitter(pd.DataFrame(self.log.data))
         train, test = splitter.split_log('timeline_contained', size, one_ts)
         total_events = len(self.log.data)
         # Check size and change time splitting method if necesary
@@ -206,7 +218,7 @@ class Optimizer:
         key = 'end_timestamp' if one_ts else 'start_timestamp'
         test = pd.DataFrame(test)
         train = pd.DataFrame(train)
-        self.log_test = (test.sort_values(key, ascending=True).reset_index(drop=True))
+        self.log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
         self.log_train = copy.deepcopy(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 

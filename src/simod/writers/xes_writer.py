@@ -1,12 +1,14 @@
 import itertools as it
 import os
+from typing import Union
 
-from memory_profiler import profile
+import pandas as pd
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 from opyenxes.factory.XFactory import XFactory
 
 from ..configuration import Configuration
+from ..readers.log_reader import LogReader
 
 
 class XesWriter(object):
@@ -14,8 +16,15 @@ class XesWriter(object):
     This class writes a process log in .xes format
     """
 
-    def __init__(self, log, settings: Configuration):
-        self.log = log
+    def __init__(self, log: Union[LogReader, pd.DataFrame, list], settings: Configuration):
+        if isinstance(log, pd.DataFrame):
+            self.log = log.values
+        elif isinstance(log, LogReader):
+            self.log = log.data
+        elif isinstance(log, list):
+            self.log = log
+        else:
+            raise Exception(f'Unimplemented type for {type(log)}')
         self.one_timestamp = settings.read_options.one_timestamp
         self.column_names = settings.read_options.column_names
         self.output_file = os.path.join(settings.output, settings.project_name + '.xes')
@@ -24,7 +33,7 @@ class XesWriter(object):
     def create_xes_file(self):
         csv_mapping = {v: k for k, v in self.column_names.items()}
         log = XFactory.create_log()
-        data = sorted(self.log.data, key=lambda x: x['caseid'])
+        data = sorted(self.log, key=lambda x: x['caseid'])
         for key, group in it.groupby(data, key=lambda x: x['caseid']):
             sort_key = ('end_timestamp' if self.one_timestamp else 'start_timestamp')
             csv_trace = sorted(list(group), key=lambda x: x[sort_key])

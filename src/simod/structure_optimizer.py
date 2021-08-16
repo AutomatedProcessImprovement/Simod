@@ -12,17 +12,15 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from simod.common_routines import mine_resources, extract_structure_parameters
 from tqdm import tqdm
 
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_message, print_subsection
-from .common_routines import execute_simulator
+from .common_routines import execute_simulator, mine_resources, extract_structure_parameters, split_timeline
 from .configuration import Configuration, MiningAlgorithm, Metric
 from .decorators import timeit, safe_exec_with_values_and_status
-from .readers import log_reader as lr
-from .readers import log_splitter as ls
+from .readers.log_reader import LogReader
 from .structure_miner import StructureMiner
 from .writers import xml_writer as xml, xes_writer as xes
 
@@ -30,9 +28,9 @@ from .writers import xml_writer as xml, xes_writer as xes
 class StructureOptimizer:
     """Hyperparameter-optimizer class"""
 
-    def __init__(self, settings: Configuration, log, **kwargs):
+    def __init__(self, settings: Configuration, log: LogReader, **kwargs):
         self.space = self.define_search_space(settings)
-        # Read inputs
+
         self.log = log
         self._split_timeline(0.8, settings.read_options.one_timestamp)
 
@@ -75,7 +73,7 @@ class StructureOptimizer:
         def exec_pipeline(trial_stg: Configuration):
             print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
-                          f'validation split: {len(pd.DataFrame(self.log_valdn).caseid.unique())}')
+                          f'validation split: {len(self.log_valdn.caseid.unique())}')
             # Vars initialization
             status = STATUS_OK
             exec_times = dict()
@@ -237,10 +235,10 @@ class StructureOptimizer:
             m_settings['read_options'].timeformat = '%Y-%m-%d %H:%M:%S.%f'
             m_settings['read_options'].column_names = column_names
             m_settings['project_name'] = settings.project_name
-            temp = lr.LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                             m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                                m_settings['read_options'],
-                                verbose=False)
+            temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
+                                          m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
+                             m_settings['read_options'],
+                             verbose=False)
             temp = pd.DataFrame(temp.data)
             temp.rename(columns={'user': 'resource'}, inplace=True)
             temp['role'] = temp['resource']
@@ -330,18 +328,22 @@ class StructureOptimizer:
         one_ts: bool, Support only one timestamp.
         """
         # Split log data
-        splitter = ls.LogSplitter(self.log.data)
-        train, validation = splitter.split_log('timeline_contained', size, one_ts)
-        total_events = len(self.log.data)
-        # Check size and change time splitting method if necessary
-        if len(validation) < int(total_events * 0.1):
-            train, validation = splitter.split_log('timeline_trace', size, one_ts)
-        # Set splits
-        key = 'end_timestamp' if one_ts else 'start_timestamp'
-        validation = pd.DataFrame(validation)
-        train = pd.DataFrame(train)
-        # If the log is big sample train partition
+        # splitter = ls.LogSplitter(self.log)
+        # train, validation = splitter.split_log('timeline_contained', size, one_ts)
+        # total_events = len(self.log)
+        # # Check size and change time splitting method if necessary
+        # if len(validation) < int(total_events * 0.1):
+        #     train, validation = splitter.split_log('timeline_trace', size, one_ts)
+        # # Set splits
+        # key = 'end_timestamp' if one_ts else 'start_timestamp'
+        # validation = pd.DataFrame(validation)
+        # train = pd.DataFrame(train)
+        # # If the log is big sample train partition
+        # train = self._sample_log(train)
+
+        train, validation, key = split_timeline(self.log, size, one_ts)
         train = self._sample_log(train)
+
         # Save partitions
         self.log_valdn = validation.sort_values(key, ascending=True).reset_index(drop=True)
         self.log_train = copy.deepcopy(self.log)

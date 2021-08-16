@@ -3,19 +3,19 @@ import logging
 import os
 import sys
 import unittest
-# from .common_routines import execute_simulator_simple
 from pathlib import Path
 from typing import List, Tuple
 
 import pandas as pd
-from simod.common_routines import compute_sequence_flow_frequencies, extract_structure_parameters, \
+
+from .common_routines import compute_sequence_flow_frequencies, extract_structure_parameters, \
     extract_process_graph, mine_gateway_probabilities_alternative, \
-    mine_gateway_probabilities_alternative_with_gateway_management
-from simod.configuration import Configuration, GateManagement
-from simod.readers.log_reader import LogReader
-from simod.readers.log_splitter import LogSplitter
-from simod.replayer_datatypes import BPMNGraph
-from simod.structure_optimizer import StructureOptimizer
+    mine_gateway_probabilities_alternative_with_gateway_management, remove_outliers
+from .configuration import Configuration, GateManagement
+from .readers.log_reader import LogReader
+from .readers.log_splitter import LogSplitter
+from .replayer_datatypes import BPMNGraph
+from .structure_optimizer import StructureOptimizer
 
 
 class TestReplayer(unittest.TestCase):
@@ -165,24 +165,6 @@ class TestReplayer(unittest.TestCase):
             for node_id in flow_arcs_frequency:
                 self.assertFalse(flow_arcs_frequency[node_id] == 0)
 
-    # def test_mine_gateway_probabilities_stochastic(self):
-    #     for arg in self.args:
-    #         model_path = arg['model_path']
-    #         log_path = arg['log_path']
-    #         print(f'\nTesting {log_path.name}')
-    #
-    #         graph, log, _ = self.setup_data(model_path, log_path)
-    #         traces = log.get_raw_traces()
-    #
-    #         try:
-    #             sequences = mine_gateway_probabilities_stochastic(traces, graph)  # NOTE: this function fails
-    #         except Exception as e:
-    #             logging.exception(e)
-    #             self.fail(f'Should not fail, failed with: {e}')
-    #
-    #         print(sequences)
-    #         self.assertFalse(len(sequences) == 0)
-
     def test_mine_gateway_probabilities_stochastic_alternative(self):
         for arg in self.validation_1_args:
             model_path = arg['model_path']
@@ -273,6 +255,36 @@ class TestReplayer(unittest.TestCase):
             self.assertTrue(len(flow_arcs_frequency) > 0)
             for node_id in flow_arcs_frequency:
                 self.assertFalse(flow_arcs_frequency[node_id] == 0)
+
+
+class TestOther(unittest.TestCase):
+    args: List[dict] = [
+        {'model_path': Path(os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.bpmn'),
+         'log_path': Path(os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.xes')},
+        {'model_path': Path(os.path.dirname(
+            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_48BA9CAF_B626_44EC_808E_FBEBCC6CF52C/Production.bpmn'),
+         'log_path': Path(os.path.dirname(
+             __file__) + '/../../test_assets/validation_1/complete logs/Production.xes')},
+        {'model_path': Path(os.path.dirname(
+            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_672EE52F_F905_4860_9CD2_57F95917D1C9/ConsultaDataMining201618.bpmn'),
+         'log_path': Path(os.path.dirname(
+             __file__) + '/../../test_assets/validation_1/complete logs/ConsultaDataMining201618.xes')},
+        # {'model_path': Path(os.path.dirname(
+        #     __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_E7C625FF_E3CA_4AB3_A386_901182018864/BPI_Challenge_2012_W_Two_TS.bpmn'),
+        #  'log_path': Path(os.path.dirname(
+        #      __file__) + '/../../test_assets/validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes')},
+    ]
+
+    def test_remove_outliers(self):
+        for arg in self.args:
+            settings = Configuration()
+            log_path = arg['log_path']
+            log = LogReader(log_path, settings.read_options)
+            print(f'Running test for {log_path}')
+            result = remove_outliers(log)
+            self.assertFalse(result is None)
+            self.assertTrue('caseid' in result.keys())
+            self.assertFalse('duration_seconds' in result.keys())
 
 
 if __name__ == '__main__':
