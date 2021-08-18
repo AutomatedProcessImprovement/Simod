@@ -100,8 +100,12 @@ class Optimizer:
         if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             self.settings_global.epsilon = best_parms['epsilon']
             self.settings_global.eta = best_parms['eta']
+            self.settings_global.and_prior = self.settings_structure.and_prior[best_parms['and_prior']]
+            self.settings_global.or_rep = self.settings_structure.or_rep[best_parms['or_rep']]
             self.best_params['epsilon'] = best_parms['epsilon']
             self.best_params['eta'] = best_parms['eta']
+            self.best_params['and_prior'] = self.settings_global.and_prior
+            self.best_params['or_rep'] = self.settings_global.or_rep
         elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
             self.settings_global.concurrency = best_parms['concurrency']
             self.best_params['concurrency'] = best_parms['concurrency']

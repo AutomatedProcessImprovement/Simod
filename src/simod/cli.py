@@ -17,7 +17,7 @@ def main():
 @click.option('--config_path', default=None, required=True)
 @click.pass_context
 def discover(ctx, config_path):
-    repository_dir = os.path.join(os.path.dirname(__file__), '../../')
+    repository_dir = os.getcwd()
     ctx.params['config_path'] = Path(os.path.join(repository_dir, config_path))
 
     config_data = config_data_from_file(config_path)
@@ -33,7 +33,7 @@ def discover(ctx, config_path):
 @click.option('--config_path', default=None, required=True)
 @click.pass_context
 def optimize(ctx, config_path):
-    repository_dir = os.path.join(os.path.dirname(__file__), '../../')
+    repository_dir = os.getcwd()
     ctx.params['config_path'] = Path(os.path.join(repository_dir, config_path))
 
     config_data = config_data_from_file(config_path)
