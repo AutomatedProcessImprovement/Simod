@@ -165,6 +165,8 @@ class BPMNGraph:
         self.decision_successors = dict()
         self.element_probability = None
         self.task_resource_probability = None
+        self.closest_distance = None
+        self.decision_flows_sortest_path = None
 
     @staticmethod
     def from_bpmn_path(model_path: Path):
@@ -392,7 +394,59 @@ class BPMNGraph:
                 break
 
         self.check_unfired_or_splits(fired_or_splits, f_arcs_frequency, p_state)
+        # self.postprocess_unfired_tasks(task_sequence, fired_tasks, f_arcs_frequency)
         return is_correct, fired_tasks, p_state.pending_tokens()
+
+    def postprocess_unfired_tasks(self, task_sequence: list, fired_tasks: list, f_arcs_frequency: dict):
+        if self.closest_distance is None:
+            self._sort_by_closest_predecesors()
+        fix_from = [None, 9999999999]
+        for i in range(0, len(fired_tasks)):
+            if not fired_tasks[i]:
+                e_info = self.element_info[self.from_name.get(task_sequence[i])]
+                j = i - 1
+                while j >= 0:
+                    p_info = self.element_info[self.from_name.get(task_sequence[j])]
+                    if self.closest_distance[e_info.id][p_info.id] < fix_from[1]:
+                        fix_from = [p_info.id, self.closest_distance[e_info.id][p_info.id]]
+                        if fix_from[1] == 1:
+                            break
+                    j -= 1
+                if fix_from[0] is not None:
+                    for flow_id in self.decision_flows_sortest_path[e_info.id][fix_from[0]]:
+                        if flow_id not in f_arcs_frequency:
+                            f_arcs_frequency[flow_id] = 0
+                        f_arcs_frequency[flow_id] += 1
+
+    def _sort_by_closest_predecesors(self):
+        self.closest_distance = dict()
+        self.decision_flows_sortest_path = dict()
+        for e_id in self.element_info:
+            self.closest_distance[e_id] = dict()
+            pred_seq = dict()
+            distance_map = {e_id: 0}
+            pred_queue = deque([self.element_info[e_id]])
+            while pred_queue:
+                e_info = pred_queue.popleft()
+                for flow_id in e_info.incoming_flows:
+                    pred_info = self._get_predecessor(flow_id)
+                    if pred_info.id not in distance_map:
+                        pred_seq[pred_info.id] = flow_id
+                        dist = distance_map[e_info.id]
+                        if pred_info.type is BPMNNodeType.TASK:
+                            dist += 1
+                            self.closest_distance[e_id][pred_info.id] = dist
+                        distance_map[pred_info.id] = dist
+                        pred_queue.append(pred_info)
+            self.decision_flows_sortest_path[e_id] = dict()
+            for p_id in self.element_info:
+                self.decision_flows_sortest_path[e_id][p_id] = list()
+                if p_id is not e_id and p_id in self.closest_distance[e_id]:
+                    p_info = self.element_info[p_id]
+                    while p_info.id is not e_id:
+                        if p_info.type in [BPMNNodeType.INCLUSIVE_GATEWAY, BPMNNodeType.EXCLUSIVE_GATEWAY] and p_info.is_split():
+                            self.decision_flows_sortest_path[e_id][p_id].append(pred_seq[p_info.id])
+                        p_info = self._get_successor(pred_seq[p_info.id])
 
     def try_firing(self, task_index, from_index, task_sequence, fired_tasks, pending_tasks, p_state,
                    f_arcs_frequency, fired_or_splits):
