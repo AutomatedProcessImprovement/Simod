@@ -355,7 +355,7 @@ class BPMNGraph:
             random.shuffle(enabled_tasks)
         return enabled_tasks
 
-    def replay_trace(self, task_sequence: list, f_arcs_frequency: dict) -> (bool, List[bool], ProcessState):
+    def replay_trace(self, task_sequence: list, f_arcs_frequency: dict, post_p=False) -> (bool, List[bool], ProcessState):
         p_state = ProcessState(self)
         fired_tasks = list()
         fired_or_splits = set()
@@ -394,20 +394,21 @@ class BPMNGraph:
                 break
 
         self.check_unfired_or_splits(fired_or_splits, f_arcs_frequency, p_state)
-        # self.postprocess_unfired_tasks(task_sequence, fired_tasks, f_arcs_frequency)
+        if post_p:
+            self.postprocess_unfired_tasks(task_sequence, fired_tasks, f_arcs_frequency)
         return is_correct, fired_tasks, p_state.pending_tokens()
 
     def postprocess_unfired_tasks(self, task_sequence: list, fired_tasks: list, f_arcs_frequency: dict):
         if self.closest_distance is None:
             self._sort_by_closest_predecesors()
-        fix_from = [None, 9999999999]
         for i in range(0, len(fired_tasks)):
             if not fired_tasks[i]:
                 e_info = self.element_info[self.from_name.get(task_sequence[i])]
+                fix_from = [self.starting_event, self.closest_distance[e_info.id][self.starting_event]]
                 j = i - 1
                 while j >= 0:
                     p_info = self.element_info[self.from_name.get(task_sequence[j])]
-                    if self.closest_distance[e_info.id][p_info.id] < fix_from[1]:
+                    if p_info.id in self.closest_distance[e_info.id] and self.closest_distance[e_info.id][p_info.id] < fix_from[1]:
                         fix_from = [p_info.id, self.closest_distance[e_info.id][p_info.id]]
                         if fix_from[1] == 1:
                             break
@@ -433,7 +434,7 @@ class BPMNGraph:
                     if pred_info.id not in distance_map:
                         pred_seq[pred_info.id] = flow_id
                         dist = distance_map[e_info.id]
-                        if pred_info.type is BPMNNodeType.TASK:
+                        if pred_info.type in [BPMNNodeType.TASK, BPMNNodeType.START_EVENT]:
                             dist += 1
                             self.closest_distance[e_id][pred_info.id] = dist
                         distance_map[pred_info.id] = dist
@@ -660,10 +661,12 @@ class BPMNGraph:
                     self.element_info[e_id].outgoing_flows) > 1:
                 total_frequency = 0
                 for flow_id in self.element_info[e_id].outgoing_flows:
+                    if flow_id not in flow_arcs_frequency:
+                        flow_arcs_frequency[flow_id] = 0
                     total_frequency += flow_arcs_frequency[flow_id]
                 flow_arc_probability = dict()
                 for flow_id in self.element_info[e_id].outgoing_flows:
-                    flow_arc_probability[flow_id] = flow_arcs_frequency[flow_id] / total_frequency
+                    flow_arc_probability[flow_id] = flow_arcs_frequency[flow_id] / total_frequency if total_frequency > 0 else 0
                 gateways_branching[e_id] = flow_arc_probability
         return gateways_branching
 
