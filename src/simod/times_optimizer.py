@@ -48,7 +48,7 @@ class TimesOptimizer:
         self.process_stats = log_df
 
         # Temp folder
-        self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
+        self.temp_output = os.path.join(os.getcwd(), 'outputs', sup.folder_id())
         if not os.path.exists(self.temp_output):
             os.makedirs(self.temp_output)
         self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
@@ -222,6 +222,8 @@ class TimesOptimizer:
         if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             data['epsilon'] = settings['epsilon']
             data['eta'] = settings['eta']
+            data['and_prior'] = settings['and_prior']
+            data['or_rep'] = settings['or_rep']
         elif settings['mining_alg'] is MiningAlgorithm.SM2:
             data['concurrency'] = settings['concurrency']
         else:
