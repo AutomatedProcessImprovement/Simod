@@ -401,17 +401,13 @@ class BPMNGraph:
     def postprocess_unfired_tasks(self, task_sequence: list, fired_tasks: list, f_arcs_frequency: dict):
         if self.closest_distance is None:
             self._sort_by_closest_predecesors()
+        task_sequence = [task_name for task_name in task_sequence if task_name in self.from_name]
         for i in range(0, len(fired_tasks)):
             if not fired_tasks[i]:
-                if self.from_name.get(task_sequence[i]) is None:
-                    continue
                 e_info = self.element_info[self.from_name.get(task_sequence[i])]
                 fix_from = [self.starting_event, self.closest_distance[e_info.id][self.starting_event]]
                 j = i - 1
                 while j >= 0:
-                    if self.from_name.get(task_sequence[i]) is None:
-                        j -= 1
-                        continue
                     p_info = self.element_info[self.from_name.get(task_sequence[j])]
                     if p_info.id in self.closest_distance[e_info.id] and self.closest_distance[e_info.id][p_info.id] < fix_from[1]:
                         fix_from = [p_info.id, self.closest_distance[e_info.id][p_info.id]]
@@ -423,6 +419,7 @@ class BPMNGraph:
                         if flow_id not in f_arcs_frequency:
                             f_arcs_frequency[flow_id] = 0
                         f_arcs_frequency[flow_id] += 1
+
 
     def _sort_by_closest_predecesors(self):
         self.closest_distance = dict()
