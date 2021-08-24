@@ -355,7 +355,7 @@ class BPMNGraph:
             random.shuffle(enabled_tasks)
         return enabled_tasks
 
-    def replay_trace(self, task_sequence: list, f_arcs_frequency: dict, post_p=False) -> (bool, List[bool], ProcessState):
+    def replay_trace(self, task_sequence: list, f_arcs_frequency: dict, post_p=True) -> (bool, List[bool], ProcessState):
         p_state = ProcessState(self)
         fired_tasks = list()
         fired_or_splits = set()
@@ -403,10 +403,15 @@ class BPMNGraph:
             self._sort_by_closest_predecesors()
         for i in range(0, len(fired_tasks)):
             if not fired_tasks[i]:
+                if self.from_name.get(task_sequence[i]) is None:
+                    continue
                 e_info = self.element_info[self.from_name.get(task_sequence[i])]
                 fix_from = [self.starting_event, self.closest_distance[e_info.id][self.starting_event]]
                 j = i - 1
                 while j >= 0:
+                    if self.from_name.get(task_sequence[i]) is None:
+                        j -= 1
+                        continue
                     p_info = self.element_info[self.from_name.get(task_sequence[j])]
                     if p_info.id in self.closest_distance[e_info.id] and self.closest_distance[e_info.id][p_info.id] < fix_from[1]:
                         fix_from = [p_info.id, self.closest_distance[e_info.id][p_info.id]]
