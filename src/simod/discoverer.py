@@ -93,8 +93,8 @@ class Discoverer:
 
         bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
         bpmn_graph = BPMNGraph.from_bpmn_path(Path(bpmn_path))
-        traces_raw = self.log_train.get_raw_traces()
-        sequences = mine_gateway_probabilities(traces_raw, bpmn_graph)
+        traces = self.log_train.get_traces()
+        sequences = mine_gateway_probabilities(traces, bpmn_graph)
 
         self.process_stats = log_train_df.merge(resource_table[['resource', 'role']],
                                                 left_on='user', right_on='resource', how='left')

@@ -37,7 +37,8 @@ class TestReplayer(unittest.TestCase):
     ]
 
     validation_2_args: List[dict] = [
-        {'log_path': Path(os.path.dirname(__file__) + '/../../test_assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
+        {'log_path': Path(
+            os.path.dirname(__file__) + '/../../test_assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
     ]
 
     @staticmethod
@@ -53,7 +54,7 @@ class TestReplayer(unittest.TestCase):
     @staticmethod
     def split_log_buckets(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.DataFrame, LogReader]:
         # Split log data
-        splitter = LogSplitter(log.data)
+        splitter = LogSplitter(pd.DataFrame(log.data))
         train, test = splitter.split_log('timeline_contained', size, one_ts)
         total_events = len(log.data)
 
@@ -93,23 +94,13 @@ class TestReplayer(unittest.TestCase):
             print(f'Testing {log_path.name}')
 
             graph, log, _ = self.setup_data(model_path, log_path)
-            traces = log.get_raw_traces()
-
-            def _collect_task_sequence(trace):
-                task_sequence = list()
-                for event in trace:
-                    task_name = event['task']  # original: concept:name
-                    state = event['event_type'].lower()  # original: lifecycle:transition
-                    if state in ["start", "assign"]:
-                        task_sequence.append(task_name)
-                return task_sequence
-
-            task_sequences = map(lambda trace: _collect_task_sequence(trace), traces)
+            traces = log.get_traces()
 
             try:
                 flow_arcs_frequency = dict()
-                for sequence in task_sequences:
-                    graph.replay_trace(sequence, flow_arcs_frequency)
+                for trace in traces:
+                    task_sequence = [event['task'] for event in trace]
+                    graph.replay_trace(task_sequence, flow_arcs_frequency)
             except Exception as e:
                 exc_type, exc_value, _ = sys.exc_info()
                 logging.exception(e)
@@ -122,7 +113,7 @@ class TestReplayer(unittest.TestCase):
             print(f'Testing {log_path.name}')
 
             graph, log, _ = self.setup_data(model_path, log_path)
-            traces = log.get_raw_traces()
+            traces = log.get_traces()
 
             try:
                 flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
@@ -153,7 +144,7 @@ class TestReplayer(unittest.TestCase):
             print(f'\nmodel_path = {model_path}\n')
 
             graph = BPMNGraph.from_bpmn_path(model_path)
-            traces = log_train.get_raw_traces()
+            traces = log_train.get_traces()
 
             try:
                 flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
@@ -172,7 +163,7 @@ class TestReplayer(unittest.TestCase):
             print(f'\nTesting {log_path.name}')
 
             graph, log, _ = TestReplayer.setup_data(model_path, log_path)
-            traces = log.get_raw_traces()
+            traces = log.get_traces()
 
             try:
                 sequences = mine_gateway_probabilities_alternative(traces, graph)
@@ -190,7 +181,7 @@ class TestReplayer(unittest.TestCase):
             print(f'\nTesting {log_path.name}')
 
             graph, log, _ = TestReplayer.setup_data(model_path, log_path)
-            traces = log.get_raw_traces()
+            traces = log.get_traces()
 
             for gateway_management in [GateManagement.DISCOVERY, GateManagement.EQUIPROBABLE]:
                 try:
@@ -244,7 +235,7 @@ class TestReplayer(unittest.TestCase):
             print(f'\nmodel_path = {model_path}\n')
 
             graph = BPMNGraph.from_bpmn_path(model_path)
-            traces = log_train.get_raw_traces()
+            traces = log_train.get_traces()
 
             try:
                 flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)

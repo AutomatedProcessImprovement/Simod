@@ -49,7 +49,7 @@ class ProcessParameters:
 def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
                                  model_path: Path) -> ProcessParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
-    traces_raw = log.get_raw_traces()  # NOTE: long operation
+    traces = log.get_traces()
     log_df = pd.DataFrame(log.data)
 
     # process_stats, conformant_traces = replay_logs(process_graph, traces, settings)
@@ -59,7 +59,7 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     # sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
     # sequences = mine_gateway_probabilities_alternative(traces_raw, bpmn_graph)
     sequences = mine_gateway_probabilities_alternative_with_gateway_management(
-        traces_raw, bpmn_graph, settings.gate_management)
+        traces, bpmn_graph, settings.gate_management)
     log_df['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
 
@@ -118,22 +118,17 @@ def mine_inter_arrival(process_graph: DiGraph, conformant_traces: pd.DataFrame, 
     return inter_evaluator.dist
 
 
-def compute_sequence_flow_frequencies(log_traces_raw: list, bpmn_graph: BPMNGraph):
+def compute_sequence_flow_frequencies(log_traces: list, bpmn_graph: BPMNGraph):
     flow_arcs_frequency = dict()
-    for trace in log_traces_raw:
-        task_sequence = list()
-        for event in trace:
-            task_name = event['task']  # original: concept:name
-            state = event['event_type'].lower()  # original: lifecycle:transition
-            if state in ["start", "assign"]:
-                task_sequence.append(task_name)
+    for trace in log_traces:
+        task_sequence = [event['task'] for event in trace]
         bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
     return flow_arcs_frequency
 
 
-def mine_gateway_probabilities(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
+def mine_gateway_probabilities(log_traces: list, bpmn_graph: BPMNGraph) -> list:
     print_step('Mining gateway probabilities')
-    arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
+    arcs_frequencies = compute_sequence_flow_frequencies(log_traces, bpmn_graph)
     gateways_branching = bpmn_graph.compute_branching_probability(arcs_frequencies)
 
     sequences = []
@@ -146,9 +141,9 @@ def mine_gateway_probabilities(log_traces_raw: list, bpmn_graph: BPMNGraph) -> l
 
 
 # TODO: make it accept gate_management option
-def mine_gateway_probabilities_alternative(log_traces_raw: list, bpmn_graph: BPMNGraph) -> list:
+def mine_gateway_probabilities_alternative(log_traces: list, bpmn_graph: BPMNGraph) -> list:
     print_step('Mining gateway probabilities')
-    arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
+    arcs_frequencies = compute_sequence_flow_frequencies(log_traces, bpmn_graph)
     gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
 
     sequences = []
@@ -160,7 +155,7 @@ def mine_gateway_probabilities_alternative(log_traces_raw: list, bpmn_graph: BPM
     return sequences
 
 
-def mine_gateway_probabilities_alternative_with_gateway_management(log_traces_raw: list, bpmn_graph: BPMNGraph,
+def mine_gateway_probabilities_alternative_with_gateway_management(log_traces: list, bpmn_graph: BPMNGraph,
                                                                    gate_management: GateManagement) -> list:
     if isinstance(gate_management, list) and len(gate_management) >= 1:
         print_notice(f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
@@ -170,7 +165,7 @@ def mine_gateway_probabilities_alternative_with_gateway_management(log_traces_ra
     if gate_management is GateManagement.EQUIPROBABLE:
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_equiprobable()
     elif gate_management is GateManagement.DISCOVERY:
-        arcs_frequencies = compute_sequence_flow_frequencies(log_traces_raw, bpmn_graph)
+        arcs_frequencies = compute_sequence_flow_frequencies(log_traces, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:
         raise Exception('Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported')

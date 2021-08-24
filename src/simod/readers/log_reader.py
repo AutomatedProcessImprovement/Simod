@@ -66,8 +66,8 @@ class LogReader(object):
         temp_data[TIMESTEP_KEY] = pd.to_datetime(temp_data[TIMESTEP_KEY], format=self.timeformat)
         temp_data.rename(columns={'concept:name': 'task', 'lifecycle:transition': 'event_type', 'org:resource': 'user',
                                   ('%s' % TIMESTEP_KEY): 'timestamp'}, inplace=True)
-        temp_data = (temp_data[~temp_data.task.isin(['Start', 'End', 'start', 'end'])].reset_index(drop=True))
-        temp_data = (temp_data[temp_data.event_type.isin(['start', 'complete'])].reset_index(drop=True))
+        temp_data = temp_data[~temp_data.task.isin(['Start', 'End', 'start', 'end'])].reset_index(drop=True)
+        temp_data = temp_data[temp_data.event_type.isin(['start', 'complete'])].reset_index(drop=True)
         if source == 'com.qbpsimulator' and len(temp_data.iloc[0].elementId.split('_')) > 1:
             temp_data['etype'] = temp_data.apply(lambda x: x.elementId.split('_')[0], axis=1)
             temp_data = (temp_data[temp_data.etype == 'Task'].reset_index(drop=True))
@@ -101,6 +101,7 @@ class LogReader(object):
             for caseid, group in temp_data.groupby(by=['caseid']):
                 trace = group.to_dict('records')
                 temp_trace = list()
+                incomplete = False
                 for i in range(0, len(trace) - 1):
                     incomplete = False
                     if trace[i]['event_type'] == 'start':
