@@ -8,8 +8,7 @@ from typing import List, Tuple
 
 import pandas as pd
 
-from .common_routines import compute_sequence_flow_frequencies, extract_structure_parameters, \
-    extract_process_graph, mine_gateway_probabilities_alternative, \
+from .common_routines import compute_sequence_flow_frequencies, mine_gateway_probabilities_alternative, \
     mine_gateway_probabilities_alternative_with_gateway_management, remove_outliers
 from .configuration import Configuration, GateManagement
 from .readers.log_reader import LogReader
