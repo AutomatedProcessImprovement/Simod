@@ -44,16 +44,7 @@ experiment_logs = {0: 'production',
 
 
 def reply_event_log(event_log, bpmn_graph, log_path=None):
-    traces = event_log.get_raw_traces()
-
-    def _collect_task_sequence(trace):
-        task_sequence = list()
-        for event in trace:
-            task_name = event['task']  # original: concept:name
-            state = event['event_type'].lower()  # original: lifecycle:transition
-            if state in ["start", "assign"]:
-                task_sequence.append(task_name)
-        return task_sequence
+    traces = event_log.get_traces()
 
     flow_arcs_prob = []
     flow_arcs_freq = []
@@ -67,11 +58,10 @@ def reply_event_log(event_log, bpmn_graph, log_path=None):
     total_traces = 0
 
     for post_p in [False, True]:
-        task_sequences = map(lambda trace: _collect_task_sequence(trace), traces)
         flow_arcs_frequency = dict()
-        for sequence in task_sequences:
-            # sequence.insert(0, 'Start')
-            # sequence.append('End')
+
+        for trace in traces:
+            sequence = [event['task'] for event in trace]
             is_correct, fired_tasks, pending_tokens = bpmn_graph.replay_trace(sequence, flow_arcs_frequency, post_p)
             if not post_p:
                 total_traces += 1
