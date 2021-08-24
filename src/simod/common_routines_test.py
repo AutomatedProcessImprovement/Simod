@@ -36,10 +36,10 @@ class TestReplayer(unittest.TestCase):
         #      __file__) + '/../../test_assets/validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes')},
     ]
 
-    validation_2_args: List[dict] = [
-        {'log_path': Path(
-            os.path.dirname(__file__) + '/../../test_assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
-    ]
+    # validation_2_args: List[dict] = [
+    #     {'log_path': Path(
+    #         os.path.dirname(__file__) + '/../../test_assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
+    # ]
 
     @staticmethod
     def setup_data(model_path: Path, log_path: Path):
@@ -193,59 +193,59 @@ class TestReplayer(unittest.TestCase):
                 print(sequences)
                 self.assertFalse(len(sequences) == 0)
 
-    def test_extract_structure_parameters(self):
-        for arg in self.validation_2_args:
-            model_path = arg['model_path']
-            log_path = arg['log_path']
-            print(f'\nTesting {log_path.name}')
+    # def test_extract_structure_parameters(self):
+    #     for arg in self.validation_2_args:
+    #         model_path = arg['model_path']
+    #         log_path = arg['log_path']
+    #         print(f'\nTesting {log_path.name}')
+    #
+    #         graph, log, settings = TestReplayer.setup_data(model_path, log_path)
+    #         process_graph = extract_process_graph(model_path)
+    #
+    #         try:
+    #             parameters = extract_structure_parameters(settings, process_graph, log, model_path)
+    #         except Exception as e:
+    #             exc_type, exc_value, _ = sys.exc_info()
+    #             logging.exception(e)
+    #             self.fail(f'Should not fail, failed with: {exc_type} {exc_value}')
+    #
+    #         self.assertTrue(parameters is not None)
+    #         self.assertTrue(parameters.process_stats is not None)
+    #         self.assertTrue(parameters.resource_pool is not None)
+    #         self.assertTrue(parameters.time_table is not None)
+    #         self.assertTrue(parameters.sequences is not None)
+    #         self.assertTrue(parameters.elements_data is not None)
 
-            graph, log, settings = TestReplayer.setup_data(model_path, log_path)
-            process_graph = extract_process_graph(model_path)
-
-            try:
-                parameters = extract_structure_parameters(settings, process_graph, log, model_path)
-            except Exception as e:
-                exc_type, exc_value, _ = sys.exc_info()
-                logging.exception(e)
-                self.fail(f'Should not fail, failed with: {exc_type} {exc_value}')
-
-            self.assertTrue(parameters is not None)
-            self.assertTrue(parameters.process_stats is not None)
-            self.assertTrue(parameters.resource_pool is not None)
-            self.assertTrue(parameters.time_table is not None)
-            self.assertTrue(parameters.sequences is not None)
-            self.assertTrue(parameters.elements_data is not None)
-
-    def test_compute_sequence_flow_frequencies_without_model_validation_2(self):
-        for arg in self.validation_2_args:
-            log_path = arg['log_path']
-            print(f'\n\nTesting {log_path.name}')
-
-            config = Configuration(log_path=log_path)
-            config.fill_in_derived_fields()
-
-            # settings for StructureOptimizer
-            config.max_eval_s = 2
-            config.concurrency = [0.0, 1.0]
-            config.epsilon = [0.0, 1.0]
-            config.eta = [0.0, 1.0]
-            config.gate_management = [GateManagement.DISCOVERY]
-
-            model_path, log_train, _ = TestReplayer.discover_model(config)
-            print(f'\nmodel_path = {model_path}\n')
-
-            graph = BPMNGraph.from_bpmn_path(model_path)
-            traces = log_train.get_traces()
-
-            try:
-                flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
-            except Exception as e:
-                self.fail(f'Should not fail, failed with: {e}')
-
-            self.assertTrue(flow_arcs_frequency is not None)
-            self.assertTrue(len(flow_arcs_frequency) > 0)
-            for node_id in flow_arcs_frequency:
-                self.assertFalse(flow_arcs_frequency[node_id] == 0)
+    # def test_compute_sequence_flow_frequencies_without_model_validation_2(self):
+    #     for arg in self.validation_2_args:
+    #         log_path = arg['log_path']
+    #         print(f'\n\nTesting {log_path.name}')
+    #
+    #         config = Configuration(log_path=log_path)
+    #         config.fill_in_derived_fields()
+    #
+    #         # settings for StructureOptimizer
+    #         config.max_eval_s = 2
+    #         config.concurrency = [0.0, 1.0]
+    #         config.epsilon = [0.0, 1.0]
+    #         config.eta = [0.0, 1.0]
+    #         config.gate_management = [GateManagement.DISCOVERY]
+    #
+    #         model_path, log_train, _ = TestReplayer.discover_model(config)
+    #         print(f'\nmodel_path = {model_path}\n')
+    #
+    #         graph = BPMNGraph.from_bpmn_path(model_path)
+    #         traces = log_train.get_traces()
+    #
+    #         try:
+    #             flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
+    #         except Exception as e:
+    #             self.fail(f'Should not fail, failed with: {e}')
+    #
+    #         self.assertTrue(flow_arcs_frequency is not None)
+    #         self.assertTrue(len(flow_arcs_frequency) > 0)
+    #         for node_id in flow_arcs_frequency:
+    #             self.assertFalse(flow_arcs_frequency[node_id] == 0)
 
 
 class TestOther(unittest.TestCase):

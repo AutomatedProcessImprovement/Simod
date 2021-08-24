@@ -229,15 +229,15 @@ class Configuration:
     # input: Optional[Path] = None
     # file: Optional[Path] = None
     # alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
-    output: Path = Path(os.path.join(os.getcwd(), 'outputs', sup.folder_id()))
-    sm1_path: Path = os.path.join(os.getcwd(), 'external_tools', 'splitminer2', 'sm2.jar')
-    sm2_path: Path = os.path.join(os.getcwd(), 'external_tools', 'splitminer2', 'sm2.jar')
-    sm3_path: Path = os.path.join(os.getcwd(), 'external_tools', 'splitminer3', 'bpmtk.jar')
-    bimp_path: Path = os.path.join(os.getcwd(), 'external_tools', 'bimp',
+    output: Path = Path(os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id()))
+    sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
+    sm2_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
+    sm3_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer3', 'bpmtk.jar')
+    bimp_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'bimp',
                                    'qbp-simulator-engine.jar')
-    align_path: Path = os.path.join(os.getcwd(), 'external_tools', 'proconformance',
+    align_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'proconformance',
                                     'ProConformance2.jar')
-    calender_path: Path = os.path.join(os.getcwd(), 'external_tools', 'calenderimp',
+    calender_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'calenderimp',
                                        'CalenderImp.jar')
     aligninfo: Path = os.path.join(output, 'CaseTypeAlignmentResults.csv')
     aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
@@ -282,7 +282,7 @@ class Configuration:
 
 def config_data_from_file(config_path) -> dict:
     def _update_fields(data: dict):
-        repository_dir = os.path.join(os.getcwd())
+        repository_dir = os.path.join(os.path.dirname(__file__), '../../')
 
         model_path = data.get('model_path')
         if model_path:

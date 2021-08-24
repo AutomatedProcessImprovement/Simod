@@ -48,7 +48,7 @@ class TimesOptimizer:
         self.process_stats = log_df
 
         # Temp folder
-        self.temp_output = os.path.join(os.getcwd(), 'outputs', sup.folder_id())
+        self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
         if not os.path.exists(self.temp_output):
             os.makedirs(self.temp_output)
         self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
