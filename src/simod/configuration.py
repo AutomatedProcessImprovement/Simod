@@ -27,6 +27,33 @@ class MiningAlgorithm(Enum):
             return cls.SM3
         else:
             raise ValueError(f'Unknown value {value}')
+            
+class AndPriorORemove(Enum):
+    TRUE = auto()
+    FALSE = auto()
+
+    @classmethod
+    def from_str(cls, value: Union[str, List[str]]) -> 'Union[AndPriorORemove, List[AndPriorORemove]]':
+        if isinstance(value, str):
+            return AndPriorORemove._from_str(value)
+        elif isinstance(value, list):
+            return [AndPriorORemove._from_str(v) for v in value]
+
+    @classmethod
+    def _from_str(cls, value: str) -> 'AndPriorORemove':
+        if value:
+            return cls.TRUE
+        elif value == False:
+            return cls.FALSE
+        else:
+            raise ValueError(f'Unknown value {value}')
+
+    def __str__(self):
+        if self == AndPriorORemove.TRUE:
+            return 'true'
+        elif self == AndPriorORemove.FALSE:
+            return 'false'
+        return f'Unknown AndPriorORemove {str(self)}'
 
 
 class GateManagement(Enum):
@@ -202,15 +229,15 @@ class Configuration:
     # input: Optional[Path] = None
     # file: Optional[Path] = None
     # alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
-    output: Path = Path(os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id()))
-    sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
-    sm2_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
-    sm3_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer3', 'bpmtk.jar')
-    bimp_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'bimp',
+    output: Path = Path(os.path.join(os.getcwd(), 'outputs', sup.folder_id()))
+    sm1_path: Path = os.path.join(os.getcwd(), 'external_tools', 'splitminer2', 'sm2.jar')
+    sm2_path: Path = os.path.join(os.getcwd(), 'external_tools', 'splitminer2', 'sm2.jar')
+    sm3_path: Path = os.path.join(os.getcwd(), 'external_tools', 'splitminer3', 'bpmtk.jar')
+    bimp_path: Path = os.path.join(os.getcwd(), 'external_tools', 'bimp',
                                    'qbp-simulator-engine.jar')
-    align_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'proconformance',
+    align_path: Path = os.path.join(os.getcwd(), 'external_tools', 'proconformance',
                                     'ProConformance2.jar')
-    calender_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'calenderimp',
+    calender_path: Path = os.path.join(os.getcwd(), 'external_tools', 'calenderimp',
                                        'CalenderImp.jar')
     aligninfo: Path = os.path.join(output, 'CaseTypeAlignmentResults.csv')
     aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
@@ -228,6 +255,8 @@ class Configuration:
     arr_support: Optional[Union[float, List[float]]] = None
     epsilon: Optional[Union[float, List[float]]] = None
     eta: Optional[Union[float, List[float]]] = None
+    and_prior: Optional[Union[AndPriorORemove, List[AndPriorORemove]]] = None
+    or_rep: Optional[Union[AndPriorORemove, List[AndPriorORemove]]] = None
     gate_management: Optional[Union[GateManagement, List[GateManagement]]] = None
     res_confidence: Optional[float] = None
     res_support: Optional[float] = None
@@ -253,7 +282,7 @@ class Configuration:
 
 def config_data_from_file(config_path) -> dict:
     def _update_fields(data: dict):
-        repository_dir = os.path.join(os.path.dirname(__file__), '../../')
+        repository_dir = os.path.join(os.getcwd())
 
         model_path = data.get('model_path')
         if model_path:
@@ -283,6 +312,14 @@ def config_data_from_file(config_path) -> dict:
         # alg_manag = data.get('alg_manag')
         # if alg_manag:
         #     data['alg_manag'] = AlgorithmManagement.from_str(alg_manag)
+
+        and_prior = data.get('and_prior')
+        if and_prior:
+            data['and_prior'] = AndPriorORemove.from_str(and_prior)
+
+        or_rep = data.get('or_rep')
+        if or_rep:
+            data['or_rep'] = AndPriorORemove.from_str(or_rep)
 
         gate_management = data.get('gate_management')
         if gate_management:

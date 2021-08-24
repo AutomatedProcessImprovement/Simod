@@ -39,7 +39,7 @@ class StructureOptimizer:
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
         # Load settings
         self.settings = settings
-        self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
+        self.temp_output = os.path.join(os.getcwd(), 'outputs', sup.folder_id())
         if not os.path.exists(self.temp_output):
             os.makedirs(self.temp_output)
         self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
@@ -58,6 +58,8 @@ class StructureOptimizer:
         if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             var_dim['epsilon'] = hp.uniform('epsilon', settings.epsilon[0], settings.epsilon[1])
             var_dim['eta'] = hp.uniform('eta', settings.eta[0], settings.eta[1])
+            var_dim['and_prior'] = hp.choice('and_prior', ['true', 'false'])
+            var_dim['or_rep'] = hp.choice('or_rep', ['true', 'false'])
         elif settings.mining_alg is MiningAlgorithm.SM2:
             var_dim['concurrency'] = hp.uniform('concurrency', settings.concurrency[0], settings.concurrency[1])
         csettings = copy.deepcopy(settings.__dict__)
@@ -286,6 +288,8 @@ class StructureOptimizer:
         if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             data['epsilon'] = settings['epsilon']
             data['eta'] = settings['eta']
+            data['and_prior'] = settings['and_prior']
+            data['or_rep'] = settings['or_rep']
         elif settings['mining_alg'] is MiningAlgorithm.SM2:
             data['concurrency'] = settings['concurrency']
         else:

@@ -114,7 +114,7 @@ class StructureMiner:
                      'au.edu.unimelb.services.ServiceProvider',
                      'SMD',
                      str(settings.epsilon), str(settings.eta),
-                     'false', 'false', 'false',
+                     settings.and_prior, settings.or_rep, 'false',
                      input_route,
                      os.path.join(settings.output, file_name)])
         subprocess.call(args)

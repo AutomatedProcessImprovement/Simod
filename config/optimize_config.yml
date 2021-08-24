@@ -11,7 +11,7 @@ add_metrics:
   - dl
   - mae
 structure_optimizer:
-  max_eval_s: 15
+  max_eval_s: 20
   concurrency:
     - 0.0
     - 1.0
@@ -24,6 +24,12 @@ structure_optimizer:
   gate_management:
     - equiprobable
     - discovery
+  or_rep:
+    - true
+    - false
+  and_prior:
+    - true
+    - false 
 time_optimizer:
   max_eval_t: 20
   rp_similarity:
