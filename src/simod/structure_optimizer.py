@@ -144,7 +144,7 @@ class StructureOptimizer:
     @timeit(rec_name='MINING_STRUCTURE')
     @safe_exec_with_values_and_status
     def _mine_structure(self, settings: Configuration, **kwargs) -> None:
-        structure_miner = StructureMiner(settings, self.log_train)
+        structure_miner = StructureMiner(settings)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             return [structure_miner.bpmn, structure_miner.process_graph]

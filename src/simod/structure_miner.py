@@ -3,6 +3,9 @@ import platform as pl
 import shutil
 import subprocess
 
+from memory_profiler import profile
+from networkx import DiGraph
+
 from .cli_formatter import print_subsection, print_step
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import safe_exec
@@ -12,9 +15,11 @@ from .readers import process_structure
 
 class StructureMiner:
     """This class extracts all the BPS parameters"""
+    bpmn: br.BpmnReader
+    process_graph: DiGraph
 
-    def __init__(self, settings: Configuration, log):
-        self.log = log
+    def __init__(self, settings: Configuration):
+        # self.log = log  # TODO: the log isn't used
         self.is_safe = True
         self.settings = settings
 
