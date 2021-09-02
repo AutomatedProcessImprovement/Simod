@@ -6,6 +6,9 @@ import pandas as pd
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 from opyenxes.factory.XFactory import XFactory
+from pm4py.objects.conversion.log import converter
+from pm4py.objects.log.exporter.xes import exporter
+from pm4py.objects.log.util import interval_lifecycle
 
 from ..configuration import Configuration
 from ..readers.log_reader import LogReader
@@ -28,15 +31,43 @@ class XesWriter(object):
         self.one_timestamp = settings.read_options.one_timestamp
         self.column_names = settings.read_options.column_names
         self.output_file = os.path.join(settings.output, settings.project_name + '.xes')
-        self.create_xes_file()
+        # self.create_xes_file()
+        self.create_xes_file_alternative()
 
+    @profile(stream=open('logs/memprof_XesWriter.create_xes_file_alternative.log', 'a+'))
+    def create_xes_file_alternative(self):
+        log_df = pd.DataFrame(self.log)
+        log_df.rename(columns={
+            'task': 'concept:name',
+            'caseid': 'case:concept:name',
+            'event_type': 'lifecycle:transition',
+            'user': 'org:resource',
+            'end_timestamp': 'time:timestamp'
+        }, inplace=True)
+        log_df.drop(columns=['@@startevent_concept:name',
+                             '@@startevent_org:resource',
+                             '@@startevent_Activity',
+                             '@@startevent_Resource',
+                             '@@duration',
+                             'case:variant',
+                             'case:variant-index',
+                             'case:creator',
+                             'Activity',
+                             'Resource'], inplace=True, errors='ignore')
+
+        log_interval = converter.apply(log_df, variant=converter.Variants.TO_EVENT_LOG)
+        log_lifecycle = interval_lifecycle.to_lifecycle(log_interval)
+
+        exporter.apply(log_lifecycle, self.output_file)
+
+    @profile
     def create_xes_file(self):
         csv_mapping = {v: k for k, v in self.column_names.items()}
         log = XFactory.create_log()
         data = sorted(self.log, key=lambda x: x['caseid'])
         for key, group in it.groupby(data, key=lambda x: x['caseid']):
             sort_key = ('end_timestamp' if self.one_timestamp else 'start_timestamp')
-            csv_trace = sorted(list(group), key=lambda x: x[sort_key])
+            csv_trace = sorted(list(group), key=lambda x: x[sort_key])  # TODO: why is that "csv_trace" in xes function?
             events = list()
             for line in csv_trace:
                 events.extend(self.convert_line_in_event(csv_mapping, line))
