@@ -24,6 +24,7 @@ from .decorators import timeit, safe_exec_with_values_and_status
 from .readers import bpmn_reader as br
 from .readers import log_reader as lr
 from .readers import process_structure as gph
+from .readers.log_reader import LogReader
 
 
 class TimesOptimizer:
@@ -34,7 +35,7 @@ class TimesOptimizer:
         # read inputs
         self.log = log
         self._split_timeline(0.8, settings.read_options.one_timestamp)
-        self.org_log = copy.deepcopy(log)
+        self.org_log = log
         self.org_log_train = copy.deepcopy(self.log_train)
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
         # Load settings
@@ -91,6 +92,7 @@ class TimesOptimizer:
             exec_times = dict()
             sim_values = []
             trial_stg = self._filter_parms(trial_stg)
+
             # Path redefinition
             rsp = self._temp_path_redef(trial_stg, status=status, log_time=exec_times)
             status = rsp['status']
@@ -112,7 +114,7 @@ class TimesOptimizer:
             rsp = self._define_response(trial_stg, status, sim_values)
 
             # reinstate log
-            self.log = copy.deepcopy(self.org_log)
+            self.log = self.org_log  # TODO: no need
             self.log_train = copy.deepcopy(self.org_log_train)
             self.log_valdn = copy.deepcopy(self.org_log_valdn)
 
@@ -456,5 +458,6 @@ class TimesOptimizer:
     def _split_timeline(self, size: float, one_ts: bool) -> None:
         train, valdn, key = split_timeline(self.log, size, one_ts)
         self.log_valdn = valdn.sort_values(key, ascending=True).reset_index(drop=True)
-        self.log_train = copy.deepcopy(self.log)
+        # self.log_train = copy.deepcopy(self.log)
+        self.log_train = LogReader.copy_without_data(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))

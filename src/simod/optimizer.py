@@ -49,7 +49,7 @@ class Optimizer:
             print_section('Model Discovery and Parameters Extraction')
             # mining the structure
             strctr_optimizer = StructureOptimizer(
-                self.settings_structure, copy.deepcopy(self.log_train), discover_model=discover_model)
+                self.settings_structure, self.log_train, discover_model=discover_model)
             strctr_optimizer.execute_trials()
             # redefining local variables
             self._redefine_best_params_after_structure_optimization(strctr_optimizer)
@@ -63,7 +63,7 @@ class Optimizer:
         print_section('Times Optimization')
         # mining times
         times_optimizer = TimesOptimizer(
-            self.settings_global, self.settings_time, copy.deepcopy(self.log_train), model_path)
+            self.settings_global, self.settings_time, self.log_train, model_path)
         times_optimizer.execute_trials()
         # redefining local variables
         self._redefine_best_params_after_times_optimization(times_optimizer)
@@ -215,7 +215,8 @@ class Optimizer:
         test = pd.DataFrame(test)
         train = pd.DataFrame(train)
         self.log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
-        self.log_train = copy.deepcopy(self.log)
+        # self.log_train = copy.deepcopy(self.log)
+        self.log_train = LogReader.copy_without_data(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
     def _modify_simulation_model(self, model):
