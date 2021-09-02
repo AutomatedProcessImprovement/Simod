@@ -31,8 +31,6 @@ class Optimizer:
         self.settings_time: Configuration = settings['tm']
         self.best_params = dict()
         self.log = LogReader(self.settings_global.log_path, self.settings_global.read_options)
-        # self.log_train = types.SimpleNamespace()
-        # self.log_test = types.SimpleNamespace()
         if not os.path.exists(self.settings_global.output.parent):
             os.makedirs(self.settings_global.output.parent)
 
@@ -191,12 +189,6 @@ class Optimizer:
         canonical_model['discovery_parameters'] = self.best_params
         sup.create_json(canonical_model, os.path.join(
             self.settings_global.output, self.settings_global.project_name + '_canon.json'))
-
-    # @timeit
-    # def set_log(self, **kwargs) -> None:
-    #     # Event log reading
-    #     global_config: Configuration = self.settings['gl']
-    #     self.log = LogReader(os.path.join(global_config.input, global_config.file), global_config.read_options)
 
     def split_and_set_log_buckets(self, size: float, one_ts: bool) -> None:
         """

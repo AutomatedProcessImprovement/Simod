@@ -86,31 +86,36 @@ class TimesOptimizer:
             print_subsection('Trial')
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
                           f'valdn split: {len(pd.DataFrame(self.log_valdn).caseid.unique())}')
-            # Vars initialization
+
             status = STATUS_OK
             exec_times = dict()
-            # print(len(data))
             sim_values = []
             trial_stg = self._filter_parms(trial_stg)
             # Path redefinition
             rsp = self._temp_path_redef(trial_stg, status=status, log_time=exec_times)
             status = rsp['status']
             trial_stg = rsp['values'] if status == STATUS_OK else trial_stg
-            # # Parameters extraction
+
+            # Parameters extraction
             rsp = self._extract_parameters(Configuration(**trial_stg), status=status, log_time=exec_times)
             status = rsp['status']
+
             # Simulate model
             rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
             status = rsp['status']
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
+
             # Save times
             self._save_times(exec_times, trial_stg, self.temp_output)
+
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
+
             # reinstate log
             self.log = copy.deepcopy(self.org_log)
             self.log_train = copy.deepcopy(self.org_log_train)
             self.log_valdn = copy.deepcopy(self.org_log_valdn)
+
             return rsp
 
         # Optimize
@@ -427,15 +432,6 @@ class TimesOptimizer:
         # load bpmn model
         self.bpmn = br.BpmnReader(model_path)
         self.process_graph = gph.create_process_structure(self.bpmn)
-
-    # def _replay_process(self) -> None:
-    #     """
-    #     Process replaying
-    #     """
-    #     replayer = LogReplayer(self.process_graph, self.log_train.get_traces(), self.settings,
-    #                            msg='reading conformant training traces')
-    #     self.process_stats = replayer.process_stats
-    #     self.conformant_traces = replayer.conformant_traces
 
     @staticmethod
     def _filter_parms(parms):

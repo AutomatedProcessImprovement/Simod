@@ -76,27 +76,33 @@ class StructureOptimizer:
             print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
                           f'validation split: {len(self.log_valdn.caseid.unique())}')
-            # Vars initialization
+
             status = STATUS_OK
             exec_times = dict()
             sim_values = []
+
             # Path redefinition
             rsp = self._temp_path_redef(trial_stg, status=status, log_time=exec_times)
             status = rsp['status']
             trial_stg = rsp['values'] if status == STATUS_OK else trial_stg
+
             # Structure mining
             rsp = self._mine_structure(Configuration(**trial_stg), status=status, log_time=exec_times)
             status = rsp['status']
+
             # Parameters extraction
             rsp = self._extract_parameters(trial_stg, rsp['values'], copy.deepcopy(parameters), status=status,
                                            log_time=exec_times)
             status = rsp['status']
+
             # Simulate model
             rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
             status = rsp['status']
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
+
             # Save times
             self._save_times(exec_times, trial_stg, self.temp_output)
+
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
             # reinstate log
@@ -331,20 +337,6 @@ class StructureOptimizer:
         size: float, validation percentage.
         one_ts: bool, Support only one timestamp.
         """
-        # Split log data
-        # splitter = ls.LogSplitter(self.log)
-        # train, validation = splitter.split_log('timeline_contained', size, one_ts)
-        # total_events = len(self.log)
-        # # Check size and change time splitting method if necessary
-        # if len(validation) < int(total_events * 0.1):
-        #     train, validation = splitter.split_log('timeline_trace', size, one_ts)
-        # # Set splits
-        # key = 'end_timestamp' if one_ts else 'start_timestamp'
-        # validation = pd.DataFrame(validation)
-        # train = pd.DataFrame(train)
-        # # If the log is big sample train partition
-        # train = self._sample_log(train)
-
         train, validation, key = split_timeline(self.log, size, one_ts)
         train = self._sample_log(train)
 

@@ -96,15 +96,6 @@ def extract_times_parameters(settings: Configuration, process_graph, log: LogRea
     )
 
 
-# # TODO: make it more general and allow new replayer with a flag everywhere
-# def replay_logs(process_graph: DiGraph,
-#                 log_traces: list,
-#                 settings: Configuration) -> Tuple[Union[list, pd.DataFrame], list]:
-#     print_step('Log Replayer')
-#     replayer = LogReplayer(process_graph, log_traces, settings, msg='reading conformant training traces')
-#     return replayer.process_stats, replayer.conformant_traces
-
-
 def mine_resources_wrapper(settings: Configuration) -> Tuple[list, List[str]]:  # TODO: maybe this one is unnecessary
     """Analysing resource pool LV917 or 247"""
     print_step('Resource Miner')
@@ -397,10 +388,6 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     ttcreator.create_timetables(args)
     resource_pool = create_resource_pool(res_analyzer.resource_table, ttcreator.res_ttable_name)
     resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
-
-    # TODO: do it after execution of this func
-    # Adding role to process stats
-    # self.output.process_stats = self.output.process_stats.merge(resource_table, on='resource', how='left')
 
     return ttcreator.time_table, resource_pool, resource_table
 
