@@ -42,6 +42,20 @@ $ pip install -r requirements.txt
 $ pip install -e .
 ```
 
+## Testing
+
+We use `pytest` to run tests on the package:
+
+```shell
+$ pytest
+```
+
+To run only relatively fast tests, execute:
+
+```shell
+$ pytest -m "not slow"
+```
+
 ## Data format
  
 The tool assumes the input is composed of a case identifier, an activity label, a resource attribute (indicating which resource performed the activity), 
