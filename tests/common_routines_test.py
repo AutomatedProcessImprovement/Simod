@@ -9,36 +9,29 @@ from typing import List, Tuple
 import pandas as pd
 from memory_profiler import profile
 
-from .common_routines import compute_sequence_flow_frequencies, mine_gateway_probabilities_alternative, \
+from simod.common_routines import compute_sequence_flow_frequencies, mine_gateway_probabilities_alternative, \
     mine_gateway_probabilities_alternative_with_gateway_management, remove_outliers
-from .configuration import Configuration, GateManagement
-from .readers.log_reader import LogReader
-from .readers.log_splitter import LogSplitter
-from .replayer_datatypes import BPMNGraph
-from .structure_optimizer import StructureOptimizer
+from simod.configuration import Configuration, GateManagement
+from simod.readers.log_reader import LogReader
+from simod.readers.log_splitter import LogSplitter
+from simod.replayer_datatypes import BPMNGraph
+from simod.structure_optimizer import StructureOptimizer
 
 
 class TestReplayer(unittest.TestCase):
     validation_1_args: List[dict] = [
-        {'model_path': Path(os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.bpmn'),
-         'log_path': Path(os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.xes')},
-        {'model_path': Path(os.path.dirname(
-            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_48BA9CAF_B626_44EC_808E_FBEBCC6CF52C/Production.bpmn'),
-         'log_path': Path(os.path.dirname(
-             __file__) + '/../../test_assets/validation_1/complete logs/Production.xes')},
-        {'model_path': Path(os.path.dirname(
-            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_672EE52F_F905_4860_9CD2_57F95917D1C9/ConsultaDataMining201618.bpmn'),
-         'log_path': Path(os.path.dirname(
-             __file__) + '/../../test_assets/validation_1/complete logs/ConsultaDataMining201618.xes')},
-        {'model_path': Path(os.path.dirname(
-            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_E7C625FF_E3CA_4AB3_A386_901182018864/BPI_Challenge_2012_W_Two_TS.bpmn'),
-         'log_path': Path(os.path.dirname(
-             __file__) + '/../../test_assets/validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes')},
+        {'model_path': Path('test_assets/PurchasingExample.bpmn'),
+         'log_path': Path('test_assets/PurchasingExample.xes')},
+        # {'model_path': Path('test_assets/validation_1/testing logs and models/20210804_48BA9CAF_B626_44EC_808E_FBEBCC6CF52C/Production.bpmn'),
+        #  'log_path': Path('test_assets/validation_1/complete logs/Production.xes')},
+        # {'model_path': Path('test_assets/validation_1/testing logs and models/20210804_672EE52F_F905_4860_9CD2_57F95917D1C9/ConsultaDataMining201618.bpmn'),
+        #  'log_path': Path('test_assets/validation_1/complete logs/ConsultaDataMining201618.xes')},
+        # {'model_path': Path('test_assets/validation_1/testing logs and models/20210804_E7C625FF_E3CA_4AB3_A386_901182018864/BPI_Challenge_2012_W_Two_TS.bpmn'),
+        #  'log_path': Path('test_assets/validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes')},
     ]
 
     validation_2_args: List[dict] = [
-        {'log_path': Path(
-            os.path.dirname(__file__) + '/../../test_assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
+        {'log_path': Path('test_assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
     ]
 
     @staticmethod
@@ -216,50 +209,47 @@ class TestReplayer(unittest.TestCase):
     #         self.assertTrue(parameters.sequences is not None)
     #         self.assertTrue(parameters.elements_data is not None)
 
-    def test_compute_sequence_flow_frequencies_without_model_validation_2(self):
-        for arg in self.validation_2_args:
-            log_path = arg['log_path']
-            print(f'\n\nTesting {log_path.name}')
-
-            config = Configuration(log_path=log_path)
-            config.fill_in_derived_fields()
-
-            # settings for StructureOptimizer
-            config.max_eval_s = 2
-            config.concurrency = [0.0, 1.0]
-            config.epsilon = [0.0, 1.0]
-            config.eta = [0.0, 1.0]
-            config.gate_management = [GateManagement.DISCOVERY]
-
-            model_path, log_train, _ = TestReplayer.discover_model(config)
-            print(f'\nmodel_path = {model_path}\n')
-
-            graph = BPMNGraph.from_bpmn_path(model_path)
-            traces = log_train.get_traces()
-
-            try:
-                flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
-            except Exception as e:
-                self.fail(f'Should not fail, failed with: {e}')
-
-            self.assertTrue(flow_arcs_frequency is not None)
-            self.assertTrue(len(flow_arcs_frequency) > 0)
-            for node_id in flow_arcs_frequency:
-                self.assertFalse(flow_arcs_frequency[node_id] == 0)
+    # NOTE: too heavy to run each time
+    # def test_compute_sequence_flow_frequencies_without_model_validation_2(self):
+    #     for arg in self.validation_2_args:
+    #         log_path = arg['log_path']
+    #         print(f'\n\nTesting {log_path.name}')
+    #
+    #         config = Configuration(log_path=log_path)
+    #         config.fill_in_derived_fields()
+    #
+    #         # settings for StructureOptimizer
+    #         config.max_eval_s = 2
+    #         config.concurrency = [0.0, 1.0]
+    #         config.epsilon = [0.0, 1.0]
+    #         config.eta = [0.0, 1.0]
+    #         config.gate_management = [GateManagement.DISCOVERY]
+    #
+    #         model_path, log_train, _ = TestReplayer.discover_model(config)
+    #         print(f'\nmodel_path = {model_path}\n')
+    #
+    #         graph = BPMNGraph.from_bpmn_path(model_path)
+    #         traces = log_train.get_traces()
+    #
+    #         try:
+    #             flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
+    #         except Exception as e:
+    #             self.fail(f'Should not fail, failed with: {e}')
+    #
+    #         self.assertTrue(flow_arcs_frequency is not None)
+    #         self.assertTrue(len(flow_arcs_frequency) > 0)
+    #         for node_id in flow_arcs_frequency:
+    #             self.assertFalse(flow_arcs_frequency[node_id] == 0)
 
 
 class TestOther(unittest.TestCase):
     args: List[dict] = [
-        {'model_path': Path(os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.bpmn'),
-         'log_path': Path(os.path.dirname(__file__) + '/../../test_assets/PurchasingExample.xes')},
-        {'model_path': Path(os.path.dirname(
-            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_48BA9CAF_B626_44EC_808E_FBEBCC6CF52C/Production.bpmn'),
-         'log_path': Path(os.path.dirname(
-             __file__) + '/../../test_assets/validation_1/complete logs/Production.xes')},
-        {'model_path': Path(os.path.dirname(
-            __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_672EE52F_F905_4860_9CD2_57F95917D1C9/ConsultaDataMining201618.bpmn'),
-         'log_path': Path(os.path.dirname(
-             __file__) + '/../../test_assets/validation_1/complete logs/ConsultaDataMining201618.xes')},
+        {'model_path': Path('test_assets/PurchasingExample.bpmn'),
+         'log_path': Path('test_assets/PurchasingExample.xes')},
+        {'model_path': Path('test_assets/validation_1/testing logs and models/20210804_48BA9CAF_B626_44EC_808E_FBEBCC6CF52C/Production.bpmn'),
+         'log_path': Path('test_assets/validation_1/complete logs/Production.xes')},
+        {'model_path': Path('test_assets/validation_1/testing logs and models/20210804_672EE52F_F905_4860_9CD2_57F95917D1C9/ConsultaDataMining201618.bpmn'),
+         'log_path': Path('test_assets/validation_1/complete logs/ConsultaDataMining201618.xes')},
         # {'model_path': Path(os.path.dirname(
         #     __file__) + '/../../test_assets/validation_1/testing logs and models/20210804_E7C625FF_E3CA_4AB3_A386_901182018864/BPI_Challenge_2012_W_Two_TS.bpmn'),
         #  'log_path': Path(os.path.dirname(

@@ -1,7 +1,7 @@
 import unittest
 
 from simod.configuration import MiningAlgorithm, GateManagement, CalculationMethod, DataType, \
-    PDFMethod, Metric, ExecutionMode
+    PDFMethod, Metric, ExecutionMode, AndPriorORemove
 
 
 class TestConfigurationFromStringConversion(unittest.TestCase):
@@ -135,6 +135,26 @@ class TestConfigurationStringRepresentation(unittest.TestCase):
 
         for arg in args:
             result = str(arg)
+            self.assertTrue(result == args[arg])
+
+    def test_AndPriorORemove_str(self):
+        args = {
+            AndPriorORemove.TRUE: 'true',
+            AndPriorORemove.FALSE: 'false',
+        }
+
+        for arg in args:
+            result = str(arg)
+            self.assertTrue(result == args[arg])
+
+    def test_AndPriorORemove_repr(self):
+        args = {
+            AndPriorORemove.TRUE: 'true',
+            AndPriorORemove.FALSE: 'false',
+        }
+
+        for arg in args:
+            result = arg.__repr__()
             self.assertTrue(result == args[arg])
 
 

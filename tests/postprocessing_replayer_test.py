@@ -1,3 +1,5 @@
+# NOTE: this file is not an actual test though, but could be helpful to debug the new replayer
+
 import os
 from pathlib import Path
 

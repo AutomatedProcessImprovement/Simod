@@ -2,13 +2,13 @@ import os
 import unittest
 
 from click.testing import CliRunner
+
 from simod.cli import main
 
 
+# NOTE: these are mostly general overall long-running tests to check if everything finishes without exceptions
 class TestCLICommands(unittest.TestCase):
-    # NOTE: these are mostly general overall long-running tests to check if everything finishes without exceptions
-
-    entry_point = os.path.dirname(__file__) + '/../../test_assets'
+    entry_point = 'test_assets'
 
     def test_discoverer_without_model(self):
         config_path = os.path.join(self.entry_point, 'discover_without_model_config.yml')
