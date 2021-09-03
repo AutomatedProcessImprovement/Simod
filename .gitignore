@@ -11,7 +11,14 @@ venv
 .DS_Store
 test_assets/validation_*
 input_files
+log/
+
+*.dat
+*.log
+*.out
 
 # Sonarqube files and folders
 .sonar_lock
 .scannerwork
+
+.pymon

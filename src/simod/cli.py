@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import click
+
 from simod.configuration import Configuration, config_data_from_file
 from simod.discoverer import Discoverer
 from simod.optimizer import Optimizer

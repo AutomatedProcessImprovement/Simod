@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Tuple, Callable, Union
 
 import pandas as pd
+from memory_profiler import profile
 from networkx import DiGraph
 from simod.readers.log_splitter import LogSplitter
 from tqdm import tqdm
@@ -46,6 +47,7 @@ class ProcessParameters:
     elements_data: list = field(default_factory=list)
 
 
+# @profile(stream=open('logs/memprof_extract_structure_parameters.log', 'a+'))
 def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
                                  model_path: Path) -> ProcessParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
@@ -392,6 +394,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     return ttcreator.time_table, resource_pool, resource_table
 
 
+# @profile(stream=open('logs/memprof_split_timeline.log', 'a+'))
 def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
     """
     Split an event log dataframe by time to perform split-validation.

@@ -4,6 +4,7 @@ import shutil
 from xml.dom import minidom
 
 import pandas as pd
+from memory_profiler import profile
 
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
@@ -24,6 +25,7 @@ class Optimizer:
     log_train: LogReader
     log_test: LogReader
 
+    # @profile(stream=open('logs/memprof_Optimizer.log', 'a+'))
     def __init__(self, settings):
         self.settings = settings
         self.settings_global: Configuration = settings['gl']
@@ -34,6 +36,7 @@ class Optimizer:
         if not os.path.exists(self.settings_global.output.parent):
             os.makedirs(self.settings_global.output.parent)
 
+    # @profile(stream=open('logs/memprof_Optimizer.log', 'a+'))
     def execute_pipeline(self, discover_model: bool = True) -> None:
         print_notice(f'Log path: {self.settings_global.log_path}')
         self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)

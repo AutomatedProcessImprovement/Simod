@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from memory_profiler import profile
 from tqdm import tqdm
 
 from . import support_utils as sup
@@ -28,6 +29,7 @@ from .writers import xml_writer as xml, xes_writer as xes
 class StructureOptimizer:
     """Hyperparameter-optimizer class"""
 
+    # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
     def __init__(self, settings: Configuration, log: LogReader, **kwargs):
         self.space = self.define_search_space(settings)
 
@@ -68,10 +70,12 @@ class StructureOptimizer:
         space = {**var_dim, **csettings}
         return space
 
+    # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
     def execute_trials(self):
         parameters = mine_resources(self.settings)
         self.log_train = self.org_log_train
 
+        # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
         def exec_pipeline(trial_stg: Configuration):
             print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
@@ -129,6 +133,7 @@ class StructureOptimizer:
             print(e)
             pass
 
+    # @profile(stream=open('logs/memprof_StructureOpimizer._temp_path_redef.log', 'a+'))
     @timeit(rec_name='PATH_DEF')
     @safe_exec_with_values_and_status
     def _temp_path_redef(self, settings, **kwargs) -> None:
@@ -152,6 +157,7 @@ class StructureOptimizer:
         else:
             raise RuntimeError('Mining Structure error')
 
+    # @profile(stream=open('logs/memprof_StructureOptimizer._extract_parameters.log', 'a+'))
     @timeit(rec_name='EXTRACTING_PARAMS')
     @safe_exec_with_values_and_status
     def _extract_parameters(self, settings: Configuration, structure, parameters, **kwargs) -> None:

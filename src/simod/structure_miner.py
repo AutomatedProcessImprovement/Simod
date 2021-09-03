@@ -23,6 +23,7 @@ class StructureMiner:
         self.is_safe = True
         self.settings = settings
 
+    # @profile(stream=open('logs/memprof_StructureMiner.execute_pipeline.log', 'a+'))
     def execute_pipeline(self) -> None:
         print_subsection("Split Mining")
         if self.settings.model_path is None:

@@ -13,6 +13,8 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
+from memory_profiler import profile
+
 from simod.common_routines import extract_times_parameters, split_timeline
 from tqdm import tqdm
 
@@ -30,6 +32,7 @@ from .readers.log_reader import LogReader
 class TimesOptimizer:
     """Hyperparameter-optimizer class"""
 
+    # @profile(stream=open('logs/memprof_TimesOptimizer.log', 'a+'))
     def __init__(self, settings: Configuration, args: Configuration, log, model_path):
         self.space = self.define_search_space(settings, args)
         # read inputs
@@ -81,8 +84,10 @@ class TimesOptimizer:
                  ('default', {'arr_dtype': hp.choice('arr_dtype', args.arr_dtype)})])}
         return space
 
+    # @profile(stream=open('logs/memprof_TimesOptimizer.execute_trials.log', 'a+'))
     def execute_trials(self):
         # create a new instance of Simod
+        # @profile(stream=open('logs/memprof_TimesOptimizer.execute_trials.exec_pipeline.log', 'a+'))
         def exec_pipeline(trial_stg):
             print_subsection('Trial')
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
@@ -143,6 +148,7 @@ class TimesOptimizer:
             os.makedirs(os.path.join(settings['output'], 'sim_data'))
         return settings
 
+    # @profile(stream=open('logs/memprof_TimesOptimizer._extract_parameters.log', 'a+'))
     @timeit(rec_name='EXTRACTING_PARAMS')
     @safe_exec_with_values_and_status
     def _extract_parameters(self, settings: Configuration, **kwargs) -> None:

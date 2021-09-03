@@ -11,6 +11,8 @@ from typing import List
 
 import numpy as np
 import pytz
+from memory_profiler import profile
+
 from simod.cli_formatter import print_warning, print_notice
 from simod.configuration import BPMN_NAMESPACE_URI, GateManagement
 
@@ -168,6 +170,7 @@ class BPMNGraph:
         self.closest_distance = None
         self.decision_flows_sortest_path = None
 
+    # @profile(stream=open('logs/memprof_BPMNGraph.from_bpmn_path.log', 'a+'))
     @staticmethod
     def from_bpmn_path(model_path: Path):
         bpmn_element_ns = {'xmlns': BPMN_NAMESPACE_URI}

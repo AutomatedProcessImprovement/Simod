@@ -22,6 +22,7 @@ class LogReaderOld(object):
     expected format .xes or .csv
     """
 
+    # @profile(stream=open('logs/memprof_LogReaderOld.log', 'a+'))
     def __init__(self, input: Union[Path, str], settings: ReadOptions, verbose=True):
         if isinstance(input, Path):
             self.input = input.absolute().__str__()
@@ -54,6 +55,7 @@ class LogReaderOld(object):
     # xes methods
     # =============================================================================
 
+    # @profile(stream=open('logs/memprof_LogReaderOld.log', 'a+'))
     def get_xes_events_data(self):
         TIMESTEP_KEY = 'time:timestamp'
 
@@ -291,7 +293,7 @@ class LogReader(object):
     expected format .xes or .csv
     """
 
-    @profile(stream=open('logs/memprof_LogReader.log', 'a+'))
+    # @profile(stream=open('logs/memprof_LogReader.log', 'a+'))
     def __init__(self, input: Union[Path, str], settings: ReadOptions, verbose=True, load=True):
         if isinstance(input, Path):
             self.input = input.absolute().__str__()
@@ -331,7 +333,7 @@ class LogReader(object):
         elif self.file_extension == '.csv':
             self.get_csv_events_data()
 
-    @profile(stream=open('logs/memprof_LogReader.log', 'a+'))
+    # @profile(stream=open('logs/memprof_LogReader.log', 'a+'))
     def get_xes_events_data(self):
         timestamp_key = 'time:timestamp'
 

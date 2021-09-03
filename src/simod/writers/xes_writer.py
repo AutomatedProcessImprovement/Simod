@@ -3,6 +3,7 @@ import os
 from typing import Union
 
 import pandas as pd
+from memory_profiler import profile
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 from opyenxes.factory.XFactory import XFactory
@@ -19,6 +20,7 @@ class XesWriter(object):
     This class writes a process log in .xes format
     """
 
+    # @profile(stream=open('logs/memprof_XesWriter.log', 'a+'))
     def __init__(self, log: Union[LogReader, pd.DataFrame, list], settings: Configuration):
         if isinstance(log, pd.DataFrame):
             self.log = log.values
@@ -34,7 +36,7 @@ class XesWriter(object):
         # self.create_xes_file()
         self.create_xes_file_alternative()
 
-    @profile(stream=open('logs/memprof_XesWriter.create_xes_file_alternative.log', 'a+'))
+    # @profile(stream=open('logs/memprof_XesWriter.create_xes_file_alternative.log', 'a+'))
     def create_xes_file_alternative(self):
         log_df = pd.DataFrame(self.log)
         log_df.rename(columns={
@@ -60,7 +62,6 @@ class XesWriter(object):
 
         exporter.apply(log_lifecycle, self.output_file)
 
-    @profile
     def create_xes_file(self):
         csv_mapping = {v: k for k, v in self.column_names.items()}
         log = XFactory.create_log()

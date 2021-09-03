@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 import random
 
+from memory_profiler import profile
+
 
 class LogSplitter(object):
     """
@@ -18,10 +20,12 @@ class LogSplitter(object):
     expected format .xes or .csv
     """
 
+    # @profile(stream=open('logs/memprof_LogSplitter.log', 'a+'))
     def __init__(self, log: pd.DataFrame, verbose=True):
         self.log = log
         self._sort_log()
 
+    # @profile(stream=open('logs/memprof_LogSplitter.split_log.log', 'a+'))
     def split_log(self, method: str, size: float, one_timestamp: bool):
         splitter = self._get_splitter(method)
         return splitter(size, one_timestamp)
@@ -90,6 +94,7 @@ class LogSplitter(object):
         df_test = self.log[~self.log.caseid.isin(scases)]
         return df_train, df_test
 
+    # @profile(stream=open('logs/memprof_LogSplitter._sort_log.log', 'a+'))
     def _sort_log(self):
         log = copy.deepcopy(self.log)
         log = sorted(log.to_dict('records'), key=lambda x: x['caseid'])
