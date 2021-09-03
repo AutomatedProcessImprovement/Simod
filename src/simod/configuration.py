@@ -27,13 +27,14 @@ class MiningAlgorithm(Enum):
             return cls.SM3
         else:
             raise ValueError(f'Unknown value {value}')
-            
+
+
 class AndPriorORemove(Enum):
     TRUE = auto()
     FALSE = auto()
 
     @classmethod
-    def from_str(cls, value: Union[str, List[str]]) -> 'Union[AndPriorORemove, List[AndPriorORemove]]':
+    def from_str(cls, value: Union[str, List[str]]) -> Union['AndPriorORemove', List['AndPriorORemove']]:
         if isinstance(value, str):
             return AndPriorORemove._from_str(value)
         elif isinstance(value, list):
@@ -43,10 +44,23 @@ class AndPriorORemove(Enum):
     def _from_str(cls, value: str) -> 'AndPriorORemove':
         if value:
             return cls.TRUE
-        elif value == False:
+        elif not value:
             return cls.FALSE
         else:
             raise ValueError(f'Unknown value {value}')
+
+    @classmethod
+    def default(cls) -> List['AndPriorORemove']:
+        return [AndPriorORemove.FALSE]
+
+    @staticmethod
+    def to_str(value: Union['AndPriorORemove', List['AndPriorORemove']]) -> Union[str, List[str]]:
+        if isinstance(value, AndPriorORemove):
+            return str(value)
+        elif isinstance(value, list):
+            return [str(item) for item in value]
+        else:
+            raise ValueError(f'Unknown value type {type(value)}')
 
     def __str__(self):
         if self == AndPriorORemove.TRUE:
@@ -226,9 +240,6 @@ class Configuration:
     log_path: Optional[Path] = None
     model_path: Optional[Path] = None
     config_path: Optional[Path] = None
-    # input: Optional[Path] = None
-    # file: Optional[Path] = None
-    # alg_manag: AlgorithmManagement or List[AlgorithmManagement] = AlgorithmManagement.REPAIR  # [AlgorithmManagement]
     output: Path = Path(os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id()))
     sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
     sm2_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
@@ -239,7 +250,8 @@ class Configuration:
                                     'ProConformance2.jar')
     calender_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'calenderimp',
                                        'CalenderImp.jar')
-    aligninfo: Path = os.path.join(output, 'CaseTypeAlignmentResults.csv')
+    aligninfo: Path = os.path.join(output,
+                                   'CaseTypeAlignmentResults.csv')  # TODO: do we still need these 'align*' attributes?
     aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     simulator: SimulatorKind = SimulatorKind.BIMP
@@ -255,8 +267,8 @@ class Configuration:
     arr_support: Optional[Union[float, List[float]]] = None
     epsilon: Optional[Union[float, List[float]]] = None
     eta: Optional[Union[float, List[float]]] = None
-    and_prior: Optional[Union[AndPriorORemove, List[AndPriorORemove]]] = None
-    or_rep: Optional[Union[AndPriorORemove, List[AndPriorORemove]]] = None
+    and_prior: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
+    or_rep: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
     gate_management: Optional[Union[GateManagement, List[GateManagement]]] = None
     res_confidence: Optional[float] = None
     res_support: Optional[float] = None
@@ -275,8 +287,6 @@ class Configuration:
 
     def fill_in_derived_fields(self):
         if self.log_path:
-            # self.input = os.path.dirname(self.log_path)
-            # self.file = os.path.basename(self.log_path)
             self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
 
 
@@ -308,10 +318,6 @@ def config_data_from_file(config_path) -> dict:
         mining_alg = data.get('mining_alg')
         if mining_alg:
             data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
-
-        # alg_manag = data.get('alg_manag')
-        # if alg_manag:
-        #     data['alg_manag'] = AlgorithmManagement.from_str(alg_manag)
 
         and_prior = data.get('and_prior')
         if and_prior:

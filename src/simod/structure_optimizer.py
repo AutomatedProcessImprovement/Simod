@@ -19,7 +19,7 @@ from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_message, print_subsection
 from .common_routines import execute_simulator, mine_resources, extract_structure_parameters, split_timeline
-from .configuration import Configuration, MiningAlgorithm, Metric
+from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .decorators import timeit, safe_exec_with_values_and_status
 from .readers.log_reader import LogReader
 from .structure_miner import StructureMiner
@@ -60,8 +60,8 @@ class StructureOptimizer:
         if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             var_dim['epsilon'] = hp.uniform('epsilon', settings.epsilon[0], settings.epsilon[1])
             var_dim['eta'] = hp.uniform('eta', settings.eta[0], settings.eta[1])
-            var_dim['and_prior'] = hp.choice('and_prior', ['true', 'false'])
-            var_dim['or_rep'] = hp.choice('or_rep', ['true', 'false'])
+            var_dim['and_prior'] = hp.choice('and_prior', AndPriorORemove.to_str(settings.and_prior))
+            var_dim['or_rep'] = hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep))
         elif settings.mining_alg is MiningAlgorithm.SM2:
             var_dim['concurrency'] = hp.uniform('concurrency', settings.concurrency[0], settings.concurrency[1])
         csettings = copy.deepcopy(settings.__dict__)
