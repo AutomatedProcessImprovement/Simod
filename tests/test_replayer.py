@@ -118,6 +118,7 @@ def test_compute_sequence_flow_frequencies(validation_1_args):
             assert flow_arcs_frequency[node_id] != 0
 
 
+@pytest.mark.slow
 def test_compute_sequence_flow_frequencies_without_model(validation_1_args):
     for arg in validation_1_args:
         log_path = arg['log_path']
@@ -191,7 +192,7 @@ def test_mine_gateway_probabilities_alternative_with_gateway_management(validati
 # NOTE: very long running tests
 #
 # validation_2_args = [
-#     {'log_path': Path('test_assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
+#     {'log_path': Path('assets/validation_2/BPI_Challenge_2017_W_Two_TS.xes')}
 # ]
 #
 # def test_extract_structure_parameters(self):

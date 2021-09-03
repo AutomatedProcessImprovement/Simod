@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from simod.cli import main
 
 # NOTE: these are mostly general overall long-running tests to check if everything finishes without exceptions
@@ -16,6 +18,7 @@ optimize_config_files = [
 ]
 
 
+@pytest.mark.slow
 def test_discover(entry_point, runner):
     for path in discover_config_files:
         config_path = os.path.join(entry_point, path)
@@ -24,6 +27,7 @@ def test_discover(entry_point, runner):
         assert result.exit_code == 0
 
 
+@pytest.mark.slow
 def test_optimize(entry_point, runner):
     for path in optimize_config_files:
         config_path = os.path.join(entry_point, path)

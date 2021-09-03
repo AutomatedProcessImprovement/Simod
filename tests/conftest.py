@@ -12,6 +12,6 @@ def runner(request):
 @pytest.fixture(scope='module')
 def entry_point():
     if os.path.basename(os.getcwd()) == 'tests':
-        return '../test_assets'
+        return 'assets'
     else:
-        return 'test_assets'
+        return 'tests/assets'

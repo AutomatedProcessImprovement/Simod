@@ -1,5 +1,5 @@
-log_path: test_assets/PurchasingExample.xes
-model_path: test_assets/PurchasingExample.bpmn
+log_path: tests/assets/PurchasingExample.xes
+model_path: tests/assets/PurchasingExample.bpmn
 mining_alg: sm3
 arr_confidence: 9.2
 arr_support: 0.098

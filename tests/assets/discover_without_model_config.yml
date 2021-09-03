@@ -1,4 +1,4 @@
-log_path: test_assets/PurchasingExample.xes
+log_path: tests/assets/PurchasingExample.xes
 mining_alg: sm3
 arr_confidence: 9.2
 arr_support: 0.098

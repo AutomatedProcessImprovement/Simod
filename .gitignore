@@ -9,7 +9,7 @@ venv
 .idea
 *.egg-info
 .DS_Store
-test_assets/validation_*
+tests/assets/validation_*
 input_files
 log/
 
