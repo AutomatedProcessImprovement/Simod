@@ -19,6 +19,12 @@ structure_optimizer:
     - 1.0
   gate_management:
     - equiprobable
+  or_rep:
+    - true
+    - false
+  and_prior:
+    - true
+    - false
 time_optimizer:
   max_eval_t: 2
   rp_similarity:
