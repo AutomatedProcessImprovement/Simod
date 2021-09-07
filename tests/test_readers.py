@@ -8,8 +8,8 @@ from simod.readers.log_reader import LogReader, LogReaderOld
 
 @pytest.fixture
 def args(entry_point) -> dict:
-    # log_path = 'assets/validation_2/BPI_Challenge_2012_W_Two_TS.xes'
-    log_path = os.path.join(entry_point, 'validation_1/complete logs/Production.xes')
+    log_path = os.path.join(entry_point, 'BPI_Challenge_2012_W_Two_TS.xes')
+    # log_path = os.path.join(entry_point, 'validation_1/complete logs/Production.xes')
     # log_path = '../assets/validation_1/complete logs/Production.xes'
     options = ReadOptions(column_names=ReadOptions.column_names_default())
     return {'log_path': log_path, 'read_options': options}
