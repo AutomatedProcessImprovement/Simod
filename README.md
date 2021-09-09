@@ -2,23 +2,67 @@
 
 Simod combines several process mining techniques to automate the generation and validation of BPS models.  The only input required by the Simod method is an event log in XES, or CSV format. These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
-### Prerequisites
+## Requirements
 
-To execute this code, you need to install Git and Anaconda in your system. Once installed, you can create an environment using the *simo.yml* specification provided in the repository.
+- **Python 3.8**+
+- **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
+- For dependencies, please, check `requirements.txt` or `simod.yml`
 
+## Getting Started
 
-### Data format
+Python environment can be set up using *Anaconda* from `simod.yml` or using the built-in *venv* module from `requirements.txt`.
+
+To install the CLI-tool from the root directory run:
+
+```shell
+$ pip install -e .
+```
+
+Invoke the tool with either of these:
+
+```shell
+$ simod
+$ simod optimize --config_path config/optimize_config.yml
+$ simod discover --config_path config/discover_without_model_config.yml  # does automatic model discovery from the log
+$ simod discover --config_path config/discover_with_model_config.yml     # no need for model discovery
+```
+
+The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
+
+## Getting Started with New Replayer
+
+```shell
+$ git clone https://github.com/AutomatedProcessImprovement/Simod.git simod
+$ cd simod
+$ git checkout new_replayer
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ python -m pip install --upgrade pip
+$ pip install -r requirements.txt
+$ pip install -e .
+```
+
+## Testing
+
+We use `pytest` to run tests on the package:
+
+```shell
+$ pytest
+```
+
+To run only relatively fast tests, execute:
+
+```shell
+$ pytest -m "not slow"
+```
+
+## Data format
  
 The tool assumes the input is composed of a case identifier, an activity label, a resource attribute (indicating which resource performed the activity), 
 and two timestamps: the start timestamp and the end timestamp. The resource attribute is required to discover the available resource pools, timetables, 
 and the mapping between activities and resource pools, which are a required element in a BPS model. We require both start and end timestamps for each activity instance to compute the processing time of activities, which is also a required element in a simulation model.
 
-### Configuration
-
-You can execute the tool from the file simod_ui.py with a python console or IDE.
-
-
-### Execution steps
+## Execution steps
 
 ***Event-log loading:*** Under the General tab, the event log must be selected; if the user requires a new event log, it can be loaded in the folder inputs. Remember, the event log must be in XES or CSV format and contain start and complete timestamps. Then It is necessary to define the execution mode between single and optimizer execution.
 
@@ -38,7 +82,6 @@ You can execute the tool from the file simod_ui.py with a python console or IDE.
  - *Number of simulations runs:* Refers to the number of simulations performed by the BIMP simulator, once the model is created. The goal of defining this value is to improve the accuracy of the assessment. Between 1 and 50.
 
 Once all the parameters are settled, It is time to start the execution and wait for the results.
-
 
 ## Authors
 

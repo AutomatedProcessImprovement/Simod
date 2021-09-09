@@ -1,0 +1,14 @@
+log_path: inputs/PurchasingExample.xes
+mining_alg: sm3
+arr_confidence: 9.2
+arr_support: 0.098
+epsilon: 0.27747592754346484
+eta: 0.3475132024591636
+gate_management: discovery
+res_confidence: 56.03564752634776
+res_support: 0.07334543198001255
+res_cal_met: discovered
+res_dtype: !!str 247
+arr_dtype: !!str 247
+rp_similarity: 0.8
+pdef_method: automatic

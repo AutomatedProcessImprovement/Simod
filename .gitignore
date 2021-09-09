@@ -5,3 +5,21 @@ logs_meta
 callcentre.*
 insurance.*
 poc_processmining.*
+venv
+.idea
+*.egg-info
+.DS_Store
+tests/assets/validation_*
+input_files
+log/
+
+*.dat
+*.log
+*.out
+
+# Sonarqube files and folders
+.sonar_lock
+.scannerwork
+
+.pymon
+.benchmarks
