@@ -27,5 +27,6 @@ jobs:
         pip install -e .
     - name: Test with pytest
       uses: GabrielBB/xvfb-action@v1
-      run: |
-        pytest -k test_optimize
+      with:
+        run: |
+          pytest -k test_optimize
