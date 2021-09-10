@@ -17,6 +17,7 @@ jobs:
         run: Xvfb :99 &
       - name: Install dependencies
         run: |
+          git clone https://github.com/AutomatedProcessImprovement/Simod.git simod && cd simod
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
