@@ -15,4 +15,4 @@ jobs:
     steps:
       - name: Run the script
         run: |
-          /bin/bash test_simod.sh
+          cd /usr/src && bash test_simod.sh
