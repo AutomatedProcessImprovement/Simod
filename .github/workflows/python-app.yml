@@ -11,17 +11,4 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: nokal/simod-base:v1.1.4
-      env:
-        DISPLAY: :99
-    steps:
-      - name: Install dependencies
-        run: |
-          git clone https://github.com/AutomatedProcessImprovement/Simod.git simod && cd simod
-          python3 -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e .
-      - name: Test with pytest
-        run: |
-          Xvfb :99 &
-          pytest -k test_optimize
+      image: nokal/simod-testing:v1.0.4
