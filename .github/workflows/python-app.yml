@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: nokal/simod-base:v1.1.4
+      env:
+        DISPLAY: :99
     steps:
       - name: Install dependencies
         run: |
