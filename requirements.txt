@@ -46,7 +46,7 @@ nbformat==5.1.3
 nest-asyncio==1.5.1
 networkx==2.5.1
 nose==1.3.7
-notebook==6.4.0
+notebook==6.4.1
 numpy==1.21.0
 opyenxes==0.3.0
 packaging==20.9
@@ -55,7 +55,7 @@ pandocfilters==1.4.3
 parso==0.8.2
 pexpect==4.8.0
 pickleshare==0.7.5
-Pillow==8.3.0
+Pillow==8.3.2
 pm4py==2.2.9
 prometheus-client==0.11.0
 prompt-toolkit==3.0.19
