@@ -15,7 +15,7 @@ from ..configuration import Configuration
 from ..readers.log_reader import LogReader
 
 
-class XesWriter(object):
+class XesWriter(object):  # TODO: it makes sense to save data also with LogReader instead of a separate class
     """
     This class writes a process log in .xes format
     """
@@ -55,7 +55,16 @@ class XesWriter(object):
                              'case:variant-index',
                              'case:creator',
                              'Activity',
-                             'Resource'], inplace=True, errors='ignore')
+                             'Resource',
+                             'elementId',
+                             'processId',
+                             'resourceId',
+                             '@@startevent_element',
+                             '@@startevent_elementId',
+                             '@@startevent_process',
+                             '@@startevent_processId',
+                             '@@startevent_resourceId',
+                             'etype'], inplace=True, errors='ignore')
 
         log_interval = converter.apply(log_df, variant=converter.Variants.TO_EVENT_LOG)
         log_lifecycle = interval_lifecycle.to_lifecycle(log_interval)
