@@ -21,7 +21,7 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
     """
 
     # @profile(stream=open('logs/memprof_XesWriter.log', 'a+'))
-    def __init__(self, log: Union[LogReader, pd.DataFrame, list], settings: Configuration):
+    def __init__(self, log: Union[LogReader, pd.DataFrame, list], settings: Configuration):  # TODO: don't pass the whole Configuration instance, pass only what's required: read_options, output_path
         if isinstance(log, pd.DataFrame):
             self.log = log.values
         elif isinstance(log, LogReader):
@@ -59,12 +59,15 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
                              'elementId',
                              'processId',
                              'resourceId',
+                             'resourceCost',
                              '@@startevent_element',
                              '@@startevent_elementId',
                              '@@startevent_process',
                              '@@startevent_processId',
                              '@@startevent_resourceId',
                              'etype'], inplace=True, errors='ignore')
+
+        log_df.fillna('UNDEFINED', inplace=True)
 
         log_interval = converter.apply(log_df, variant=converter.Variants.TO_EVENT_LOG)
         log_lifecycle = interval_lifecycle.to_lifecycle(log_interval)
