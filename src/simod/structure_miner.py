@@ -69,7 +69,7 @@ class StructureMiner:
         if not pl.system().lower() == 'windows':
             args.append('-Xmx2G')
         args.extend(['-cp',
-                     (settings.sm2_path.__str__() + sep + os.path.join('external_tools', 'splitminer2', 'lib', '*')),
+                     (settings.sm2_path.__str__() + sep + os.path.join(os.path.dirname(settings.sm2_path), 'lib', '*')),
                      'au.edu.unimelb.services.ServiceProvider',
                      'SM2',
                      input_route,
