@@ -58,6 +58,11 @@ To run only relatively fast tests, execute:
 $ pytest -m "not slow"
 ```
 
+## Docker
+
+- Docker files are available in the `docker` folder.
+- Base image for Simod is available at https://hub.docker.com/r/nokal/simod-base and can be downloaded with `docker pull nokal/simod-base:v1.1.4`. The image has a proper Java version for dependencies, Xvfb (for faking X server for the Java dependencies) and Python 3 installed. It doesn't contain Simod itself.
+
 ## Data format
  
 The tool assumes the input is composed of a case identifier, an activity label, a resource attribute (indicating which resource performed the activity), 
