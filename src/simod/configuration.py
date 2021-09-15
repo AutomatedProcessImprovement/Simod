@@ -291,95 +291,100 @@ class Configuration:
 
 
 def config_data_from_file(config_path) -> dict:
-    def _update_fields(data: dict):
-        repository_dir = os.path.join(os.path.dirname(__file__), '../../')
-
-        model_path = data.get('model_path')
-        if model_path:
-            if not os.path.isabs(model_path):
-                data['model_path'] = Path(os.path.join(repository_dir, model_path))
-            else:
-                data['model_path'] = Path(model_path)
-
-        log_path = data.get('log_path')
-        if log_path:
-            if not os.path.isabs(log_path):
-                data['log_path'] = Path(os.path.join(repository_dir, log_path))
-            else:
-                data['log_path'] = Path(log_path)
-
-        input = data.get('input')
-        if input:
-            if not os.path.isabs(input):
-                data['input'] = Path(os.path.join(repository_dir, input))
-            else:
-                data['input'] = Path(input)
-
-        mining_alg = data.get('mining_alg')
-        if mining_alg:
-            data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
-
-        and_prior = data.get('and_prior')
-        if and_prior:
-            data['and_prior'] = AndPriorORemove.from_str(and_prior)
-
-        or_rep = data.get('or_rep')
-        if or_rep:
-            data['or_rep'] = AndPriorORemove.from_str(or_rep)
-
-        gate_management = data.get('gate_management')
-        if gate_management:
-            data['gate_management'] = GateManagement.from_str(gate_management)
-
-        res_cal_met = data.get('res_cal_met')
-        if res_cal_met:
-            data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
-
-        res_dtype = data.get('res_dtype')
-        if res_dtype:
-            data['res_dtype'] = DataType.from_str(res_dtype)
-
-        arr_dtype = data.get('arr_dtype')
-        if arr_dtype:
-            data['arr_dtype'] = DataType.from_str(arr_dtype)
-
-        pdef_method = data.get('pdef_method')
-        if pdef_method:
-            data['pdef_method'] = PDFMethod.from_str(pdef_method)
-
-        is_output = data.get('output')
-        if is_output:
-            data['output'] = Path(os.path.join(repository_dir, 'outputs', sup.folder_id()))
-
-        exec_mode = data.get('exec_mode')
-        if exec_mode:
-            data['exec_mode'] = ExecutionMode.from_str(exec_mode)
-
-        sim_metric = data.get('sim_metric')
-        if sim_metric:
-            data['sim_metric'] = Metric.from_str(sim_metric)
-
-        add_metrics = data.get('add_metrics')
-        if add_metrics:
-            data['add_metrics'] = Metric.from_str(add_metrics)
-
     with open(config_path, 'r') as f:
         config_data = yaml.load(f, Loader=yaml.FullLoader)
+    config_data = config_data_from_yaml(config_data)
+    return config_data
 
-    _update_fields(config_data)
+
+def config_data_from_yaml(config_data: dict) -> dict:
+    update_config_with_datastructures(config_data)
 
     structure_optimizer = config_data.get('structure_optimizer')
     if structure_optimizer:
-        _update_fields(structure_optimizer)
+        update_config_with_datastructures(structure_optimizer)
         # the rest of the software uses 'strc' key
         config_data.pop('structure_optimizer')
         config_data['strc'] = structure_optimizer
 
     time_optimizer = config_data.get('time_optimizer')
     if time_optimizer:
-        _update_fields(time_optimizer)
+        update_config_with_datastructures(time_optimizer)
         # the rest of the software uses 'tm' key
         config_data.pop('time_optimizer')
         config_data['tm'] = time_optimizer
 
     return config_data
+
+
+def update_config_with_datastructures(data: dict):
+    repository_dir = os.path.join(os.path.dirname(__file__), '../../')
+
+    model_path = data.get('model_path')
+    if model_path:
+        if not os.path.isabs(model_path):
+            data['model_path'] = Path(os.path.join(repository_dir, model_path))
+        else:
+            data['model_path'] = Path(model_path)
+
+    log_path = data.get('log_path')
+    if log_path:
+        if not os.path.isabs(log_path):
+            data['log_path'] = Path(os.path.join(repository_dir, log_path))
+        else:
+            data['log_path'] = Path(log_path)
+
+    input = data.get('input')
+    if input:
+        if not os.path.isabs(input):
+            data['input'] = Path(os.path.join(repository_dir, input))
+        else:
+            data['input'] = Path(input)
+
+    mining_alg = data.get('mining_alg')
+    if mining_alg:
+        data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
+
+    and_prior = data.get('and_prior')
+    if and_prior:
+        data['and_prior'] = AndPriorORemove.from_str(and_prior)
+
+    or_rep = data.get('or_rep')
+    if or_rep:
+        data['or_rep'] = AndPriorORemove.from_str(or_rep)
+
+    gate_management = data.get('gate_management')
+    if gate_management:
+        data['gate_management'] = GateManagement.from_str(gate_management)
+
+    res_cal_met = data.get('res_cal_met')
+    if res_cal_met:
+        data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
+
+    res_dtype = data.get('res_dtype')
+    if res_dtype:
+        data['res_dtype'] = DataType.from_str(res_dtype)
+
+    arr_dtype = data.get('arr_dtype')
+    if arr_dtype:
+        data['arr_dtype'] = DataType.from_str(arr_dtype)
+
+    pdef_method = data.get('pdef_method')
+    if pdef_method:
+        data['pdef_method'] = PDFMethod.from_str(pdef_method)
+
+    is_output = data.get('output')
+    if is_output:
+        data['output'] = Path(os.path.join(repository_dir, 'outputs', sup.folder_id()))
+
+    exec_mode = data.get('exec_mode')
+    if exec_mode:
+        data['exec_mode'] = ExecutionMode.from_str(exec_mode)
+
+    sim_metric = data.get('sim_metric')
+    if sim_metric:
+        data['sim_metric'] = Metric.from_str(sim_metric)
+
+    add_metrics = data.get('add_metrics')
+    if add_metrics:
+        data['add_metrics'] = Metric.from_str(add_metrics)
