@@ -9,7 +9,6 @@ from typing import Union
 
 import pandas as pd
 import pm4py
-from memory_profiler import profile
 from pm4py.objects.log.util import interval_lifecycle
 
 from .. import support_utils as sup
@@ -22,8 +21,7 @@ class LogReaderOld(object):
     expected format .xes or .csv
     """
 
-    # @profile(stream=open('logs/memprof_LogReaderOld.log', 'a+'))
-    def __init__(self, input: Union[Path, str], settings: ReadOptions, verbose=True):
+    def __init__(self, input: Union[Path, str], settings: ReadOptions, verbose=True, load=True):
         if isinstance(input, Path):
             self.input = input.absolute().__str__()
         else:
@@ -38,7 +36,9 @@ class LogReaderOld(object):
 
         self.data = list()
         self.raw_data = list()
-        self.load_data_from_file()
+
+        if load:
+            self.load_data_from_file()
 
     def load_data_from_file(self):
         """
@@ -55,7 +55,6 @@ class LogReaderOld(object):
     # xes methods
     # =============================================================================
 
-    # @profile(stream=open('logs/memprof_LogReaderOld.log', 'a+'))
     def get_xes_events_data(self):
         TIMESTEP_KEY = 'time:timestamp'
 
@@ -286,6 +285,17 @@ class LogReaderOld(object):
         _, fileExtension = os.path.splitext(outfilename)
         return outfilename, fileExtension
 
+    @staticmethod
+    def copy_without_data(log: 'LogReader') -> 'LogReader':
+        default_options = ReadOptions(column_names=ReadOptions.column_names_default())
+        copy = LogReader(input=log.input, settings=default_options, load=False)
+        copy.timeformat = log.timeformat
+        copy.column_names = log.column_names
+        copy.one_timestamp = log.one_timestamp
+        copy.filter_d_attrib = log.filter_d_attrib
+        copy.verbose = log.verbose
+        return copy
+
 
 class LogReader(object):
     """
@@ -293,7 +303,6 @@ class LogReader(object):
     expected format .xes or .csv
     """
 
-    # @profile(stream=open('logs/memprof_LogReader.log', 'a+'))
     def __init__(self, input: Union[Path, str], settings: ReadOptions, verbose=True, load=True):
         if isinstance(input, Path):
             self.input = input.absolute().__str__()
@@ -333,7 +342,6 @@ class LogReader(object):
         elif self.file_extension == '.csv':
             self.get_csv_events_data()
 
-    # @profile(stream=open('logs/memprof_LogReader.log', 'a+'))
     def get_xes_events_data(self):
         timestamp_key = 'time:timestamp'
 
@@ -351,6 +359,7 @@ class LogReader(object):
         # temp_data = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
 
         # NOTE: Stripping zone information from the log
+        # TODO: is it applicable here: pm4py.objects.log.util.dataframe_utils.convert_timestamp_columns_in_df?
         temp_data[timestamp_key] = temp_data.apply(lambda x: x[timestamp_key].strftime(self.timeformat), axis=1)
         temp_data[timestamp_key] = pd.to_datetime(temp_data[timestamp_key], format=self.timeformat)
         temp_data['start_timestamp'] = temp_data.apply(lambda x: x['start_timestamp'].strftime(self.timeformat), axis=1)
@@ -383,7 +392,7 @@ class LogReader(object):
         if self.verbose:
             sup.print_done_task()
 
-    def get_csv_events_data(self):
+    def get_csv_events_data(self):  # TODO: does this function work? Had problems reading in Production.csv
         """
         reads and parse all the events information from a csv file
         """
