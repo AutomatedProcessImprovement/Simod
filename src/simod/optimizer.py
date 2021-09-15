@@ -51,8 +51,7 @@ class Optimizer:
         if discover_model:
             print_section('Model Discovery and Parameters Extraction')
             # mining the structure
-            strctr_optimizer = StructureOptimizer(
-                self.settings_structure, self.log_train, discover_model=discover_model)
+            strctr_optimizer = StructureOptimizer(self.settings_structure, self.log_train)
             strctr_optimizer.execute_trials()
             # redefining local variables
             self._redefine_best_params_after_structure_optimization(strctr_optimizer)
