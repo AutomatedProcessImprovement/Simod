@@ -4,24 +4,27 @@ import os
 import subprocess
 import time
 from dataclasses import dataclass, field
+from operator import itemgetter
 from pathlib import Path
 from typing import List, Tuple, Callable, Union
 
+import networkx
 import pandas as pd
-from memory_profiler import profile
 from networkx import DiGraph
-from simod.readers.log_splitter import LogSplitter
 from tqdm import tqdm
 
+from simod.readers.log_splitter import LogSplitter
 from . import support_utils as sup
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step, print_notice
-from .configuration import CalculationMethod, DataType, GateManagement
+from .configuration import CalculationMethod, DataType, GateManagement, TraceAlignmentAlgorithm
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
+from .extraction.log_replayer import LogReplayer
 from .extraction.role_discovery import ResourcePoolAnalyser
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
+from .log_repairing import traces_alignment, traces_replacement
 from .readers import bpmn_reader
 from .readers import process_structure
 from .readers.log_reader import LogReader
@@ -151,7 +154,8 @@ def mine_gateway_probabilities_alternative(log_traces: list, bpmn_graph: BPMNGra
 def mine_gateway_probabilities_alternative_with_gateway_management(log_traces: list, bpmn_graph: BPMNGraph,
                                                                    gate_management: GateManagement) -> list:
     if isinstance(gate_management, list) and len(gate_management) >= 1:
-        print_notice(f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
+        print_notice(
+            f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
         gate_management = gate_management[0]
 
     print_step(f'Mining gateway probabilities with {gate_management}')
@@ -395,7 +399,8 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
 
 
 # @profile(stream=open('logs/memprof_split_timeline.log', 'a+'))
-def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
+def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[
+    pd.DataFrame, pd.DataFrame, str]:
     """
     Split an event log dataframe by time to perform split-validation.
     preferred method time splitting removing incomplete traces.
@@ -448,7 +453,61 @@ def remove_outliers(log: Union[LogReader, pd.DataFrame]) -> pd.DataFrame:
     unique_cases_durations = event_log[['caseid', 'duration_seconds']].drop_duplicates()
     first_quantile = unique_cases_durations.quantile(0.1)
     last_quantile = unique_cases_durations.quantile(0.9)
-    event_log = event_log[(event_log.duration_seconds <= last_quantile.duration_seconds) & (event_log.duration_seconds >= first_quantile.duration_seconds)]
+    event_log = event_log[(event_log.duration_seconds <= last_quantile.duration_seconds) & (
+            event_log.duration_seconds >= first_quantile.duration_seconds)]
     event_log = event_log.drop(columns=['duration_seconds'])
 
     return event_log
+
+
+def evaluate_and_execute_alignment(process_graph: networkx.DiGraph, log: LogReader, settings: Configuration,
+                                   message='evaluating train partition conformance:'):
+    # NOTE: the function mutates log.data
+
+    def _get_traces(data, one_timestamp):
+        """
+        returns the data splitted by caseid and ordered by start_timestamp
+        """
+        cases = list(set([x['caseid'] for x in data]))
+        traces = list()
+        for case in cases:
+            order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
+            trace = sorted(
+                list(filter(lambda x: (x['caseid'] == case), data)),
+                key=itemgetter(order_key))
+            traces.append(trace)
+        return traces
+
+    def _print_stats(log, conformant, traces):
+        print('complete traces:', str(len(traces)),
+              ', events:', str(len(log.data)), sep=' ')
+        print('conformance percentage:',
+              str(sup.ffloat((len(conformant) / len(traces)) * 100, 2)) + '%', sep=' ')
+
+    traces = log.get_traces()
+    test_replayer = LogReplayer(process_graph, traces, settings, msg=message)  # NOTE: previous version of replayer
+    conformant = _get_traces(test_replayer.conformant_traces, False)
+    not_conformant = _get_traces(test_replayer.not_conformant_traces, False)
+    # ------conformance percentage before repair------------------
+
+    _print_stats(log, conformant, traces)
+    if settings.alg_manag == TraceAlignmentAlgorithm.REPLACEMENT:
+        log.set_data(traces_replacement.replacement(conformant, not_conformant, log, settings))
+    elif settings.alg_manag == TraceAlignmentAlgorithm.REPAIR:
+        repaired_event_log = list()
+        [repaired_event_log.extend(x) for x in conformant]
+        trace_aligner = traces_alignment.TracesAligner(log, not_conformant, settings)
+        repaired_event_log.extend(trace_aligner.aligned_traces)
+        log.set_data(repaired_event_log)
+    elif settings.alg_manag == TraceAlignmentAlgorithm.REMOVAL:
+        ref_conformant = list()
+        for trace in conformant:
+            ref_conformant.extend(trace)
+        log.set_data(ref_conformant)
+
+    # ------conformance percentage after repair------------------
+    aligned_traces = log.get_traces()
+    test_replayer = LogReplayer(process_graph, aligned_traces, settings,
+                                msg='evaluating conformance after ' + str(settings.alg_manag) + ':')
+    conformant = _get_traces(test_replayer.conformant_traces, False)
+    _print_stats(log, conformant, aligned_traces)

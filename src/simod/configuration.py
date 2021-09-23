@@ -12,6 +12,32 @@ QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
 BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
 
 
+class TraceAlignmentAlgorithm(Enum):
+    REPLACEMENT = auto()
+    REPAIR = auto()
+    REMOVAL = auto()
+
+    @classmethod
+    def from_str(cls, value: str) -> 'TraceAlignmentAlgorithm':
+        if value.lower() == 'replacement':
+            return cls.REPLACEMENT
+        elif value.lower() == 'repair':
+            return cls.REPAIR
+        elif value.lower() == 'removal':
+            return cls.REMOVAL
+        else:
+            raise ValueError(f'Unknown value {value}')
+
+    def __str__(self):
+        if self == TraceAlignmentAlgorithm.REPLACEMENT:
+            return 'replacement'
+        elif self == TraceAlignmentAlgorithm.REPAIR:
+            return 'repair'
+        elif self == TraceAlignmentAlgorithm.REMOVAL:
+            return 'removal'
+        return f'Unknown TraceAlignmentAlgorithm {str(self)}'
+
+
 class MiningAlgorithm(Enum):
     SM1 = auto()
     SM2 = auto()
@@ -253,6 +279,7 @@ class Configuration:
     aligninfo: Path = os.path.join(output,
                                    'CaseTypeAlignmentResults.csv')  # TODO: do we still need these 'align*' attributes?
     aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
+    alg_manag: TraceAlignmentAlgorithm = TraceAlignmentAlgorithm.REPAIR
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     simulator: SimulatorKind = SimulatorKind.BIMP
     mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
@@ -388,3 +415,7 @@ def update_config_with_datastructures(data: dict):
     add_metrics = data.get('add_metrics')
     if add_metrics:
         data['add_metrics'] = Metric.from_str(add_metrics)
+
+    alg_manag = data.get('alg_manag')
+    if alg_manag:
+        data['alg_manag'] = TraceAlignmentAlgorithm.from_str(alg_manag)

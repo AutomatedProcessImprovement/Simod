@@ -316,6 +316,7 @@ class LogReader(object):
         self.filter_d_attrib = settings.filter_d_attrib
         self.verbose = verbose
         self.data = list()
+        self.raw_data = list()
 
         if load:
             self.load_data_from_file()
@@ -382,6 +383,8 @@ class LogReader(object):
         if source == 'com.qbpsimulator' and len(temp_data.iloc[0].elementId.split('_')) > 1:
             temp_data['etype'] = temp_data.apply(lambda x: x.elementId.split('_')[0], axis=1)
             temp_data = (temp_data[temp_data.etype == 'Task'].reset_index(drop=True))
+
+        self.raw_data = temp_data.to_dict('records')
 
         temp_data.drop_duplicates(inplace=True)
 
@@ -464,6 +467,20 @@ class LogReader(object):
             trace = sorted(
                 list(filter(lambda x: (x['caseid'] == case), self.data)),
                 key=itemgetter(order_key))
+            traces.append(trace)
+        return traces
+
+    # NOTE: needed only for TracesAligner
+    def get_raw_traces(self):
+        """
+        returns the raw data splitted by caseid and ordered by timestamp
+        """
+        cases = list(set([c['caseid'] for c in self.raw_data]))
+        traces = list()
+        for case in cases:
+            trace = sorted(
+                list(filter(lambda x, case=case: (x['caseid'] == case), self.raw_data)),
+                key=itemgetter('end_timestamp'))
             traces.append(trace)
         return traces
 

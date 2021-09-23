@@ -2,38 +2,47 @@ import os
 import platform as pl
 import shutil
 import subprocess
+from typing import Union
 
-from memory_profiler import profile
 from networkx import DiGraph
 
 from .cli_formatter import print_subsection, print_step
+from .common_routines import evaluate_and_execute_alignment
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import safe_exec
 from .readers import bpmn_reader as br
 from .readers import process_structure
+from .readers.log_reader import LogReader
 
 
 class StructureMiner:
     """This class extracts all the BPS parameters"""
     bpmn: br.BpmnReader
     process_graph: DiGraph
+    do_trace_alignment: bool
+    log: Union[LogReader, None]
+    settings: Configuration
+    is_safe: bool
 
-    def __init__(self, settings: Configuration):
-        # self.log = log  # TODO: the log isn't used
+    def __init__(self, settings: Configuration, do_trace_alignment=False, log: Union[LogReader, None] = None):
         self.is_safe = True
         self.settings = settings
+        self.do_trace_alignment = do_trace_alignment
+        if do_trace_alignment:
+            self.log = log
 
-    # @profile(stream=open('logs/memprof_StructureMiner.execute_pipeline.log', 'a+'))
     def execute_pipeline(self) -> None:
-        print_subsection("Split Mining")
         if self.settings.model_path is None:
+            print_subsection("Mining the model structure")
             self.is_safe = self._mining_structure(is_safe=self.is_safe)
         else:
-            print_step("Copying The Model")
+            print_step("Copying the model")
             shutil.copy(self.settings.model_path, self.settings.output)
 
         self.bpmn = br.BpmnReader(os.path.join(self.settings.output, self.settings.project_name + '.bpmn'))
         self.process_graph = process_structure.create_process_structure(self.bpmn)
+        if self.do_trace_alignment:
+            evaluate_and_execute_alignment(self.process_graph, self.log, self.settings)
 
     @safe_exec
     def _mining_structure(self, **kwargs) -> None:
@@ -54,11 +63,6 @@ class StructureMiner:
     def _sm2_miner(settings: Configuration):
         """
         Executes splitminer for bpmn structure mining.
-
-        Returns
-        -------
-        None
-            DESCRIPTION.
         """
         # Event log file_name
         file_name = settings.project_name
@@ -81,11 +85,6 @@ class StructureMiner:
     def _sm1_miner(settings: Configuration) -> None:
         """
         Executes splitminer for bpmn structure mining.
-
-        Returns
-        -------
-        None
-            DESCRIPTION.
         """
         # Event log file_name
         file_name = settings.project_name
@@ -101,11 +100,6 @@ class StructureMiner:
     def _sm3_miner(settings: Configuration) -> None:
         """
         Executes splitminer for bpmn structure mining.
-    
-        Returns
-        -------
-        None
-            DESCRIPTION.
         """
         # Event log file_name
         file_name = settings.project_name
@@ -120,6 +114,7 @@ class StructureMiner:
                      'au.edu.unimelb.services.ServiceProvider',
                      'SMD',
                      str(settings.epsilon), str(settings.eta),
+                     # TODO: in some cases .and_prior and .or_rep are lists
                      str(settings.and_prior), str(settings.or_rep), 'false',
                      input_route,
                      os.path.join(settings.output, file_name)])
