@@ -1,5 +1,6 @@
 import itertools as it
 import os
+from pathlib import Path
 from typing import Union
 
 import pandas as pd
@@ -11,7 +12,7 @@ from pm4py.objects.conversion.log import converter
 from pm4py.objects.log.exporter.xes import exporter
 from pm4py.objects.log.util import interval_lifecycle
 
-from ..configuration import Configuration
+from ..configuration import Configuration, ReadOptions
 from ..readers.log_reader import LogReader
 
 
@@ -21,7 +22,7 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
     """
 
     # @profile(stream=open('logs/memprof_XesWriter.log', 'a+'))
-    def __init__(self, log: Union[LogReader, pd.DataFrame, list], settings: Configuration):  # TODO: don't pass the whole Configuration instance, pass only what's required: read_options, output_path
+    def __init__(self, log: Union[LogReader, pd.DataFrame, list], read_options: ReadOptions, output_path: Path):
         if isinstance(log, pd.DataFrame):
             self.log = log.values
         elif isinstance(log, LogReader):
@@ -30,9 +31,9 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
             self.log = log
         else:
             raise Exception(f'Unimplemented type for {type(log)}')
-        self.one_timestamp = settings.read_options.one_timestamp
-        self.column_names = settings.read_options.column_names
-        self.output_file = os.path.join(settings.output, settings.project_name + '.xes')
+        self.one_timestamp = read_options.one_timestamp
+        self.column_names = read_options.column_names
+        self.output_file = str(output_path)
         # self.create_xes_file()
         self.create_xes_file_alternative()
 

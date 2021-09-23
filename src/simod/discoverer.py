@@ -67,7 +67,8 @@ class Discoverer:
             os.makedirs(self.settings.output)
             os.makedirs(os.path.join(self.settings.output, 'sim_data'))
         # Create customized event-log for the external tools
-        xes.XesWriter(self.log_train, self.settings)
+        output_path = self.settings.output / (self.settings.project_name + '.xes')
+        xes.XesWriter(self.log_train, self.settings.read_options, output_path)
 
     @timeit(rec_name='MINING_STRUCTURE')
     @safe_exec

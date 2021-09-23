@@ -136,7 +136,7 @@ class StructureOptimizer:
     # @profile(stream=open('logs/memprof_StructureOpimizer._temp_path_redef.log', 'a+'))
     @timeit(rec_name='PATH_DEF')
     @safe_exec_with_values_and_status
-    def _temp_path_redef(self, settings, **kwargs) -> None:
+    def _temp_path_redef(self, settings: dict, **kwargs) -> None:
         # Paths redefinition
         settings['output'] = os.path.join(self.temp_output, sup.folder_id())
         # Output folder creation
@@ -144,7 +144,8 @@ class StructureOptimizer:
             os.makedirs(settings['output'])
             os.makedirs(os.path.join(settings['output'], 'sim_data'))
         # Create customized event-log for the external tools
-        xes.XesWriter(self.log_train, Configuration(**settings))
+        output_path = Path(os.path.join(settings['output'], (settings['project_name'] + '.xes')))
+        xes.XesWriter(self.log_train, settings['read_options'], output_path)
         return settings
 
     @timeit(rec_name='MINING_STRUCTURE')
