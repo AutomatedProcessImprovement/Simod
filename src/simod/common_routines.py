@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass, field
 from operator import itemgetter
 from pathlib import Path
-from typing import List, Tuple, Callable, Union
+from typing import List, Tuple, Callable, Union, Optional
 
 import networkx
 import pandas as pd
@@ -511,3 +511,13 @@ def evaluate_and_execute_alignment(process_graph: networkx.DiGraph, log: LogRead
                                 msg='evaluating conformance after ' + str(settings.alg_manag) + ':')
     conformant = _get_traces(test_replayer.conformant_traces, False)
     _print_stats(log, conformant, aligned_traces)
+
+
+def file_contains(file_path: Path, substr: str) -> Optional[bool]:
+    if not file_path.exists():
+        return None
+
+    with file_path.open('r') as f:
+        contains = next((line for line in f if substr in line), None)
+
+    return contains is not None
