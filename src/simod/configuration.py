@@ -279,7 +279,7 @@ class Configuration:
     aligninfo: Path = os.path.join(output,
                                    'CaseTypeAlignmentResults.csv')  # TODO: do we still need these 'align*' attributes?
     aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
-    alg_manag: TraceAlignmentAlgorithm = TraceAlignmentAlgorithm.REPAIR
+    alg_manag: TraceAlignmentAlgorithm = TraceAlignmentAlgorithm.REPLACEMENT  # TODO: is replacement the best default?
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     simulator: SimulatorKind = SimulatorKind.BIMP
     mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
