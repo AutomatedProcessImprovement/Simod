@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from simod.common_routines import remove_outliers
+from simod.common_routines import remove_outliers, file_contains
 from simod.configuration import Configuration
 from simod.readers.log_reader import LogReader
 
@@ -35,3 +35,21 @@ def test_remove_outliers(args):
         assert result is not None
         assert 'caseid' in result.keys()
         assert 'duration_seconds' not in result.keys()
+
+
+def test_file_contains(entry_point):
+    paths_without_inclusive = [
+        Path(os.path.join(entry_point, 'PurchasingExample.bpmn')),
+        Path(os.path.join(entry_point, 'Production.bpmn')),
+    ]
+
+    paths_with_inclusive = [
+        Path(os.path.join(entry_point, 'ProductionTestFileContains.bpmn')),
+    ]
+
+    for file_path in paths_without_inclusive:
+        assert file_contains(file_path, "exclusiveGateway") is True
+        assert file_contains(file_path, "inclusiveGateway") is False
+
+    for file_path in paths_with_inclusive:
+        assert file_contains(file_path, "inclusiveGateway") is True
