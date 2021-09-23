@@ -138,7 +138,7 @@ class StructureOptimizer:
     @safe_exec_with_values_and_status
     def _temp_path_redef(self, settings: dict, **kwargs) -> None:
         # Paths redefinition
-        settings['output'] = os.path.join(self.temp_output, sup.folder_id())
+        settings['output'] = Path(os.path.join(self.temp_output, sup.folder_id()))
         # Output folder creation
         if not os.path.exists(settings['output']):
             os.makedirs(settings['output'])
@@ -151,7 +151,7 @@ class StructureOptimizer:
     @timeit(rec_name='MINING_STRUCTURE')
     @safe_exec_with_values_and_status
     def _mine_structure(self, settings: Configuration, **kwargs) -> None:
-        structure_miner = StructureMiner(settings)
+        structure_miner = StructureMiner(settings, log=self.log_train)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             return [structure_miner.bpmn, structure_miner.process_graph]
