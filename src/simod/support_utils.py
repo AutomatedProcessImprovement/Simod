@@ -4,6 +4,7 @@ import json
 import os
 import platform as pl
 import uuid
+from pathlib import Path
 from sys import stdout
 
 import numpy as np
@@ -114,3 +115,7 @@ def copy(source, destiny):
         os.system('copy "' + source + '" "' + destiny + '"')
     else:
         os.system('cp "' + source + '" "' + destiny + '"')
+
+
+def get_project_dir() -> Path:
+    return Path(os.path.dirname(__file__)).parent.parent

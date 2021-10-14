@@ -6,6 +6,7 @@ import click
 from simod.configuration import Configuration, config_data_from_file
 from simod.discoverer import Discoverer
 from simod.optimizer import Optimizer
+from simod.support_utils import get_project_dir
 
 
 @click.group()
@@ -18,8 +19,8 @@ def main():
 @click.option('--config_path', default=None, required=True)
 @click.pass_context
 def discover(ctx, config_path):
-    repository_dir = os.path.join(os.path.dirname(__file__), '../../')
-    ctx.params['config_path'] = Path(os.path.join(repository_dir, config_path))
+    repository_dir = get_project_dir()
+    ctx.params['config_path'] = repository_dir.joinpath(config_path)
 
     config_data = config_data_from_file(config_path)
     config_data.update(ctx.params)
@@ -34,8 +35,8 @@ def discover(ctx, config_path):
 @click.option('--config_path', default=None, required=True)
 @click.pass_context
 def optimize(ctx, config_path):
-    repository_dir = os.path.join(os.path.dirname(__file__), '../../')
-    ctx.params['config_path'] = Path(os.path.join(repository_dir, config_path))
+    repository_dir = get_project_dir()
+    ctx.params['config_path'] = repository_dir.joinpath(config_path)
 
     config_data = config_data_from_file(config_path)
     config_data.update(ctx.params)

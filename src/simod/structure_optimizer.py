@@ -23,6 +23,7 @@ from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemo
 from .decorators import timeit, safe_exec_with_values_and_status
 from .readers.log_reader import LogReader
 from .structure_miner import StructureMiner
+from .support_utils import get_project_dir
 from .writers import xml_writer as xml, xes_writer as xes
 
 
@@ -41,7 +42,7 @@ class StructureOptimizer:
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
         # Load settings
         self.settings = settings
-        self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
+        self.temp_output = get_project_dir() / 'outputs' / sup.folder_id()
         if not os.path.exists(self.temp_output):
             os.makedirs(self.temp_output)
         self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))

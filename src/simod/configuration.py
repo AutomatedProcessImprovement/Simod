@@ -7,9 +7,11 @@ from typing import List, Dict, Optional, Union
 import yaml
 
 from . import support_utils as sup
+from .support_utils import get_project_dir
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
 BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
+PROJECT_DIR = get_project_dir()
 
 
 class TraceAlignmentAlgorithm(Enum):
@@ -266,19 +268,15 @@ class Configuration:
     log_path: Optional[Path] = None
     model_path: Optional[Path] = None
     config_path: Optional[Path] = None
-    output: Path = Path(os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id()))
-    sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
-    sm2_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
-    sm3_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer3', 'bpmtk.jar')
-    bimp_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'bimp',
-                                   'qbp-simulator-engine.jar')
-    align_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'proconformance',
-                                    'ProConformance2.jar')
-    calender_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'calenderimp',
-                                       'CalenderImp.jar')
-    aligninfo: Path = os.path.join(output,
-                                   'CaseTypeAlignmentResults.csv')  # TODO: do we still need these 'align*' attributes?
-    aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
+    output: Path = PROJECT_DIR / 'outputs' / sup.folder_id()
+    sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
+    sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
+    sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
+    bimp_path: Path = PROJECT_DIR / 'external_tools/bimp/qbp-simulator-engine.jar'
+    align_path: Path = PROJECT_DIR / 'external_tools/proconformance/ProConformance2.jar'
+    calender_path: Path = PROJECT_DIR / 'external_tools/calenderimp/CalenderImp.jar'
+    aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
+    aligntype: Path = output / 'AlignmentStatistics.csv'
     alg_manag: TraceAlignmentAlgorithm = TraceAlignmentAlgorithm.REPLACEMENT  # TODO: is replacement the best default?
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     simulator: SimulatorKind = SimulatorKind.BIMP
@@ -345,26 +343,26 @@ def config_data_from_yaml(config_data: dict) -> dict:
 
 
 def update_config_with_datastructures(data: dict):
-    repository_dir = os.path.join(os.path.dirname(__file__), '../../')
+    global PROJECT_DIR
 
     model_path = data.get('model_path')
     if model_path:
         if not os.path.isabs(model_path):
-            data['model_path'] = Path(os.path.join(repository_dir, model_path))
+            data['model_path'] = PROJECT_DIR / model_path
         else:
             data['model_path'] = Path(model_path)
 
     log_path = data.get('log_path')
     if log_path:
         if not os.path.isabs(log_path):
-            data['log_path'] = Path(os.path.join(repository_dir, log_path))
+            data['log_path'] = PROJECT_DIR / log_path
         else:
             data['log_path'] = Path(log_path)
 
     input = data.get('input')
     if input:
         if not os.path.isabs(input):
-            data['input'] = Path(os.path.join(repository_dir, input))
+            data['input'] = PROJECT_DIR / input
         else:
             data['input'] = Path(input)
 
@@ -402,7 +400,7 @@ def update_config_with_datastructures(data: dict):
 
     is_output = data.get('output')
     if is_output:
-        data['output'] = Path(os.path.join(repository_dir, 'outputs', sup.folder_id()))
+        data['output'] = PROJECT_DIR / 'outputs' / sup.folder_id()
 
     exec_mode = data.get('exec_mode')
     if exec_mode:
