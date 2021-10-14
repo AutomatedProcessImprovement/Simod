@@ -6,7 +6,7 @@ from typing import Union
 
 from networkx import DiGraph
 
-from .cli_formatter import print_subsection, print_step
+from .cli_formatter import print_subsection, print_step, print_asset
 from .common_routines import evaluate_and_execute_alignment, file_contains
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import safe_exec
@@ -36,6 +36,8 @@ class StructureMiner:
     def execute_pipeline(self) -> None:
         if self.settings.model_path is None:
             print_subsection("Mining the model structure")
+            log_path = self.settings.output / (self.settings.project_name + '.xes')
+            print_asset(f"Log file {log_path}")
             self.is_safe = self._mining_structure(is_safe=self.is_safe)
         else:
             print_step("Copying the model")
