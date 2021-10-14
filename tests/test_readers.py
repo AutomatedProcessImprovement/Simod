@@ -12,8 +12,6 @@ def args(entry_point) -> dict:
     # log_path = os.path.join(entry_point, 'confidential_1000.xes')
     # log_path = os.path.join(entry_point, 'cvs_pharmacy.xes')
     log_path = os.path.join(entry_point, 'Production.xes')
-    # log_path = os.path.join(entry_point, 'validation_1/complete logs/Production.xes')
-    # log_path = '../assets/validation_1/complete logs/Production.xes'
     options = ReadOptions(column_names=ReadOptions.column_names_default())
     return {'log_path': log_path, 'read_options': options}
 
