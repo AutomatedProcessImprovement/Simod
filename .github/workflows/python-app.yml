@@ -2,9 +2,9 @@ name: Build & Test
 
 on:
   push:
-    branches: [ master, new_replayer ]
+    branches: [ master, new_replayer, simulator ]
   pull_request:
-    branches: [ master, new_replayer ]
+    branches: [ master, new_replayer, simulator ]
 
 jobs:
   build:
