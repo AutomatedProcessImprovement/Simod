@@ -157,11 +157,9 @@ class Optimizer:
         return model_path
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
-        output_path = os.path.join(self.settings_global.output.parent, sup.folder_id())
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-            os.makedirs(os.path.join(output_path, 'sim_data'))
-        # self.settings_global.__dict__.pop('output', None)
+        output_path = self.settings_global.output.parent / sup.folder_id()
+        sim_path = output_path / 'sim_data'
+        sim_path.mkdir(parents=True, exist_ok=True)
         self.settings_global.output = output_path
         self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
