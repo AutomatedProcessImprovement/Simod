@@ -95,6 +95,10 @@ class StructureOptimizer:
             rsp = self._mine_structure(Configuration(**trial_stg), status=status, log_time=exec_times)
             status = rsp['status']
 
+            # Recording if the trace alignment was executed or not
+            a, b, is_trace_alignment = rsp['values']
+            rsp['values'] = (a, b)
+
             # Parameters extraction
             rsp = self._extract_parameters(trial_stg, rsp['values'], copy.deepcopy(parameters), status=status,
                                            log_time=exec_times)
@@ -109,7 +113,7 @@ class StructureOptimizer:
             self._save_times(exec_times, trial_stg, self.temp_output)
 
             # Optimizer results
-            rsp = self._define_response(trial_stg, status, sim_values)
+            rsp = self._define_response(trial_stg, status, sim_values, is_trace_alignment=is_trace_alignment)
             # reinstate log
             self.log = copy.deepcopy(self.org_log)
             self.log_train = copy.deepcopy(self.org_log_train)
@@ -155,18 +159,18 @@ class StructureOptimizer:
         structure_miner = StructureMiner(settings, log=self.log_train)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
-            return [structure_miner.bpmn, structure_miner.process_graph]
+            return [structure_miner.bpmn, structure_miner.process_graph, structure_miner.do_trace_alignment]
         else:
             raise RuntimeError('Mining Structure error')
 
     # @profile(stream=open('logs/memprof_StructureOptimizer._extract_parameters.log', 'a+'))
     @timeit(rec_name='EXTRACTING_PARAMS')
     @safe_exec_with_values_and_status
-    def _extract_parameters(self, settings: Configuration, structure, parameters, **kwargs) -> None:
+    def _extract_parameters(self, settings: Configuration, structure_values, parameters, **kwargs) -> None:
         if isinstance(settings, dict):
             settings = Configuration(**settings)
 
-        _, process_graph = structure
+        _, process_graph = structure_values
         num_inst = len(self.log_valdn.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
         start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
@@ -298,8 +302,12 @@ class StructureOptimizer:
     def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()
         measurements = list()
-        data = {'gate_management': settings['gate_management'], 'output': settings['output']}
-        # Miner parms
+        data = {
+            'gate_management': settings['gate_management'],
+            'output': settings['output'],
+            'is_trace_alignment': kwargs.get('is_trace_alignment', False)
+        }
+        # Miner parameters
         if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             data['epsilon'] = settings['epsilon']
             data['eta'] = settings['eta']
