@@ -37,7 +37,7 @@ class StructureOptimizer:
         self.log = log
         self._split_timeline(0.8, settings.read_options.one_timestamp)
 
-        self.org_log = log
+        self.org_log = copy.deepcopy(log)
         self.org_log_train = copy.deepcopy(self.log_train)
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
         # Load settings
@@ -74,7 +74,7 @@ class StructureOptimizer:
     # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
     def execute_trials(self):
         parameters = mine_resources(self.settings)
-        self.log_train = self.org_log_train
+        self.log_train = copy.deepcopy(self.org_log_train)
 
         # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
         def exec_pipeline(trial_stg: Configuration):
@@ -111,9 +111,9 @@ class StructureOptimizer:
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
             # reinstate log
-            self.log = self.org_log
-            self.log_train = self.org_log_train
-            self.log_valdn = self.org_log_valdn
+            self.log = copy.deepcopy(self.org_log)
+            self.log_train = copy.deepcopy(self.org_log_train)
+            self.log_valdn = copy.deepcopy(self.org_log_valdn)
 
             return rsp
 
