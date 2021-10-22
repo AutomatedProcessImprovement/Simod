@@ -19,6 +19,8 @@ from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_message, print_subsection
 from .common_routines import execute_simulator, mine_resources, extract_structure_parameters, split_timeline
+from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
+    save_times
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .decorators import timeit, safe_exec_with_values_and_status
 from .readers.log_reader import LogReader
@@ -113,7 +115,7 @@ class StructureOptimizer:
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
 
             # Save times
-            self._save_times(exec_times, trial_stg, self.temp_output)
+            save_times(exec_times, trial_stg, self.temp_output)
 
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values, is_trace_alignment=is_trace_alignment)
@@ -290,17 +292,6 @@ class StructureOptimizer:
 
         return evaluate(*args)
 
-    @staticmethod
-    def _save_times(times, settings, temp_output):
-        if times:
-            times = [{**{'output': settings['output']}, **times}]
-            log_file = os.path.join(temp_output, 'execution_times.csv')
-            if not os.path.exists(log_file):
-                open(log_file, 'w').close()
-            if os.path.getsize(log_file) > 0:
-                sup.create_csv_file(times, log_file, mode='a')
-            else:
-                sup.create_csv_file_header(times, log_file)
 
     def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()

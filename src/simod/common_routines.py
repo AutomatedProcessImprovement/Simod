@@ -338,6 +338,16 @@ def evaluate_logs_with_add_metrics(args):
     return evaluate(*args)
 
 
+def save_times(times, settings, temp_output):
+    if times:
+        times = [{**{'output': settings['output']}, **times}]
+        log_file = os.path.join(temp_output, 'execution_times.csv')
+        if not os.path.exists(log_file):
+            open(log_file, 'w').close()
+        if os.path.getsize(log_file) > 0:
+            sup.create_csv_file(times, log_file, mode='a')
+        else:
+            sup.create_csv_file_header(times, log_file)
 def mine_resources(settings: Configuration):
     parameters = dict()
     settings.res_cal_met = CalculationMethod.DEFAULT
