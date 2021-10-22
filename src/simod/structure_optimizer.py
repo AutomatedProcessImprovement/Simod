@@ -96,8 +96,11 @@ class StructureOptimizer:
             status = rsp['status']
 
             # Recording if the trace alignment was executed or not
-            a, b, is_trace_alignment = rsp['values']
-            rsp['values'] = (a, b)
+            is_trace_alignment = False
+            values = rsp.get('values', None)
+            if values and len(values) == 3:
+                a, b, is_trace_alignment = rsp['values']
+                rsp['values'] = (a, b)
 
             # Parameters extraction
             rsp = self._extract_parameters(trial_stg, rsp['values'], copy.deepcopy(parameters), status=status,
