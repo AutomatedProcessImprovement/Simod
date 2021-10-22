@@ -1,28 +1,21 @@
 import copy
-import itertools
 import math
-import multiprocessing
 import os
 import random
-import time
-from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from memory_profiler import profile
-from tqdm import tqdm
 
 from . import support_utils as sup
-from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_message, print_subsection
-from .common_routines import execute_simulator, mine_resources, extract_structure_parameters, split_timeline
 from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
     save_times
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .decorators import timeit, safe_exec_with_values_and_status
+from .qbp import simulate
 from .readers.log_reader import LogReader
 from .structure_miner import StructureMiner
 from .support_utils import get_project_dir
@@ -110,9 +103,11 @@ class StructureOptimizer:
             status = rsp['status']
 
             # Simulate model
-            rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
-            status = rsp['status']
-            sim_values = rsp['values'] if status == STATUS_OK else sim_values
+            # rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
+            # NOTE: looks strange, seems correct
+            rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_logs)
+            # status = rsp['status']  # TODO: we stopped using status here as it was designed
+            sim_values = rsp if status == STATUS_OK else sim_values
 
             # Save times
             save_times(exec_times, trial_stg, self.temp_output)
@@ -199,99 +194,38 @@ class StructureOptimizer:
         self.log_valdn['role'] = 'SYSTEM'
         self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
 
-    @timeit(rec_name='SIMULATION_EVAL')
-    @safe_exec_with_values_and_status
-    def _simulate(self, settings: Configuration, data, **kwargs) -> list:
-        if isinstance(settings, dict):
-            settings = Configuration(**settings)
-
-        def pbar_async(p, msg):
-            pbar = tqdm(total=reps, desc=msg)
-            processed = 0
-            while not p.ready():
-                cprocesed = (reps - p._number_left)
-                if processed < cprocesed:
-                    increment = cprocesed - processed
-                    pbar.update(n=increment)
-                    processed = cprocesed
-            time.sleep(1)
-            pbar.update(n=(reps - processed))
-            p.wait()
-            pbar.close()
-
-        reps = settings.repetitions
-        cpu_count = multiprocessing.cpu_count()
-        w_count = reps if reps <= cpu_count else cpu_count
-        pool = Pool(processes=w_count)
-        # Simulate
-        args = [(settings, rep) for rep in range(reps)]
-        p = pool.map_async(execute_simulator, args)
-        pbar_async(p, 'simulating:')
-        # Read simulated logs
-        p = pool.map_async(self.read_stats, args)
-        pbar_async(p, 'reading simulated logs:')
-        # Evaluate
-        args = [(settings, data, log) for log in p.get()]
-        if len(self.log_valdn.caseid.unique()) > 1000:
-            pool.close()
-            results = [self.evaluate_logs(arg)
-                       for arg in tqdm(args, 'evaluating results:')]
-            # Save results
-            sim_values = list(itertools.chain(*results))
-        else:
-            p = pool.map_async(self.evaluate_logs, args)
-            pbar_async(p, 'evaluating results:')
-            pool.close()
-            # Save results
-            sim_values = list(itertools.chain(*p.get()))
-        return sim_values
-
-    @staticmethod
-    def read_stats(args):
-        def read(settings: Configuration, rep):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            m_settings = dict()
-            m_settings['output'] = settings.output
-            column_names = {'resource': 'user'}
-            m_settings['read_options'] = settings.read_options
-            m_settings['read_options'].timeformat = '%Y-%m-%d %H:%M:%S.%f'
-            m_settings['read_options'].column_names = column_names
-            m_settings['project_name'] = settings.project_name
-            temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                          m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                             m_settings['read_options'],
-                             verbose=False)
-            temp = pd.DataFrame(temp.data)
-            temp.rename(columns={'user': 'resource'}, inplace=True)
-            temp['role'] = temp['resource']
-            temp['source'] = 'simulation'
-            temp['run_num'] = rep + 1
-            temp = temp[~temp.task.isin(['Start', 'End'])]
-            return temp
-
-        return read(*args)
-
-    @staticmethod
-    def evaluate_logs(args):
-        def evaluate(settings: Configuration, data, sim_log):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            rep = (sim_log.iloc[0].run_num)
-            sim_values = list()
-            evaluator = sim.SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
-            evaluator.measure_distance(Metric.DL)
-            sim_values.append({**{'run_num': rep}, **evaluator.similarity})
-            return sim_values
-
-        return evaluate(*args)
-
+    # @timeit(rec_name='SIMULATION_EVAL')
+    # @safe_exec_with_values_and_status
+    # def _simulate(self, settings: Configuration, data, **kwargs) -> list:
+    #     if isinstance(settings, dict):
+    #         settings = Configuration(**settings)
+    #
+    #     reps = settings.repetitions
+    #     cpu_count = multiprocessing.cpu_count()
+    #     w_count = reps if reps <= cpu_count else cpu_count
+    #     pool = multiprocessing.Pool(processes=w_count)
+    #
+    #     # Simulate
+    #     args = [(settings, rep) for rep in range(reps)]
+    #     p = pool.map_async(execute_simulator, args)
+    #     pbar_async(p, 'simulating:', reps)
+    #
+    #     # Read simulated logs
+    #     p = pool.map_async(read_stats, args)
+    #     pbar_async(p, 'reading simulated logs:', reps)
+    #
+    #     # Evaluate
+    #     args = [(settings, data, log) for log in p.get()]
+    #     if len(self.log_valdn.caseid.unique()) > 1000:
+    #         pool.close()
+    #         results = [evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+    #         sim_values = list(itertools.chain(*results))
+    #     else:
+    #         p = pool.map_async(evaluate_logs, args)
+    #         pbar_async(p, 'evaluating results:', reps)
+    #         pool.close()
+    #         sim_values = list(itertools.chain(*p.get()))
+    #     return sim_values
 
     def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()

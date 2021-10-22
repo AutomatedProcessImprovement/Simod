@@ -9,8 +9,8 @@ from memory_profiler import profile
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
-from .common_routines import extract_structure_parameters, extract_process_graph, simulate, \
-    evaluate_logs_with_add_metrics, remove_outliers
+from .common_routines import extract_structure_parameters, extract_process_graph, evaluate_logs_with_add_metrics, remove_outliers
+from .qbp import simulate
 from .configuration import Configuration, MiningAlgorithm
 from .readers import log_splitter as ls
 from .readers.log_reader import LogReader

@@ -1,17 +1,15 @@
 import itertools
-import multiprocessing
 import os
 import subprocess
 import time
 from dataclasses import dataclass, field
 from operator import itemgetter
 from pathlib import Path
-from typing import List, Tuple, Callable, Union, Optional
+from typing import List, Tuple, Union, Optional
 
 import networkx
 import pandas as pd
 from networkx import DiGraph
-from tqdm import tqdm
 
 from simod.readers.log_splitter import LogSplitter
 from . import support_utils as sup
@@ -188,79 +186,13 @@ def extract_process_graph(model_path) -> DiGraph:
     return process_structure.create_process_structure(bpmn)
 
 
-def simulate(settings: Configuration, process_stats: pd.DataFrame, log_test, evaluate_fn: Callable = None):
-    if evaluate_fn is None:
-        evaluate_fn = evaluate_logs
-
-    # NOTE: from Discoverer
-    def pbar_async(p, msg):
-        pbar = tqdm(total=reps, desc=msg)
-        processed = 0
-        while not p.ready():
-            cprocesed = (reps - p._number_left)
-            if processed < cprocesed:
-                increment = cprocesed - processed
-                pbar.update(n=increment)
-                processed = cprocesed
-        time.sleep(1)
-        pbar.update(n=(reps - processed))
-        p.wait()
-        pbar.close()
-
-    reps = settings.repetitions
-    cpu_count = multiprocessing.cpu_count()
-    w_count = reps if reps <= cpu_count else cpu_count
-    pool = multiprocessing.Pool(processes=w_count)
-
-    # Simulate
-    args = [(settings, rep) for rep in range(reps)]
-    p = pool.map_async(execute_simulator, args)
-    pbar_async(p, 'simulating:')
-
-    # Read simulated logs
-    args = [(settings, rep) for rep in range(reps)]
-    p = pool.map_async(read_stats, args)
-    pbar_async(p, 'reading simulated logs:')
-
-    # Evaluate
-    args = [(settings, process_stats, log) for log in p.get()]
-    if len(log_test.caseid.unique()) > 1000:
-        pool.close()
-        results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results:')]
-        sim_values = list(itertools.chain(*results))
-    else:
-        p = pool.map_async(evaluate_fn, args)
-        pbar_async(p, 'evaluating results:')
-        pool.close()
-        sim_values = list(itertools.chain(*p.get()))
-    return sim_values
-
-
-def execute_simulator(args):
-    # NOTE: extracted from StructureOptimizer static method
-    def sim_call(settings: Configuration, rep):
-        args = ['java', '-jar', settings.bimp_path,
-                os.path.join(settings.output, settings.project_name + '.bpmn'),
-                '-csv',
-                os.path.join(settings.output, 'sim_data', settings.project_name + '_' + str(rep + 1) + '.csv')]
-        # NOTE: the call generates a CSV event log from a model
-        # NOTE: might fail silently, because stderr or stdout aren't checked
-        completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
-        message = f'Simulator debug information:' \
-                  f'\n\targs = {completed_process.args()}' \
-                  f'\n\tstdout = {completed_process.stdout.__str__()}' \
-                  f'\n\tstderr = {completed_process.stderr.__str__()}'
-        print_notice(message)
-
-    sim_call(*args)
-
-
-# def execute_simulator_simple(bimp_path, model_path, csv_output_path):
-#     args = ['java', '-jar', bimp_path, model_path, '-csv', csv_output_path]
-#     print('args', args)
-#     # NOTE: the call generates a CSV event log from a model
-#     # NOTE: might fail silently, because stderr or stdout aren't checked
-#     subprocess.run(args, check=True, stdout=subprocess.PIPE)
+def execute_shell_cmd(args):
+    completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+    message = f'\nShell debug information:' \
+              f'\n\targs = {completed_process.args}' \
+              f'\n\tstdout = {completed_process.stdout.__str__()}' \
+              f'\n\tstderr = {completed_process.stderr.__str__()}'
+    print_notice(message)
 
 
 def read_stats(args):
@@ -348,6 +280,24 @@ def save_times(times, settings, temp_output):
             sup.create_csv_file(times, log_file, mode='a')
         else:
             sup.create_csv_file_header(times, log_file)
+
+
+def pbar_async(p, msg, reps):
+    from tqdm import tqdm
+    pbar = tqdm(total=reps, desc=msg)
+    processed = 0
+    while not p.ready():
+        cprocesed = (reps - p._number_left)
+        if processed < cprocesed:
+            increment = cprocesed - processed
+            pbar.update(n=increment)
+            processed = cprocesed
+    time.sleep(1)
+    pbar.update(n=(reps - processed))
+    p.wait()
+    pbar.close()
+
+
 def mine_resources(settings: Configuration):
     parameters = dict()
     settings.res_cal_met = CalculationMethod.DEFAULT

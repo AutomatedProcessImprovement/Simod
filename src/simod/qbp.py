@@ -4,15 +4,26 @@
     The aim of the module is to extract parameters from a QBP-generated XML and save them as a JSON-file for the new
     simulator to use.
 """
-
+import itertools
 import json
+import multiprocessing
+import time
 import xml.etree.ElementTree as ET
+from typing import Callable, Tuple
+
+import pandas as pd
+from tqdm import tqdm
+
+from simod.common_routines import evaluate_logs, read_stats, execute_shell_cmd, pbar_async
+from simod.configuration import Configuration
 
 QBP_NS = {'qbp': 'http://www.qbp-simulator.com/Schema201212'}
 BPMN_NS = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
 
 
-def parse_and_save(qbp_bpmn_path, out_file):
+def parse_model_and_save_json(qbp_bpmn_path, out_file):
+    """Extracts data from BPMN QBP and saves it to JSON for the new simulator."""
+
     global QBP_NS, BPMN_NS
 
     tree = ET.parse(qbp_bpmn_path)
@@ -47,11 +58,11 @@ def parse_and_save(qbp_bpmn_path, out_file):
         time_table = calendar_info.find("qbp:rules", QBP_NS).find("qbp:rule", QBP_NS)
         calendars_map[calendar_id].append({"from": time_table.attrib["fromWeekDay"],
                                            "to": time_table.attrib["toWeekDay"],
-                                           "beginTime": format_date(time_table.attrib["fromTime"]),
-                                           "endTime": format_date(time_table.attrib["toTime"])})
+                                           "beginTime": _format_date(time_table.attrib["fromTime"]),
+                                           "endTime": _format_date(time_table.attrib["toTime"])})
 
     # 3. Extracting Arrival time distribution
-    arrival_time_dist = extract_dist_params(simod_root.find("qbp:arrivalRateDistribution", QBP_NS))
+    arrival_time_dist = _extract_dist_params(simod_root.find("qbp:arrivalRateDistribution", QBP_NS))
 
     # 4. Extracting task-resource duration distributions
     bpmn_resources = simod_root.find("qbp:resources", QBP_NS)
@@ -72,7 +83,7 @@ def parse_and_save(qbp_bpmn_path, out_file):
         rpool_id = e_inf.find("qbp:resourceIds", QBP_NS).find("qbp:resourceId", QBP_NS).text
         dist_info = e_inf.find("qbp:durationDistribution", QBP_NS)
 
-        t_dist = extract_dist_params(dist_info)
+        t_dist = _extract_dist_params(dist_info)
         if task_id not in task_resource_dist:
             task_resource_dist[task_id] = dict()
         for rp_id in resource_pools[rpool_id]:
@@ -89,7 +100,7 @@ def parse_and_save(qbp_bpmn_path, out_file):
         json.dump(to_save, file_writter)
 
 
-def extract_dist_params(dist_info):
+def _extract_dist_params(dist_info):
     # time_unit = dist_info.find("qbp:timeUnit", simod_ns).text
     # The time_tables produced by bimp always have the parameters in seconds, although it shouws other time units in
     # the XML file.
@@ -115,8 +126,56 @@ def extract_dist_params(dist_info):
     return None
 
 
-def format_date(date_str):
+def _format_date(date_str):
     date_splt = date_str.split("+")
     if len(date_splt) == 2 and date_splt[1] == "00:00":
         return date_splt[0]
     return date_str
+
+
+def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, evaluate_fn: Callable = None):
+    if evaluate_fn is None:
+        evaluate_fn = evaluate_logs
+
+    if isinstance(settings, dict):
+        settings = Configuration(**settings)
+
+    reps = settings.repetitions
+    cpu_count = multiprocessing.cpu_count()
+    w_count = reps if reps <= cpu_count else cpu_count
+    pool = multiprocessing.Pool(processes=w_count)
+
+    # Simulate
+    args = [(settings, rep) for rep in range(reps)]
+    p = pool.map_async(execute_simulator, args)
+    pbar_async(p, 'simulating:', reps)
+
+    # Read simulated logs
+    p = pool.map_async(read_stats, args)
+    pbar_async(p, 'reading simulated logs:', reps)
+
+    # Evaluate
+    args = [(settings, process_stats, log) for log in p.get()]
+    if len(log_data.caseid.unique()) > 1000:
+        pool.close()
+        results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results:')]
+        sim_values = list(itertools.chain(*results))
+    else:
+        p = pool.map_async(evaluate_fn, args)
+        pbar_async(p, 'evaluating results:', reps)
+        pool.close()
+        sim_values = list(itertools.chain(*p.get()))
+    return sim_values
+
+
+def execute_simulator(args: Tuple):
+    settings: Configuration
+    repetitions: int
+    settings, repetitions = args
+    args = ['java', '-jar', settings.bimp_path.absolute().__str__(),
+            settings.output / (settings.project_name + '.bpmn'),
+            '-csv',
+            settings.output / 'sim_data' / (settings.project_name + '_' + str(repetitions + 1) + '.csv')]
+    # NOTE: the call generates a CSV event log from a model
+    # NOTE: might fail silently, because stderr or stdout aren't checked
+    execute_shell_cmd(args)
