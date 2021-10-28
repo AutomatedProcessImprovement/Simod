@@ -367,7 +367,7 @@ def config_data_with_datastructures(data: dict) -> dict:
             data['input'] = Path(input)
 
     mining_alg = data.get('mining_alg')
-    if mining_alg and isinstance(mining_alg, str):
+    if mining_alg:
         data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
 
     and_prior = data.get('and_prior')
@@ -375,7 +375,7 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['and_prior'] = AndPriorORemove.from_str(and_prior)
 
     or_rep = data.get('or_rep')
-    if or_rep and isinstance(or_rep, str):
+    if or_rep:
         data['or_rep'] = AndPriorORemove.from_str(or_rep)
 
     gate_management = data.get('gate_management')
@@ -383,11 +383,11 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['gate_management'] = GateManagement.from_str(gate_management)
 
     res_cal_met = data.get('res_cal_met')
-    if res_cal_met and isinstance(res_cal_met, str):
+    if res_cal_met:
         data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
 
     res_dtype = data.get('res_dtype')
-    if res_dtype and isinstance(res_cal_met, str):
+    if res_dtype:
         data['res_dtype'] = DataType.from_str(res_dtype)
 
     arr_dtype = data.get('arr_dtype')
@@ -395,19 +395,19 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['arr_dtype'] = DataType.from_str(arr_dtype)
 
     pdef_method = data.get('pdef_method')
-    if pdef_method and isinstance(pdef_method, str):
+    if pdef_method:
         data['pdef_method'] = PDFMethod.from_str(pdef_method)
 
     exec_mode = data.get('exec_mode')
-    if exec_mode and isinstance(exec_mode, str):
+    if exec_mode:
         data['exec_mode'] = ExecutionMode.from_str(exec_mode)
 
     sim_metric = data.get('sim_metric')
-    if sim_metric and (isinstance(sim_metric, str) or isinstance(sim_metric, list)):
+    if sim_metric:
         data['sim_metric'] = Metric.from_str(sim_metric)
 
     add_metrics = data.get('add_metrics')
-    if add_metrics and (isinstance(add_metrics, str) or isinstance(add_metrics, str)):
+    if add_metrics:
         data['add_metrics'] = Metric.from_str(add_metrics)
 
     return data
