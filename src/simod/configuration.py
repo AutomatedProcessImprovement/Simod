@@ -315,26 +315,26 @@ class Configuration:
             self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
 
 
-def config_data_from_file(config_path) -> dict:
-    with open(config_path, 'r') as f:
+def config_data_from_file(config_path: Path) -> dict:
+    with config_path.open('r') as f:
         config_data = yaml.load(f, Loader=yaml.FullLoader)
     config_data = config_data_from_yaml(config_data)
     return config_data
 
 
 def config_data_from_yaml(config_data: dict) -> dict:
-    update_config_with_datastructures(config_data)
+    config_data = config_data_with_datastructures(config_data)
 
     structure_optimizer = config_data.get('structure_optimizer')
     if structure_optimizer:
-        update_config_with_datastructures(structure_optimizer)
+        config_data_with_datastructures(structure_optimizer)
         # the rest of the software uses 'strc' key
         config_data.pop('structure_optimizer')
         config_data['strc'] = structure_optimizer
 
     time_optimizer = config_data.get('time_optimizer')
     if time_optimizer:
-        update_config_with_datastructures(time_optimizer)
+        config_data_with_datastructures(time_optimizer)
         # the rest of the software uses 'tm' key
         config_data.pop('time_optimizer')
         config_data['tm'] = time_optimizer
@@ -342,8 +342,9 @@ def config_data_from_yaml(config_data: dict) -> dict:
     return config_data
 
 
-def update_config_with_datastructures(data: dict):
+def config_data_with_datastructures(data: dict) -> dict:
     global PROJECT_DIR
+    data = data.copy()
 
     model_path = data.get('model_path')
     if model_path:
@@ -367,53 +368,51 @@ def update_config_with_datastructures(data: dict):
             data['input'] = Path(input)
 
     mining_alg = data.get('mining_alg')
-    if mining_alg:
+    if mining_alg and isinstance(mining_alg, str):
         data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
 
     and_prior = data.get('and_prior')
-    if and_prior:
+    if and_prior and isinstance(and_prior, str):
         data['and_prior'] = AndPriorORemove.from_str(and_prior)
 
     or_rep = data.get('or_rep')
-    if or_rep:
+    if or_rep and isinstance(or_rep, str):
         data['or_rep'] = AndPriorORemove.from_str(or_rep)
 
     gate_management = data.get('gate_management')
-    if gate_management:
+    if gate_management and isinstance(gate_management, str):
         data['gate_management'] = GateManagement.from_str(gate_management)
 
     res_cal_met = data.get('res_cal_met')
-    if res_cal_met:
+    if res_cal_met and isinstance(res_cal_met, str):
         data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
 
     res_dtype = data.get('res_dtype')
-    if res_dtype:
+    if res_dtype and isinstance(res_cal_met, str):
         data['res_dtype'] = DataType.from_str(res_dtype)
 
     arr_dtype = data.get('arr_dtype')
-    if arr_dtype:
+    if arr_dtype and isinstance(arr_dtype, str):
         data['arr_dtype'] = DataType.from_str(arr_dtype)
 
     pdef_method = data.get('pdef_method')
-    if pdef_method:
+    if pdef_method and isinstance(pdef_method, str):
         data['pdef_method'] = PDFMethod.from_str(pdef_method)
 
-    is_output = data.get('output')
-    if is_output:
-        data['output'] = PROJECT_DIR / 'outputs' / sup.folder_id()
-
     exec_mode = data.get('exec_mode')
-    if exec_mode:
+    if exec_mode and isinstance(exec_mode, str):
         data['exec_mode'] = ExecutionMode.from_str(exec_mode)
 
     sim_metric = data.get('sim_metric')
-    if sim_metric:
+    if sim_metric and isinstance(sim_metric, str):
         data['sim_metric'] = Metric.from_str(sim_metric)
 
     add_metrics = data.get('add_metrics')
-    if add_metrics:
+    if add_metrics and isinstance(add_metrics, str):
         data['add_metrics'] = Metric.from_str(add_metrics)
 
     alg_manag = data.get('alg_manag')
-    if alg_manag:
+    if alg_manag and isinstance(alg_manag, str):
         data['alg_manag'] = TraceAlignmentAlgorithm.from_str(alg_manag)
+
+    return data
