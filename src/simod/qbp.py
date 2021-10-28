@@ -173,9 +173,9 @@ def execute_simulator(args: Tuple):
     repetitions: int
     settings, repetitions = args
     args = ['java', '-jar', settings.bimp_path.absolute().__str__(),
-            settings.output / (settings.project_name + '.bpmn'),
+            (settings.output / (settings.project_name + '.bpmn')).__str__(),
             '-csv',
-            settings.output / 'sim_data' / (settings.project_name + '_' + str(repetitions + 1) + '.csv')]
+            (settings.output / 'sim_data' / (settings.project_name + '_' + str(repetitions + 1) + '.csv')).__str__()]
     # NOTE: the call generates a CSV event log from a model
     # NOTE: might fail silently, because stderr or stdout aren't checked
     execute_shell_cmd(args)
