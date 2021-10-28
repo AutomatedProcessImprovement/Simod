@@ -272,17 +272,20 @@ def evaluate_logs_with_add_metrics(args):
 
 
 def save_times(times, settings: Union[Configuration, dict], temp_output):
+    if not times:
+        return
+
     if isinstance(settings, dict):
         settings = Configuration(**settings)
-    if times:
-        times = [{**{'output': settings['output']}, **times}]
-        log_file = os.path.join(temp_output, 'execution_times.csv')
-        if not os.path.exists(log_file):
-            open(log_file, 'w').close()
-        if os.path.getsize(log_file) > 0:
-            sup.create_csv_file(times, log_file, mode='a')
-        else:
-            sup.create_csv_file_header(times, log_file)
+
+    times = [{**{'output': settings.output}, **times}]
+    log_file = os.path.join(temp_output, 'execution_times.csv')
+    if not os.path.exists(log_file):
+        open(log_file, 'w').close()
+    if os.path.getsize(log_file) > 0:
+        sup.create_csv_file(times, log_file, mode='a')
+    else:
+        sup.create_csv_file_header(times, log_file)
 
 
 def pbar_async(p, msg, reps):
