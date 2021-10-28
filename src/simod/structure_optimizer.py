@@ -90,13 +90,6 @@ class StructureOptimizer:
             rsp = self._mine_structure(Configuration(**trial_stg), status=status, log_time=exec_times)
             status = rsp['status']
 
-            # Recording if the trace alignment was executed or not
-            is_trace_alignment = False
-            values = rsp.get('values', None)
-            if values and len(values) == 3:
-                a, b, is_trace_alignment = rsp['values']
-                rsp['values'] = (a, b)
-
             # Parameters extraction
             rsp = self._extract_parameters(trial_stg, rsp['values'], copy.deepcopy(parameters), status=status,
                                            log_time=exec_times)
@@ -113,7 +106,7 @@ class StructureOptimizer:
             save_times(exec_times, trial_stg, self.temp_output)
 
             # Optimizer results
-            rsp = self._define_response(trial_stg, status, sim_values, is_trace_alignment=is_trace_alignment)
+            rsp = self._define_response(trial_stg, status, sim_values)
             # reinstate log
             self.log = copy.deepcopy(self.org_log)
             self.log_train = copy.deepcopy(self.org_log_train)
@@ -156,10 +149,10 @@ class StructureOptimizer:
     @timeit(rec_name='MINING_STRUCTURE')
     @safe_exec_with_values_and_status
     def _mine_structure(self, settings: Configuration, **kwargs) -> None:
-        structure_miner = StructureMiner(settings, log=self.log_train)
+        structure_miner = StructureMiner(settings)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
-            return [structure_miner.bpmn, structure_miner.process_graph, structure_miner.do_trace_alignment]
+            return [structure_miner.bpmn, structure_miner.process_graph]
         else:
             raise RuntimeError('Mining Structure error')
 
@@ -233,7 +226,6 @@ class StructureOptimizer:
         data = {
             'gate_management': settings['gate_management'],
             'output': settings['output'],
-            'is_trace_alignment': kwargs.get('is_trace_alignment', False)
         }
         # Miner parameters
         if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:

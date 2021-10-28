@@ -2,36 +2,26 @@ import os
 import platform as pl
 import shutil
 import subprocess
-from typing import Union
 
 from networkx import DiGraph
 
 from .cli_formatter import print_subsection, print_step, print_asset
-from .common_routines import evaluate_and_execute_alignment, file_contains
 from .configuration import Configuration, MiningAlgorithm
 from .decorators import safe_exec
 from .readers import bpmn_reader as br
 from .readers import process_structure
-from .readers.log_reader import LogReader
 
 
 class StructureMiner:
     """This class extracts all the BPS parameters"""
     bpmn: br.BpmnReader
     process_graph: DiGraph
-    do_trace_alignment: bool
-    log: Union[LogReader, None]
     settings: Configuration
     is_safe: bool
 
-    def __init__(self, settings: Configuration, do_trace_alignment=False, log: Union[LogReader, None] = None):
+    def __init__(self, settings: Configuration):
         self.is_safe = True
         self.settings = settings
-
-        # NOTE: we can ensure trace alignment by specifying the flag below.
-        # However, this flag is also reset in .execute_pipeline() depending on or-gateways in the model.
-        self.do_trace_alignment = do_trace_alignment
-        self.log = log
 
     def execute_pipeline(self) -> None:
         if self.settings.model_path is None:
@@ -46,14 +36,6 @@ class StructureMiner:
         model_path = self.settings.output / (self.settings.project_name + '.bpmn')
         self.bpmn = br.BpmnReader(model_path)
         self.process_graph = process_structure.create_process_structure(self.bpmn)
-
-        # deciding on either to do trace alignment or not
-        if not file_contains(model_path, 'inclusiveGateway'):
-            self.do_trace_alignment = True
-
-        if self.do_trace_alignment:
-            print_step("Evaluating and executing trace alignment")
-            evaluate_and_execute_alignment(self.process_graph, self.log, self.settings)
 
     @safe_exec
     def _mining_structure(self, **kwargs) -> None:
