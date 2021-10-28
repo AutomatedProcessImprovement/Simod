@@ -1,6 +1,5 @@
 log_path: "tests/assets/Production.xes"
 mining_alg: sm3
-output: true
 exec_mode: optimizer
 repetitions: 1
 simulation: true
