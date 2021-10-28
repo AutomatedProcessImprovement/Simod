@@ -34,6 +34,9 @@ from .replayer_datatypes import BPMNGraph
 # introducing code duplication. We can stay with the functional approach, like I'm proposing at the moment, or create
 # a more general class for Discoverer and Optimizer for them to inherit from it all the general routines.
 
+TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
+
 @dataclass
 class ProcessParameters:
     instances: Union[int, None] = None
@@ -196,13 +199,15 @@ def execute_shell_cmd(args):
 
 
 def read_stats(args):
+    global TIMESTAMP_FORMAT
+
     # NOTE: extracted from StructureOptimizer static method
     def read(settings: Configuration, rep):
         m_settings = dict()
         m_settings['output'] = settings.output
         column_names = {'resource': 'user'}
         m_settings['read_options'] = settings.read_options
-        m_settings['read_options'].timeformat = '%Y-%m-%d %H:%M:%S.%f'
+        m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
         m_settings['read_options'].column_names = column_names
         m_settings['project_name'] = settings.project_name
         temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
@@ -222,6 +227,8 @@ def read_stats(args):
 
 # TODO: name properly or modify/merge read_stats and read_stats_alt
 def read_stats_alt(args):
+    global TIMESTAMP_FORMAT
+
     # NOTE: extracted from Discoverer and Optimizer static method
     def read(settings: Configuration, rep):
         path = os.path.join(settings.output, 'sim_data')
@@ -232,9 +239,9 @@ def read_stats_alt(args):
         rep_results['source'] = 'simulation'
         rep_results.rename(columns={'resource': 'user'}, inplace=True)
         rep_results['start_timestamp'] = pd.to_datetime(
-            rep_results['start_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            rep_results['start_timestamp'], format=TIMESTAMP_FORMAT)
         rep_results['end_timestamp'] = pd.to_datetime(
-            rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            rep_results['end_timestamp'], format=TIMESTAMP_FORMAT)
         return rep_results
 
     return read(*args)
