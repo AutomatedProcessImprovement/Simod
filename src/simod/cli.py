@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import click
@@ -16,7 +15,7 @@ def main():
 
 
 @main.command()
-@click.option('--config_path', default=None, required=True)
+@click.option('--config_path', default=None, required=True, type=Path)
 @click.pass_context
 def discover(ctx, config_path):
     repository_dir = get_project_dir()
@@ -32,7 +31,7 @@ def discover(ctx, config_path):
 
 
 @main.command()
-@click.option('--config_path', default=None, required=True)
+@click.option('--config_path', default=None, required=True, type=Path)
 @click.pass_context
 def optimize(ctx, config_path):
     repository_dir = get_project_dir()
