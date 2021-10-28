@@ -59,6 +59,12 @@ To run only relatively fast tests, execute:
 $ pytest -m "not slow"
 ```
 
+Coverage:
+
+```shell
+$ pytest -m "not slow" --cov=simod
+```
+
 ## Docker
 
 - Docker files are available in the `docker` folder.
