@@ -271,7 +271,9 @@ def evaluate_logs_with_add_metrics(args):
     return evaluate(*args)
 
 
-def save_times(times, settings, temp_output):
+def save_times(times, settings: Union[Configuration, dict], temp_output):
+    if isinstance(settings, dict):
+        settings = Configuration(**settings)
     if times:
         times = [{**{'output': settings['output']}, **times}]
         log_file = os.path.join(temp_output, 'execution_times.csv')
