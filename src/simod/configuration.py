@@ -326,14 +326,14 @@ def config_data_from_yaml(config_data: dict) -> dict:
 
     structure_optimizer = config_data.get('structure_optimizer')
     if structure_optimizer:
-        config_data_with_datastructures(structure_optimizer)
+        structure_optimizer = config_data_with_datastructures(structure_optimizer)
         # the rest of the software uses 'strc' key
         config_data.pop('structure_optimizer')
         config_data['strc'] = structure_optimizer
 
     time_optimizer = config_data.get('time_optimizer')
     if time_optimizer:
-        config_data_with_datastructures(time_optimizer)
+        time_optimizer = config_data_with_datastructures(time_optimizer)
         # the rest of the software uses 'tm' key
         config_data.pop('time_optimizer')
         config_data['tm'] = time_optimizer
@@ -371,7 +371,7 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
 
     and_prior = data.get('and_prior')
-    if and_prior and isinstance(and_prior, str):
+    if and_prior and (isinstance(and_prior, str) or isinstance(and_prior, list)):
         data['and_prior'] = AndPriorORemove.from_str(and_prior)
 
     or_rep = data.get('or_rep')
@@ -379,7 +379,7 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['or_rep'] = AndPriorORemove.from_str(or_rep)
 
     gate_management = data.get('gate_management')
-    if gate_management and isinstance(gate_management, str):
+    if gate_management and (isinstance(gate_management, str) or isinstance(gate_management, list)):
         data['gate_management'] = GateManagement.from_str(gate_management)
 
     res_cal_met = data.get('res_cal_met')
@@ -391,7 +391,7 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['res_dtype'] = DataType.from_str(res_dtype)
 
     arr_dtype = data.get('arr_dtype')
-    if arr_dtype and isinstance(arr_dtype, str):
+    if arr_dtype and (isinstance(arr_dtype, str) or isinstance(arr_dtype, list)):
         data['arr_dtype'] = DataType.from_str(arr_dtype)
 
     pdef_method = data.get('pdef_method')
@@ -403,15 +403,11 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['exec_mode'] = ExecutionMode.from_str(exec_mode)
 
     sim_metric = data.get('sim_metric')
-    if sim_metric and isinstance(sim_metric, str):
+    if sim_metric and (isinstance(sim_metric, str) or isinstance(sim_metric, list)):
         data['sim_metric'] = Metric.from_str(sim_metric)
 
     add_metrics = data.get('add_metrics')
-    if add_metrics and isinstance(add_metrics, str):
+    if add_metrics and (isinstance(add_metrics, str) or isinstance(add_metrics, str)):
         data['add_metrics'] = Metric.from_str(add_metrics)
-
-    alg_manag = data.get('alg_manag')
-    if alg_manag and isinstance(alg_manag, str):
-        data['alg_manag'] = TraceAlignmentAlgorithm.from_str(alg_manag)
 
     return data
