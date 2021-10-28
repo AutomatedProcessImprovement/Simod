@@ -28,7 +28,6 @@ from .readers import process_structure
 from .readers.log_reader import LogReader
 from .replayer_datatypes import BPMNGraph
 
-
 # NOTE: This module needs better name and possible refactoring. At the moment it contains API, which is suitable
 # for discovery and optimization. Before function from here were implemented often as static methods on specific classes
 # introducing code duplication. We can stay with the functional approach, like I'm proposing at the moment, or create
@@ -58,20 +57,15 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     traces = log.get_traces()
     log_df = pd.DataFrame(log.data)
 
-    # process_stats, conformant_traces = replay_logs(process_graph, traces, settings)
     resource_pool, time_table = mine_resources_wrapper(settings)
     arrival_rate = mine_inter_arrival(process_graph, log_df, settings)
     bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-    # sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
-    # sequences = mine_gateway_probabilities_alternative(traces_raw, bpmn_graph)
     sequences = mine_gateway_probabilities_alternative_with_gateway_management(
         traces, bpmn_graph, settings.gate_management)
-    log_df['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
+    log_df['role'] = 'SYSTEM'
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
 
     log_df = pd.DataFrame(log.data)
-    # num_inst = len(log_df.caseid.unique())  # TODO: should it be log_train or log_valdn
-    # start_time = log_df.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
 
     return ProcessParameters(
         process_stats=log_df,
@@ -439,9 +433,7 @@ def evaluate_and_execute_alignment(process_graph: networkx.DiGraph, log: LogRead
         traces = list()
         for case in cases:
             order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
-            trace = sorted(
-                list(filter(lambda x: (x['caseid'] == case), data)),
-                key=itemgetter(order_key))
+            trace = sorted(list(filter(lambda x, case=case: x['caseid'] == case, data)), key=itemgetter(order_key))
             traces.append(trace)
         return traces
 
