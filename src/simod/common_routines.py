@@ -426,57 +426,6 @@ def remove_outliers(log: Union[LogReader, pd.DataFrame]) -> pd.DataFrame:
     return event_log
 
 
-def evaluate_and_execute_alignment(process_graph: networkx.DiGraph, log: LogReader, settings: Configuration,
-                                   message='evaluating train partition conformance:'):
-    # NOTE: the function mutates log.data
-
-    def _get_traces(data, one_timestamp):
-        """
-        returns the data splitted by caseid and ordered by start_timestamp
-        """
-        cases = list(set([x['caseid'] for x in data]))
-        traces = list()
-        for case in cases:
-            order_key = 'end_timestamp' if one_timestamp else 'start_timestamp'
-            trace = sorted(list(filter(lambda x, case=case: x['caseid'] == case, data)), key=itemgetter(order_key))
-            traces.append(trace)
-        return traces
-
-    def _print_stats(log, conformant, traces):
-        print('complete traces:', str(len(traces)),
-              ', events:', str(len(log.data)), sep=' ')
-        print('conformance percentage:',
-              str(sup.ffloat((len(conformant) / len(traces)) * 100, 2)) + '%', sep=' ')
-
-    traces = log.get_traces()
-    test_replayer = LogReplayer(process_graph, traces, settings, msg=message)  # NOTE: previous version of replayer
-    conformant = _get_traces(test_replayer.conformant_traces, False)
-    not_conformant = _get_traces(test_replayer.not_conformant_traces, False)
-    # ------conformance percentage before repair------------------
-
-    _print_stats(log, conformant, traces)
-    if settings.alg_manag == TraceAlignmentAlgorithm.REPLACEMENT:
-        log.set_data(traces_replacement.replacement(conformant, not_conformant, log, settings))
-    elif settings.alg_manag == TraceAlignmentAlgorithm.REPAIR:
-        repaired_event_log = list()
-        [repaired_event_log.extend(x) for x in conformant]
-        trace_aligner = traces_alignment.TracesAligner(log, not_conformant, settings)
-        repaired_event_log.extend(trace_aligner.aligned_traces)
-        log.set_data(repaired_event_log)
-    elif settings.alg_manag == TraceAlignmentAlgorithm.REMOVAL:
-        ref_conformant = list()
-        for trace in conformant:
-            ref_conformant.extend(trace)
-        log.set_data(ref_conformant)
-
-    # ------conformance percentage after repair------------------
-    aligned_traces = log.get_traces()
-    test_replayer = LogReplayer(process_graph, aligned_traces, settings,
-                                msg='evaluating conformance after ' + str(settings.alg_manag) + ':')
-    conformant = _get_traces(test_replayer.conformant_traces, False)
-    _print_stats(log, conformant, aligned_traces)
-
-
 def file_contains(file_path: Path, substr: str) -> Optional[bool]:
     if not file_path.exists():
         return None

@@ -277,7 +277,6 @@ class Configuration:
     calender_path: Path = PROJECT_DIR / 'external_tools/calenderimp/CalenderImp.jar'
     aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
     aligntype: Path = output / 'AlignmentStatistics.csv'
-    alg_manag: TraceAlignmentAlgorithm = TraceAlignmentAlgorithm.REPLACEMENT  # TODO: is replacement the best default?
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     simulator: SimulatorKind = SimulatorKind.BIMP
     mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
