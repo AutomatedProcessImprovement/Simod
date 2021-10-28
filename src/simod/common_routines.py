@@ -160,7 +160,7 @@ def mine_gateway_probabilities_alternative_with_gateway_management(log_traces: l
         arcs_frequencies = compute_sequence_flow_frequencies(log_traces, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:
-        raise Exception('Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported')
+        raise Exception(f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, {type(gate_management)}')
 
     sequences = []
     for gateway_id in gateways_branching:
