@@ -289,10 +289,11 @@ class Configuration:
     aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
     aligntype: Path = output / 'AlignmentStatistics.csv'
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
-    simulator: SimulatorKind = SimulatorKind.BIMP
     mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
     repetitions: int = 1
-    simulation: bool = True
+    simulator: SimulatorKind = SimulatorKind.BIMP
+    simulation_cases: int = 0
+    simulation: bool = True  # TODO: is this condition checked anywhere?
     sim_metric: Metric = Metric.TSD
     add_metrics: List[Metric] = field(
         default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])

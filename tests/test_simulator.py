@@ -2,20 +2,25 @@ import os
 from pathlib import Path
 
 import pandas as pd
+import pm4py
 import pytest
 
 from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
 from simod.common_routines import evaluate_logs
 from simod.configuration import Configuration
-from simod.simulator import qbp_simulator, diffresbp_simulator, simulate
+from simod.simulator import qbp_simulator, diffresbp_simulator, simulate, get_number_of_cases
 
 
 @pytest.fixture
 def args(entry_point, tmp_path) -> list:
     entry_point = Path(entry_point)
     return [
-        {'qbp_path': entry_point / 'Production.bpmn', 'json_path': tmp_path / 'Production.json'},
-        {'qbp_path': entry_point / 'PurchasingExampleQBP.bpmn', 'json_path': tmp_path / 'PurchasingExampleQBP.json'},
+        {'qbp_path': entry_point / 'Production.bpmn',
+         'json_path': tmp_path / 'Production.json',
+         'n_cases': 45},
+        {'qbp_path': entry_point / 'PurchasingExampleQBP.bpmn',
+         'json_path': tmp_path / 'PurchasingExampleQBP.json',
+         'n_cases': 98},
     ]
 
 
@@ -48,10 +53,15 @@ def test_qbp_simulator(args):
 
 def test_diffresbp_simulator(args):
     for arg in args:
+        n_cases = 0
+
+        pm4py.read_xes()
+
         config = Configuration()
         config.output = arg['qbp_path'].parent
         config.project_name, _ = os.path.splitext(arg['qbp_path'].name)
         config.repetitions = 1
+        config.simulation_cases = n_cases
 
         diffresbp_simulator((config, config.repetitions))
 
@@ -59,9 +69,15 @@ def test_diffresbp_simulator(args):
         assert json_path.exists()
 
 
-def test_simulate(args):
-    settings = Configuration()
-    stats = pd.DataFrame()
-    log_data = pd.DataFrame()
+# def test_simulate(args):
+#     settings = Configuration()
+#     stats = pd.DataFrame()
+#     log_data = pd.DataFrame()
+#
+#     simulate(settings, stats, log_data, evaluate_fn=evaluate_logs)
 
-    simulate(settings, stats, log_data, evaluate_fn=evaluate_logs)
+
+def test_get_number_of_cases(args):
+    for arg in args:
+        n_cases = get_number_of_cases(arg['qbp_path'])
+        assert arg['n_cases'] == n_cases

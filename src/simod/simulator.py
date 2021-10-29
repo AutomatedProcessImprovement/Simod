@@ -1,5 +1,6 @@
 import itertools
 import multiprocessing
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable, Tuple
 
@@ -24,7 +25,8 @@ def diffresbp_simulator(args: Tuple):
     json_path = bpmn_path.with_suffix('.json')
     for path in [output_path, json_path]:
         path.parent.mkdir(parents=True, exist_ok=True)
-    total_cases = 1  # TODO: what's the value for total_cases?
+    total_cases = settings.simulation_cases
+    print_notice(f'Number of simulation cases: {total_cases}')
 
     parse_qbp_simulation_process(bpmn_path.__str__(), json_path.__str__())
 
@@ -73,6 +75,10 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, eva
     else:
         raise ValueError(f'Unknown simulator {settings.simulator}')
 
+    # Number of cases to simulate
+    n_cases = len(log_data.caseid.unique())
+    settings.simulation_cases = n_cases
+
     reps = settings.repetitions
     cpu_count = multiprocessing.cpu_count()
     w_count = reps if reps <= cpu_count else cpu_count
@@ -89,7 +95,7 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, eva
 
     # Evaluate
     args = [(settings, process_stats, log) for log in p.get()]
-    if len(log_data.caseid.unique()) > 1000:
+    if n_cases > 1000:
         pool.close()
         results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results:')]
         sim_values = list(itertools.chain(*results))
@@ -99,3 +105,18 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, eva
         pool.close()
         sim_values = list(itertools.chain(*p.get()))
     return sim_values
+
+
+def get_number_of_cases(bpmn: Path) -> int:
+    namespaces = {"qbp": "http://www.qbp-simulator.com/Schema201212"}
+    root = ET.parse(bpmn).getroot()
+    result = root.find(".//qbp:processSimulationInfo", namespaces=namespaces)
+    n_cases = 0
+    if not result:
+        return n_cases
+    try:
+        n_cases = int(result.get('processInstances'))
+    except ValueError as e:
+        print_notice(f'get_number_of_cases failed with {e}')
+        return n_cases
+    return n_cases
