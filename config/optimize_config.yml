@@ -4,6 +4,7 @@ exec_mode: optimizer
 repetitions: 5
 simulation: true
 sim_metric: tsd
+simulator: bimp
 add_metrics:
   - day_hour_emd
   - log_mae
