@@ -191,6 +191,17 @@ class PDFMethod(Enum):
 
 class SimulatorKind(Enum):
     BIMP = auto()
+    CUSTOM = auto()
+
+    @classmethod
+    def from_str(cls, value: str) -> 'SimulatorKind':
+        value = value.lower()
+        if value in ('bimp', 'qbp'):
+            return cls.BIMP
+        elif value == 'custom':
+            return cls.CUSTOM
+        else:
+            raise ValueError(f'Unknown value {value}')
 
 
 class Metric(Enum):
@@ -409,5 +420,9 @@ def config_data_with_datastructures(data: dict) -> dict:
     add_metrics = data.get('add_metrics')
     if add_metrics:
         data['add_metrics'] = Metric.from_str(add_metrics)
+
+    simulator = data.get('simulator')
+    if simulator:
+        data['simulator'] = SimulatorKind.from_str(simulator)
 
     return data
