@@ -13,11 +13,9 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
-from memory_profiler import profile
-
-from simod.common_routines import extract_times_parameters, split_timeline
 from tqdm import tqdm
 
+from simod.common_routines import extract_times_parameters, split_timeline, save_times
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_subsection, print_message, print_notice
@@ -27,6 +25,7 @@ from .readers import bpmn_reader as br
 from .readers import log_reader as lr
 from .readers import process_structure as gph
 from .readers.log_reader import LogReader
+from .support_utils import get_project_dir
 
 
 class TimesOptimizer:
@@ -52,7 +51,7 @@ class TimesOptimizer:
         self.process_stats = log_df
 
         # Temp folder
-        self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
+        self.temp_output = get_project_dir() / 'outputs' / sup.folder_id()
         if not os.path.exists(self.temp_output):
             os.makedirs(self.temp_output)
         self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
@@ -113,7 +112,7 @@ class TimesOptimizer:
             sim_values = rsp['values'] if status == STATUS_OK else sim_values
 
             # Save times
-            self._save_times(exec_times, trial_stg, self.temp_output)
+            save_times(exec_times, trial_stg, self.temp_output)
 
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
@@ -212,18 +211,6 @@ class TimesOptimizer:
             # Save results
             sim_values = list(itertools.chain(*p.get()))
         return sim_values
-
-    @staticmethod
-    def _save_times(times, settings, temp_output):
-        if times:
-            times = [{**{'output': settings['output']}, **times}]
-            log_file = os.path.join(temp_output, 'execution_times.csv')
-            if not os.path.exists(log_file):
-                open(log_file, 'w').close()
-            if os.path.getsize(log_file) > 0:
-                sup.create_csv_file(times, log_file, mode='a')
-            else:
-                sup.create_csv_file_header(times, log_file)
 
     def _define_response(self, settings, status, sim_values, **kwargs) -> None:
         response = dict()

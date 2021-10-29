@@ -6,15 +6,16 @@ from pathlib import Path
 import pandas as pd
 import xmltodict as xtd
 from lxml import etree
-from simod.replayer_datatypes import BPMNGraph
 
+from simod.replayer_datatypes import BPMNGraph
 from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
-from .common_routines import simulate, mine_resources_with_resource_table, \
+from .common_routines import mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
-    split_timeline
+    split_timeline, save_times
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
+from .qbp import simulate
 from .readers import log_reader as lr
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
@@ -45,7 +46,7 @@ class Discoverer:
         self.is_safe = self._extract_parameters(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self._simulate(log_time=exec_times, is_safe=self.is_safe)
         self._manage_results()
-        self._save_times(exec_times, self.settings)
+        save_times(exec_times, self.settings, self.settings.output.parent)
         self.is_safe = self._export_canonical_model(is_safe=self.is_safe)
         print_asset(f"Output folder is at {self.settings.output}")
 
@@ -67,13 +68,14 @@ class Discoverer:
             os.makedirs(self.settings.output)
             os.makedirs(os.path.join(self.settings.output, 'sim_data'))
         # Create customized event-log for the external tools
-        xes.XesWriter(self.log_train, self.settings)
+        output_path = self.settings.output / (self.settings.project_name + '.xes')
+        xes.XesWriter(self.log_train, self.settings.read_options, output_path)
 
     @timeit(rec_name='MINING_STRUCTURE')
     @safe_exec
     def _mine_structure(self, **kwargs) -> None:
         print_section("Process Structure Mining")
-        structure_miner = StructureMiner(self.settings)
+        structure_miner = StructureMiner(self.settings, log=self.log_train)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             self.bpmn = structure_miner.bpmn
@@ -127,17 +129,6 @@ class Discoverer:
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = self.settings.output
         self.sim_values.to_csv(os.path.join(self.settings.output, self.output_file), index=False)
-
-    @staticmethod
-    def _save_times(times, settings: Configuration):
-        times = [{**{'output': settings.output}, **times}]
-        log_file = os.path.join(settings.output.parent, 'execution_times.csv')
-        if not os.path.exists(log_file):
-            open(log_file, 'w').close()
-        if os.path.getsize(log_file) > 0:
-            sup.create_csv_file(times, log_file, mode='a')
-        else:
-            sup.create_csv_file_header(times, log_file)
 
     @safe_exec
     def _export_canonical_model(self, **kwargs):

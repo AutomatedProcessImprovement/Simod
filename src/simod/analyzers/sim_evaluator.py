@@ -6,7 +6,6 @@ Created on Fri Jan 10 11:40:46 2020
 import copy
 import itertools
 import multiprocessing
-import random
 import string
 import time
 import traceback
@@ -21,9 +20,9 @@ from scipy.optimize import linear_sum_assignment
 from scipy.stats import wasserstein_distance
 from tqdm import tqdm
 
+from simod.configuration import Configuration, Metric
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
-from simod.configuration import Configuration, Metric
 
 
 class SimilarityEvaluator():
@@ -31,7 +30,8 @@ class SimilarityEvaluator():
         This class evaluates the similarity of two event-logs
      """
 
-    def __init__(self, log_data: pd.DataFrame, simulation_data: pd.DataFrame, settings: Configuration, max_cases=500, dtype='log'):
+    def __init__(self, log_data: pd.DataFrame, simulation_data: pd.DataFrame, settings: Configuration, max_cases=500,
+                 dtype='log'):
         self.dtype = dtype
         self.log_data = copy.deepcopy(log_data)
         self.simulation_data = copy.deepcopy(simulation_data)
@@ -64,6 +64,7 @@ class SimilarityEvaluator():
         self.simulation_data = data[data.source == 'simulation']
         self.alias = self.create_task_alias(data, 'task')
 
+        # TODO: concurrency can be discovered with pm4py as well, does it suit the need? is it more performance-effective?
         self.alpha_concurrency = ao.AlphaOracle(self.log_data, self.alias, self.one_timestamp, True)
         # reformat and sampling data
         self.log_data = self.reformat_events(self.log_data.to_dict('records'), 'task')
@@ -72,7 +73,6 @@ class SimilarityEvaluator():
         self.simulation_data = self.simulation_data[num_traces:-num_traces]
         self.log_data = list(map(lambda i: self.log_data[i],
                                  np.random.randint(0, len(self.log_data), len(self.simulation_data))))
-
 
     def _preprocess_serie(self):
         # load data

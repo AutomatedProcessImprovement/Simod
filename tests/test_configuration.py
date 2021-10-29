@@ -1,4 +1,6 @@
-import os
+from pathlib import Path
+
+import yaml
 
 from simod.configuration import config_data_from_file, AndPriorORemove, Configuration, GateManagement, MiningAlgorithm, \
     CalculationMethod, DataType, PDFMethod, Metric, ExecutionMode
@@ -161,10 +163,36 @@ class TestConfigurationStringRepresentation:
 
 
 def test_AndPriorORemove_default(entry_point):
-    config_path = os.path.join(entry_point, 'optimize_debug_config_2.yml')
+    config_path = Path(entry_point) / 'optimize_debug_config_2.yml'
     config = config_data_from_file(config_path)
     assert config['strc'] is not None
 
     structure_config = Configuration(**config['strc'])
     assert structure_config.and_prior == [AndPriorORemove.FALSE]
     assert structure_config.or_rep == [AndPriorORemove.FALSE]
+
+
+def test_config_data_from_file(entry_point):
+    paths = [
+        Path(entry_point) / 'discover_with_model_config.yml',
+        Path(entry_point) / 'optimize_debug_config.yml'
+    ]
+
+    for config_path in paths:
+        with config_path.open('r') as f:
+            config_data = yaml.load(f, Loader=yaml.FullLoader)
+
+        config = config_data_from_file(config_path)
+
+        if 'dicover' in config_path.name.__str__():
+            assert isinstance(config['log_path'], Path)
+            assert isinstance(config['gate_management'], GateManagement)
+            assert isinstance(config['res_cal_met'], CalculationMethod)
+            assert isinstance(config['pdef_method'], PDFMethod)
+            assert config['gate_management'] == GateManagement.from_str(config_data['gate_management'])
+            assert config['res_cal_met'] == CalculationMethod.from_str(config_data['res_cal_met'])
+            assert config['pdef_method'] == PDFMethod.from_str(config_data['pdef_method'])
+        elif 'optimize' in config_path.name.__str__():
+            assert isinstance(config['log_path'], Path)
+            assert isinstance(config['mining_alg'], MiningAlgorithm)
+            assert config['mining_alg'] == MiningAlgorithm.from_str(config_data['mining_alg'])

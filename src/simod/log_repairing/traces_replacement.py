@@ -8,7 +8,8 @@ from ..configuration import Configuration
 
 
 def replacement(conformant, not_conformant, log, settings: Configuration):
-    alias = create_task_alias(log.data)
+    # alias = create_task_alias(log.data)
+    alias = create_alias_alternative(log.data)
     similarity = measure_distance(reformat_events(not_conformant, alias, settings),
                                   reformat_events(conformant, alias, settings))
     conformant_reformated = list()
@@ -50,7 +51,7 @@ def measure_distance(not_conformant, conformant):
     return similarity
 
 
-def create_task_alias(df):
+def create_task_alias(df):  # TODO: this function creates illegal XML characters which are then dumped into XES and SplitMiner crashes
     subsec_set = set()
     task_list = [x['task'] for x in df]
     [subsec_set.add(x) for x in task_list]
@@ -60,6 +61,15 @@ def create_task_alias(df):
     alias = dict()
     for i, _ in enumerate(variables):
         alias[variables[i]] = aliases[i]
+    return alias
+
+
+def create_alias_alternative(log_data: list):
+    task_list = [item['task'] for item in log_data]
+    unique_tasks = sorted(list(set(task_list)))
+    alias = dict()
+    for index, task_name in enumerate(unique_tasks):
+        alias[task_name] = str(index)
     return alias
 
 

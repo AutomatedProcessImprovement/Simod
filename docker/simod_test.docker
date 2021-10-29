@@ -1,0 +1,15 @@
+FROM nokal/simod-base:v1.1.4
+
+# Simod installation
+WORKDIR /usr/src/
+RUN echo "#!/bin/bash" >> test_simod.sh
+# NOTE: running `Xvfb :99` inside the loaded container when you need a display dummy
+RUN echo "git clone https://github.com/AutomatedProcessImprovement/Simod.git simod && cd simod" >> test_simod.sh
+RUN echo "git checkout new_replayer" >> test_simod.sh
+RUN echo "python3 -m pip install --upgrade pip" >> test_simod.sh
+RUN echo "pip install -r requirements.txt" >> test_simod.sh
+RUN echo "pip install -e ." >> test_simod.sh
+RUN echo "Xvfb :99 &>/dev/null & disown; pytest" >> test_simod.sh
+
+ENV DISPLAY=:99
+CMD ["/bin/bash"]

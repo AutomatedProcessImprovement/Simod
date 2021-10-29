@@ -18,16 +18,10 @@ from simod.structure_optimizer import StructureOptimizer
 
 
 @pytest.fixture
-def validation_1_args(entry_point):
+def args(entry_point):
     args = [
         {'model_path': Path(os.path.join(entry_point, 'PurchasingExample.bpmn')),
          'log_path': Path(os.path.join(entry_point, 'PurchasingExample.xes'))},
-        # {'model_path': Path(os.path.join(entry_point, 'validation_1/testing logs and models/20210804_48BA9CAF_B626_44EC_808E_FBEBCC6CF52C/Production.bpmn')),
-        #  'log_path': Path(os.path.join(entry_point, 'validation_1/complete logs/Production.xes'))},
-        # {'model_path': Path(os.path.join(entry_point, 'validation_1/testing logs and models/20210804_672EE52F_F905_4860_9CD2_57F95917D1C9/ConsultaDataMining201618.bpmn')),
-        #  'log_path': Path(os.path.join(entry_point, 'validation_1/complete logs/ConsultaDataMining201618.xes'))},
-        # {'model_path': Path(os.path.join(entry_point, 'validation_1/testing logs and models/20210804_E7C625FF_E3CA_4AB3_A386_901182018864/BPI_Challenge_2012_W_Two_TS.bpmn')),
-        #  'log_path': Path(os.path.join(entry_point, 'validation_1/complete logs/BPI_Challenge_2012_W_Two_TS.xes'))},
     ]
     return args
 
@@ -78,8 +72,8 @@ def discover_model(settings: Configuration) -> Tuple[Path, LogReader, pd.DataFra
     return model_path, log_train, log_test
 
 
-def test_replay_trace(validation_1_args):
-    for arg in validation_1_args:
+def test_replay_trace(args):
+    for arg in args:
         model_path = arg['model_path']
         log_path = arg['log_path']
         print(f'Testing {log_path.name}')
@@ -98,8 +92,8 @@ def test_replay_trace(validation_1_args):
             pytest.fail(f'Should not fail, failed with: {e}')
 
 
-def test_compute_sequence_flow_frequencies(validation_1_args):
-    for arg in validation_1_args:
+def test_compute_sequence_flow_frequencies(args):
+    for arg in args:
         model_path = arg['model_path']
         log_path = arg['log_path']
         print(f'Testing {log_path.name}')
@@ -119,8 +113,8 @@ def test_compute_sequence_flow_frequencies(validation_1_args):
 
 
 @pytest.mark.slow
-def test_compute_sequence_flow_frequencies_without_model(validation_1_args):
-    for arg in validation_1_args:
+def test_compute_sequence_flow_frequencies_without_model(args):
+    for arg in args:
         log_path = arg['log_path']
         print(f'\n\nTesting {log_path.name}')
 
@@ -151,8 +145,8 @@ def test_compute_sequence_flow_frequencies_without_model(validation_1_args):
             assert flow_arcs_frequency[node_id] != 0
 
 
-def test_mine_gateway_probabilities_stochastic_alternative(validation_1_args):
-    for arg in validation_1_args:
+def test_mine_gateway_probabilities_stochastic_alternative(args):
+    for arg in args:
         model_path = arg['model_path']
         log_path = arg['log_path']
         print(f'\nTesting {log_path.name}')
@@ -170,8 +164,8 @@ def test_mine_gateway_probabilities_stochastic_alternative(validation_1_args):
         assert len(sequences) != 0
 
 
-def test_mine_gateway_probabilities_alternative_with_gateway_management(validation_1_args):
-    for arg in validation_1_args:
+def test_mine_gateway_probabilities_alternative_with_gateway_management(args):
+    for arg in args:
         model_path = arg['model_path']
         log_path = arg['log_path']
         print(f'\nTesting {log_path.name}')

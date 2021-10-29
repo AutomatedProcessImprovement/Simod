@@ -1,5 +1,7 @@
 # Simod
 
+![Build & Test](https://github.com/AutomatedProcessImprovement/Simod/actions/workflows/python-app.yml/badge.svg)
+
 Simod combines several process mining techniques to automate the generation and validation of BPS models.  The only input required by the Simod method is an event log in XES, or CSV format. These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
 ## Requirements
@@ -7,6 +9,7 @@ Simod combines several process mining techniques to automate the generation and 
 - **Python 3.8**+
 - **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
 - For dependencies, please, check `requirements.txt` or `simod.yml`
+- For external tools: **Java 1.8**
 
 ## Getting Started
 
@@ -55,6 +58,17 @@ To run only relatively fast tests, execute:
 ```shell
 $ pytest -m "not slow"
 ```
+
+Coverage:
+
+```shell
+$ pytest -m "not slow" --cov=simod
+```
+
+## Docker
+
+- Docker files are available in the `docker` folder.
+- Base image for Simod is available at https://hub.docker.com/r/nokal/simod-base and can be downloaded with `docker pull nokal/simod-base:v1.1.4`. The image has a proper Java version for dependencies, Xvfb (for faking X server for the Java dependencies) and Python 3 installed. It doesn't contain Simod itself.
 
 ## Data format
  

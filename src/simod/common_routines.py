@@ -1,37 +1,40 @@
 import itertools
-import multiprocessing
 import os
 import subprocess
 import time
 from dataclasses import dataclass, field
+from operator import itemgetter
 from pathlib import Path
-from typing import List, Tuple, Callable, Union
+from typing import List, Tuple, Union, Optional
 
+import networkx
 import pandas as pd
-from memory_profiler import profile
 from networkx import DiGraph
-from simod.readers.log_splitter import LogSplitter
-from tqdm import tqdm
 
+from simod.readers.log_splitter import LogSplitter
 from . import support_utils as sup
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step, print_notice
-from .configuration import CalculationMethod, DataType, GateManagement
+from .configuration import CalculationMethod, DataType, GateManagement, TraceAlignmentAlgorithm
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
+from .extraction.log_replayer import LogReplayer
 from .extraction.role_discovery import ResourcePoolAnalyser
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
+from .log_repairing import traces_alignment, traces_replacement
 from .readers import bpmn_reader
 from .readers import process_structure
 from .readers.log_reader import LogReader
 from .replayer_datatypes import BPMNGraph
 
-
 # NOTE: This module needs better name and possible refactoring. At the moment it contains API, which is suitable
 # for discovery and optimization. Before function from here were implemented often as static methods on specific classes
 # introducing code duplication. We can stay with the functional approach, like I'm proposing at the moment, or create
 # a more general class for Discoverer and Optimizer for them to inherit from it all the general routines.
+
+TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
 
 @dataclass
 class ProcessParameters:
@@ -54,20 +57,15 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
     traces = log.get_traces()
     log_df = pd.DataFrame(log.data)
 
-    # process_stats, conformant_traces = replay_logs(process_graph, traces, settings)
     resource_pool, time_table = mine_resources_wrapper(settings)
     arrival_rate = mine_inter_arrival(process_graph, log_df, settings)
     bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-    # sequences = mine_gateway_probabilities_stochastic(traces_raw, bpmn_graph)
-    # sequences = mine_gateway_probabilities_alternative(traces_raw, bpmn_graph)
     sequences = mine_gateway_probabilities_alternative_with_gateway_management(
         traces, bpmn_graph, settings.gate_management)
-    log_df['role'] = 'SYSTEM'  # TODO: why is this necessary? in which case?
+    log_df['role'] = 'SYSTEM'
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
 
     log_df = pd.DataFrame(log.data)
-    # num_inst = len(log_df.caseid.unique())  # TODO: should it be log_train or log_valdn
-    # start_time = log_df.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
 
     return ProcessParameters(
         process_stats=log_df,
@@ -151,7 +149,8 @@ def mine_gateway_probabilities_alternative(log_traces: list, bpmn_graph: BPMNGra
 def mine_gateway_probabilities_alternative_with_gateway_management(log_traces: list, bpmn_graph: BPMNGraph,
                                                                    gate_management: GateManagement) -> list:
     if isinstance(gate_management, list) and len(gate_management) >= 1:
-        print_notice(f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
+        print_notice(
+            f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
         gate_management = gate_management[0]
 
     print_step(f'Mining gateway probabilities with {gate_management}')
@@ -161,7 +160,7 @@ def mine_gateway_probabilities_alternative_with_gateway_management(log_traces: l
         arcs_frequencies = compute_sequence_flow_frequencies(log_traces, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:
-        raise Exception('Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported')
+        raise Exception(f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, {type(gate_management)}')
 
     sequences = []
     for gateway_id in gateways_branching:
@@ -184,89 +183,25 @@ def extract_process_graph(model_path) -> DiGraph:
     return process_structure.create_process_structure(bpmn)
 
 
-def simulate(settings: Configuration, process_stats: pd.DataFrame, log_test, evaluate_fn: Callable = None):
-    if evaluate_fn is None:
-        evaluate_fn = evaluate_logs
-
-    # NOTE: from Discoverer
-    def pbar_async(p, msg):
-        pbar = tqdm(total=reps, desc=msg)
-        processed = 0
-        while not p.ready():
-            cprocesed = (reps - p._number_left)
-            if processed < cprocesed:
-                increment = cprocesed - processed
-                pbar.update(n=increment)
-                processed = cprocesed
-        time.sleep(1)
-        pbar.update(n=(reps - processed))
-        p.wait()
-        pbar.close()
-
-    reps = settings.repetitions
-    cpu_count = multiprocessing.cpu_count()
-    w_count = reps if reps <= cpu_count else cpu_count
-    pool = multiprocessing.Pool(processes=w_count)
-
-    # Simulate
-    args = [(settings, rep) for rep in range(reps)]
-    p = pool.map_async(execute_simulator, args)
-    pbar_async(p, 'simulating:')
-
-    # Read simulated logs
-    args = [(settings, rep) for rep in range(reps)]
-    p = pool.map_async(read_stats, args)
-    pbar_async(p, 'reading simulated logs:')
-
-    # Evaluate
-    args = [(settings, process_stats, log) for log in p.get()]
-    if len(log_test.caseid.unique()) > 1000:
-        pool.close()
-        results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results:')]
-        sim_values = list(itertools.chain(*results))
-    else:
-        p = pool.map_async(evaluate_fn, args)
-        pbar_async(p, 'evaluating results:')
-        pool.close()
-        sim_values = list(itertools.chain(*p.get()))
-    return sim_values
-
-
-def execute_simulator(args):
-    # NOTE: extracted from StructureOptimizer static method
-    def sim_call(settings: Configuration, rep):
-        args = ['java', '-jar', settings.bimp_path,
-                os.path.join(settings.output, settings.project_name + '.bpmn'),
-                '-csv',
-                os.path.join(settings.output, 'sim_data', settings.project_name + '_' + str(rep + 1) + '.csv')]
-        # NOTE: the call generates a CSV event log from a model
-        # NOTE: might fail silently, because stderr or stdout aren't checked
-        completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
-        message = f'Simulator debug information:' \
-                  f'\n\targs = {completed_process.args()}' \
-                  f'\n\tstdout = {completed_process.stdout.__str__()}' \
-                  f'\n\tstderr = {completed_process.stderr.__str__()}'
-        print_notice(message)
-
-    sim_call(*args)
-
-
-# def execute_simulator_simple(bimp_path, model_path, csv_output_path):
-#     args = ['java', '-jar', bimp_path, model_path, '-csv', csv_output_path]
-#     print('args', args)
-#     # NOTE: the call generates a CSV event log from a model
-#     # NOTE: might fail silently, because stderr or stdout aren't checked
-#     subprocess.run(args, check=True, stdout=subprocess.PIPE)
+def execute_shell_cmd(args):
+    completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+    message = f'\nShell debug information:' \
+              f'\n\targs = {completed_process.args}' \
+              f'\n\tstdout = {completed_process.stdout.__str__()}' \
+              f'\n\tstderr = {completed_process.stderr.__str__()}'
+    print_notice(message)
 
 
 def read_stats(args):
+    global TIMESTAMP_FORMAT
+
     # NOTE: extracted from StructureOptimizer static method
     def read(settings: Configuration, rep):
         m_settings = dict()
         m_settings['output'] = settings.output
         column_names = {'resource': 'user'}
         m_settings['read_options'] = settings.read_options
-        m_settings['read_options'].timeformat = '%Y-%m-%d %H:%M:%S.%f'
+        m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
         m_settings['read_options'].column_names = column_names
         m_settings['project_name'] = settings.project_name
         temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
@@ -286,6 +221,8 @@ def read_stats(args):
 
 # TODO: name properly or modify/merge read_stats and read_stats_alt
 def read_stats_alt(args):
+    global TIMESTAMP_FORMAT
+
     # NOTE: extracted from Discoverer and Optimizer static method
     def read(settings: Configuration, rep):
         path = os.path.join(settings.output, 'sim_data')
@@ -296,9 +233,9 @@ def read_stats_alt(args):
         rep_results['source'] = 'simulation'
         rep_results.rename(columns={'resource': 'user'}, inplace=True)
         rep_results['start_timestamp'] = pd.to_datetime(
-            rep_results['start_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            rep_results['start_timestamp'], format=TIMESTAMP_FORMAT)
         rep_results['end_timestamp'] = pd.to_datetime(
-            rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            rep_results['end_timestamp'], format=TIMESTAMP_FORMAT)
         return rep_results
 
     return read(*args)
@@ -332,6 +269,39 @@ def evaluate_logs_with_add_metrics(args):
         return sim_values
 
     return evaluate(*args)
+
+
+def save_times(times, settings: Union[Configuration, dict], temp_output):
+    if not times:
+        return
+
+    if isinstance(settings, dict):
+        settings = Configuration(**settings)
+
+    times = [{**{'output': settings.output}, **times}]
+    log_file = os.path.join(temp_output, 'execution_times.csv')
+    if not os.path.exists(log_file):
+        open(log_file, 'w').close()
+    if os.path.getsize(log_file) > 0:
+        sup.create_csv_file(times, log_file, mode='a')
+    else:
+        sup.create_csv_file_header(times, log_file)
+
+
+def pbar_async(p, msg, reps):
+    from tqdm import tqdm
+    pbar = tqdm(total=reps, desc=msg)
+    processed = 0
+    while not p.ready():
+        cprocesed = (reps - p._number_left)
+        if processed < cprocesed:
+            increment = cprocesed - processed
+            pbar.update(n=increment)
+            processed = cprocesed
+    time.sleep(1)
+    pbar.update(n=(reps - processed))
+    p.wait()
+    pbar.close()
 
 
 def mine_resources(settings: Configuration):
@@ -395,7 +365,8 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
 
 
 # @profile(stream=open('logs/memprof_split_timeline.log', 'a+'))
-def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
+def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[
+    pd.DataFrame, pd.DataFrame, str]:
     """
     Split an event log dataframe by time to perform split-validation.
     preferred method time splitting removing incomplete traces.
@@ -448,7 +419,18 @@ def remove_outliers(log: Union[LogReader, pd.DataFrame]) -> pd.DataFrame:
     unique_cases_durations = event_log[['caseid', 'duration_seconds']].drop_duplicates()
     first_quantile = unique_cases_durations.quantile(0.1)
     last_quantile = unique_cases_durations.quantile(0.9)
-    event_log = event_log[(event_log.duration_seconds <= last_quantile.duration_seconds) & (event_log.duration_seconds >= first_quantile.duration_seconds)]
+    event_log = event_log[(event_log.duration_seconds <= last_quantile.duration_seconds) & (
+            event_log.duration_seconds >= first_quantile.duration_seconds)]
     event_log = event_log.drop(columns=['duration_seconds'])
 
     return event_log
+
+
+def file_contains(file_path: Path, substr: str) -> Optional[bool]:
+    if not file_path.exists():
+        return None
+
+    with file_path.open('r') as f:
+        contains = next((line for line in f if substr in line), None)
+
+    return contains is not None

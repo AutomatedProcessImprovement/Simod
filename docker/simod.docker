@@ -1,0 +1,16 @@
+FROM nokal/simod-base:v1.1.4
+
+# Simod installation
+WORKDIR /usr/src/
+RUN git clone https://github.com/AutomatedProcessImprovement/Simod.git simod
+WORKDIR /usr/src/simod
+RUN git checkout new_replayer
+RUN python3 -m pip install --upgrade pip
+RUN pip install -r requirements.txt
+RUN pip install -e .
+
+# NOTE: run `Xvfb :99` inside the loaded container when you need a display dummy
+ENV DISPLAY=:99
+
+# Entry point
+CMD /bin/bash

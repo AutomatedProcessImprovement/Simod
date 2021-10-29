@@ -9,8 +9,8 @@ from memory_profiler import profile
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
-from .common_routines import extract_structure_parameters, extract_process_graph, simulate, \
-    evaluate_logs_with_add_metrics, remove_outliers
+from .common_routines import extract_structure_parameters, extract_process_graph, evaluate_logs_with_add_metrics, remove_outliers
+from .qbp import simulate
 from .configuration import Configuration, MiningAlgorithm
 from .readers import log_splitter as ls
 from .readers.log_reader import LogReader
@@ -51,8 +51,7 @@ class Optimizer:
         if discover_model:
             print_section('Model Discovery and Parameters Extraction')
             # mining the structure
-            strctr_optimizer = StructureOptimizer(
-                self.settings_structure, self.log_train, discover_model=discover_model)
+            strctr_optimizer = StructureOptimizer(self.settings_structure, self.log_train)
             strctr_optimizer.execute_trials()
             # redefining local variables
             self._redefine_best_params_after_structure_optimization(strctr_optimizer)
@@ -158,11 +157,9 @@ class Optimizer:
         return model_path
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
-        output_path = os.path.join(self.settings_global.output.parent, sup.folder_id())
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-            os.makedirs(os.path.join(output_path, 'sim_data'))
-        # self.settings_global.__dict__.pop('output', None)
+        output_path = self.settings_global.output.parent / sup.folder_id()
+        sim_path = output_path / 'sim_data'
+        sim_path.mkdir(parents=True, exist_ok=True)
         self.settings_global.output = output_path
         self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()

@@ -1,7 +1,6 @@
 log_path: inputs/PurchasingExample.xes
 model_path: inputs/PurchasingExample.bpmn
 mining_alg: sm3
-output: true
 exec_mode: optimizer
 repetitions: 1
 simulation: true
@@ -19,6 +18,7 @@ structure_optimizer:
     - 1.0
   gate_management:
     - equiprobable
+    - discovery
   or_rep:
     - true
     - false

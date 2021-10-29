@@ -7,9 +7,37 @@ from typing import List, Dict, Optional, Union
 import yaml
 
 from . import support_utils as sup
+from .support_utils import get_project_dir
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
 BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
+PROJECT_DIR = get_project_dir()
+
+
+class TraceAlignmentAlgorithm(Enum):
+    REPLACEMENT = auto()
+    REPAIR = auto()
+    REMOVAL = auto()
+
+    @classmethod
+    def from_str(cls, value: str) -> 'TraceAlignmentAlgorithm':
+        if value.lower() == 'replacement':
+            return cls.REPLACEMENT
+        elif value.lower() == 'repair':
+            return cls.REPAIR
+        elif value.lower() == 'removal':
+            return cls.REMOVAL
+        else:
+            raise ValueError(f'Unknown value {value}')
+
+    def __str__(self):
+        if self == TraceAlignmentAlgorithm.REPLACEMENT:
+            return 'replacement'
+        elif self == TraceAlignmentAlgorithm.REPAIR:
+            return 'repair'
+        elif self == TraceAlignmentAlgorithm.REMOVAL:
+            return 'removal'
+        return f'Unknown TraceAlignmentAlgorithm {str(self)}'
 
 
 class MiningAlgorithm(Enum):
@@ -240,19 +268,15 @@ class Configuration:
     log_path: Optional[Path] = None
     model_path: Optional[Path] = None
     config_path: Optional[Path] = None
-    output: Path = Path(os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id()))
-    sm1_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
-    sm2_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer2', 'sm2.jar')
-    sm3_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'splitminer3', 'bpmtk.jar')
-    bimp_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'bimp',
-                                   'qbp-simulator-engine.jar')
-    align_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'proconformance',
-                                    'ProConformance2.jar')
-    calender_path: Path = os.path.join(os.path.dirname(__file__), '../../', 'external_tools', 'calenderimp',
-                                       'CalenderImp.jar')
-    aligninfo: Path = os.path.join(output,
-                                   'CaseTypeAlignmentResults.csv')  # TODO: do we still need these 'align*' attributes?
-    aligntype: Path = os.path.join(output, 'AlignmentStatistics.csv')
+    output: Path = PROJECT_DIR / 'outputs' / sup.folder_id()
+    sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
+    sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
+    sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
+    bimp_path: Path = PROJECT_DIR / 'external_tools/bimp/qbp-simulator-engine.jar'
+    align_path: Path = PROJECT_DIR / 'external_tools/proconformance/ProConformance2.jar'
+    calender_path: Path = PROJECT_DIR / 'external_tools/calenderimp/CalenderImp.jar'
+    aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
+    aligntype: Path = output / 'AlignmentStatistics.csv'
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     simulator: SimulatorKind = SimulatorKind.BIMP
     mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
@@ -290,96 +314,100 @@ class Configuration:
             self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
 
 
-def config_data_from_file(config_path) -> dict:
-    def _update_fields(data: dict):
-        repository_dir = os.path.join(os.path.dirname(__file__), '../../')
-
-        model_path = data.get('model_path')
-        if model_path:
-            if not os.path.isabs(model_path):
-                data['model_path'] = Path(os.path.join(repository_dir, model_path))
-            else:
-                data['model_path'] = Path(model_path)
-
-        log_path = data.get('log_path')
-        if log_path:
-            if not os.path.isabs(log_path):
-                data['log_path'] = Path(os.path.join(repository_dir, log_path))
-            else:
-                data['log_path'] = Path(log_path)
-
-        input = data.get('input')
-        if input:
-            if not os.path.isabs(input):
-                data['input'] = Path(os.path.join(repository_dir, input))
-            else:
-                data['input'] = Path(input)
-
-        mining_alg = data.get('mining_alg')
-        if mining_alg:
-            data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
-
-        and_prior = data.get('and_prior')
-        if and_prior:
-            data['and_prior'] = AndPriorORemove.from_str(and_prior)
-
-        or_rep = data.get('or_rep')
-        if or_rep:
-            data['or_rep'] = AndPriorORemove.from_str(or_rep)
-
-        gate_management = data.get('gate_management')
-        if gate_management:
-            data['gate_management'] = GateManagement.from_str(gate_management)
-
-        res_cal_met = data.get('res_cal_met')
-        if res_cal_met:
-            data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
-
-        res_dtype = data.get('res_dtype')
-        if res_dtype:
-            data['res_dtype'] = DataType.from_str(res_dtype)
-
-        arr_dtype = data.get('arr_dtype')
-        if arr_dtype:
-            data['arr_dtype'] = DataType.from_str(arr_dtype)
-
-        pdef_method = data.get('pdef_method')
-        if pdef_method:
-            data['pdef_method'] = PDFMethod.from_str(pdef_method)
-
-        is_output = data.get('output')
-        if is_output:
-            data['output'] = Path(os.path.join(repository_dir, 'outputs', sup.folder_id()))
-
-        exec_mode = data.get('exec_mode')
-        if exec_mode:
-            data['exec_mode'] = ExecutionMode.from_str(exec_mode)
-
-        sim_metric = data.get('sim_metric')
-        if sim_metric:
-            data['sim_metric'] = Metric.from_str(sim_metric)
-
-        add_metrics = data.get('add_metrics')
-        if add_metrics:
-            data['add_metrics'] = Metric.from_str(add_metrics)
-
-    with open(config_path, 'r') as f:
+def config_data_from_file(config_path: Path) -> dict:
+    with config_path.open('r') as f:
         config_data = yaml.load(f, Loader=yaml.FullLoader)
+    config_data = config_data_from_yaml(config_data)
+    return config_data
 
-    _update_fields(config_data)
+
+def config_data_from_yaml(config_data: dict) -> dict:
+    config_data = config_data_with_datastructures(config_data)
 
     structure_optimizer = config_data.get('structure_optimizer')
     if structure_optimizer:
-        _update_fields(structure_optimizer)
+        structure_optimizer = config_data_with_datastructures(structure_optimizer)
         # the rest of the software uses 'strc' key
         config_data.pop('structure_optimizer')
         config_data['strc'] = structure_optimizer
 
     time_optimizer = config_data.get('time_optimizer')
     if time_optimizer:
-        _update_fields(time_optimizer)
+        time_optimizer = config_data_with_datastructures(time_optimizer)
         # the rest of the software uses 'tm' key
         config_data.pop('time_optimizer')
         config_data['tm'] = time_optimizer
 
     return config_data
+
+
+def config_data_with_datastructures(data: dict) -> dict:
+    global PROJECT_DIR
+    data = data.copy()
+
+    model_path = data.get('model_path')
+    if model_path:
+        if not os.path.isabs(model_path):
+            data['model_path'] = PROJECT_DIR / model_path
+        else:
+            data['model_path'] = Path(model_path)
+
+    log_path = data.get('log_path')
+    if log_path:
+        if not os.path.isabs(log_path):
+            data['log_path'] = PROJECT_DIR / log_path
+        else:
+            data['log_path'] = Path(log_path)
+
+    input = data.get('input')
+    if input:
+        if not os.path.isabs(input):
+            data['input'] = PROJECT_DIR / input
+        else:
+            data['input'] = Path(input)
+
+    mining_alg = data.get('mining_alg')
+    if mining_alg:
+        data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
+
+    and_prior = data.get('and_prior')
+    if and_prior and (isinstance(and_prior, str) or isinstance(and_prior, list)):
+        data['and_prior'] = AndPriorORemove.from_str(and_prior)
+
+    or_rep = data.get('or_rep')
+    if or_rep:
+        data['or_rep'] = AndPriorORemove.from_str(or_rep)
+
+    gate_management = data.get('gate_management')
+    if gate_management and (isinstance(gate_management, str) or isinstance(gate_management, list)):
+        data['gate_management'] = GateManagement.from_str(gate_management)
+
+    res_cal_met = data.get('res_cal_met')
+    if res_cal_met:
+        data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
+
+    res_dtype = data.get('res_dtype')
+    if res_dtype:
+        data['res_dtype'] = DataType.from_str(res_dtype)
+
+    arr_dtype = data.get('arr_dtype')
+    if arr_dtype and (isinstance(arr_dtype, str) or isinstance(arr_dtype, list)):
+        data['arr_dtype'] = DataType.from_str(arr_dtype)
+
+    pdef_method = data.get('pdef_method')
+    if pdef_method:
+        data['pdef_method'] = PDFMethod.from_str(pdef_method)
+
+    exec_mode = data.get('exec_mode')
+    if exec_mode:
+        data['exec_mode'] = ExecutionMode.from_str(exec_mode)
+
+    sim_metric = data.get('sim_metric')
+    if sim_metric:
+        data['sim_metric'] = Metric.from_str(sim_metric)
+
+    add_metrics = data.get('add_metrics')
+    if add_metrics:
+        data['add_metrics'] = Metric.from_str(add_metrics)
+
+    return data

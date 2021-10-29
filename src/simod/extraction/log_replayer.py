@@ -11,7 +11,7 @@ from .. import support_utils as sup
 from ..configuration import Configuration
 
 
-class LogReplayer():
+class LogReplayer:
     """
     This class replays an event log over a model,
     measures the global conformance and the KPI's related with times

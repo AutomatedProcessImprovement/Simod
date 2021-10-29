@@ -2,31 +2,17 @@ name: Build & Test
 
 on:
   push:
-    branches: [ new_replayer ]
+    branches: [ master, new_replayer, simulator ]
   pull_request:
-    branches: [ new_replayer ]
+    branches: [ master, new_replayer, simulator ]
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    container:
+      image: nokal/simod-testing:v1.1.0
     steps:
-    - uses: actions/checkout@v2
-      with:
-        ref: new_replayer
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-        pip install -r requirements.txt
-        pip install -e .
-    - name: Test with pytest
-      uses: GabrielBB/xvfb-action@v1
-      with:
+      - name: Run the script
         run: |
-          pytest -k test_optimize
+          cd /usr/src && bash test_simod.sh

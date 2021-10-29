@@ -1,28 +1,24 @@
 import copy
-import itertools
 import math
-import multiprocessing
 import os
 import random
-import time
-from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from memory_profiler import profile
-from tqdm import tqdm
 
 from . import support_utils as sup
-from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_message, print_subsection
-from .common_routines import execute_simulator, mine_resources, extract_structure_parameters, split_timeline
+from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
+    save_times
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .decorators import timeit, safe_exec_with_values_and_status
+from .qbp import simulate
 from .readers.log_reader import LogReader
 from .structure_miner import StructureMiner
+from .support_utils import get_project_dir
 from .writers import xml_writer as xml, xes_writer as xes
 
 
@@ -36,12 +32,12 @@ class StructureOptimizer:
         self.log = log
         self._split_timeline(0.8, settings.read_options.one_timestamp)
 
-        self.org_log = log
+        self.org_log = copy.deepcopy(log)
         self.org_log_train = copy.deepcopy(self.log_train)
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
         # Load settings
         self.settings = settings
-        self.temp_output = os.path.join(os.path.dirname(__file__), '../../', 'outputs', sup.folder_id())
+        self.temp_output = get_project_dir() / 'outputs' / sup.folder_id()
         if not os.path.exists(self.temp_output):
             os.makedirs(self.temp_output)
         self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
@@ -73,7 +69,7 @@ class StructureOptimizer:
     # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
     def execute_trials(self):
         parameters = mine_resources(self.settings)
-        self.log_train = self.org_log_train
+        self.log_train = copy.deepcopy(self.org_log_train)
 
         # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
         def exec_pipeline(trial_stg: Configuration):
@@ -100,19 +96,21 @@ class StructureOptimizer:
             status = rsp['status']
 
             # Simulate model
-            rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
-            status = rsp['status']
-            sim_values = rsp['values'] if status == STATUS_OK else sim_values
+            # rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
+            # NOTE: looks strange, seems correct
+            rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_logs)
+            # status = rsp['status']  # TODO: we stopped using status here as it was designed
+            sim_values = rsp if status == STATUS_OK else sim_values
 
             # Save times
-            self._save_times(exec_times, trial_stg, self.temp_output)
+            save_times(exec_times, trial_stg, self.temp_output)
 
             # Optimizer results
             rsp = self._define_response(trial_stg, status, sim_values)
             # reinstate log
-            self.log = self.org_log
-            self.log_train = self.org_log_train
-            self.log_valdn = self.org_log_valdn
+            self.log = copy.deepcopy(self.org_log)
+            self.log_train = copy.deepcopy(self.org_log_train)
+            self.log_valdn = copy.deepcopy(self.org_log_valdn)
 
             return rsp
 
@@ -136,15 +134,16 @@ class StructureOptimizer:
     # @profile(stream=open('logs/memprof_StructureOpimizer._temp_path_redef.log', 'a+'))
     @timeit(rec_name='PATH_DEF')
     @safe_exec_with_values_and_status
-    def _temp_path_redef(self, settings, **kwargs) -> None:
+    def _temp_path_redef(self, settings: dict, **kwargs) -> None:
         # Paths redefinition
-        settings['output'] = os.path.join(self.temp_output, sup.folder_id())
+        settings['output'] = Path(os.path.join(self.temp_output, sup.folder_id()))
         # Output folder creation
         if not os.path.exists(settings['output']):
             os.makedirs(settings['output'])
             os.makedirs(os.path.join(settings['output'], 'sim_data'))
         # Create customized event-log for the external tools
-        xes.XesWriter(self.log_train, Configuration(**settings))
+        output_path = Path(os.path.join(settings['output'], (settings['project_name'] + '.xes')))
+        xes.XesWriter(self.log_train, settings['read_options'], output_path)
         return settings
 
     @timeit(rec_name='MINING_STRUCTURE')
@@ -160,11 +159,11 @@ class StructureOptimizer:
     # @profile(stream=open('logs/memprof_StructureOptimizer._extract_parameters.log', 'a+'))
     @timeit(rec_name='EXTRACTING_PARAMS')
     @safe_exec_with_values_and_status
-    def _extract_parameters(self, settings: Configuration, structure, parameters, **kwargs) -> None:
+    def _extract_parameters(self, settings: Configuration, structure_values, parameters, **kwargs) -> None:
         if isinstance(settings, dict):
             settings = Configuration(**settings)
 
-        _, process_graph = structure
+        _, process_graph = structure_values
         num_inst = len(self.log_valdn.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
         start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
@@ -188,116 +187,47 @@ class StructureOptimizer:
         self.log_valdn['role'] = 'SYSTEM'
         self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
 
-    @timeit(rec_name='SIMULATION_EVAL')
-    @safe_exec_with_values_and_status
-    def _simulate(self, settings: Configuration, data, **kwargs) -> list:
-        if isinstance(settings, dict):
-            settings = Configuration(**settings)
-
-        def pbar_async(p, msg):
-            pbar = tqdm(total=reps, desc=msg)
-            processed = 0
-            while not p.ready():
-                cprocesed = (reps - p._number_left)
-                if processed < cprocesed:
-                    increment = cprocesed - processed
-                    pbar.update(n=increment)
-                    processed = cprocesed
-            time.sleep(1)
-            pbar.update(n=(reps - processed))
-            p.wait()
-            pbar.close()
-
-        reps = settings.repetitions
-        cpu_count = multiprocessing.cpu_count()
-        w_count = reps if reps <= cpu_count else cpu_count
-        pool = Pool(processes=w_count)
-        # Simulate
-        args = [(settings, rep) for rep in range(reps)]
-        p = pool.map_async(execute_simulator, args)
-        pbar_async(p, 'simulating:')
-        # Read simulated logs
-        p = pool.map_async(self.read_stats, args)
-        pbar_async(p, 'reading simulated logs:')
-        # Evaluate
-        args = [(settings, data, log) for log in p.get()]
-        if len(self.log_valdn.caseid.unique()) > 1000:
-            pool.close()
-            results = [self.evaluate_logs(arg)
-                       for arg in tqdm(args, 'evaluating results:')]
-            # Save results
-            sim_values = list(itertools.chain(*results))
-        else:
-            p = pool.map_async(self.evaluate_logs, args)
-            pbar_async(p, 'evaluating results:')
-            pool.close()
-            # Save results
-            sim_values = list(itertools.chain(*p.get()))
-        return sim_values
-
-    @staticmethod
-    def read_stats(args):
-        def read(settings: Configuration, rep):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            m_settings = dict()
-            m_settings['output'] = settings.output
-            column_names = {'resource': 'user'}
-            m_settings['read_options'] = settings.read_options
-            m_settings['read_options'].timeformat = '%Y-%m-%d %H:%M:%S.%f'
-            m_settings['read_options'].column_names = column_names
-            m_settings['project_name'] = settings.project_name
-            temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                          m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                             m_settings['read_options'],
-                             verbose=False)
-            temp = pd.DataFrame(temp.data)
-            temp.rename(columns={'user': 'resource'}, inplace=True)
-            temp['role'] = temp['resource']
-            temp['source'] = 'simulation'
-            temp['run_num'] = rep + 1
-            temp = temp[~temp.task.isin(['Start', 'End'])]
-            return temp
-
-        return read(*args)
-
-    @staticmethod
-    def evaluate_logs(args):
-        def evaluate(settings: Configuration, data, sim_log):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            rep = (sim_log.iloc[0].run_num)
-            sim_values = list()
-            evaluator = sim.SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
-            evaluator.measure_distance(Metric.DL)
-            sim_values.append({**{'run_num': rep}, **evaluator.similarity})
-            return sim_values
-
-        return evaluate(*args)
-
-    @staticmethod
-    def _save_times(times, settings, temp_output):
-        if times:
-            times = [{**{'output': settings['output']}, **times}]
-            log_file = os.path.join(temp_output, 'execution_times.csv')
-            if not os.path.exists(log_file):
-                open(log_file, 'w').close()
-            if os.path.getsize(log_file) > 0:
-                sup.create_csv_file(times, log_file, mode='a')
-            else:
-                sup.create_csv_file_header(times, log_file)
+    # @timeit(rec_name='SIMULATION_EVAL')
+    # @safe_exec_with_values_and_status
+    # def _simulate(self, settings: Configuration, data, **kwargs) -> list:
+    #     if isinstance(settings, dict):
+    #         settings = Configuration(**settings)
+    #
+    #     reps = settings.repetitions
+    #     cpu_count = multiprocessing.cpu_count()
+    #     w_count = reps if reps <= cpu_count else cpu_count
+    #     pool = multiprocessing.Pool(processes=w_count)
+    #
+    #     # Simulate
+    #     args = [(settings, rep) for rep in range(reps)]
+    #     p = pool.map_async(execute_simulator, args)
+    #     pbar_async(p, 'simulating:', reps)
+    #
+    #     # Read simulated logs
+    #     p = pool.map_async(read_stats, args)
+    #     pbar_async(p, 'reading simulated logs:', reps)
+    #
+    #     # Evaluate
+    #     args = [(settings, data, log) for log in p.get()]
+    #     if len(self.log_valdn.caseid.unique()) > 1000:
+    #         pool.close()
+    #         results = [evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
+    #         sim_values = list(itertools.chain(*results))
+    #     else:
+    #         p = pool.map_async(evaluate_logs, args)
+    #         pbar_async(p, 'evaluating results:', reps)
+    #         pool.close()
+    #         sim_values = list(itertools.chain(*p.get()))
+    #     return sim_values
 
     def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()
         measurements = list()
-        data = {'gate_management': settings['gate_management'], 'output': settings['output']}
-        # Miner parms
+        data = {
+            'gate_management': settings['gate_management'],
+            'output': settings['output'],
+        }
+        # Miner parameters
         if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             data['epsilon'] = settings['epsilon']
             data['eta'] = settings['eta']

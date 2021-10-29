@@ -1,5 +1,6 @@
 import itertools as it
 import os
+from pathlib import Path
 from typing import Union
 
 import pandas as pd
@@ -11,17 +12,17 @@ from pm4py.objects.conversion.log import converter
 from pm4py.objects.log.exporter.xes import exporter
 from pm4py.objects.log.util import interval_lifecycle
 
-from ..configuration import Configuration
+from ..configuration import Configuration, ReadOptions
 from ..readers.log_reader import LogReader
 
 
-class XesWriter(object):
+class XesWriter(object):  # TODO: it makes sense to save data also with LogReader instead of a separate class
     """
     This class writes a process log in .xes format
     """
 
     # @profile(stream=open('logs/memprof_XesWriter.log', 'a+'))
-    def __init__(self, log: Union[LogReader, pd.DataFrame, list], settings: Configuration):
+    def __init__(self, log: Union[LogReader, pd.DataFrame, list], read_options: ReadOptions, output_path: Path):
         if isinstance(log, pd.DataFrame):
             self.log = log.values
         elif isinstance(log, LogReader):
@@ -30,9 +31,9 @@ class XesWriter(object):
             self.log = log
         else:
             raise Exception(f'Unimplemented type for {type(log)}')
-        self.one_timestamp = settings.read_options.one_timestamp
-        self.column_names = settings.read_options.column_names
-        self.output_file = os.path.join(settings.output, settings.project_name + '.xes')
+        self.one_timestamp = read_options.one_timestamp
+        self.column_names = read_options.column_names
+        self.output_file = str(output_path)
         # self.create_xes_file()
         self.create_xes_file_alternative()
 
@@ -55,7 +56,19 @@ class XesWriter(object):
                              'case:variant-index',
                              'case:creator',
                              'Activity',
-                             'Resource'], inplace=True, errors='ignore')
+                             'Resource',
+                             'elementId',
+                             'processId',
+                             'resourceId',
+                             'resourceCost',
+                             '@@startevent_element',
+                             '@@startevent_elementId',
+                             '@@startevent_process',
+                             '@@startevent_processId',
+                             '@@startevent_resourceId',
+                             'etype'], inplace=True, errors='ignore')
+
+        log_df.fillna('UNDEFINED', inplace=True)
 
         log_interval = converter.apply(log_df, variant=converter.Variants.TO_EVENT_LOG)
         log_lifecycle = interval_lifecycle.to_lifecycle(log_interval)
