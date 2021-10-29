@@ -185,7 +185,7 @@ def extract_process_graph(model_path) -> DiGraph:
 
 def execute_shell_cmd(args):
     completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
-    message = f'\nShell debug information:' \
+    message = f'Shell debug information:' \
               f'\n\targs = {completed_process.args}' \
               f'\n\tstdout = {completed_process.stdout.__str__()}' \
               f'\n\tstderr = {completed_process.stderr.__str__()}'
