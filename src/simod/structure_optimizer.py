@@ -15,8 +15,8 @@ from .common_routines import mine_resources, extract_structure_parameters, split
     save_times
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .decorators import timeit, safe_exec_with_values_and_status
-from .qbp import simulate
 from .readers.log_reader import LogReader
+from .simulator import simulate
 from .structure_miner import StructureMiner
 from .support_utils import get_project_dir
 from .writers import xml_writer as xml, xes_writer as xes
@@ -98,7 +98,7 @@ class StructureOptimizer:
             # Simulate model
             # rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
             # NOTE: looks strange, seems correct
-            rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_logs)
+            rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
             # status = rsp['status']  # TODO: we stopped using status here as it was designed
             sim_values = rsp if status == STATUS_OK else sim_values
 

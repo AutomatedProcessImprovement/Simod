@@ -15,8 +15,8 @@ from .common_routines import mine_resources_with_resource_table, \
     split_timeline, save_times
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
-from .qbp import simulate
 from .readers import log_reader as lr
+from .simulator import simulate
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
 from .writers import xml_writer as xml
