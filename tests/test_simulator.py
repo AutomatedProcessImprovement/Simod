@@ -1,14 +1,11 @@
 import os
 from pathlib import Path
 
-import pandas as pd
-import pm4py
 import pytest
 
 from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
-from simod.common_routines import evaluate_logs
 from simod.configuration import Configuration
-from simod.simulator import qbp_simulator, diffresbp_simulator, simulate, get_number_of_cases
+from simod.simulator import qbp_simulator, diffresbp_simulator, get_number_of_cases
 
 
 @pytest.fixture
@@ -53,15 +50,11 @@ def test_qbp_simulator(args):
 
 def test_diffresbp_simulator(args):
     for arg in args:
-        n_cases = 0
-
-        pm4py.read_xes()
-
         config = Configuration()
         config.output = arg['qbp_path'].parent
         config.project_name, _ = os.path.splitext(arg['qbp_path'].name)
         config.repetitions = 1
-        config.simulation_cases = n_cases
+        config.simulation_cases = get_number_of_cases(arg['qbp_path'])
 
         diffresbp_simulator((config, config.repetitions))
 
