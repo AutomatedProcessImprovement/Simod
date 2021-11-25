@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
 from simod.cli_formatter import print_notice
-from simod.common_routines import evaluate_logs
-from simod.common_routines import execute_shell_cmd, pbar_async, read_stats
+from simod.common_routines import evaluate_logs, read_stats_alt
+from simod.common_routines import execute_shell_cmd, pbar_async
 from simod.configuration import Configuration, SimulatorKind
 
 
@@ -72,6 +72,14 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, eva
         simulate_fn = qbp_simulator
     elif settings.simulator is SimulatorKind.CUSTOM:
         simulate_fn = diffresbp_simulator
+        settings.read_options.column_names = {
+            'CaseID': 'caseid',
+            'Activity': 'task',
+            'EnableTimestamp': 'enabled_timestamp',
+            'StartTimestamp': 'start_timestamp',
+            'EndTimestamp': 'end_timestamp',
+            'Resource': 'user'
+        }
     else:
         raise ValueError(f'Unknown simulator {settings.simulator}')
 
@@ -90,7 +98,7 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, eva
     pbar_async(p, 'simulating:', reps)
 
     # Read simulated logs
-    p = pool.map_async(read_stats, args)
+    p = pool.map_async(read_stats_alt, args)
     pbar_async(p, 'reading simulated logs:', reps)
 
     # Evaluate

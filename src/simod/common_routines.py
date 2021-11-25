@@ -3,11 +3,9 @@ import os
 import subprocess
 import time
 from dataclasses import dataclass, field
-from operator import itemgetter
 from pathlib import Path
 from typing import List, Tuple, Union, Optional
 
-import networkx
 import pandas as pd
 from networkx import DiGraph
 
@@ -15,14 +13,12 @@ from simod.readers.log_splitter import LogSplitter
 from . import support_utils as sup
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step, print_notice
-from .configuration import CalculationMethod, DataType, GateManagement, TraceAlignmentAlgorithm
+from .configuration import CalculationMethod, DataType, GateManagement
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
-from .extraction.log_replayer import LogReplayer
 from .extraction.role_discovery import ResourcePoolAnalyser
 from .extraction.schedule_tables import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
-from .log_repairing import traces_alignment, traces_replacement
 from .readers import bpmn_reader
 from .readers import process_structure
 from .readers.log_reader import LogReader
@@ -219,24 +215,28 @@ def read_stats(args):
     return read(*args)
 
 
-# TODO: name properly or modify/merge read_stats and read_stats_alt
 def read_stats_alt(args):
     global TIMESTAMP_FORMAT
 
-    # NOTE: extracted from Discoverer and Optimizer static method
+    # NOTE: extracted from StructureOptimizer static method
     def read(settings: Configuration, rep):
-        path = os.path.join(settings.output, 'sim_data')
-        log_name = settings.project_name + '_' + str(rep + 1) + '.csv'
-        rep_results = pd.read_csv(os.path.join(path, log_name), dtype={'caseid': object})
-        rep_results['caseid'] = 'Case' + rep_results['caseid']
-        rep_results['run_num'] = rep
-        rep_results['source'] = 'simulation'
-        rep_results.rename(columns={'resource': 'user'}, inplace=True)
-        rep_results['start_timestamp'] = pd.to_datetime(
-            rep_results['start_timestamp'], format=TIMESTAMP_FORMAT)
-        rep_results['end_timestamp'] = pd.to_datetime(
-            rep_results['end_timestamp'], format=TIMESTAMP_FORMAT)
-        return rep_results
+        m_settings = dict()
+        m_settings['output'] = settings.output
+        m_settings['read_options'] = settings.read_options
+        m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
+        m_settings['read_options'].column_names = settings.read_options.column_names
+        m_settings['project_name'] = settings.project_name
+        temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
+                                      m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
+                         m_settings['read_options'],
+                         verbose=False)
+        temp = pd.DataFrame(temp.data)
+        temp.rename(columns={'user': 'resource'}, inplace=True)
+        temp['role'] = temp['resource']
+        temp['source'] = 'simulation'
+        temp['run_num'] = rep + 1
+        temp = temp[~temp.task.isin(['Start', 'End'])]
+        return temp
 
     return read(*args)
 

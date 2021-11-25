@@ -413,19 +413,16 @@ class LogReader(object):
             log['end_timestamp'] = pd.to_datetime(log['end_timestamp'],
                                                   format=self.timeformat)
         else:
-            self.column_names['Start Timestamp'] = 'start_timestamp'
+            self.column_names['Start Timestamp'] = 'start_timestamp'  # TODO: there might be no such columns
             self.column_names['Complete Timestamp'] = 'end_timestamp'
             log = log.rename(columns=self.column_names)
             log = log.astype({'caseid': object})
-            log = (log[(log.task != 'Start') & (log.task != 'End')]
-                   .reset_index(drop=True))
+            log = log[(log.task != 'Start') & (log.task != 'End')].reset_index(drop=True)
             if self.filter_d_attrib:
-                log = log[['caseid', 'task', 'user',
-                           'start_timestamp', 'end_timestamp']]
-            log['start_timestamp'] = pd.to_datetime(log['start_timestamp'],
-                                                    format=self.timeformat)
-            log['end_timestamp'] = pd.to_datetime(log['end_timestamp'],
-                                                  format=self.timeformat)
+                log = log[['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']]
+            # NOTE: Converting all timestamps to UTC
+            log['start_timestamp'] = pd.to_datetime(log['start_timestamp'], format=self.timeformat, utc=True)
+            log['end_timestamp'] = pd.to_datetime(log['end_timestamp'], format=self.timeformat, utc=True)
         self.data = log.to_dict('records')
         self.append_csv_start_end()
         if self.verbose:

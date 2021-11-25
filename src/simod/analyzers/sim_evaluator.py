@@ -371,6 +371,7 @@ class SimilarityEvaluator():
                 how='left').rename(columns={0: 'window'})
             dataframe = dataframe[[feature, 'date', 'window']]
             dataframe.rename(columns={feature: 'timestamp'}, inplace=True)
+            dataframe['timestamp'] = pd.to_datetime(dataframe['timestamp'], utc=True)
             dataframe['source'] = source
             return dataframe
 
