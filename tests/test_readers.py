@@ -3,7 +3,7 @@ import os
 import pytest
 
 from simod.configuration import ReadOptions
-from simod.readers.log_reader import LogReader, LogReaderOld
+from simod.readers.log_reader import LogReader
 
 
 @pytest.fixture
@@ -14,11 +14,6 @@ def args(entry_point) -> dict:
     log_path = os.path.join(entry_point, 'Production.xes')
     options = ReadOptions(column_names=ReadOptions.column_names_default())
     return {'log_path': log_path, 'read_options': options}
-
-
-def test_logreader_old(args):
-    log = LogReaderOld(args['log_path'], args['read_options'])
-    assert len(log.data) != 0
 
 
 def test_logreader_new(args):
@@ -34,24 +29,11 @@ def test_copy_without_data(args):
     copy1.set_data(['foo'])
     copy2 = LogReader.copy_without_data(copy1)
     copy2.set_data(['foo', 'bar'])
-    assert copy1.timeformat == copy2.timeformat
-    assert copy1.column_names == copy2.column_names
-    assert copy1.one_timestamp == copy2.one_timestamp
-    assert copy1.filter_d_attrib == copy2.filter_d_attrib
-    assert copy1.verbose == copy2.verbose
+    assert copy1._time_format == copy2._time_format
+    assert copy1._column_names == copy2._column_names
+    assert copy1._filter_attributes == copy2._filter_attributes
+    assert copy1._verbose == copy2._verbose
 
-    copy1.verbose = False
-    assert copy1.verbose != copy2.verbose
-
-
-# def test_csv_read(entry_point, args):
-#     log_path = os.path.join(entry_point, '../../inputs/Production.xes')
-#     log = LogReader(log_path, args['read_options'])
-#     log_df = pd.DataFrame(log.data)
-#     csv_path = log_path.replace('.xes', '.csv')
-#     log_df.to_csv(csv_path, index=False)
-#
-#     df = pd.read_csv(csv_path)
-#
-#     assert ((log_df.notna() == df.notna()).all()).all()
+    copy1._verbose = False
+    assert copy1._verbose != copy2._verbose
 
