@@ -2,9 +2,8 @@ log_path: "tests/assets/BPI_Challenge_2012_W_Two_TS.xes"
 mining_alg: sm3
 exec_mode: optimizer
 repetitions: 1
-simulation: true
 sim_metric: dl
-simulator: bimp
+simulator: custom
 structure_optimizer:
   max_eval_s: 2
   concurrency:
