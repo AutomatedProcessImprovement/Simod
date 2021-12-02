@@ -11,10 +11,8 @@ from typing import List
 
 import numpy as np
 import pytz
-from memory_profiler import profile
-
-from simod.cli_formatter import print_warning, print_notice
-from simod.configuration import BPMN_NAMESPACE_URI, GateManagement
+from .cli_formatter import print_warning
+from .configuration import BPMN_NAMESPACE_URI
 
 
 class BPMNNodeType(Enum):
@@ -405,8 +403,8 @@ class BPMNGraph:
         if self.closest_distance is None:
             self._sort_by_closest_predecesors()
         task_sequence = [task_name for task_name in task_sequence if task_name in self.from_name]
-        for i in range(0, len(fired_tasks)):
-            if not fired_tasks[i]:
+        for i in range(0, len(task_sequence)):
+            if not fired_tasks[i]:  # TODO: not sure in this, should we use fired_tasks here this way?
                 e_info = self.element_info[self.from_name.get(task_sequence[i])]
                 fix_from = [self.starting_event, self.closest_distance[e_info.id][self.starting_event]]
                 j = i - 1

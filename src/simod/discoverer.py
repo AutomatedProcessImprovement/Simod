@@ -7,7 +7,6 @@ import pandas as pd
 import xmltodict as xtd
 from lxml import etree
 
-from simod.replayer_datatypes import BPMNGraph
 from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import mine_resources_with_resource_table, \
@@ -16,6 +15,7 @@ from .common_routines import mine_resources_with_resource_table, \
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
 from .readers import log_reader as lr
+from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
