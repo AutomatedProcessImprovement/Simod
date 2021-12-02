@@ -329,6 +329,8 @@ class Configuration:
 def config_data_from_file(config_path: Path) -> dict:
     with config_path.open('r') as f:
         config_data = yaml.load(f, Loader=yaml.FullLoader)
+    if config_data is None:
+        raise Exception('Config is empty')
     config_data = config_data_from_yaml(config_data)
     return config_data
 
