@@ -10,8 +10,16 @@ Simod combines several process mining techniques to automate the generation and 
 - **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
 - For dependencies, please, check `requirements.txt` or `simod.yml`
 - For external tools: **Java 1.8**
+- Access to the **private** repository at https://github.com/AutomatedProcessImprovement/DiffResBP_Simulator
 
 ## Getting Started
+
+Getting the source code:
+
+```shell
+$ git clone https://github.com/AutomatedProcessImprovement/Simod.git
+$ git submodule update --init --recursive
+```
 
 Python environment can be set up using *Anaconda* from `simod.yml` or using the built-in *venv* module from `requirements.txt`.
 
@@ -31,19 +39,6 @@ $ simod discover --config_path config/discover_with_model_config.yml     # no ne
 ```
 
 The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
-
-## Getting Started with New Replayer
-
-```shell
-$ git clone https://github.com/AutomatedProcessImprovement/Simod.git simod
-$ cd simod
-$ git checkout new_replayer
-$ python3 -m venv venv
-$ source venv/bin/activate
-$ python -m pip install --upgrade pip
-$ pip install -r requirements.txt
-$ pip install -e .
-```
 
 ## Testing
 
