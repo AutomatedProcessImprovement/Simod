@@ -403,7 +403,9 @@ class BPMNGraph:
         if self.closest_distance is None:
             self._sort_by_closest_predecesors()
         task_sequence = [task_name for task_name in task_sequence if task_name in self.from_name]
-        for i in range(0, len(task_sequence)):
+        if len(task_sequence) != len(fired_tasks):
+            raise Exception('Lists of different length')
+        for i in range(0, len(fired_tasks)):
             if not fired_tasks[i]:  # TODO: not sure in this, should we use fired_tasks here this way?
                 e_info = self.element_info[self.from_name.get(task_sequence[i])]
                 fix_from = [self.starting_event, self.closest_distance[e_info.id][self.starting_event]]
