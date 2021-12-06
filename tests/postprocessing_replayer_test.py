@@ -11,8 +11,8 @@ bpmn_schema_url = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
 bpmn_element_ns = {'xmlns': bpmn_schema_url}
 
 xes_simodbpmn_file_paths = {
-    'purchasing_example': ['/input_files/xes_files/PurchasingExample.xes',
-                           '/input_files/bpmn_simod_models/PurchasingExample.bpmn'],
+    'purchasing_example': ['/Simod/inputs/PurchasingExample.xes',
+                           '/Simod/inputs/PurchasingExample.bpmn'],
     'production': ['/input_files/xes_files/production.xes',
                    '/input_files/bpmn_simod_models/Production.bpmn'],
     'insurance': ['/input_files/xes_files/insurance.xes',
@@ -117,7 +117,7 @@ def print_probabilities(flow_arcs_prob, f_arcs_freq):
 
 
 def main():
-    for i in range(7, 8):
+    for i in range(1, 8):
         current_dir = str(Path(os.path.dirname(__file__)).parent.parent)
         log_path = current_dir + xes_simodbpmn_file_paths[experiment_logs[i]][0]
         model_path = current_dir + xes_simodbpmn_file_paths[experiment_logs[i]][1]
