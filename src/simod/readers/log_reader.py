@@ -5,7 +5,7 @@ import zipfile as zf
 from datetime import timedelta
 from operator import itemgetter
 from pathlib import Path
-from typing import Union, Dict
+from typing import Union, Dict, List
 
 import pandas as pd
 import pm4py
@@ -25,7 +25,7 @@ class LogReader:
     _verbose: bool
     _filter_attributes: bool
     _column_names: Dict[str, str]
-    _columns_filter: list[str]
+    _columns_filter: List[str]
     _time_format: str
 
     def __init__(self, input: Union[Path, str], settings: ReadOptions, verbose=True, load=True):
