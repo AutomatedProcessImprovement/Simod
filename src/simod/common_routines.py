@@ -142,8 +142,8 @@ def mine_gateway_probabilities_alternative(log_traces: list, bpmn_graph: BPMNGra
     return sequences
 
 
-def mine_gateway_probabilities_alternative_with_gateway_management(log_traces: list, bpmn_graph: BPMNGraph,
-                                                                   gate_management: GateManagement) -> list:
+def mine_gateway_probabilities_alternative_with_gateway_management(
+        log_traces: list, bpmn_graph: BPMNGraph, gate_management: GateManagement) -> list:
     if isinstance(gate_management, list) and len(gate_management) >= 1:
         print_notice(
             f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')

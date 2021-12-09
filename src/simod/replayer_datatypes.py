@@ -11,10 +11,8 @@ from typing import List
 
 import numpy as np
 import pytz
-from memory_profiler import profile
-
-from simod.cli_formatter import print_warning, print_notice
-from simod.configuration import BPMN_NAMESPACE_URI, GateManagement
+from .cli_formatter import print_warning
+from .configuration import BPMN_NAMESPACE_URI
 
 
 class BPMNNodeType(Enum):
@@ -404,13 +402,15 @@ class BPMNGraph:
     def postprocess_unfired_tasks(self, task_sequence: list, fired_tasks: list, f_arcs_frequency: dict):
         if self.closest_distance is None:
             self._sort_by_closest_predecesors()
-        task_sequence = [task_name for task_name in task_sequence if task_name in self.from_name]
         for i in range(0, len(fired_tasks)):
-            if not fired_tasks[i]:
+            if not fired_tasks[i] and task_sequence[i] is not None and self.from_name.get(task_sequence[i]):
                 e_info = self.element_info[self.from_name.get(task_sequence[i])]
                 fix_from = [self.starting_event, self.closest_distance[e_info.id][self.starting_event]]
                 j = i - 1
                 while j >= 0:
+                    if task_sequence[j] is None or self.from_name.get(task_sequence[j]) is None:
+                        j -= 1
+                        continue
                     p_info = self.element_info[self.from_name.get(task_sequence[j])]
                     if p_info.id in self.closest_distance[e_info.id] and self.closest_distance[e_info.id][p_info.id] < fix_from[1]:
                         fix_from = [p_info.id, self.closest_distance[e_info.id][p_info.id]]
