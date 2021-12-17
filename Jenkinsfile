@@ -1,6 +1,9 @@
 pipeline {
     agent {
-        docker { image 'nokal/simod-testing:v1.1.0' }
+        docker {
+            image 'nokal/simod-testing:v1.1.0'
+            args '-u root'
+        }
     }
     stages {
         stage('Test') {
