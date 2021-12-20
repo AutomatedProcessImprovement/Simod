@@ -2,16 +2,17 @@ name: Build & Test
 
 on:
   push:
-    branches: [ master, new_replayer, simulator ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, new_replayer, simulator ]
+    branches: [ master ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     container:
-      image: nokal/simod-testing:v1.1.0
+      image: nokal/simod-testing:v1.2.0
+    env:
+      BRANCH_NAME: master
     steps:
       - name: Run the script
         run: |
