@@ -191,6 +191,17 @@ class PDFMethod(Enum):
 
 class SimulatorKind(Enum):
     BIMP = auto()
+    CUSTOM = auto()
+
+    @classmethod
+    def from_str(cls, value: str) -> 'SimulatorKind':
+        value = value.lower()
+        if value in ('bimp', 'qbp'):
+            return cls.BIMP
+        elif value == 'custom':
+            return cls.CUSTOM
+        else:
+            raise ValueError(f'Unknown value {value}')
 
 
 class Metric(Enum):
@@ -278,10 +289,11 @@ class Configuration:
     aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
     aligntype: Path = output / 'AlignmentStatistics.csv'
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
-    simulator: SimulatorKind = SimulatorKind.BIMP
     mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
     repetitions: int = 1
-    simulation: bool = True
+    simulator: SimulatorKind = SimulatorKind.BIMP
+    simulation_cases: int = 0
+    simulation: bool = True  # TODO: is this condition checked anywhere?
     sim_metric: Metric = Metric.TSD
     add_metrics: List[Metric] = field(
         default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])
@@ -317,6 +329,8 @@ class Configuration:
 def config_data_from_file(config_path: Path) -> dict:
     with config_path.open('r') as f:
         config_data = yaml.load(f, Loader=yaml.FullLoader)
+    if config_data is None:
+        raise Exception('Config is empty')
     config_data = config_data_from_yaml(config_data)
     return config_data
 
@@ -409,5 +423,9 @@ def config_data_with_datastructures(data: dict) -> dict:
     add_metrics = data.get('add_metrics')
     if add_metrics:
         data['add_metrics'] = Metric.from_str(add_metrics)
+
+    simulator = data.get('simulator')
+    if simulator:
+        data['simulator'] = SimulatorKind.from_str(simulator)
 
     return data

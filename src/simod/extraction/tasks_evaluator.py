@@ -1,17 +1,15 @@
 import networkx as nx
 import numpy as np
 import pandas as pd
-from .. import support_utils as sup
 from tqdm import tqdm
 
 from .pdf_finder import DistributionFinder
+from .. import support_utils as sup
 from ..configuration import Configuration, PDFMethod
 
 
-class TaskEvaluator():
-    """
-        This class evaluates the tasks durations and associates resources to it
-     """
+class TaskEvaluator:
+    """This class evaluates the tasks durations and associates resources to it."""
 
     def __init__(self, process_graph, process_stats: pd.DataFrame, resource_pool, settings: Configuration):
         """constructor"""
@@ -45,8 +43,6 @@ class TaskEvaluator():
         # processing time discovery method
         if self.pdef_method is PDFMethod.AUTOMATIC:
             elements_data = self.mine_processing_time()
-        # elif self.pdef_method in ['manual', 'semi-automatic']:
-        #     elements_data = self.define_distributions_manually()
         elif self.pdef_method == PDFMethod.DEFAULT:
             elements_data = self.default_processing_time()
         else:
@@ -72,12 +68,9 @@ class TaskEvaluator():
 
         """
         elements_data = list()
-        for task in tqdm(self.tasks,
-                         desc='mining tasks distributions:'):
+        for task in tqdm(self.tasks, desc='mining tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
-            task_processing = (
-                self.process_stats[
-                    self.process_stats.task == task][s_key].tolist())
+            task_processing = self.process_stats[self.process_stats.task == task][s_key].tolist()
             dist = DistributionFinder(task_processing).distribution
             elements_data.append({'id': sup.gen_id(),
                                   'type': dist['dname'],
@@ -90,30 +83,6 @@ class TaskEvaluator():
             self.model_data[['name', 'elementid']], on='name', how='left')
         return elements_data
 
-    # def define_distributions_manually(self):
-    #     """
-    #     Enable the manual edition of tasks duration
-    #
-    #     Returns
-    #     -------
-    #     elements_data : Dataframe
-    #
-    #     """
-    #     if self.pdef_method == 'semi-automatic':
-    #         elements_data = self.mine_processing_time().sort_values(by='name')
-    #         elements_data = elements_data.to_dict('records')
-    #     else:
-    #         elements_data = self.default_values()
-    #     root = tk.Tk()
-    #     window = MainWindow(root, elements_data)
-    #     root.mainloop()
-    #     new_elements = pd.DataFrame(window.new_elements)
-    #     elements_data = pd.DataFrame(elements_data)
-    #
-    #     elements_data = new_elements.merge(
-    #         elements_data[['id', 'name', 'elementid']], on='id', how='left')
-    #     return elements_data
-
     def default_values(self):
         """
         Performs the mining of activities durations from data
@@ -122,12 +91,9 @@ class TaskEvaluator():
         elements_data : Dataframe
         """
         elements_data = list()
-        for task in tqdm(self.tasks,
-                         desc='mining tasks distributions:'):
+        for task in tqdm(self.tasks, desc='mining tasks distributions:'):
             s_key = 'duration' if self.one_timestamp else 'processing_time'
-            task_processing = (
-                self.process_stats[
-                    self.process_stats.task == task][s_key].tolist())
+            task_processing = self.process_stats[self.process_stats.task == task][s_key].tolist()
             try:
                 mean_time = np.mean(task_processing) if task_processing else 0
             except:
@@ -139,18 +105,15 @@ class TaskEvaluator():
                                   'arg1': str(np.round(mean_time, 2)),
                                   'arg2': str(0)})
         elements_data = pd.DataFrame(elements_data)
-        elements_data = elements_data.merge(
-            self.model_data[['name', 'elementid']], on='name', how='left')
+        elements_data = elements_data.merge(self.model_data[['name', 'elementid']], on='name', how='left')
         return elements_data.to_dict('records')
 
     def add_start_end_info(self, elements_data):
         # records creation
         temp_elements_data = list()
-        default_record = {'type': 'FIXED',
-                          'mean': '0', 'arg1': '0', 'arg2': '0'}
+        default_record = {'type': 'FIXED', 'mean': '0', 'arg1': '0', 'arg2': '0'}
         for task in ['Start', 'End']:
-            temp_elements_data.append({**{'id': sup.gen_id(), 'name': task},
-                                       **default_record})
+            temp_elements_data.append({**{'id': sup.gen_id(), 'name': task}, **default_record})
         temp_elements_data = pd.DataFrame(temp_elements_data)
 
         temp_elements_data = temp_elements_data.merge(
@@ -163,7 +126,7 @@ class TaskEvaluator():
                        .rename(columns={'id': 'resource', 'name': 'r_name'}))
         temp_elements_data = (temp_elements_data.merge(
             resource_id, on='r_name', how='left').drop(columns=['r_name']))
-        # Appening to the elements data
+        # Appending to the elements data
         temp_elements_data = temp_elements_data.to_dict('records')
         elements_data.extend(temp_elements_data)
         return elements_data
@@ -189,15 +152,10 @@ class TaskEvaluator():
                        .reset_index())
         resource_id = (pd.DataFrame.from_dict(self.resource_pool)[['id', 'name']]
                        .rename(columns={'id': 'resource', 'name': 'r_name'}))
-        roles_table = (roles_table.merge(resource_id,
-                                         left_on='role',
-                                         right_on='r_name',
-                                         how='left')
-                       .drop(columns=['role', 'r_name', 'caseid']))
-        elements_data = elements_data.merge(roles_table,
-                                            left_on='name',
-                                            right_on='task',
-                                            how='left').drop(columns=['task'])
+        roles_table = (roles_table.merge(resource_id, left_on='role', right_on='r_name', how='left').drop(
+            columns=['role', 'r_name', 'caseid']))
+        elements_data = elements_data.merge(roles_table, left_on='name', right_on='task', how='left').drop(
+            columns=['task'])
         elements_data['resource'].fillna('QBP_DEFAULT_RESOURCE', inplace=True)
         return elements_data
 
@@ -214,9 +172,7 @@ class TaskEvaluator():
         tasks : List
 
         """
-        tasks = list(filter(
-            lambda x: process_graph.nodes[x]['type'] == 'task',
-            list(nx.nodes(process_graph))))
+        tasks = list(filter(lambda x: process_graph.nodes[x]['type'] == 'task', list(nx.nodes(process_graph))))
         tasks = [process_graph.nodes[x]['name'] for x in tasks]
         return tasks
 
@@ -232,8 +188,6 @@ class TaskEvaluator():
         -------
         model_data : Dataframe
         """
-        model_data = pd.DataFrame.from_dict(
-            dict(process_graph.nodes.data()), orient='index')
-        model_data = (model_data[model_data.type.isin(['task', 'start', 'end'])]
-                      .rename(columns={'id': 'elementid'}))
+        model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
+        model_data = model_data[model_data.type.isin(['task', 'start', 'end'])].rename(columns={'id': 'elementid'})
         return model_data

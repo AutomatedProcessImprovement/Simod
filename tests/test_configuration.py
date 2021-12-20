@@ -3,7 +3,7 @@ from pathlib import Path
 import yaml
 
 from simod.configuration import config_data_from_file, AndPriorORemove, Configuration, GateManagement, MiningAlgorithm, \
-    CalculationMethod, DataType, PDFMethod, Metric, ExecutionMode
+    CalculationMethod, DataType, PDFMethod, Metric, ExecutionMode, SimulatorKind
 
 
 class TestConfigurationFromStringConversion:
@@ -124,6 +124,17 @@ class TestConfigurationFromStringConversion:
 
         for arg in args:
             result = ExecutionMode.from_str(arg)
+            assert result == args[arg]
+
+    def test_SimulatorKind_from_str(self):
+        args = {
+            'bimp': SimulatorKind.BIMP,
+            'qbp': SimulatorKind.BIMP,
+            'custom': SimulatorKind.CUSTOM,
+        }
+
+        for arg in args:
+            result = SimulatorKind.from_str(arg)
             assert result == args[arg]
 
 

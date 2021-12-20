@@ -7,7 +7,6 @@ import pandas as pd
 import xmltodict as xtd
 from lxml import etree
 
-from simod.replayer_datatypes import BPMNGraph
 from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import mine_resources_with_resource_table, \
@@ -15,8 +14,9 @@ from .common_routines import mine_resources_with_resource_table, \
     split_timeline, save_times
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
-from .qbp import simulate
 from .readers import log_reader as lr
+from .replayer_datatypes import BPMNGraph
+from .simulator import simulate
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
 from .writers import xml_writer as xml
@@ -75,7 +75,7 @@ class Discoverer:
     @safe_exec
     def _mine_structure(self, **kwargs) -> None:
         print_section("Process Structure Mining")
-        structure_miner = StructureMiner(self.settings, log=self.log_train)
+        structure_miner = StructureMiner(self.settings)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             self.bpmn = structure_miner.bpmn
