@@ -7,11 +7,9 @@ Created on Thu Nov 26 21:35:36 2020
 import copy
 import itertools
 from operator import itemgetter
+
 import numpy as np
 import pandas as pd
-import random
-
-from memory_profiler import profile
 
 
 class LogSplitter(object):

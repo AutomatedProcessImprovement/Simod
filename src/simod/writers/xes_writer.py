@@ -1,10 +1,8 @@
 import itertools as it
-import os
 from pathlib import Path
 from typing import Union
 
 import pandas as pd
-from memory_profiler import profile
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 from opyenxes.factory.XFactory import XFactory
@@ -12,7 +10,7 @@ from pm4py.objects.conversion.log import converter
 from pm4py.objects.log.exporter.xes import exporter
 from pm4py.objects.log.util import interval_lifecycle
 
-from ..configuration import Configuration, ReadOptions
+from ..configuration import ReadOptions
 from ..readers.log_reader import LogReader
 
 

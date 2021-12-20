@@ -98,7 +98,7 @@ class StructureOptimizer:
             # Simulate model
             # rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
             # rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
-            rsp = self._simulate(trial_stg)
+            rsp = self._simulate(trial_stg, status=status)
             status = rsp['status']
             sim_values = rsp if status == STATUS_OK else sim_values
 
@@ -188,8 +188,8 @@ class StructureOptimizer:
         self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
 
     @safe_exec_with_values_and_status
-    def _simulate(self, trial_stg):
-        simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
+    def _simulate(self, trial_stg, **kwargs):
+        return simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
 
     # @timeit(rec_name='SIMULATION_EVAL')
     # @safe_exec_with_values_and_status

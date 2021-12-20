@@ -8,6 +8,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'click',
+        'DiffResBP_Simulator'
     ],
     entry_points={
         'console_scripts': [
