@@ -4,7 +4,7 @@ exec_mode: optimizer
 repetitions: 1
 simulation: true
 sim_metric: dl
-simulator: bimp
+simulator: custom
 structure_optimizer:
   max_eval_s: 2
   concurrency:

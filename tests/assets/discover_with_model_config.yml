@@ -13,4 +13,4 @@ res_dtype: 247
 arr_dtype: 247
 rp_similarity: 0.8
 pdef_method: automatic
-simulator: bimp
+simulator: custom
