@@ -100,7 +100,7 @@ class StructureOptimizer:
             # rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
             rsp = self._simulate(trial_stg, status=status)
             status = rsp['status']
-            sim_values = rsp if status == STATUS_OK else sim_values
+            sim_values = rsp['values'] if status == STATUS_OK else sim_values
 
             # Save times
             save_times(exec_times, trial_stg, self.temp_output)
