@@ -3,7 +3,7 @@ FROM nokal/simod-base:v1.1.4
 # Simod installation
 WORKDIR /usr/src/
 RUN echo "#!/bin/bash" >> test_simod.sh
-# NOTE: running `Xvfb :99` inside the loaded container when you need a display dummy
+# NOTE: run `Xvfb :99` inside the loaded container when you need a display dummy
 RUN echo "git clone https://github.com/AutomatedProcessImprovement/Simod.git simod && cd simod" >> test_simod.sh
 RUN echo "git checkout \$BRANCH_NAME" >> test_simod.sh
 RUN echo "git submodule update --init --recursive" >> test_simod.sh
