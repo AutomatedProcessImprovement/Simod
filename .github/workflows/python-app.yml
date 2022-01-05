@@ -15,6 +15,10 @@ jobs:
     env:
       BRANCH_NAME: master
     steps:
-      - name: Run the script
+      - name: Test
         run: |
           cd /usr/src && bash test_simod.sh
+      - name: Snyk Scan
+        uses: snyk/actions@0.3.0
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
