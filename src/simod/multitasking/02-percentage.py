@@ -1,14 +1,8 @@
-import sys
+import datetime
 import os
-import subprocess
-import configparser as cp
 import os.path
 import xml.etree.ElementTree as ET
-import copy
 from shutil import copyfile
-import time
-import datetime
-# from sweeper import add_event_id_to_log_events
 
 model_input = "./PurchasingExample_Processed_Input_ForPercentage.xes"
 model_output = "./PurchasingExample_Processed_Output_ForPercentage.xes"
@@ -21,6 +15,7 @@ dict = {
     # }
 }
 
+
 def main():
     copy_file_name = './InputCopy.xes'
     copyfile(model_input, copy_file_name)
@@ -30,7 +25,7 @@ def main():
         'xes': "http://www.xes-standard.org",
         'time': "http://www.xes-standard.org/time.xesext"
     }
-    
+
     tree = ET.parse(copy_file_name)
     root = tree.getroot()
 
@@ -39,19 +34,19 @@ def main():
 
     for trace in traces:
         # if(trace_name.attrib['value'] not in dict):
-            # dict[trace_name.attrib['value']] = {}
+        # dict[trace_name.attrib['value']] = {}
         events = trace.findall("./{http://www.xes-standard.org}event", ns1)
 
         for event in events:
             for d in event:
-                if(d.attrib["key"] == "org:resource"):
-                    if(d.attrib['value'] not in dict):
+                if d.attrib["key"] == "org:resource":
+                    if d.attrib['value'] not in dict:
                         dict[d.attrib['value']] = []
 
                     # we assume that event has two dates, first is normal start
                     # second is EventEndTime that we add using function add_event_id_to_log_events
                     dates = event.findall("./{http://www.xes-standard.org}date", ns1)
-                    if(len(dates) > 1):
+                    if len(dates) > 1:
                         start = dates[0].attrib['value']
                         dat_start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f")
                         start_ms = int(round(dat_start.timestamp() * 1000))
@@ -61,7 +56,8 @@ def main():
                         end_ms = int(round(dat_end.timestamp() * 1000))
 
                         event_id = next(x.attrib['value'] for x in event.getchildren() if x.attrib['key'] == 'EventID')
-                        task_id = next(x.attrib['value'] for x in event.getchildren() if x.attrib['key'] == 'concept:name')
+                        task_id = next(
+                            x.attrib['value'] for x in event.getchildren() if x.attrib['key'] == 'concept:name')
 
                         # add the event corresponding to the resource 
                         dict[d.attrib["value"]].append([start_ms, end_ms, task_id, event_id])
@@ -69,7 +65,7 @@ def main():
     removed_instant_events = 0
     for res in dict:
         for ev in reversed(dict[res]):
-            if(ev[0] == ev[1]):
+            if ev[0] == ev[1]:
                 dict[res].remove(ev)
                 removed_instant_events += 1
 
@@ -79,11 +75,11 @@ def main():
     visited = []
     for res in dict:
         i = 0
-        
+
         for ev in dict[res]:
-            if(ev[3] not in visited):
+            if ev[3] not in visited:
                 for ev2 in dict[res][i:]:
-                    if(ev2[0] == ev[1]):
+                    if ev2[0] == ev[1]:
                         visited.append(ev2[3])
                         visited.append(ev[3])
                         pairs.append((ev, ev2))
@@ -111,30 +107,30 @@ def main():
                 endmark = False
                 event_resource = event.find("./{http://www.xes-standard.org}string[@key='org:resource']")
 
-                if(event_resource != None and event_resource.attrib["value"] == resource):
+                if event_resource != None and event_resource.attrib["value"] == resource:
                     for d in event:
-                        if(d.attrib["key"] == "EventID"):
+                        if d.attrib["key"] == "EventID":
                             eventid = d.attrib['value']
-                        if(d.attrib["key"] == "EventEndTime"):
+                        if d.attrib["key"] == "EventEndTime":
                             endmark = True
 
                     filtered = list(filter(lambda x: x[0][3] == eventid, pairs))
-                    if(len(filtered) > 0):
+                    if len(filtered) > 0:
                         for d in event:
-                            if(d.attrib["key"] == "time:timestamp"):
+                            if d.attrib["key"] == "time:timestamp":
                                 stamp = None
                                 # we actually have an endmark on the start event
                                 # which refers to the corresponding end event
-                                if(endmark == True):
-                                    stamp = int(filtered[0][0][0]/1000.0)
+                                if (endmark == True):
+                                    stamp = int(filtered[0][0][0] / 1000.0)
                                 else:
-                                    stamp = int(filtered[0][0][1]/1000.0)
+                                    stamp = int(filtered[0][0][1] / 1000.0)
                                 dtd = datetime.datetime.fromtimestamp(stamp)
                                 upd = dtd.strftime("%Y-%m-%dT%H:%M:%S.%f")
                                 d.attrib['value'] = upd
                                 # processed_times += 1
-                            if(d.attrib["key"] == "EventEndTime"):
-                                stamp = int(filtered[0][0][1]/1000.0)
+                            if d.attrib["key"] == "EventEndTime":
+                                stamp = int(filtered[0][0][1] / 1000.0)
                                 dtd = datetime.datetime.fromtimestamp(stamp)
                                 upd = dtd.strftime("%Y-%m-%dT%H:%M:%S.%f")
                                 d.attrib['value'] = upd
@@ -142,6 +138,7 @@ def main():
 
     tree.write(open(model_output, 'wb'), "UTF-8", True)
     os.remove(copy_file_name)
+
 
 if __name__ == "__main__":
     main()
