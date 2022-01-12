@@ -1,29 +1,38 @@
 import copy
-import datetime
 import itertools
-import time
 import uuid
 import xml.etree.ElementTree as et
 from functools import reduce
 from pathlib import Path
 from typing import List, Dict, Tuple
+
 import pendulum
 
-et.register_namespace('', 'http://www.xes-standard.org')
+XES_NAMESPACE = 'http://www.xes-standard.org'
+XML_EVENT_TAG = f'{{{XES_NAMESPACE}}}event'
+XML_TRACE_TAG = f'{{{XES_NAMESPACE}}}trace'
+XML_DATE_TAG = f'{{{XES_NAMESPACE}}}date'
+XML_STRING_TAG = f'{{{XES_NAMESPACE}}}string'
+XPATH_ACTIVITY = "*[@key='concept:name']"
+XPATH_RESOURCE = "*[@key='org:resource']"
+XPATH_END_TIMESTAMP = "*[@key='time:timestamp']"
+XPATH_EVENT_END_TIME = "*[@key='EventEndTime']"
+XPATH_EVENT_ID = "*[@key='EventID']"
 
 namespaces = {
-    'xes': "http://www.xes-standard.org",
-    'time': "http://www.xes-standard.org/time.xesext"
+    'xes': XES_NAMESPACE,
+    'time': f"{XES_NAMESPACE}/time.xesext"
 }
 
+et.register_namespace('', XES_NAMESPACE)
 
-def pre_sweeper(xes_input_path: Path) -> et.ElementTree:
+
+def _pre_sweeper(xes_input_path: Path) -> et.ElementTree:
     tree = et.parse(xes_input_path)
     resources = {}
-    for event in tree.iter('{http://www.xes-standard.org}event'):
-        end_time: str = event.find("*[@key='time:timestamp']").attrib.get('value')
-        name: str = event.find("*[@key='concept:name']").attrib.get('value')
-        resource: str = event.find("*[@key='org:resource']").attrib.get('value')
+    for event in tree.iter(XML_EVENT_TAG):
+        name: str = event.find(XPATH_ACTIVITY).attrib.get('value')
+        resource: str = event.find(XPATH_RESOURCE).attrib.get('value')
 
         if resource not in resources:
             resources[resource] = {}
@@ -34,69 +43,82 @@ def pre_sweeper(xes_input_path: Path) -> et.ElementTree:
         else:
             event_id = resources[resource][name]['event_id']
             start_event = resources[resource][name]['start_event']
-            et.SubElement(start_event, '{http://www.xes-standard.org}date', {'key': 'EventEndTime', 'value': end_time})
+            end_time: str = event.find(XPATH_END_TIMESTAMP).attrib.get('value')
+            et.SubElement(start_event, XML_DATE_TAG, {'key': 'EventEndTime', 'value': end_time})
             del resources[resource][name]
 
-        et.SubElement(event, '{http://www.xes-standard.org}string', {'key': 'EventID', 'value': event_id})
+        et.SubElement(event, XML_STRING_TAG, {'key': 'EventID', 'value': event_id})
 
     return tree
 
 
-def apply_percentage(tree: et.ElementTree, percent: float = 0.05) -> et.ElementTree:
+def _apply_percentage(tree: et.ElementTree, percent: float = 0.05) -> et.ElementTree:
     global namespaces
+
     root = tree.getroot()
 
     resources = _extract_resources(root)
 
     for resource in resources:
-        for event in reversed(resources[resource]):
-            if event[0] == event[1]:
-                resources[resource].remove(event)
+        resources[resource] = list(filter(lambda event: event[0] != event[1], resources[resource]))
 
-    pairs_of_events = _extract_pairs_of_events(percent, resources)
+    pairs_of_events = _extract_pairs_of_events(resources, percent)
 
-    _update_timestamps_in_pairs(resources, pairs_of_events, root)
+    _update_timestamps_from_pairs(resources, pairs_of_events, root)
 
     return tree
 
 
-def apply_sweeper(tree: et.ElementTree) -> et.ElementTree:
+def _apply_sweeper(tree: et.ElementTree) -> et.ElementTree:
     global namespaces
+
     root = tree.getroot()
 
     resources = _extract_resources(root)
 
-    # updating end timestamps in resources
     event_end_mapping = {}
-    traces = root.findall("{http://www.xes-standard.org}trace", namespaces)
+    traces = root.findall(XML_TRACE_TAG, namespaces)
     for resource in resources:
+        adjusted_ranges = _adjust_ranges(resources[resource], event_end_mapping)
         for trace in traces:
-            adjusted_ranges = _adjust_ranges(resources[resource], event_end_mapping)  # TODO: KeyError
-            events = trace.findall("./{http://www.xes-standard.org}event", namespaces)
+            events = trace.findall(f"./{XML_EVENT_TAG}", namespaces)
             for event in events:
-                event_resource = event.find("./{http://www.xes-standard.org}string[@key='org:resource']")
-                if event_resource is not None and event_resource.attrib.get('value') == resource:
-                    event_end_time = event.find("*[@key='EventEndTime']")
-                    if event_end_time and event_end_time.attrib.get('value'):
-                        end_timestamp_node = event.find("*[@key='time:timestamp']")
-                        if end_timestamp_node:
-                            event_id = event.find("*[@key='EventID']").attrib.get('value')
-                            stamp = int(adjusted_ranges[event_id] / 1000.0)
-                            _update_date_node(end_timestamp_node, stamp)
+                _update_end_timestamp_node_for_resource(adjusted_ranges, event, resource)
 
     return tree
+
+
+def _update_end_timestamp_node_for_resource(adjusted_ranges, event, resource):
+    event_resource = event.find(XPATH_RESOURCE)
+    if not event_resource:
+        return
+
+    if event_resource.attrib.get('value') != resource:
+        return
+
+    event_end_time = event.find(XPATH_EVENT_END_TIME)
+    if not event_end_time:
+        return
+
+    end_timestamp_node = event.find(XPATH_END_TIMESTAMP)
+    if not end_timestamp_node:
+        return
+
+    event_id = event.find(XPATH_EVENT_ID).attrib.get('value')
+    stamp = int(adjusted_ranges[event_id] / 1000.0)
+    _update_date_node(end_timestamp_node, stamp)
 
 
 def _extract_resources(root: et.Element) -> Dict[str, List]:
     global namespaces
-    events = root.findall('./{http://www.xes-standard.org}trace/{http://www.xes-standard.org}event', namespaces)
+    events = root.findall(f"./{XML_TRACE_TAG}/{XML_EVENT_TAG}", namespaces)
     resources = {}
     for event in events:
-        resource = event.find("*[@key='org:resource']").attrib.get('value')
+        resource = event.find(XPATH_RESOURCE).attrib.get('value')
         if resource not in resources:
             resources[resource] = []
 
-        dates = event.findall('./{http://www.xes-standard.org}date', namespaces)
+        dates = event.findall(f"./{XML_DATE_TAG}", namespaces)
         if len(dates) > 1:
             start = dates[0].attrib.get('value')
             start_date = pendulum.parse(start)
@@ -106,29 +128,24 @@ def _extract_resources(root: et.Element) -> Dict[str, List]:
             end_date = pendulum.parse(end)
             end_ms = int(round(end_date.timestamp() * 1000))
 
-            event_id = event.find("*[@key='EventID']").attrib.get('value')
-            if event_id is None:
-                raise ValueError('Log must be pre-processed with pre_sweeper')
-
-            task_id = event.find("*[@key='concept:name']").attrib.get('value')
-
+            event_id = event.find(XPATH_EVENT_ID).attrib.get('value')
+            task_id = event.find(XPATH_ACTIVITY).attrib.get('value')
             resources[resource].append([start_ms, end_ms, task_id, event_id])
     return resources
 
 
 def _get_events_by_resource(root: et.Element, resource: str) -> List[et.Element]:
     global namespaces
-    xpath = f"./{{http://www.xes-standard.org}}trace/{{http://www.xes-standard.org}}event/*[@key='org:resource'][@value='{resource}']/.."
+    xpath = f"./{XML_TRACE_TAG}/{XML_EVENT_TAG}/{XPATH_RESOURCE}[@value='{resource}']/.."
     return root.findall(xpath, namespaces)
 
 
 def _update_date_node(node: et.Element, timestamp_ms: int):
-    date = datetime.datetime.fromtimestamp(timestamp_ms)
-    date_str = date.strftime('%Y-%m-%dT%H:%M:%S.%f')
-    node.attrib['value'] = date_str
+    date = pendulum.from_timestamp(timestamp_ms / 1000.0)
+    node.attrib['value'] = date.isoformat()
 
 
-def _extract_pairs_of_events(percent, resources):
+def _extract_pairs_of_events(resources, percent):
     pairs_of_events = []
     visited_event_ids = []
     for resource, events in resources.items():
@@ -149,27 +166,27 @@ def _extract_pairs_of_events(percent, resources):
     return pairs_of_events
 
 
-def _update_timestamps_in_pairs(resources: Dict[str, List], pairs_of_events: List, root: et.Element):
+def _update_timestamps_from_pairs(resources: Dict[str, List], pairs_of_events: List, root: et.Element):
     global namespaces
 
     for resource in resources:
         events = _get_events_by_resource(root, resource)
         for event in events:
-            event_id = event.find("*[@key='EventID']").attrib.get('value')
+            event_id = event.find(XPATH_EVENT_ID).attrib.get('value')
             filtered = list(filter(lambda item: item[0][3] == event_id, pairs_of_events))
             if len(filtered) == 0:
                 continue
 
             stamp = int(filtered[0][0][1] / 1000.0)
 
-            end_timestamp_node = event.find("*[@key='time:timestamp']")
+            end_timestamp_node = event.find(XPATH_END_TIMESTAMP)
             if end_timestamp_node:
-                event_end_time = event.find("*[@key='EventEndTime']")
+                event_end_time = event.find(XPATH_EVENT_END_TIME)
                 if event_end_time and event_end_time.attrib.get('value'):
                     stamp = int(filtered[0][0][0] / 1000.0)
                 _update_date_node(end_timestamp_node, stamp)
 
-            end_time_node = event.find("*[@key='EventEndTime']")
+            end_time_node = event.find(XPATH_EVENT_END_TIME)
             if end_time_node:
                 _update_date_node(end_time_node, stamp)
 
@@ -255,3 +272,18 @@ def _build_range(input, event_end_mapping: Dict) -> List:
     new_ranges.sort(key=lambda v: v[0])
 
     return new_ranges
+
+
+def process_log(xes_input_path: Path, xes_output_path: Path):
+    tree = _pre_sweeper(xes_input_path)
+    tree = _apply_percentage(tree)
+    tree = _apply_sweeper(tree)
+    tree.write(xes_output_path)
+
+
+if __name__ == '__main__':
+    import sys
+
+    input_path = Path(sys.argv[1])
+    output_path = Path(sys.argv[2])
+    process_log(input_path, output_path)
