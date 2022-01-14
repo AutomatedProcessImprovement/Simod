@@ -6,7 +6,6 @@ from simod.multitasking import multitasking as mt
 def test_pre_sweeper(entry_point):
     log_path = Path(entry_point) / 'PurchasingExample.xes'
     mt._pre_sweeper(log_path)
-    assert log_output_path.exists()
 
 
 def test_apply_percentage(entry_point):
