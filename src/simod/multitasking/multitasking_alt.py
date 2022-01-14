@@ -11,6 +11,7 @@ from pm4py.objects.log.util import interval_lifecycle
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'
+_PM4PY_START_TIMESTAMP_TAG = 'start_timestamp'
 
 
 class _LifecycleType(Enum):
@@ -91,7 +92,7 @@ def _make_custom_records(log_interval_df):
     data: List[_CustomLogRecord] = []
     for i, event in log_interval_df.iterrows():
         start_item = _CustomLogRecord(event_id=log_interval_df.index[i],
-                                      timestamp=event['start_timestamp'],
+                                      timestamp=event[_PM4PY_START_TIMESTAMP_TAG],
                                       lifecycle_type=_LifecycleType.START)
         end_item = _CustomLogRecord(event_id=log_interval_df.index[i],
                                     timestamp=event[_XES_TIMESTAMP_TAG],
@@ -114,7 +115,8 @@ def _update_end_timestamps(records: List[_AuxiliaryLogRecord], log_df: pd.DataFr
     """Modifies end timestamp according to the adjusted durations."""
     for event_id, group in groupby(records, lambda record: record.event_id):
         duration = sum(map(lambda record: record.adjusted_duration_s, group))
-        log_df.at[event_id, _XES_TIMESTAMP_TAG] = log_df.loc[event_id]['start_timestamp'] + pd.Timedelta(duration, unit='s')
+        log_df.at[event_id, _XES_TIMESTAMP_TAG] = \
+            log_df.loc[event_id][_PM4PY_START_TIMESTAMP_TAG] + pd.Timedelta(duration, unit='s')
     return log_df
 
 
@@ -125,9 +127,9 @@ def _resource_utilization(log: pd.DataFrame) -> Dict[str, float]:
     for resource in resources:
         events = log[log[_XES_RESOURCE_TAG] == resource]
         max_end = events[_XES_TIMESTAMP_TAG].max()
-        min_start = events['start_timestamp'].min()
+        min_start = events[_PM4PY_START_TIMESTAMP_TAG].min()
         end_timestamps = events[_XES_TIMESTAMP_TAG]
-        start_timestamps = events['start_timestamp']
+        start_timestamps = events[_PM4PY_START_TIMESTAMP_TAG]
         result = ((end_timestamps - start_timestamps) / (max_end - min_start)).sum()
         utilization[resource] = result
     return utilization
