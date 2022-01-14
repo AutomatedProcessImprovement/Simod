@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XES version 1.0 -->
+<!-- Created by Fluxicon Disco (http://fluxicon.com/disco/ -->
+<!-- (c) 2017 Fluxicon - http://fluxicon.com/ -->
+<log xes.version="1.0" xmlns="http://www.xes-standard.org" xes.creator="Fluxicon Disco">
+	<extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
+	<extension name="Lifecycle" prefix="lifecycle" uri="http://www.xes-standard.org/lifecycle.xesext"/>
+	<extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
+	<extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xesext"/>
+	<global scope="trace">
+		<string key="concept:name" value="name"/>
+		<string key="variant" value="string"/>
+		<int key="variant-index" value="0"/>
+	</global>
+	<global scope="event">
+		<string key="concept:name" value="name"/>
+		<string key="lifecycle:transition" value="transition"/>
+		<string key="org:resource" value="resource"/>
+		<date key="time:timestamp" value="2018-08-30T18:20:15.649"/>
+		<string key="Activity" value="string"/>
+		<string key="Resource" value="string"/>
+	</global>
+	<classifier name="Activity" keys="Activity"/>
+	<classifier name="Resource" keys="Resource"/>
+	<string key="lifecycle:model" value="standard"/>
+	<string key="creator" value="Fluxicon Disco"/>
+	<string key="library" value="Fluxicon Octane"/>
+	<trace>
+		<string key="concept:name" value="1"/>
+		<string key="variant" value="Variant 2"/>
+		<int key="variant-index" value="2"/>
+		<string key="creator" value="Fluxicon Disco"/>
+		<event>
+			<string key="concept:name" value="A1"/>
+			<string key="lifecycle:transition" value="start"/>
+			<string key="org:resource" value="R1"/>
+			<date key="time:timestamp" value="2011-01-01T00:00:00.000"/>
+		</event>
+        <event>
+			<string key="concept:name" value="A1"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<string key="org:resource" value="R1"/>
+			<date key="time:timestamp" value="2011-01-01T00:00:10.000"/>
+		</event>
+        <event>
+			<string key="concept:name" value="A2"/>
+			<string key="lifecycle:transition" value="start"/>
+			<string key="org:resource" value="R1"/>
+			<date key="time:timestamp" value="2011-01-01T00:00:00.000"/>
+		</event>
+		<event>
+			<string key="concept:name" value="A2"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<string key="org:resource" value="R1"/>
+			<date key="time:timestamp" value="2011-01-01T00:00:05.000"/>
+		</event>
+		<event>
+			<string key="concept:name" value="A3"/>
+			<string key="lifecycle:transition" value="start"/>
+			<string key="org:resource" value="R1"/>
+			<date key="time:timestamp" value="2011-01-01T00:00:05.000"/>
+		</event>
+		<event>
+			<string key="concept:name" value="A3"/>
+			<string key="lifecycle:transition" value="complete"/>
+			<string key="org:resource" value="R1"/>
+			<date key="time:timestamp" value="2011-01-01T00:00:10.000"/>
+		</event>
+	</trace>
+</log>

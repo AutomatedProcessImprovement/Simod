@@ -1,3 +1,5 @@
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import groupby
@@ -7,6 +9,7 @@ from typing import List, Dict, Optional
 import pandas as pd
 import pm4py
 from pm4py.objects.conversion.log import converter
+from pm4py.objects.log.exporter.xes import exporter as xes_exporter
 from pm4py.objects.log.util import interval_lifecycle
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
@@ -41,7 +44,7 @@ class _AuxiliaryLogRecord:
     adjusted_duration_s: float
 
 
-def adjust_durations(log_path: Path, verbose=False) -> pd.DataFrame:
+def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose=False) -> pd.DataFrame:
     """Changes end timestamps for multitasking events without changing the overall resource utilization."""
     log = pm4py.read_xes(str(log_path))
     log_interval = interval_lifecycle.to_interval(log)
@@ -53,10 +56,10 @@ def adjust_durations(log_path: Path, verbose=False) -> pd.DataFrame:
     # apply sweep line for each resource
     resources = log_interval_df[_XES_RESOURCE_TAG].unique()
     for resource in resources:
-        resource_events = log_interval_df[log_interval_df[_XES_RESOURCE_TAG] == resource]
-        data = _make_custom_records(resource_events, log_interval_df)
-        aux_log = _make_auxiliary_log(data)
-        _update_end_timestamps(aux_log, log_interval_df)
+        _adjust_duration_for_resource(log_interval_df, resource)
+    # with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count() - 2) as executor:
+    #     for resource in resources:
+    #         executor.submit(_adjust_duration_for_resource, log_interval, resource)
 
     if verbose:
         utilization_after = _resource_utilization(log_interval_df)
@@ -65,7 +68,20 @@ def adjust_durations(log_path: Path, verbose=False) -> pd.DataFrame:
         print('Resource utilization after', utilization_after)
         print('Utilization before equals the one after: ', utilization_before == utilization_after)
         print('New process: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
+
+    if output_path is not None:
+        log = converter.apply(log_interval_df, variant=converter.Variants.TO_EVENT_LOG)
+        log_lifecycle = interval_lifecycle.to_lifecycle(log)
+        xes_exporter.apply(log_lifecycle, str(output_path))
+
     return log_interval_df
+
+
+def _adjust_duration_for_resource(log_interval_df, resource):
+    resource_events = log_interval_df[log_interval_df[_XES_RESOURCE_TAG] == resource]
+    data = _make_custom_records(resource_events, log_interval_df)
+    aux_log = _make_auxiliary_log(data)
+    _update_end_timestamps(aux_log, log_interval_df)
 
 
 def _make_auxiliary_log(data: List[_CustomLogRecord]) -> List[_AuxiliaryLogRecord]:
@@ -124,6 +140,7 @@ def _active_set_len(active_set: dict) -> int:
 
 def _update_end_timestamps(records: List[_AuxiliaryLogRecord], log_df: pd.DataFrame) -> pd.DataFrame:
     """Modifies end timestamp according to the adjusted durations."""
+    records = sorted(records, key=lambda record: record.event_id)  # groupby below works only on sorted data
     for event_id, group in groupby(records, lambda record: record.event_id):
         duration = sum(map(lambda record: record.adjusted_duration_s, group))
         log_df.at[event_id, _XES_TIMESTAMP_TAG] = \
@@ -148,5 +165,10 @@ def _resource_utilization(log: pd.DataFrame) -> Dict[str, float]:
 
 if __name__ == '__main__':
     import sys
+
     log_path = Path(sys.argv[1])
-    _ = adjust_durations(log_path)
+    output_path = Path(sys.argv[2])
+    adjust_durations(log_path, output_path)
+
+
+# every resource perform the same number of activities, events
