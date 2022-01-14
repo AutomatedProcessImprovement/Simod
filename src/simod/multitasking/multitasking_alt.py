@@ -31,6 +31,7 @@ class _CustomLogRecord:
     event_id: int
     timestamp: pd.Timestamp
     lifecycle_type: _LifecycleType
+    resource: str
 
 
 @dataclass
@@ -45,18 +46,26 @@ def adjust_durations(log_path: Path, verbose=False) -> pd.DataFrame:
     log = pm4py.read_xes(str(log_path))
     log_interval = interval_lifecycle.to_interval(log)
     log_interval_df = converter.apply(log_interval, variant=converter.Variants.TO_DATA_FRAME)
-    utilization_before = _resource_utilization(log_interval_df)
-    data = _make_custom_records(log_interval_df)
-    aux_log = _make_auxiliary_log(data)
-    result = _update_end_timestamps(aux_log, log_interval_df)
-    utilization_after = _resource_utilization(log_interval_df)
     if verbose:
-        print('\nAdjusted durations: ', list(filter(lambda record: record.adjusted_duration_s != 0, aux_log)))
+        print('\nProcess: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
+        utilization_before = _resource_utilization(log_interval_df)
+
+    # apply sweep line for each resource
+    resources = log_interval_df[_XES_RESOURCE_TAG].unique()
+    for resource in resources:
+        resource_events = log_interval_df[log_interval_df[_XES_RESOURCE_TAG] == resource]
+        data = _make_custom_records(resource_events, log_interval_df)
+        aux_log = _make_auxiliary_log(data)
+        _update_end_timestamps(aux_log, log_interval_df)
+
+    if verbose:
+        utilization_after = _resource_utilization(log_interval_df)
+        # print('Adjusted durations: ', list(filter(lambda record: record.adjusted_duration_s != 0, aux_log)))
         print('Resource utilization before', utilization_before)
         print('Resource utilization after', utilization_after)
         print('Utilization before equals the one after: ', utilization_before == utilization_after)
-        print('New process: ', result[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
-    return result
+        print('New process: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
+    return log_interval_df
 
 
 def _make_auxiliary_log(data: List[_CustomLogRecord]) -> List[_AuxiliaryLogRecord]:
@@ -87,16 +96,18 @@ def _make_auxiliary_log(data: List[_CustomLogRecord]) -> List[_AuxiliaryLogRecor
     return aux_log
 
 
-def _make_custom_records(log_interval_df):
+def _make_custom_records(resource_events: pd.DataFrame, log: pd.DataFrame):
     """Prepares records for the Sweep Line algorithm."""
     data: List[_CustomLogRecord] = []
-    for i, event in log_interval_df.iterrows():
-        start_item = _CustomLogRecord(event_id=log_interval_df.index[i],
+    for i, event in resource_events.iterrows():
+        start_item = _CustomLogRecord(event_id=log.index[i],
                                       timestamp=event[_PM4PY_START_TIMESTAMP_TAG],
-                                      lifecycle_type=_LifecycleType.START)
-        end_item = _CustomLogRecord(event_id=log_interval_df.index[i],
+                                      lifecycle_type=_LifecycleType.START,
+                                      resource=event[_XES_RESOURCE_TAG])
+        end_item = _CustomLogRecord(event_id=log.index[i],
                                     timestamp=event[_XES_TIMESTAMP_TAG],
-                                    lifecycle_type=_LifecycleType.END)
+                                    lifecycle_type=_LifecycleType.END,
+                                    resource=event[_XES_RESOURCE_TAG])
         data.append(start_item)
         data.append(end_item)
     return data
