@@ -1,5 +1,5 @@
 import multiprocessing
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import groupby
@@ -11,6 +11,7 @@ import pm4py
 from pm4py.objects.conversion.log import converter
 from pm4py.objects.log.exporter.xes import exporter as xes_exporter
 from pm4py.objects.log.util import interval_lifecycle
+from tqdm import tqdm
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'
@@ -50,26 +51,37 @@ def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose
     log_interval = interval_lifecycle.to_interval(log)
     log_interval_df = converter.apply(log_interval, variant=converter.Variants.TO_DATA_FRAME)
     if verbose:
-        print('\nProcess: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
-        utilization_before = _resource_utilization(log_interval_df)
+        # print('\nProcess: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
+        metrics_before = _resource_metrics(log_interval_df)
 
     # apply sweep line for each resource
     resources = log_interval_df[_XES_RESOURCE_TAG].unique()
-    for resource in resources:
+    for resource in tqdm(resources, desc='processing resources'):
         _adjust_duration_for_resource(log_interval_df, resource)
-    # with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count() - 2) as executor:
+    # with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count() - 1) as executor:
     #     for resource in resources:
-    #         executor.submit(_adjust_duration_for_resource, log_interval, resource)
+    #         handle = executor.submit(_adjust_duration_for_resource, log_interval_df, resource)
+    #         handle.result()
 
     if verbose:
-        utilization_after = _resource_utilization(log_interval_df)
+        metrics = _resource_metrics(log_interval_df)
         # print('Adjusted durations: ', list(filter(lambda record: record.adjusted_duration_s != 0, aux_log)))
-        print('Resource utilization before', utilization_before)
-        print('Resource utilization after', utilization_after)
-        print('Utilization before equals the one after: ', utilization_before == utilization_after)
-        print('New process: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
+        # print('Resource utilization before', metrics_before['utilization'])
+        # print('Resource utilization after', metrics['utilization'])
+        print('Utilization before equals the one after: ', metrics_before['utilization'] == metrics['utilization'])
+        # print('Resource events before:', metrics_before['number_of_events'])
+        # print('Resource events after:', metrics['number_of_events'])
+        print("Resource events equal:", metrics_before['number_of_events'] == metrics['number_of_events'])
+        # print('New process: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
 
     if output_path is not None:
+        log_interval_df = log_interval_df.drop(columns=[
+            '@@startevent_org:resource',
+            '@@startevent_concept:name',
+            '@@duration',
+            '@@custom_lif_id',
+            '@@origin_ev_idx'],
+            errors='ignore')
         log = converter.apply(log_interval_df, variant=converter.Variants.TO_EVENT_LOG)
         log_lifecycle = interval_lifecycle.to_lifecycle(log)
         xes_exporter.apply(log_lifecycle, str(output_path))
@@ -84,58 +96,51 @@ def _adjust_duration_for_resource(log_interval_df, resource):
     _update_end_timestamps(aux_log, log_interval_df)
 
 
-def _make_auxiliary_log(data: List[_CustomLogRecord]) -> List[_AuxiliaryLogRecord]:
-    """Adjusts duration for multitasking resources."""
-    active_set: Dict[int, Optional[_CustomLogRecord]] = {}
-    previous_time_s: float = 0
-    aux_log: List[_AuxiliaryLogRecord] = []
-    data = sorted(data, key=lambda item: item.timestamp)
-    for record in data:
-        for e_id in active_set:
-            active_set_event = active_set[e_id]
-            if active_set_event is None:
-                continue
-            current_time_s = record.timestamp.timestamp()
-            adjusted_duration = (current_time_s - previous_time_s) / _active_set_len(active_set)
-            aux_record = _AuxiliaryLogRecord(event_id=e_id,
-                                             timestamp=active_set_event.timestamp,
-                                             adjusted_duration_s=adjusted_duration)
-            aux_log.append(aux_record)
-
-        if record.lifecycle_type is _LifecycleType.START:
-            active_set[record.event_id] = record
-        else:
-            # we set to None instead of removing to avoid the exception "dictionary changed size during iteration"
-            active_set[record.event_id] = None
-
-        previous_time_s = record.timestamp.timestamp()
-    return aux_log
-
-
 def _make_custom_records(resource_events: pd.DataFrame, log: pd.DataFrame):
     """Prepares records for the Sweep Line algorithm."""
     data: List[_CustomLogRecord] = []
     for i, event in resource_events.iterrows():
-        start_item = _CustomLogRecord(event_id=log.index[i],
-                                      timestamp=event[_PM4PY_START_TIMESTAMP_TAG],
+        start_timestamp = event[_PM4PY_START_TIMESTAMP_TAG]
+        end_timestamp = event[_XES_TIMESTAMP_TAG]
+        resource = event[_XES_RESOURCE_TAG]
+        event_id = log.index[i]
+        if start_timestamp == end_timestamp:  # filter out instant events
+            continue
+        start_item = _CustomLogRecord(event_id=event_id,
+                                      timestamp=start_timestamp,
                                       lifecycle_type=_LifecycleType.START,
-                                      resource=event[_XES_RESOURCE_TAG])
-        end_item = _CustomLogRecord(event_id=log.index[i],
-                                    timestamp=event[_XES_TIMESTAMP_TAG],
+                                      resource=resource)
+        end_item = _CustomLogRecord(event_id=event_id,
+                                    timestamp=end_timestamp,
                                     lifecycle_type=_LifecycleType.END,
-                                    resource=event[_XES_RESOURCE_TAG])
-        data.append(start_item)
-        data.append(end_item)
+                                    resource=resource)
+        data.extend([start_item, end_item])
     return data
 
 
-def _active_set_len(active_set: dict) -> int:
-    """Active set contains None values which we need to avoid in counting the amount of active items in the set."""
-    length = 0
-    for k in active_set:
-        if active_set[k] is not None:
-            length += 1
-    return length
+def _make_auxiliary_log(data: List[_CustomLogRecord]) -> List[_AuxiliaryLogRecord]:
+    """Adjusts duration for multitasking resources."""
+    active_set: Dict[int, Optional[_CustomLogRecord]] = {}
+    # active_set_df = pd.DataFrame(columns=['event_id', 'timestamp', 'adjusted_duration_s'])
+    previous_time_s: float = 0
+    aux_log: List[_AuxiliaryLogRecord] = []
+    data = sorted(data, key=lambda item: item.timestamp)
+    for record in data:
+        current_time_s = record.timestamp.timestamp()
+        adjusted_duration = 0
+        active_set_len = len(active_set)
+        if active_set_len > 0:
+            adjusted_duration = (current_time_s - previous_time_s) / active_set_len
+        aux_log.extend(_AuxiliaryLogRecord(event_id=e_id,
+                                           timestamp=active_set[e_id].timestamp,
+                                           adjusted_duration_s=adjusted_duration)
+                       for e_id in active_set)
+        previous_time_s = record.timestamp.timestamp()
+        if record.lifecycle_type is _LifecycleType.START:
+            active_set[record.event_id] = record
+        else:
+            del active_set[record.event_id]
+    return aux_log
 
 
 def _update_end_timestamps(records: List[_AuxiliaryLogRecord], log_df: pd.DataFrame) -> pd.DataFrame:
@@ -148,19 +153,21 @@ def _update_end_timestamps(records: List[_AuxiliaryLogRecord], log_df: pd.DataFr
     return log_df
 
 
-def _resource_utilization(log: pd.DataFrame) -> Dict[str, float]:
+def _resource_metrics(log: pd.DataFrame) -> dict:
     """Calculates resource utilization for each resource in the log."""
     resources = log[_XES_RESOURCE_TAG].unique()
     utilization = {}
+    number_of_events = {}
     for resource in resources:
         events = log[log[_XES_RESOURCE_TAG] == resource]
+        number_of_events[resource] = len(events)
         max_end = events[_XES_TIMESTAMP_TAG].max()
         min_start = events[_PM4PY_START_TIMESTAMP_TAG].min()
         end_timestamps = events[_XES_TIMESTAMP_TAG]
         start_timestamps = events[_PM4PY_START_TIMESTAMP_TAG]
         result = ((end_timestamps - start_timestamps) / (max_end - min_start)).sum()
         utilization[resource] = result
-    return utilization
+    return {'utilization': utilization, 'number_of_events': number_of_events}
 
 
 if __name__ == '__main__':
@@ -168,7 +175,4 @@ if __name__ == '__main__':
 
     log_path = Path(sys.argv[1])
     output_path = Path(sys.argv[2])
-    adjust_durations(log_path, output_path)
-
-
-# every resource perform the same number of activities, events
+    adjust_durations(log_path, output_path, verbose=True)

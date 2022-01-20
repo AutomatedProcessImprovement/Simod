@@ -28,7 +28,7 @@ def test_adjust_durations_purchasing_example3(entry_point):
     assert (result.iloc[2]['time:timestamp'] - result.iloc[2]['start_timestamp']).total_seconds() == 2.5
 
 
-def test_adjust_durations_other(entry_point):
-    log_path = Path(entry_point) / 'ConsultaDataMining201618Multitasking.xes'
+def test_adjust_durations_consulta(entry_point):
+    log_path = Path(entry_point) / 'ConsultaDataMining201618.xes'
     result = mt.adjust_durations(log_path, verbose=False)
     assert result is not None
