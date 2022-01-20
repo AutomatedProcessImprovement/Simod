@@ -47,7 +47,7 @@ class _AuxiliaryLogRecord:
 
 
 def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose=False,
-                     is_concurrent=True, max_workers=multiprocessing.cpu_count()) -> pd.DataFrame:
+                     is_concurrent=False, max_workers=multiprocessing.cpu_count()) -> pd.DataFrame:
     """Changes end timestamps for multitasking events without changing the overall resource utilization."""
     log = pm4py.read_xes(str(log_path))
     log_interval = interval_lifecycle.to_interval(log)
