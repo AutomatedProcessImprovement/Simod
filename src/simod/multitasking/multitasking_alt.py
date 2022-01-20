@@ -1,3 +1,4 @@
+import concurrent.futures
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
@@ -45,34 +46,36 @@ class _AuxiliaryLogRecord:
     adjusted_duration_s: float
 
 
-def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose=False) -> pd.DataFrame:
+def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose=False,
+                     is_concurrent=True, max_workers=multiprocessing.cpu_count()) -> pd.DataFrame:
     """Changes end timestamps for multitasking events without changing the overall resource utilization."""
     log = pm4py.read_xes(str(log_path))
     log_interval = interval_lifecycle.to_interval(log)
     log_interval_df = converter.apply(log_interval, variant=converter.Variants.TO_DATA_FRAME)
     if verbose:
-        # print('\nProcess: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
         metrics_before = _resource_metrics(log_interval_df)
 
     # apply sweep line for each resource
     resources = log_interval_df[_XES_RESOURCE_TAG].unique()
-    for resource in tqdm(resources, desc='processing resources'):
-        _adjust_duration_for_resource(log_interval_df, resource)
-    # with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count() - 1) as executor:
-    #     for resource in resources:
-    #         handle = executor.submit(_adjust_duration_for_resource, log_interval_df, resource)
-    #         handle.result()
+    if not is_concurrent:
+        # sequential processing
+        for resource in tqdm(resources, desc='processing resources'):
+            _adjust_duration_for_resource(log_interval_df, resource)
+    else:
+        # concurrent processing
+        aux_log = []
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = (executor.submit(_make_aux_log, log_interval_df, resource)
+                       for resource in tqdm(resources, desc='submitting resources for concurrent processing'))
+            for future in tqdm(concurrent.futures.as_completed(futures), desc='waiting for completion'):
+                aux_records = future.result()
+                aux_log.extend(aux_records)
+        _update_end_timestamps(aux_log, log_interval_df)
 
     if verbose:
         metrics = _resource_metrics(log_interval_df)
-        # print('Adjusted durations: ', list(filter(lambda record: record.adjusted_duration_s != 0, aux_log)))
-        # print('Resource utilization before', metrics_before['utilization'])
-        # print('Resource utilization after', metrics['utilization'])
         print('Utilization before equals the one after: ', metrics_before['utilization'] == metrics['utilization'])
-        # print('Resource events before:', metrics_before['number_of_events'])
-        # print('Resource events after:', metrics['number_of_events'])
         print("Resource events equal:", metrics_before['number_of_events'] == metrics['number_of_events'])
-        # print('New process: ', log_interval_df[['concept:name', 'org:resource', 'start_timestamp', 'time:timestamp']])
 
     if output_path is not None:
         log_interval_df = log_interval_df.drop(columns=[
@@ -94,6 +97,12 @@ def _adjust_duration_for_resource(log_interval_df, resource):
     data = _make_custom_records(resource_events, log_interval_df)
     aux_log = _make_auxiliary_log(data)
     _update_end_timestamps(aux_log, log_interval_df)
+
+
+def _make_aux_log(log_interval_df, resource):
+    resource_events = log_interval_df[log_interval_df[_XES_RESOURCE_TAG] == resource]
+    data = _make_custom_records(resource_events, log_interval_df)
+    return _make_auxiliary_log(data)
 
 
 def _make_custom_records(resource_events: pd.DataFrame, log: pd.DataFrame):
