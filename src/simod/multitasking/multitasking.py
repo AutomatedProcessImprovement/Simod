@@ -1,5 +1,6 @@
 import concurrent.futures
 import multiprocessing
+import xml.etree.ElementTree as ET
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -81,15 +82,31 @@ def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose
         log_interval_df = log_interval_df.drop(columns=[
             '@@startevent_org:resource',
             '@@startevent_concept:name',
+            '@@startevent_Activity',
+            '@@startevent_Resource',
             '@@duration',
             '@@custom_lif_id',
             '@@origin_ev_idx'],
             errors='ignore')
+
         log = converter.apply(log_interval_df, variant=converter.Variants.TO_EVENT_LOG)
         log_lifecycle = interval_lifecycle.to_lifecycle(log)
         xes_exporter.apply(log_lifecycle, str(output_path))
 
+        reformat_timestamps(output_path, output_path)
+
     return log_interval_df
+
+
+def reformat_timestamps(log_path: Path, output_path: Path):
+    """Converts timestamps in XES to a format suitable for the Simod's calendar Java dependency."""
+    tree = ET.parse(log_path)
+    root = tree.getroot()
+    for element in root.iterfind(".//*[@key='time:timestamp']"):
+        timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%dT%H:%M:%S.%f')
+        value = timestamp.isoformat()
+        element.set('value', value)
+    tree.write(output_path)
 
 
 def _adjust_duration_for_resource(log_interval_df, resource):

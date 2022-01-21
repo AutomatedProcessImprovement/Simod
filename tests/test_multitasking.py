@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from simod.multitasking import adjust_durations
+from simod.multitasking import adjust_durations, reformat_timestamps
 
 
 def test_adjust_durations_purchasing_example(entry_point):
@@ -32,3 +32,10 @@ def test_adjust_durations_consulta(entry_point):
     log_path = Path(entry_point) / 'ConsultaDataMining201618.xes'
     result = adjust_durations(log_path, verbose=False)
     assert result is not None
+
+
+def test_reformat_timestamps(entry_point):
+    log_path = Path(entry_point) / 'PurchasingExample_Timestamps.xes'
+    output_path = log_path.with_name(log_path.stem + '_Reformatted.xes')
+    reformat_timestamps(log_path, output_path)
+    assert output_path.exists()
