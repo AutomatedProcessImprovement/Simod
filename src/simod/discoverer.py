@@ -20,6 +20,7 @@ from .simulator import simulate
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
 from .writers import xml_writer as xml
+from .preprocessor import Preprocessor
 
 
 class Discoverer:
@@ -42,6 +43,7 @@ class Discoverer:
         exec_times = dict()
         self.is_safe = self._read_inputs(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self._temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
+        self._preprocess()
         self.is_safe = self._mine_structure(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self._extract_parameters(log_time=exec_times, is_safe=self.is_safe)
         self.is_safe = self._simulate(log_time=exec_times, is_safe=self.is_safe)
@@ -49,6 +51,10 @@ class Discoverer:
         save_times(exec_times, self.settings, self.settings.output.parent)
         self.is_safe = self._export_canonical_model(is_safe=self.is_safe)
         print_asset(f"Output folder is at {self.settings.output}")
+
+    def _preprocess(self):
+        processor = Preprocessor(self.settings)
+        self.settings = processor.run()
 
     @timeit(rec_name='READ_INPUTS')
     @safe_exec

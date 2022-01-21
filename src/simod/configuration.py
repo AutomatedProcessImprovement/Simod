@@ -313,6 +313,7 @@ class Configuration:
     arr_dtype: Optional[Union[DataType, List[DataType]]] = None
     rp_similarity: Optional[Union[float, List[float]]] = None
     pdef_method: Optional[PDFMethod] = None
+    multitasking: Optional[bool] = False
 
     # Optimizer specific
     exec_mode: ExecutionMode = ExecutionMode.SINGLE
