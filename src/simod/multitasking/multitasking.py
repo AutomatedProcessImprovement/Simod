@@ -147,7 +147,6 @@ def _make_custom_records(resource_events: pd.DataFrame, log: pd.DataFrame):
 def _make_auxiliary_log(data: List[_CustomLogRecord]) -> List[_AuxiliaryLogRecord]:
     """Adjusts duration for multitasking resources."""
     active_set: Dict[int, Optional[_CustomLogRecord]] = {}
-    # active_set_df = pd.DataFrame(columns=['event_id', 'timestamp', 'adjusted_duration_s'])
     previous_time_s: float = 0
     aux_log: List[_AuxiliaryLogRecord] = []
     data = sorted(data, key=lambda item: item.timestamp)
