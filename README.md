@@ -91,9 +91,3 @@ and the mapping between activities and resource pools, which are a required elem
  - *Number of simulations runs:* Refers to the number of simulations performed by the BIMP simulator, once the model is created. The goal of defining this value is to improve the accuracy of the assessment. Between 1 and 50.
 
 Once all the parameters are settled, It is time to start the execution and wait for the results.
-
-## Authors
-
-* **Manuel Camargo**
-* **Marlon Dumas**
-* **Oscar Gonzalez-Rojas**
