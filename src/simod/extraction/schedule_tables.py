@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from .. import support_utils as sup
 from ..configuration import Configuration, DataType, CalculationMethod, QBP_NAMESPACE_URI
+from ..multitasking import reformat_timestamps
 
 
 class TimeTablesCreator():
@@ -17,6 +18,9 @@ class TimeTablesCreator():
 
     def __init__(self, settings: Configuration):
         self.settings = settings
+
+        # NOTE: reformatting timestamps because Java dependency complains about timeformat without milliseconds
+        reformat_timestamps(settings.log_path, settings.log_path)
 
     def create_timetables(self, args):
         creator = self._get_creator(args['res_cal_met'], args['arr_cal_met'])
