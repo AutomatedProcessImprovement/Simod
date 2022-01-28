@@ -19,9 +19,6 @@ class TimeTablesCreator():
     def __init__(self, settings: Configuration):
         self.settings = settings
 
-        # NOTE: reformatting timestamps because Java dependency complains about timeformat without milliseconds
-        reformat_timestamps(settings.log_path, settings.log_path)
-
     def create_timetables(self, args):
         creator = self._get_creator(args['res_cal_met'], args['arr_cal_met'])
         if args['res_cal_met'] is CalculationMethod.POOL:

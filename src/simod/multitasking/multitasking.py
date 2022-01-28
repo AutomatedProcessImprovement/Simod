@@ -104,7 +104,7 @@ def reformat_timestamps(log_path: Path, output_path: Path):
     root = tree.getroot()
     for element in root.iterfind(".//*[@key='time:timestamp']"):
         timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%dT%H:%M:%S.%f')
-        value = timestamp.isoformat()
+        value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
         element.set('value', value)
     tree.write(output_path)
 

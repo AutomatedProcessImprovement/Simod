@@ -44,7 +44,7 @@ def diffresbp_simulator(args: Tuple):
 def qbp_simulator(args: Tuple):
     """BIMP simulator."""
 
-    print_notice(f'BIMP simulator has been chosen')
+    print_notice(f'BIMP simulator has been called')
 
     settings: Configuration
     repetitions: int
