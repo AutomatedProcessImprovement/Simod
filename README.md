@@ -10,7 +10,7 @@ Simod combines several process mining techniques to automate the generation and 
 - **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
 - For dependencies, please, check `requirements.txt` or `simod.yml`
 - For external tools: **Java 1.8**
-- Access to the **private** repository at https://github.com/AutomatedProcessImprovement/DiffResBP_Simulator
+- **Prosimos** simulator is available at https://github.com/AutomatedProcessImprovement/Prosimos
 
 ## Getting Started
 
@@ -64,6 +64,120 @@ $ pytest -m "not slow" --cov=simod
 
 - Docker files are available in the `docker` folder.
 - Base image for Simod is available at https://hub.docker.com/r/nokal/simod-base and can be downloaded with `docker pull nokal/simod-base:v1.1.4`. The image has a proper Java version for dependencies, Xvfb (for faking X server for the Java dependencies) and Python 3 installed. It doesn't contain Simod itself.
+
+## Benchmarking in HPC with SLURM
+
+```bash
+#!/bin/bash
+
+#SBATCH --partition=main'
+#SBATCH -J job_name
+#SBATCH -N 1
+#SBATCH --cpus-per-task=20
+#SBATCH --mem=46G
+#SBATCH -t 120:00:00
+
+module load any/jdk/1.8.0_265
+module load py-xvfbwrapper
+module load any/python/3.8.3-conda
+conda activate simod
+
+xvfb-run simod optimize --config_path path_to_config
+```
+
+## Benchmarking using Docker
+
+The script below assumes a user has a folder with configuration files for each log. It also require a docker container `nokal/simod` available at https://hub.docker.com/r/nokal/simod. 
+
+```bash
+#!/usr/bin/env bash
+
+# pass the output directory when executing this script
+OUTPUT_DIR=$1
+
+# array of event logs' names
+files=("event_log_1" "event_log_2")
+
+BRANCH_NAME="master"
+
+for LOG_NAME in "${files[@]}"; do
+	CONFIG_PATH="config_benchmarking/opt_${LOG_NAME}_conf.yml"
+	OUTPUT_PATH="tmp/${OUTPUT_DIR}/${LOG_NAME}"
+	OUTPUT_LOG_PATH="tmp/${OUTPUT_DIR}/${LOG_NAME}.log"
+
+	echo "* Removing previous container"
+	docker rm simod_benchmarking
+	
+	echo "* Creating output folder"
+	mkdir -p $OUTPUT_PATH
+	
+	echo "* Running Simod"
+	docker run --name simod_benchmarking -v /home/ihar/config:/usr/src/simod/config_benchmarking -v /home/ihar/inputs:/usr/src/simod/inputs nokal/simod bash -c "Xvfb :99 &>/dev/null & disown; cd /usr/src/simod; git checkout ${BRANCH_NAME}; git pull && pip install -e .; simod optimize --config_path ${CONFIG_PATH}" &> $OUTPUT_LOG_PATH
+
+	echo "* Copying output"
+	docker container cp simod_benchmarking:/usr/src/simod/outputs $OUTPUT_PATH	
+done
+```
+
+Sample configuration for PurchasingExample.xes:
+
+```yaml
+log_path: inputs/PurchasingExample.xes
+mining_alg: sm2
+exec_mode: optimizer
+repetitions: 5
+simulator: bimp
+sim_metric: tsd
+multitasking: true
+add_metrics:
+- day_hour_emd
+- log_mae
+- dl
+- mae
+structure_optimizer:
+  max_eval_s: 40
+  concurrency:
+  - 0.0
+  - 1.0
+  epsilon:
+  - 0.0
+  - 1.0
+  eta:
+  - 0.0
+  - 1.0
+  gate_management:
+  - discovery
+  - equiprobable
+  or_rep:
+  - true
+  - false
+  and_prior:
+  - true
+  - false
+time_optimizer:
+  max_eval_t: 20
+  rp_similarity:
+  - 0.5
+  - 0.9
+  res_dtype:
+  - dt247
+  - lv917
+  arr_dtype:
+  - dt247
+  - lv917
+  res_sup_dis:
+  - 0.01
+  - 0.3
+  res_con_dis:
+  - 50
+  - 85
+  arr_support:
+  - 0.01
+  - 0.1
+  arr_confidence:
+  - 1
+  - 10
+```
 
 ## Data format
  
