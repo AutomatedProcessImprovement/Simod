@@ -21,7 +21,7 @@ $ git clone https://github.com/AutomatedProcessImprovement/Simod.git
 $ git submodule update --init --recursive
 ```
 
-Python environment can be set up using *Anaconda* from `simod.yml` or using the built-in *venv* module from `requirements.txt`.
+Python environment can be set up using *Anaconda* from `environment.yml` or using the built-in *venv* module from `requirements.txt`.
 
 To install the CLI-tool from the root directory run:
 
