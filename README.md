@@ -8,7 +8,7 @@ Simod combines several process mining techniques to automate the generation and 
 
 - **Python 3.8**+
 - **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
-- For dependencies, please, check `requirements.txt` or `simod.yml`
+- For dependencies, please, check `requirements.txt` or `environment.yml`
 - For external tools: **Java 1.8**
 - **Prosimos** simulator is available at https://github.com/AutomatedProcessImprovement/Prosimos
 
