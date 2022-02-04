@@ -1,5 +1,6 @@
 import itertools
 import multiprocessing
+import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable, Tuple
@@ -38,7 +39,8 @@ def diffresbp_simulator(args: Tuple):
         '--total_cases', str(total_cases)
     ]
 
-    execute_shell_cmd(args)
+    # execute_shell_cmd(args)
+    os.system(' '.join(args))
 
 
 def qbp_simulator(args: Tuple):

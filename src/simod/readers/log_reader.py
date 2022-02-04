@@ -31,6 +31,7 @@ TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 
 class LogReader:
     log_path: Path
+    log_path_xes: Path
     log: pd.DataFrame
     data: list  # TODO: we need to get rid of list and use DataFrame everywhere
     _time_format: str
@@ -48,10 +49,15 @@ class LogReader:
 
         _, ext = os.path.splitext(log_path)
         if ext != '.csv':
+            # NOTE: XES is needed for CalenderImp Java dependency which will be removed later
+            self.log_path_xes = log_path
             self.log_path = log_path.with_suffix('.csv')
             convert_xes_to_csv(log_path, self.log_path)
         else:
             self.log_path = log_path
+
+            # NOTE: we assume that XES is located at the same path
+            self.log_path_xes = log_path.with_suffix('.xes')
 
         if load:
             df = pd.read_csv(self.log_path)
