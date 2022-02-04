@@ -61,7 +61,7 @@ class Discoverer:
     def _read_inputs(self, **kwargs) -> None:
         print_section("Log Parsing")
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings.log_path), self.settings.read_options)
+        self.log = lr.LogReader(self.settings.log_path, column_names=self.settings.read_options.column_names)
         # Time splitting 80-20
         self._split_timeline(0.8, self.settings.read_options.one_timestamp)
 

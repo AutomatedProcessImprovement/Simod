@@ -25,7 +25,6 @@ from .writers import xml_writer as xml, xes_writer as xes
 class StructureOptimizer:
     """Hyperparameter-optimizer class"""
 
-    # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
     def __init__(self, settings: Configuration, log: LogReader, **kwargs):
         self.space = self.define_search_space(settings)
 
@@ -169,7 +168,7 @@ class StructureOptimizer:
 
         model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
         structure_parameters = extract_structure_parameters(
-            settings=settings, process_graph=process_graph, log=self.log_train, model_path=model_path)
+            settings=settings, process_graph=process_graph, log_reader=self.log_train, model_path=model_path)
 
         parameters = {**parameters, **{'resource_pool': structure_parameters.resource_pool,
                                        'time_table': structure_parameters.time_table,

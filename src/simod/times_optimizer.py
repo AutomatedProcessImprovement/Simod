@@ -6,6 +6,7 @@ import subprocess
 import time
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -271,8 +272,8 @@ class TimesOptimizer:
             if not os.path.exists(file_path):
                 print_notice(f'File does not exist at {file_path}')
                 return
-            temp = lr.LogReader(file_path, m_settings['read_options'], verbose=False)
-            temp = pd.DataFrame(temp.data)
+            temp = lr.LogReader(Path(file_path), m_settings['read_options'].column_names)
+            temp = temp.log
             temp.rename(columns={'user': 'resource'}, inplace=True)
             temp['role'] = temp['resource']
             temp['source'] = 'simulation'

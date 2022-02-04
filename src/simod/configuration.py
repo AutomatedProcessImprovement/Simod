@@ -264,7 +264,7 @@ class ExecutionMode(Enum):
 class ReadOptions:
     column_names: Dict[str, str]
     timeformat: str = '%Y-%m-%dT%H:%M:%S.%f'
-    one_timestamp: bool = False
+    one_timestamp: bool = False  # TODO: must be an obsolete attribute because Simod doesn't work with one_timestamp logs
     filter_d_attrib: bool = True
 
     @staticmethod

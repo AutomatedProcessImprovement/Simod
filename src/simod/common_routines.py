@@ -29,7 +29,7 @@ from .replayer_datatypes import BPMNGraph
 # introducing code duplication. We can stay with the functional approach, like I'm proposing at the moment, or create
 # a more general class for Discoverer and Optimizer for them to inherit from it all the general routines.
 
-TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'  # TODO: should be used from LogReader
 
 
 @dataclass
@@ -46,12 +46,11 @@ class ProcessParameters:
     elements_data: list = field(default_factory=list)
 
 
-# @profile(stream=open('logs/memprof_extract_structure_parameters.log', 'a+'))
-def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
+def extract_structure_parameters(settings: Configuration, process_graph, log_reader: LogReader,
                                  model_path: Path) -> ProcessParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
-    traces = log.get_traces()
-    log_df = pd.DataFrame(log.data)
+    traces = log_reader.get_traces()
+    log_df = pd.DataFrame(log_reader.data)
 
     resource_pool, time_table = mine_resources_wrapper(settings)
     arrival_rate = mine_inter_arrival(process_graph, log_df, settings)
@@ -60,8 +59,6 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
         traces, bpmn_graph, settings.gate_management)
     log_df['role'] = 'SYSTEM'
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
-
-    log_df = pd.DataFrame(log.data)
 
     return ProcessParameters(
         process_stats=log_df,
@@ -156,7 +153,8 @@ def mine_gateway_probabilities_alternative_with_gateway_management(
         arcs_frequencies = compute_sequence_flow_frequencies(log_traces, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:
-        raise Exception(f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, {type(gate_management)}')
+        raise Exception(
+            f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, {type(gate_management)}')
 
     sequences = []
     for gateway_id in gateways_branching:
@@ -180,7 +178,8 @@ def extract_process_graph(model_path) -> DiGraph:
 
 
 def execute_shell_cmd(args):
-    completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+    print_step(f'Executing shell command: {args}')
+    completed_process = subprocess.run(args, check=True, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
     message = f'Shell debug information:' \
               f'\n\targs = {completed_process.args}' \
               f'\n\tstdout = {completed_process.stdout.__str__()}' \
@@ -200,11 +199,10 @@ def read_stats(args):
         m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
         m_settings['read_options'].column_names = column_names
         m_settings['project_name'] = settings.project_name
-        temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                      m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                         m_settings['read_options'],
-                         verbose=False)
-        temp = pd.DataFrame(temp.data)
+        log_path = Path(os.path.join(m_settings['output'], 'sim_data',
+                                     m_settings['project_name'] + '_' + str(rep + 1) + '.csv'))
+        temp = LogReader(log_path=log_path, column_names=column_names)
+        temp = temp.log
         temp.rename(columns={'user': 'resource'}, inplace=True)
         temp['role'] = temp['resource']
         temp['source'] = 'simulation'
@@ -226,11 +224,10 @@ def read_stats_alt(args):
         m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
         m_settings['read_options'].column_names = settings.read_options.column_names
         m_settings['project_name'] = settings.project_name
-        temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                      m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                         m_settings['read_options'],
-                         verbose=False)
-        temp = pd.DataFrame(temp.data)
+        log_path = Path(os.path.join(m_settings['output'], 'sim_data',
+                                     m_settings['project_name'] + '_' + str(rep + 1) + '.csv'))
+        temp = LogReader(log_path=log_path, column_names=settings.read_options.column_names)
+        temp = temp.log
         temp.rename(columns={'user': 'resource'}, inplace=True)
         temp['role'] = temp['resource']
         temp['source'] = 'simulation'
@@ -364,7 +361,6 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     return ttcreator.time_table, resource_pool, resource_table
 
 
-# @profile(stream=open('logs/memprof_split_timeline.log', 'a+'))
 def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[
     pd.DataFrame, pd.DataFrame, str]:
     """

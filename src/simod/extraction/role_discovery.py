@@ -6,13 +6,15 @@ import scipy
 from scipy.stats import pearsonr
 from tqdm import tqdm
 
+from simod.readers.log_reader import LogReader
+
 
 class ResourcePoolAnalyser():
     """
         This class evaluates the tasks durations and associates resources to it
      """
 
-    def __init__(self, log, drawing=False, sim_threshold=0.7):
+    def __init__(self, log: LogReader, drawing=False, sim_threshold=0.7):
         """constructor"""
         self.data = self.read_resource_pool(log)
         self.drawing = drawing
@@ -23,7 +25,7 @@ class ResourcePoolAnalyser():
 
         self.roles, self.resource_table = self.discover_roles()
 
-    def read_resource_pool(self, log):
+    def read_resource_pool(self, log: LogReader):
         filtered_list = pd.DataFrame(log.data)[['task', 'user']]
         filtered_list = filtered_list[~filtered_list.task.isin(['Start', 'End'])]
         filtered_list = filtered_list[filtered_list.user != 'AUTO']

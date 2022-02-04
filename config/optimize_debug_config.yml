@@ -1,11 +1,11 @@
-log_path: inputs/PurchasingExample.xes
+log_path: inputs/PurchasingExample.csv
 mining_alg: sm3
 exec_mode: optimizer
 repetitions: 1
 simulation: true
 sim_metric: dl
 simulator: custom
-multitasking: true
+multitasking: false
 structure_optimizer:
   max_eval_s: 2
   concurrency:

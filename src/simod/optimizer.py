@@ -10,6 +10,7 @@ from .cli_formatter import print_section, print_asset, print_subsection, print_n
 from .common_routines import extract_structure_parameters, extract_process_graph, evaluate_logs_with_add_metrics, \
     remove_outliers
 from .configuration import Configuration, MiningAlgorithm
+from .preprocessor import Preprocessor
 from .readers import log_splitter as ls
 from .readers.log_reader import LogReader
 from .simulator import simulate
@@ -17,11 +18,10 @@ from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers import xml_writer
 from .writers.model_serialization import serialize_model
-from .preprocessor import Preprocessor
 
 
 class Optimizer:
-    """Hyper-parameter Optimizer class"""
+    """Hyperparameter Optimizer"""
     log_train: LogReader
     log_test: LogReader
 
@@ -38,7 +38,7 @@ class Optimizer:
         processor = Preprocessor(self.settings_global)
         self.settings_global = processor.run()
 
-        self.log = LogReader(self.settings_global.log_path, self.settings_global.read_options)
+        self.log = LogReader(self.settings_global.log_path)
 
     def execute_pipeline(self, discover_model: bool = True) -> None:
         print_notice(f'Log path: {self.settings_global.log_path}')
@@ -135,7 +135,7 @@ class Optimizer:
         model_path = self.settings_global.model_path
         process_graph = extract_process_graph(model_path)
         parameters = extract_structure_parameters(
-            settings=self.settings_structure, process_graph=process_graph, log=self.log_train, model_path=model_path)
+            settings=self.settings_structure, process_graph=process_graph, log_reader=self.log_train, model_path=model_path)
 
         # TODO: usually, self.log_valdn is used, but we don't have it here, in Discoverer,
         #  self.log_test is used instead. What whould be used here?
