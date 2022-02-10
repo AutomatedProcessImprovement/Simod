@@ -47,7 +47,8 @@ class LogReader:
                  column_names: dict = DEFAULT_CSV_COLUMNS,
                  column_filter: Optional[list] = DEFAULT_COLUMNS,
                  time_format: str = TIME_FORMAT,
-                 load: bool = True):
+                 load: bool = True,
+                 log: Optional[pd.DataFrame] = None):
         if not log_path.exists():
             raise FileNotFoundError
 
@@ -61,10 +62,13 @@ class LogReader:
             self.log_path = log_path
 
             # NOTE: we assume that XES is located at the same path
-            self.log_path_xes = log_path.with_suffix('.xes')
+            self.log_path_xes = log_path.with_suffix('.xes')  # TODO: should we convert CSV to XES if XES isn't provided
 
         if load:
-            df = pd.read_csv(self.log_path)
+            if log is None:
+                df = pd.read_csv(self.log_path)
+            else:
+                df = log
             df = df.rename(columns=column_names)
             df = df.astype({'caseid': object})
             df = df[(df.task != 'Start') & (df.task != 'End')].reset_index(drop=True)
