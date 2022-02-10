@@ -38,7 +38,7 @@ class Optimizer:
         processor = Preprocessor(self.settings_global)
         self.settings_global = processor.run()
 
-        self.log = LogReader(self.settings_global.log_path)
+        self.log = LogReader(self.settings_global.log_path, log=processor.log)
 
     def execute_pipeline(self, discover_model: bool = True) -> None:
         print_notice(f'Log path: {self.settings_global.log_path}')
