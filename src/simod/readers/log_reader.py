@@ -65,25 +65,36 @@ class LogReader:
             self.log_path_xes = log_path.with_suffix('.xes')  # TODO: should we convert CSV to XES if XES isn't provided
 
         if load:
-            if log is None:
-                df = pd.read_csv(self.log_path)
-            else:
-                df = log
-            df = df.rename(columns=column_names)
-            df = df.astype({'caseid': object})
-            df = df[(df.task != 'Start') & (df.task != 'End')].reset_index(drop=True)
-            if column_filter is not None:
-                df = df[column_filter]
-            df['start_timestamp'] = pd.to_datetime(df['start_timestamp'], format=time_format, utc=True)
-            df['end_timestamp'] = pd.to_datetime(df['end_timestamp'], format=time_format, utc=True)
-            self.log = df
-
-            self.data = df.to_dict('records')
-            self.data = self._append_csv_start_end_entries(self.data)
+            self._read_log(log, column_filter, column_names, time_format)
 
         self._time_format = time_format
         self._column_names = column_names
         self._column_filter = column_filter
+
+    def _read_log(self, log: Optional[pd.DataFrame], column_filter: list, column_names: dict, time_format: str):
+        if log is None:
+            df = pd.read_csv(self.log_path)
+        else:
+            df = log
+
+        # renaming for internal use
+        df = df.rename(columns=column_names)
+
+        # type conversion
+        df = df.astype({'caseid': object})
+        df['start_timestamp'] = pd.to_datetime(df['start_timestamp'], format=time_format, utc=True)
+        df['end_timestamp'] = pd.to_datetime(df['end_timestamp'], format=time_format, utc=True)
+
+        # filtering out Start and End fake events
+        df = df[(df.task != 'Start') & (df.task != 'End')].reset_index(drop=True)
+
+        # filtering columns
+        if column_filter is not None:
+            df = df[column_filter]
+
+        self.log = df
+        self.data = df.to_dict('records')
+        self.data = self._append_csv_start_end_entries(self.data)
 
     @staticmethod
     def copy_without_data(log: 'LogReader') -> 'LogReader':
