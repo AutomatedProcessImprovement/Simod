@@ -138,4 +138,25 @@ def convert_xes_to_csv(xes_path: Path, output_path: Path):
     log = pm4py.read_xes(str(xes_path))
     log_interval = interval_lifecycle.to_interval(log)
     df = log_converter.apply(log_interval, variant=log_converter.Variants.TO_DATA_FRAME)
-    df.to_csv(output_path)
+    df.to_csv(output_path, index=False)
+
+
+def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
+    _, ext = os.path.splitext(log_path)
+    if ext != '.csv':
+        if output_path:
+            log_path_csv = output_path
+        else:
+            log_path_csv = log_path.with_suffix('.csv')
+        convert_xes_to_csv(log_path, log_path_csv)
+        return log_path_csv
+    else:
+        return log_path
+
+
+def read(log_path: Path) -> pd.DataFrame:
+    log_path_csv = convert_xes_to_csv_if_needed(log_path)
+    log = pd.read_csv(log_path_csv)
+    log['start_timestamp'] = pd.to_datetime(log['start_timestamp'], utc=True)
+    log['time:timestamp'] = pd.to_datetime(log['time:timestamp'], utc=True)
+    return log
