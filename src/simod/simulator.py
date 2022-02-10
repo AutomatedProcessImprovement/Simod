@@ -39,8 +39,7 @@ def diffresbp_simulator(args: Tuple):
         '--total_cases', str(total_cases)
     ]
 
-    # execute_shell_cmd(args)
-    os.system(' '.join(args))
+    execute_shell_cmd(args)
 
 
 def qbp_simulator(args: Tuple):
@@ -72,6 +71,9 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, eva
     # Simulator choice based on configuration
     if settings.simulator is SimulatorKind.BIMP:
         simulate_fn = qbp_simulator
+        settings.read_options.column_names = {
+            'resource': 'user'
+        }
     elif settings.simulator is SimulatorKind.CUSTOM:
         simulate_fn = diffresbp_simulator
         settings.read_options.column_names = {

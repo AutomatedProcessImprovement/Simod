@@ -1,6 +1,5 @@
 import itertools
 import os
-import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -179,12 +178,7 @@ def extract_process_graph(model_path) -> DiGraph:
 
 def execute_shell_cmd(args):
     print_step(f'Executing shell command: {args}')
-    completed_process = subprocess.run(args, check=True, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
-    message = f'Shell debug information:' \
-              f'\n\targs = {completed_process.args}' \
-              f'\n\tstdout = {completed_process.stdout.__str__()}' \
-              f'\n\tstderr = {completed_process.stderr.__str__()}'
-    print_notice(message)
+    os.system(' '.join(args))
 
 
 def read_stats(args):
