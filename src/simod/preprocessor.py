@@ -1,21 +1,27 @@
 from pathlib import Path
+from typing import Optional
+
+import pandas as pd
 
 from .cli_formatter import print_step, print_section, print_notice
 from .configuration import Configuration
 from .multitasking import adjust_durations
+from .readers.log_reader import read
 
 
 class Preprocessor:
     """Preprocessor executes any pre-processing required according to the configuration."""
     config: Configuration
+    log: Optional[pd.DataFrame] = None
 
     def __init__(self, config: Configuration):
         self.config = config
 
     def _multitasking_processing(self, log_path: Path, output_dir: Path, is_concurrent=False, verbose=False):
         print_step('Multitasking pre-processing')
+        self.log = read(log_path)
         processed_log_path = output_dir / (log_path.stem + '_processed.xes')
-        adjust_durations(log_path, processed_log_path, is_concurrent=is_concurrent, verbose=verbose)
+        self.log = adjust_durations(self.log, processed_log_path, is_concurrent=is_concurrent, verbose=verbose)
         self.config.log_path = processed_log_path
         print_notice(f'New log path: {self.config.log_path}')
 
