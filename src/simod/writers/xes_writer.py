@@ -15,11 +15,8 @@ from ..readers.log_reader import LogReader
 
 
 class XesWriter(object):  # TODO: it makes sense to save data also with LogReader instead of a separate class
-    """
-    This class writes a process log in .xes format
-    """
+    """This class writes a process log in XES-format."""
 
-    # @profile(stream=open('logs/memprof_XesWriter.log', 'a+'))
     def __init__(self, log: Union[LogReader, pd.DataFrame, list], read_options: ReadOptions, output_path: Path):
         if isinstance(log, pd.DataFrame):
             self.log = log.values
@@ -32,11 +29,9 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
         self.one_timestamp = read_options.one_timestamp
         self.column_names = read_options.column_names
         self.output_file = str(output_path)
-        # self.create_xes_file()
-        self.create_xes_file_alternative()
+        self.write_xes()
 
-    # @profile(stream=open('logs/memprof_XesWriter.create_xes_file_alternative.log', 'a+'))
-    def create_xes_file_alternative(self):
+    def write_xes(self):
         log_df = pd.DataFrame(self.log)
         log_df.rename(columns={
             'task': 'concept:name',
