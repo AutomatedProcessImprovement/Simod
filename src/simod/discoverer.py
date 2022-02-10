@@ -14,28 +14,28 @@ from .common_routines import mine_resources_with_resource_table, \
     split_timeline, save_times
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .decorators import safe_exec, timeit
-from .readers import log_reader as lr
+from .preprocessor import Preprocessor
+from .readers.log_reader import LogReader, DEFAULT_CSV_COLUMNS
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_miner import StructureMiner
 from .writers import xes_writer as xes
 from .writers import xml_writer as xml
-from .preprocessor import Preprocessor
 
 
 class Discoverer:
     """Main class of the Simulation Models Discoverer"""
+    settings: Configuration
+    output_file: str
+    log: LogReader
+    log_train: LogReader
+    log_test: LogReader
+    sim_values: list = []
+    response: dict = {}
+    is_safe: bool = True
 
     def __init__(self, settings: Configuration):
         self.settings = settings
-
-        self.log = types.SimpleNamespace()
-        self.log_train = types.SimpleNamespace()
-        self.log_test = types.SimpleNamespace()
-
-        self.sim_values = list()
-        self.response = dict()
-        self.is_safe = True
         self.output_file = sup.file_id(prefix='SE_')
 
     def execute_pipeline(self) -> None:
@@ -61,7 +61,7 @@ class Discoverer:
     def _read_inputs(self, **kwargs) -> None:
         print_section("Log Parsing")
         # Event log reading
-        self.log = lr.LogReader(self.settings.log_path, column_names=self.settings.read_options.column_names)
+        self.log = LogReader(self.settings.log_path, column_names=DEFAULT_CSV_COLUMNS)
         # Time splitting 80-20
         self._split_timeline(0.8, self.settings.read_options.one_timestamp)
 
