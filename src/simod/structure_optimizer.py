@@ -65,12 +65,10 @@ class StructureOptimizer:
         space = {**var_dim, **csettings}
         return space
 
-    # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
     def execute_trials(self):
         parameters = mine_resources(self.settings)
         self.log_train = copy.deepcopy(self.org_log_train)
 
-        # @profile(stream=open('logs/memprof_StructureOptimizer.log', 'a+'))
         def exec_pipeline(trial_stg: Configuration):
             print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
@@ -189,39 +187,6 @@ class StructureOptimizer:
     @safe_exec_with_values_and_status
     def _simulate(self, trial_stg, **kwargs):
         return simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
-
-    # @timeit(rec_name='SIMULATION_EVAL')
-    # @safe_exec_with_values_and_status
-    # def _simulate(self, settings: Configuration, data, **kwargs) -> list:
-    #     if isinstance(settings, dict):
-    #         settings = Configuration(**settings)
-    #
-    #     reps = settings.repetitions
-    #     cpu_count = multiprocessing.cpu_count()
-    #     w_count = reps if reps <= cpu_count else cpu_count
-    #     pool = multiprocessing.Pool(processes=w_count)
-    #
-    #     # Simulate
-    #     args = [(settings, rep) for rep in range(reps)]
-    #     p = pool.map_async(execute_simulator, args)
-    #     pbar_async(p, 'simulating:', reps)
-    #
-    #     # Read simulated logs
-    #     p = pool.map_async(read_stats, args)
-    #     pbar_async(p, 'reading simulated logs:', reps)
-    #
-    #     # Evaluate
-    #     args = [(settings, data, log) for log in p.get()]
-    #     if len(self.log_valdn.caseid.unique()) > 1000:
-    #         pool.close()
-    #         results = [evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
-    #         sim_values = list(itertools.chain(*results))
-    #     else:
-    #         p = pool.map_async(evaluate_logs, args)
-    #         pbar_async(p, 'evaluating results:', reps)
-    #         pool.close()
-    #         sim_values = list(itertools.chain(*p.get()))
-    #     return sim_values
 
     def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
         response = dict()
