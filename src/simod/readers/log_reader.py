@@ -18,6 +18,10 @@ DEFAULT_CSV_COLUMNS = {
     'time:timestamp': 'end_timestamp'
 }
 
+QBP_CSV_COLUMNS = {
+    'resource': 'user'
+}
+
 DEFAULT_XES_COLUMNS = {
     'Start Timestamp': 'start_timestamp',
     'Complete Timestamp': 'end_timestamp',
