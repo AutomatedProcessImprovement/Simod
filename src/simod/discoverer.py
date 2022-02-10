@@ -81,7 +81,7 @@ class Discoverer:
     @safe_exec
     def _mine_structure(self, **kwargs) -> None:
         print_section("Process Structure Mining")
-        structure_miner = StructureMiner(self.settings)
+        structure_miner = StructureMiner(self.settings.log_path, self.settings)
         structure_miner.execute_pipeline()
         if structure_miner.is_safe:
             self.bpmn = structure_miner.bpmn
