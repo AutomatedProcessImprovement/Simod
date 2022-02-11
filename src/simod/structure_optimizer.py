@@ -2,7 +2,9 @@ import copy
 import math
 import os
 import random
+import traceback
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -65,6 +67,18 @@ class StructureOptimizer:
         space = {**var_dim, **csettings}
         return space
 
+    @staticmethod
+    def _pipeline_step(status: str, fn, *args) -> Tuple[str, object]:
+        if status == STATUS_OK:
+            try:
+                return STATUS_OK, fn(*args)
+            except Exception as error:
+                print(error)
+                traceback.print_exc()
+                return STATUS_FAIL, None
+        else:
+            return status, None
+
     def execute_trials(self):
         parameters = mine_resources(self.settings)
         self.log_train = copy.deepcopy(self.org_log_train)
@@ -75,41 +89,29 @@ class StructureOptimizer:
                           f'validation split: {len(self.log_valdn.caseid.unique())}')
 
             status = STATUS_OK
-            exec_times = dict()
-            sim_values = []
 
-            # Path redefinition
-            rsp = self._temp_path_redef(trial_stg, status=status, log_time=exec_times)
-            status = rsp['status']
-            trial_stg = rsp['values'] if status == STATUS_OK else trial_stg
+            status, result = self._pipeline_step(status, self._temp_path_redef, trial_stg)
+            if status == STATUS_OK:
+                trial_stg = result
+            else:
+                trial_stg = trial_stg.__dict__
 
-            # Structure mining
-            rsp = self._mine_structure(Configuration(**trial_stg), status=status, log_time=exec_times)
-            status = rsp['status']
+            status, result = self._pipeline_step(status, self._mine_structure, Configuration(**trial_stg))
 
-            # Parameters extraction
-            rsp = self._extract_parameters(trial_stg, rsp['values'], copy.deepcopy(parameters), status=status,
-                                           log_time=exec_times)
-            status = rsp['status']
+            status, result = self._pipeline_step(status, self._extract_parameters, trial_stg, result, copy.deepcopy(parameters))
 
-            # Simulate model
-            # rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
-            # rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
-            rsp = self._simulate(trial_stg, status=status)
-            status = rsp['status']
-            sim_values = rsp['values'] if status == STATUS_OK else sim_values
+            status, result = self._pipeline_step(status, self._simulate, trial_stg)
 
-            # Save times
-            save_times(exec_times, trial_stg, self.temp_output)
+            sim_values = result if status == STATUS_OK else []
 
-            # Optimizer results
-            rsp = self._define_response(trial_stg, status, sim_values)
+            response = self._define_response(trial_stg, status, sim_values)
+
             # reinstate log
             self.log = copy.deepcopy(self.org_log)
             self.log_train = copy.deepcopy(self.org_log_train)
             self.log_valdn = copy.deepcopy(self.org_log_valdn)
 
-            return rsp
+            return response
 
         # Optimize
         best = fmin(fn=exec_pipeline,
@@ -128,35 +130,26 @@ class StructureOptimizer:
             print(e)
             pass
 
-    # @profile(stream=open('logs/memprof_StructureOpimizer._temp_path_redef.log', 'a+'))
-    @timeit(rec_name='PATH_DEF')
-    @safe_exec_with_values_and_status
-    def _temp_path_redef(self, settings: dict, **kwargs) -> None:
-        # Paths redefinition
-        settings['output'] = Path(os.path.join(self.temp_output, sup.folder_id()))
-        # Output folder creation
-        if not os.path.exists(settings['output']):
-            os.makedirs(settings['output'])
-            os.makedirs(os.path.join(settings['output'], 'sim_data'))
+    def _temp_path_redef(self, settings: dict) -> dict:
+        output_path = self.temp_output / sup.folder_id()
+        sim_data_path = output_path / 'sim_data'
+        sim_data_path.mkdir(parents=True, exist_ok=True)
+
         # Create customized event-log for the external tools
-        output_path = Path(os.path.join(settings['output'], (settings['project_name'] + '.xes')))
-        xes.XesWriter(self.log_train, settings['read_options'], output_path)
+        xes_path = output_path / (settings['project_name'] + '.xes')
+        xes.XesWriter(self.log_train, settings['read_options'], xes_path)
+
+        settings['output'] = output_path
+        settings['log_path'] = xes_path
         return settings
 
-    @timeit(rec_name='MINING_STRUCTURE')
-    @safe_exec_with_values_and_status
-    def _mine_structure(self, settings: Configuration, **kwargs) -> None:
+    @staticmethod
+    def _mine_structure(settings: Configuration):
         structure_miner = StructureMiner(settings.log_path, settings)
         structure_miner.execute_pipeline()
-        if structure_miner.is_safe:
-            return [structure_miner.bpmn, structure_miner.process_graph]
-        else:
-            raise RuntimeError('Mining Structure error')
+        return [structure_miner.bpmn, structure_miner.process_graph]
 
-    # @profile(stream=open('logs/memprof_StructureOptimizer._extract_parameters.log', 'a+'))
-    @timeit(rec_name='EXTRACTING_PARAMS')
-    @safe_exec_with_values_and_status
-    def _extract_parameters(self, settings: Configuration, structure_values, parameters, **kwargs) -> None:
+    def _extract_parameters(self, settings: Configuration, structure_values, parameters):
         if isinstance(settings, dict):
             settings = Configuration(**settings)
 
@@ -184,11 +177,10 @@ class StructureOptimizer:
         self.log_valdn['role'] = 'SYSTEM'
         self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
 
-    @safe_exec_with_values_and_status
-    def _simulate(self, trial_stg, **kwargs):
+    def _simulate(self, trial_stg):
         return simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
 
-    def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
+    def _define_response(self, settings, status, sim_values) -> dict:
         response = dict()
         measurements = list()
         data = {
