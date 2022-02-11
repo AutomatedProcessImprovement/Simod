@@ -63,7 +63,7 @@ class TimesOptimizer:
         # Trials object to track progress
         self.bayes_trials = Trials()
         self.best_output = None
-        self.best_parms = dict()
+        self.best_parameters = dict()
 
     @staticmethod
     def define_search_space(settings: Configuration, args: Configuration):
@@ -132,7 +132,7 @@ class TimesOptimizer:
         try:
             results = (pd.DataFrame(self.bayes_trials.results).sort_values('loss', ascending=bool))
             self.best_output = results[results.status == 'ok'].head(1).iloc[0].output
-            self.best_parms = best
+            self.best_parameters = best
         except Exception as e:
             print(e)
             pass
