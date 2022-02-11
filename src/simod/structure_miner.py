@@ -8,42 +8,37 @@ from networkx import DiGraph
 
 from .cli_formatter import print_subsection, print_step, print_asset
 from .configuration import Configuration, MiningAlgorithm
-from .decorators import safe_exec
 from .readers import bpmn_reader as br
 from .readers import process_structure
 
 
 class StructureMiner:
     """This class extracts all the BPS parameters"""
-    xes_path: Path
     bpmn: br.BpmnReader
     process_graph: DiGraph
-    settings: Configuration
-    is_safe: bool
+    _xes_path: Path
+    _settings: Configuration
 
     def __init__(self, xes_path: Path, settings: Configuration):
-        self.xes_path = xes_path
-        self.is_safe = True
-        self.settings = settings
+        self._xes_path = xes_path
+        self._settings = settings
 
-    def execute_pipeline(self) -> None:
-        if self.settings.model_path is None:
+    def execute_pipeline(self):
+        if self._settings.model_path is None:
             print_subsection("Mining the model structure")
-            xes_path = self.settings.output / (self.settings.project_name + '.xes')
-            print_asset(f"Log file {xes_path}")
-            self.is_safe = self._mining_structure(xes_path, is_safe=self.is_safe)
+            print_asset(f"Log file {self._xes_path}")
+            self._mining_structure(self._xes_path)
         else:
             print_step("Copying the model")
-            shutil.copy(self.settings.model_path, self.settings.output)
+            shutil.copy(self._settings.model_path, self._settings.output)
 
-        model_path = self.settings.output / (self.settings.project_name + '.bpmn')
+        model_path = self._settings.output / (self._settings.project_name + '.bpmn')
         self.bpmn = br.BpmnReader(model_path)
         self.process_graph = process_structure.create_process_structure(self.bpmn)
 
-    @safe_exec
-    def _mining_structure(self, xes_path: Path, **kwargs) -> None:
-        miner = self._get_miner(self.settings.mining_alg)
-        miner(xes_path, self.settings)
+    def _mining_structure(self, xes_path: Path):
+        miner = self._get_miner(self._settings.mining_alg)
+        miner(xes_path, self._settings)
 
     def _get_miner(self, miner: MiningAlgorithm):
         if miner is MiningAlgorithm.SM1:
@@ -75,7 +70,7 @@ class StructureMiner:
         subprocess.call(args)
 
     @staticmethod
-    def _sm1_miner(xes_path: Path, settings: Configuration) -> None:
+    def _sm1_miner(xes_path: Path, settings: Configuration):
         """
         Executes SplitMiner2 for BPMN structure mining.
         """
@@ -87,7 +82,7 @@ class StructureMiner:
         subprocess.call(args)
 
     @staticmethod
-    def _sm3_miner(xes_path: Path, settings: Configuration) -> None:
+    def _sm3_miner(xes_path: Path, settings: Configuration):
         """
         Executes SplitMiner3 for BPMN structure mining.
         """
