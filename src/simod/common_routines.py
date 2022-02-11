@@ -356,7 +356,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     return ttcreator.time_table, resource_pool, resource_table
 
 
-def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[
+def split_timeline(log: Union[LogReader, pd.DataFrame], size: float) -> Tuple[
     pd.DataFrame, pd.DataFrame, str]:
     """
     Split an event log dataframe by time to perform split-validation.
@@ -376,15 +376,15 @@ def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: boo
 
     # Split log data
     splitter = LogSplitter(log)
-    partition1, partition2 = splitter.split_log('timeline_contained', size, one_ts)
+    partition1, partition2 = splitter.split_log('timeline_contained', size)
     total_events = len(log)
 
     # Check size and change time splitting method if necesary
     if len(partition2) < int(total_events * 0.1):
-        partition1, partition2 = splitter.split_log('timeline_trace', size, one_ts)
+        partition1, partition2 = splitter.split_log('timeline_trace', size)
 
     # Set splits
-    key = 'end_timestamp' if one_ts else 'start_timestamp'
+    key = 'start_timestamp'
     partition1 = pd.DataFrame(partition1)
     partition2 = pd.DataFrame(partition2)
     return partition1, partition2, key

@@ -37,7 +37,7 @@ class TimesOptimizer:
         self.space = self.define_search_space(settings, args)
         # read inputs
         self.log = log
-        self._split_timeline(0.8, settings.read_options.one_timestamp)
+        self._split_timeline(0.8)
         self.org_log = log
         self.org_log_train = copy.deepcopy(self.log_train)
         self.org_log_valdn = copy.deepcopy(self.log_valdn)
@@ -449,9 +449,9 @@ class TimesOptimizer:
         parms['arr_cal_met'] = method
         return parms
 
-    def _split_timeline(self, size: float, one_ts: bool) -> None:
-        train, valdn, key = split_timeline(self.log, size, one_ts)
+    def _split_timeline(self, size: float) -> None:
+        train, valdn, key = split_timeline(self.log, size)
         self.log_valdn = valdn.sort_values(key, ascending=True).reset_index(drop=True)
-        # self.log_train = copy.deepcopy(self.log)
+        self.log_train = copy.deepcopy(self.log)
         self.log_train = LogReader.copy_without_data(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
