@@ -98,13 +98,23 @@ class StructureMiner:
         args = ['java']
         if not pl.system().lower() == 'windows':
             args.extend(['-Xmx2G', '-Xms1024M'])
+
+        if isinstance(settings.and_prior, list):
+            and_prior_setting = str([str(value) for value in settings.and_prior])
+        else:
+            and_prior_setting = str(settings.and_prior)
+
+        if isinstance(settings.or_rep, list):
+            or_rep_setting = str([str(value) for value in settings.or_rep])
+        else:
+            or_rep_setting = str(settings.or_rep)
+
         args.extend(['-cp',
                      (settings.sm3_path.__str__() + sep + os.path.join(os.path.dirname(settings.sm3_path), 'lib', '*')),
                      'au.edu.unimelb.services.ServiceProvider',
                      'SMD',
                      str(settings.epsilon), str(settings.eta),
-                     # TODO: in some cases .and_prior and .or_rep are lists
-                     str(settings.and_prior), str(settings.or_rep), 'false',
+                     and_prior_setting, or_rep_setting, 'false',
                      str(xes_path),
                      os.path.join(settings.output, file_name)])
         subprocess.call(args)
