@@ -8,7 +8,7 @@ from .pdf_finder import DistributionFinder
 from ..configuration import Configuration, PDFMethod
 
 
-class InterArrivalEvaluator():
+class InterArrivalEvaluator:
     """
     This class evaluates the inter-arrival times
     """
@@ -35,8 +35,6 @@ class InterArrivalEvaluator():
         # processing time discovery method
         if self.pdef_method is PDFMethod.AUTOMATIC:
             self.dist = DistributionFinder(self.inter_arrival_times).distribution
-        # elif self.pdef_method in [PDFMethod.MANUAL, PDFMethod.SEMIAUTOMATIC]:
-        #     self.dist = self._define_distributions_manually(DistributionFinder(self.inter_arrival_times).distribution)
         elif self.pdef_method is PDFMethod.DEFAULT:
             self.dist = {'dname': 'EXPONENTIAL',
                          'dparams': {'mean': 0,
@@ -95,7 +93,7 @@ class InterArrivalEvaluator():
                 succs = list(temp_process_graph.successors(node))
                 temp_process_graph.add_edges_from(list(itertools.product(preds, succs)))
                 temp_process_graph.remove_node(node)
-        graph_data = (pd.DataFrame.from_dict(dict(temp_process_graph.nodes.data()), orient='index'))
+        graph_data = pd.DataFrame.from_dict(dict(temp_process_graph.nodes.data()), orient='index')
         start = graph_data[graph_data.type.isin(['start'])]
         start = start.index.tolist()[0]  # start node id 
         in_tasks = [temp_process_graph.nodes[x]['name'] for x in temp_process_graph.successors(start)]

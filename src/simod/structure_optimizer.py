@@ -2,7 +2,9 @@ import copy
 import math
 import os
 import random
+import traceback
 from pathlib import Path
+from typing import Tuple, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -12,9 +14,8 @@ from hyperopt import tpe
 from . import support_utils as sup
 from .cli_formatter import print_message, print_subsection
 from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
-    save_times
+    hyperopt_pipeline_step
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
-from .decorators import timeit, safe_exec_with_values_and_status
 from .readers.log_reader import LogReader
 from .simulator import simulate
 from .structure_miner import StructureMiner
@@ -24,33 +25,105 @@ from .writers import xml_writer as xml, xes_writer as xes
 
 class StructureOptimizer:
     """Hyperparameter-optimizer class"""
+    best_output: Optional[Path]
+    best_parameters: dict
+    measurements_file_name: Path
 
-    def __init__(self, settings: Configuration, log: LogReader, **kwargs):
-        self.space = self.define_search_space(settings)
+    _best_similarity: float
+    _bayes_trials: Trials
+    _settings: Configuration
+    _log: LogReader
+    _log_train: LogReader
+    _log_validation: pd.DataFrame
+    _original_log: LogReader
+    _original_log_train: LogReader
+    _original_log_validation: pd.DataFrame
+    _space: dict
 
-        self.log = log
-        self._split_timeline(0.8, settings.read_options.one_timestamp)
+    def __init__(self, settings: Configuration, log: LogReader):
+        self._settings = settings
+        self._log = log
 
-        self.org_log = copy.deepcopy(log)
-        self.org_log_train = copy.deepcopy(self.log_train)
-        self.org_log_valdn = copy.deepcopy(self.log_valdn)
-        # Load settings
-        self.settings = settings
-        self.temp_output = get_project_dir() / 'outputs' / sup.folder_id()
-        if not os.path.exists(self.temp_output):
-            os.makedirs(self.temp_output)
-        self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
-        # Results file
-        if not os.path.exists(self.file_name):
-            open(self.file_name, 'w').close()
+        self._space = self._define_search_space(self._settings)
+
+        train, validation = self._split_timeline(self._log, 0.8)
+        self._log_train = LogReader.copy_without_data(self._log)
+        self._log_train.set_data(
+            train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
+        self._log_validation = validation
+
+        self._original_log = copy.deepcopy(log)
+        self._original_log_train = copy.deepcopy(self._log_train)
+        self._original_log_validation = copy.deepcopy(self._log_validation)
+
+        self._temp_output = get_project_dir() / 'outputs' / sup.folder_id()
+        self._temp_output.mkdir(parents=True, exist_ok=True)
+
+        # Measurements file
+        self.measurements_file_name = self._temp_output / sup.file_id(prefix='OP_')
+        with self.measurements_file_name.open('w') as _:
+            pass
+
         # Trials object to track progress
-        self.bayes_trials = Trials()
+        self._bayes_trials = Trials()
         self.best_output = None
-        self.best_parms = dict()
-        self.best_similarity = 0
+        self.best_parameters = dict()
+        self._best_similarity = 0
+
+    def execute_trials(self):
+        parameters = mine_resources(self._settings)
+        self._log_train = copy.deepcopy(self._original_log_train)
+
+        def exec_pipeline(trial_stg: Union[Configuration, dict]):
+            print_subsection("Trial")
+            print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
+                          f'validation split: {len(self._log_validation.caseid.unique())}')
+
+            if isinstance(trial_stg, dict):
+                trial_stg = Configuration(**trial_stg)
+
+            status = STATUS_OK
+
+            status, result = hyperopt_pipeline_step(status, self._update_config_and_export_xes, trial_stg)
+            if status == STATUS_OK:
+                trial_stg = result
+
+            status, result = hyperopt_pipeline_step(status, self._mine_structure, trial_stg)
+
+            status, result = hyperopt_pipeline_step(
+                status, self._extract_parameters, trial_stg, result, copy.deepcopy(parameters))
+
+            status, result = hyperopt_pipeline_step(status, self._simulate, trial_stg)
+            sim_values = result if status == STATUS_OK else []
+
+            response = self._define_response(trial_stg, status, sim_values)
+
+            # reinstate log
+            self._log = copy.deepcopy(self._original_log)
+            self._log_train = copy.deepcopy(self._original_log_train)
+            self._log_validation = copy.deepcopy(self._original_log_validation)
+
+            return response
+
+        # Optimization
+        best = fmin(fn=exec_pipeline,
+                    space=self._space,
+                    algo=tpe.suggest,
+                    max_evals=self._settings.max_eval_s,
+                    trials=self._bayes_trials,
+                    show_progressbar=False)
+
+        # Saving results
+        try:
+            results = pd.DataFrame(self._bayes_trials.results).sort_values('loss', ascending=bool)
+            self.best_output = results[results.status == 'ok'].head(1).iloc[0].output
+            self.best_parameters = best
+            self._best_similarity = results[results.status == 'ok'].head(1).iloc[0].loss
+        except Exception as e:
+            print(e)
 
     @staticmethod
-    def define_search_space(settings: Configuration):
+    def _define_search_space(settings: Configuration) -> dict:
         var_dim = {'gate_management': hp.choice('gate_management', settings.gate_management)}
         if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
             var_dim['epsilon'] = hp.uniform('epsilon', settings.epsilon[0], settings.epsilon[1])
@@ -59,114 +132,40 @@ class StructureOptimizer:
             var_dim['or_rep'] = hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep))
         elif settings.mining_alg is MiningAlgorithm.SM2:
             var_dim['concurrency'] = hp.uniform('concurrency', settings.concurrency[0], settings.concurrency[1])
-        csettings = copy.deepcopy(settings.__dict__)
+        new_settings = copy.deepcopy(settings.__dict__)
         for key in var_dim.keys():
-            csettings.pop(key, None)
-        space = {**var_dim, **csettings}
+            new_settings.pop(key, None)
+        space = {**var_dim, **new_settings}
         return space
 
-    def execute_trials(self):
-        parameters = mine_resources(self.settings)
-        self.log_train = copy.deepcopy(self.org_log_train)
+    def _update_config_and_export_xes(self, settings: Configuration) -> Configuration:
+        output_path = self._temp_output / sup.folder_id()
+        sim_data_path = output_path / 'sim_data'
+        sim_data_path.mkdir(parents=True, exist_ok=True)
 
-        def exec_pipeline(trial_stg: Configuration):
-            print_subsection("Trial")
-            print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
-                          f'validation split: {len(self.log_valdn.caseid.unique())}')
-
-            status = STATUS_OK
-            exec_times = dict()
-            sim_values = []
-
-            # Path redefinition
-            rsp = self._temp_path_redef(trial_stg, status=status, log_time=exec_times)
-            status = rsp['status']
-            trial_stg = rsp['values'] if status == STATUS_OK else trial_stg
-
-            # Structure mining
-            rsp = self._mine_structure(Configuration(**trial_stg), status=status, log_time=exec_times)
-            status = rsp['status']
-
-            # Parameters extraction
-            rsp = self._extract_parameters(trial_stg, rsp['values'], copy.deepcopy(parameters), status=status,
-                                           log_time=exec_times)
-            status = rsp['status']
-
-            # Simulate model
-            # rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
-            # rsp = simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
-            rsp = self._simulate(trial_stg, status=status)
-            status = rsp['status']
-            sim_values = rsp['values'] if status == STATUS_OK else sim_values
-
-            # Save times
-            save_times(exec_times, trial_stg, self.temp_output)
-
-            # Optimizer results
-            rsp = self._define_response(trial_stg, status, sim_values)
-            # reinstate log
-            self.log = copy.deepcopy(self.org_log)
-            self.log_train = copy.deepcopy(self.org_log_train)
-            self.log_valdn = copy.deepcopy(self.org_log_valdn)
-
-            return rsp
-
-        # Optimize
-        best = fmin(fn=exec_pipeline,
-                    space=self.space,
-                    algo=tpe.suggest,
-                    max_evals=self.settings.max_eval_s,
-                    trials=self.bayes_trials,
-                    show_progressbar=False)
-        # Save results
-        try:
-            results = pd.DataFrame(self.bayes_trials.results).sort_values('loss', ascending=bool)
-            self.best_output = results[results.status == 'ok'].head(1).iloc[0].output
-            self.best_parms = best
-            self.best_similarity = results[results.status == 'ok'].head(1).iloc[0].loss
-        except Exception as e:
-            print(e)
-            pass
-
-    # @profile(stream=open('logs/memprof_StructureOpimizer._temp_path_redef.log', 'a+'))
-    @timeit(rec_name='PATH_DEF')
-    @safe_exec_with_values_and_status
-    def _temp_path_redef(self, settings: dict, **kwargs) -> None:
-        # Paths redefinition
-        settings['output'] = Path(os.path.join(self.temp_output, sup.folder_id()))
-        # Output folder creation
-        if not os.path.exists(settings['output']):
-            os.makedirs(settings['output'])
-            os.makedirs(os.path.join(settings['output'], 'sim_data'))
         # Create customized event-log for the external tools
-        output_path = Path(os.path.join(settings['output'], (settings['project_name'] + '.xes')))
-        xes.XesWriter(self.log_train, settings['read_options'], output_path)
+        xes_path = output_path / (settings.project_name + '.xes')
+        xes.XesWriter(self._log_train, settings.read_options, xes_path)
+
+        settings.output = output_path
+        settings.log_path = xes_path
         return settings
 
-    @timeit(rec_name='MINING_STRUCTURE')
-    @safe_exec_with_values_and_status
-    def _mine_structure(self, settings: Configuration, **kwargs) -> None:
+    @staticmethod
+    def _mine_structure(settings: Configuration):
         structure_miner = StructureMiner(settings.log_path, settings)
         structure_miner.execute_pipeline()
-        if structure_miner.is_safe:
-            return [structure_miner.bpmn, structure_miner.process_graph]
-        else:
-            raise RuntimeError('Mining Structure error')
+        return [structure_miner.bpmn, structure_miner.process_graph]
 
-    # @profile(stream=open('logs/memprof_StructureOptimizer._extract_parameters.log', 'a+'))
-    @timeit(rec_name='EXTRACTING_PARAMS')
-    @safe_exec_with_values_and_status
-    def _extract_parameters(self, settings: Configuration, structure_values, parameters, **kwargs) -> None:
-        if isinstance(settings, dict):
-            settings = Configuration(**settings)
-
+    def _extract_parameters(self, settings: Configuration, structure_values, parameters):
         _, process_graph = structure_values
-        num_inst = len(self.log_valdn.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
-        start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
+        num_inst = len(self._log_validation.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
+        start_time = self._log_validation.start_timestamp.min().strftime(
+            "%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
         model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
         structure_parameters = extract_structure_parameters(
-            settings=settings, process_graph=process_graph, log_reader=self.log_train, model_path=model_path)
+            settings=settings, process_graph=process_graph, log_reader=self._log_train, model_path=model_path)
 
         parameters = {**parameters, **{'resource_pool': structure_parameters.resource_pool,
                                        'time_table': structure_parameters.time_table,
@@ -178,36 +177,33 @@ class StructureOptimizer:
         bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')
         xml.print_parameters(bpmn_path, bpmn_path, parameters)
 
-        self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
-        self.log_valdn['source'] = 'log'
-        self.log_valdn['run_num'] = 0
-        self.log_valdn['role'] = 'SYSTEM'
-        self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
+        self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
+        self._log_validation['source'] = 'log'
+        self._log_validation['run_num'] = 0
+        self._log_validation['role'] = 'SYSTEM'
+        self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
 
-    @safe_exec_with_values_and_status
-    def _simulate(self, trial_stg, **kwargs):
-        return simulate(trial_stg, self.log_valdn, self.log_valdn, evaluate_fn=evaluate_logs)
+    def _simulate(self, trial_stg: Configuration):
+        return simulate(trial_stg, self._log_validation, evaluate_fn=evaluate_logs)
 
-    def _define_response(self, settings, status, sim_values, **kwargs) -> dict:
-        response = dict()
+    def _define_response(self, settings: Configuration, status, sim_values) -> dict:
+        response = {}  # response contains Configuration and additional hyperopt parameters, e.g., 'status', 'loss'
         measurements = list()
         data = {
-            'gate_management': settings['gate_management'],
-            'output': settings['output'],
+            'gate_management': settings.gate_management,
+            'output': settings.output,
         }
         # Miner parameters
-        if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
-            data['epsilon'] = settings['epsilon']
-            data['eta'] = settings['eta']
-            data['and_prior'] = settings['and_prior']
-            data['or_rep'] = settings['or_rep']
-        elif settings['mining_alg'] is MiningAlgorithm.SM2:
-            data['concurrency'] = settings['concurrency']
+        if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+            data['epsilon'] = settings.epsilon
+            data['eta'] = settings.eta
+            data['and_prior'] = settings.and_prior
+            data['or_rep'] = settings.or_rep
+        elif settings.mining_alg is MiningAlgorithm.SM2:
+            data['concurrency'] = settings.concurrency
         else:
-            raise ValueError(settings['mining_alg'])
-        similarity = 0
-        # response['params'] = settings
-        response['output'] = settings['output']
+            raise ValueError(settings.mining_alg)
+        response['output'] = settings.output
         if status == STATUS_OK:
             similarity = np.mean([x['sim_val'] for x in sim_values])
             loss = (1 - similarity)
@@ -225,34 +221,29 @@ class StructureOptimizer:
                                     'sim_metric': Metric.DL,
                                     'status': response['status']},
                                  **data})
-        if os.path.getsize(self.file_name) > 0:
-            sup.create_csv_file(measurements, self.file_name, mode='a')
+        if os.path.getsize(self.measurements_file_name) > 0:
+            sup.create_csv_file(measurements, self.measurements_file_name, mode='a')
         else:
-            sup.create_csv_file_header(measurements, self.file_name)
+            sup.create_csv_file_header(measurements, self.measurements_file_name)
         return response
 
-    def _split_timeline(self, size: float, one_ts: bool) -> None:
+    @staticmethod
+    def _split_timeline(log: LogReader, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Split an event log dataframe by time to perform split-validation. preferred method time splitting removing
         incomplete traces. If the testing set is smaller than the 10% of the log size the second method is sort by
-        traces start and split taking the whole traces no matter if they are contained in the timeframe or not
-
-        Parameters
-        ----------
-        size: float, validation percentage.
-        one_ts: bool, Support only one timestamp.
+        traces start and split taking the whole traces no matter if they are contained in the timeframe or not.
         """
-        train, validation, key = split_timeline(self.log, size, one_ts)
-        train = self._sample_log(train)
+        train, validation, key = split_timeline(log, size)
+        train = StructureOptimizer._sample_log(train)
 
         # Save partitions
-        self.log_valdn = validation.sort_values(key, ascending=True).reset_index(drop=True)
-        self.log_train = LogReader.copy_without_data(self.log)
-        self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
+        validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
+        train = train.sort_values(key, ascending=True).reset_index(drop=True)
+        return train, validation
 
     @staticmethod
     def _sample_log(train):
-
         def sample_size(p_size, c_level, c_interval):
             """
             p_size : population size.
