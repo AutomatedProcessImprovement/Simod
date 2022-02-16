@@ -76,7 +76,7 @@ class Optimizer:
         print_section('Final Comparison')
         output_file = sup.file_id(prefix='SE_')
         self._test_model(
-            times_optimizer.best_output, output_file, strctr_optimizer_file_name, times_optimizer.file_name)
+            times_optimizer.best_output, output_file, strctr_optimizer_file_name, times_optimizer.measurements_file_name)
         self._export_canonical_model(times_optimizer.best_output)
         if strctr_optimizer_temp_output:
             shutil.rmtree(strctr_optimizer_temp_output)
@@ -156,7 +156,7 @@ class Optimizer:
         sim_data_path = os.path.join(self.settings_global.output, 'sim_data')
         if not os.path.exists(sim_data_path):
             os.makedirs(sim_data_path)
-        _ = simulate(self.settings_global, parameters.process_stats, self.log_test)
+        _ = simulate(self.settings_global, parameters.process_stats)
         return model_path
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
@@ -167,8 +167,7 @@ class Optimizer:
         self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
         print_subsection("Simulation")
-        self.sim_values = simulate(self.settings_global, self.process_stats, self.log_test,
-                                   evaluate_fn=evaluate_logs_with_add_metrics)
+        self.sim_values = simulate(self.settings_global, self.process_stats, evaluate_fn=evaluate_logs_with_add_metrics)
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
         self.sim_values.to_csv(os.path.join(output_path, output_file), index=False)

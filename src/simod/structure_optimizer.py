@@ -184,7 +184,7 @@ class StructureOptimizer:
         self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
 
     def _simulate(self, trial_stg: Configuration):
-        return simulate(trial_stg, self._log_validation, self._log_validation, evaluate_fn=evaluate_logs)
+        return simulate(trial_stg, self._log_validation, evaluate_fn=evaluate_logs)
 
     def _define_response(self, settings: Configuration, status, sim_values) -> dict:
         response = {}  # response contains Configuration and additional hyperopt parameters, e.g., 'status', 'loss'
