@@ -57,7 +57,7 @@ class Discoverer:
         # Event log reading
         self._log = LogReader(self._settings.log_path, column_names=DEFAULT_CSV_COLUMNS)
         # Time splitting 80-20
-        self._split_timeline(0.8, self._settings.read_options.one_timestamp)
+        self._split_timeline(0.8)
 
     def _temp_path_creation(self):
         print_section("Log Customization")
@@ -112,8 +112,7 @@ class Discoverer:
 
     def _simulate(self):
         print_section("Simulation")
-        self._sim_values = simulate(self._settings, self.process_stats, self._log_test,
-                                    evaluate_fn=evaluate_logs_with_add_metrics)
+        self._sim_values = simulate(self._settings, self.process_stats, evaluate_fn=evaluate_logs_with_add_metrics)
 
     def _manage_results(self):
         self._sim_values = pd.DataFrame.from_records(self._sim_values)
@@ -151,8 +150,8 @@ class Discoverer:
             best_params['arr_confidence'] = str(settings.arr_confidence)
         return best_params
 
-    def _split_timeline(self, size: float, one_ts: bool):
-        train, test, key = split_timeline(self._log, size, one_ts)
+    def _split_timeline(self, size: float):
+        train, test, key = split_timeline(self._log, size)
         self._log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
         self._log_train = copy.deepcopy(self._log)
         self._log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
