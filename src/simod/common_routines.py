@@ -1,11 +1,13 @@
 import itertools
 import os
 import time
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple, Union, Optional
 
 import pandas as pd
+from hyperopt import STATUS_OK, STATUS_FAIL
 from networkx import DiGraph
 
 from simod.readers.log_splitter import LogSplitter
@@ -356,8 +358,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     return ttcreator.time_table, resource_pool, resource_table
 
 
-def split_timeline(log: Union[LogReader, pd.DataFrame], size: float) -> Tuple[
-    pd.DataFrame, pd.DataFrame, str]:
+def split_timeline(log: Union[LogReader, pd.DataFrame], size: float) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
     """
     Split an event log dataframe by time to perform split-validation.
     preferred method time splitting removing incomplete traces.
@@ -369,7 +370,6 @@ def split_timeline(log: Union[LogReader, pd.DataFrame], size: float) -> Tuple[
     ----------
     log: LogRead, log to split.
     size: float, validation percentage.
-    one_ts: bool, Support only one timestamp.
     """
     if isinstance(log, LogReader):
         log = pd.DataFrame(log.data)
@@ -425,3 +425,16 @@ def file_contains(file_path: Path, substr: str) -> Optional[bool]:
         contains = next((line for line in f if substr in line), None)
 
     return contains is not None
+
+
+def hyperopt_pipeline_step(status: str, fn, *args) -> Tuple[str, object]:
+    """Function executes the provided function with arguments in hyperopt safe way."""
+    if status == STATUS_OK:
+        try:
+            return STATUS_OK, fn(*args)
+        except Exception as error:
+            print(error)
+            traceback.print_exc()
+            return STATUS_FAIL, None
+    else:
+        return status, None

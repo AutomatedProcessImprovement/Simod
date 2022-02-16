@@ -13,7 +13,8 @@ from hyperopt import tpe
 
 from . import support_utils as sup
 from .cli_formatter import print_message, print_subsection
-from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs
+from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
+    hyperopt_pipeline_step
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .readers.log_reader import LogReader
 from .simulator import simulate
@@ -26,7 +27,7 @@ class StructureOptimizer:
     """Hyperparameter-optimizer class"""
     best_output: Optional[Path]
     best_parameters: dict
-    measurements_file_name: str
+    measurements_file_name: Path
 
     _best_similarity: float
     _bayes_trials: Trials
@@ -83,16 +84,16 @@ class StructureOptimizer:
 
             status = STATUS_OK
 
-            status, result = self._pipeline_step(status, self._update_config_and_export_xes, trial_stg)
+            status, result = hyperopt_pipeline_step(status, self._update_config_and_export_xes, trial_stg)
             if status == STATUS_OK:
                 trial_stg = result
 
-            status, result = self._pipeline_step(status, self._mine_structure, trial_stg)
+            status, result = hyperopt_pipeline_step(status, self._mine_structure, trial_stg)
 
-            status, result = self._pipeline_step(status, self._extract_parameters, trial_stg, result,
-                                                 copy.deepcopy(parameters))
+            status, result = hyperopt_pipeline_step(
+                status, self._extract_parameters, trial_stg, result, copy.deepcopy(parameters))
 
-            status, result = self._pipeline_step(status, self._simulate, trial_stg)
+            status, result = hyperopt_pipeline_step(status, self._simulate, trial_stg)
             sim_values = result if status == STATUS_OK else []
 
             response = self._define_response(trial_stg, status, sim_values)
@@ -136,18 +137,6 @@ class StructureOptimizer:
             new_settings.pop(key, None)
         space = {**var_dim, **new_settings}
         return space
-
-    @staticmethod
-    def _pipeline_step(status: str, fn, *args) -> Tuple[str, object]:
-        if status == STATUS_OK:
-            try:
-                return STATUS_OK, fn(*args)
-            except Exception as error:
-                print(error)
-                traceback.print_exc()
-                return STATUS_FAIL, None
-        else:
-            return status, None
 
     def _update_config_and_export_xes(self, settings: Configuration) -> Configuration:
         output_path = self._temp_output / sup.folder_id()
