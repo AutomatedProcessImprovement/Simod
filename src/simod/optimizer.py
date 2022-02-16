@@ -58,8 +58,8 @@ class Optimizer:
             strctr_optimizer.execute_trials()
             # redefining local variables
             self._redefine_best_params_after_structure_optimization(strctr_optimizer)
-            strctr_optimizer_file_name = strctr_optimizer.file_name
-            strctr_optimizer_temp_output = strctr_optimizer.temp_output
+            strctr_optimizer_file_name = strctr_optimizer.measurements_file_name
+            strctr_optimizer_temp_output = strctr_optimizer._temp_output
             model_path = os.path.join(strctr_optimizer.best_output, self.settings_global.project_name + '.bpmn')
         else:
             print_section('Parameters Extraction')
@@ -76,7 +76,7 @@ class Optimizer:
         print_section('Final Comparison')
         output_file = sup.file_id(prefix='SE_')
         self._test_model(
-            times_optimizer.best_output, output_file, strctr_optimizer_file_name, times_optimizer.file_name)
+            times_optimizer.best_output, output_file, strctr_optimizer_file_name, times_optimizer.measurements_file_name)
         self._export_canonical_model(times_optimizer.best_output)
         if strctr_optimizer_temp_output:
             shutil.rmtree(strctr_optimizer_temp_output)
@@ -91,27 +91,27 @@ class Optimizer:
         key = 'end_timestamp' if self.settings['gl'].read_options.one_timestamp else 'start_timestamp'
         self.log_train.set_data(log_train_df.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
-    def _redefine_best_params_after_structure_optimization(self, strctr_optimizer):
+    def _redefine_best_params_after_structure_optimization(self, structure_optimizer):
         # receiving mined results and redefining local variables
 
-        best_parms = strctr_optimizer.best_parms
+        best_parameters = structure_optimizer.best_parameters
 
         self.settings_global.gate_management = self.settings_structure.gate_management[
-            best_parms['gate_management']]
+            best_parameters['gate_management']]
         self.best_params['gate_management'] = self.settings_global.gate_management
         # best structure mining parameters
         if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
-            self.settings_global.epsilon = best_parms['epsilon']
-            self.settings_global.eta = best_parms['eta']
-            self.settings_global.and_prior = self.settings_structure.and_prior[best_parms['and_prior']]
-            self.settings_global.or_rep = self.settings_structure.or_rep[best_parms['or_rep']]
-            self.best_params['epsilon'] = best_parms['epsilon']
-            self.best_params['eta'] = best_parms['eta']
+            self.settings_global.epsilon = best_parameters['epsilon']
+            self.settings_global.eta = best_parameters['eta']
+            self.settings_global.and_prior = self.settings_structure.and_prior[best_parameters['and_prior']]
+            self.settings_global.or_rep = self.settings_structure.or_rep[best_parameters['or_rep']]
+            self.best_params['epsilon'] = best_parameters['epsilon']
+            self.best_params['eta'] = best_parameters['eta']
             self.best_params['and_prior'] = self.settings_global.and_prior
             self.best_params['or_rep'] = self.settings_global.or_rep
         elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
-            self.settings_global.concurrency = best_parms['concurrency']
-            self.best_params['concurrency'] = best_parms['concurrency']
+            self.settings_global.concurrency = best_parameters['concurrency']
+            self.best_params['concurrency'] = best_parameters['concurrency']
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
                     'arr_confidence', 'res_cal_met', 'arr_cal_met']:  # TODO: seems like this is unnecessary
             self.settings.pop(key, None)
@@ -119,16 +119,16 @@ class Optimizer:
 
     def _redefine_best_params_after_times_optimization(self, times_optimizer):
         # redefining parameters after times optimizer
-        if times_optimizer.best_parms['res_cal_met'] == 1:
-            self.best_params['res_dtype'] = self.settings_time.res_dtype[times_optimizer.best_parms['res_dtype']]
+        if times_optimizer.best_parameters['res_cal_met'] == 1:
+            self.best_params['res_dtype'] = self.settings_time.res_dtype[times_optimizer.best_parameters['res_dtype']]
         else:
-            self.best_params['res_support'] = times_optimizer.best_parms['res_support']
-            self.best_params['res_confidence'] = times_optimizer.best_parms['res_confidence']
-        if times_optimizer.best_parms['arr_cal_met'] == 1:
-            self.best_params['arr_dtype'] = self.settings_time.res_dtype[times_optimizer.best_parms['arr_dtype']]
+            self.best_params['res_support'] = times_optimizer.best_parameters['res_support']
+            self.best_params['res_confidence'] = times_optimizer.best_parameters['res_confidence']
+        if times_optimizer.best_parameters['arr_cal_met'] == 1:
+            self.best_params['arr_dtype'] = self.settings_time.res_dtype[times_optimizer.best_parameters['arr_dtype']]
         else:
-            self.best_params['arr_support'] = (times_optimizer.best_parms['arr_support'])
-            self.best_params['arr_confidence'] = (times_optimizer.best_parms['arr_confidence'])
+            self.best_params['arr_support'] = (times_optimizer.best_parameters['arr_support'])
+            self.best_params['arr_confidence'] = (times_optimizer.best_parameters['arr_confidence'])
 
     def _extract_parameters_and_rewrite_model(self):
         # extracting parameters
@@ -156,7 +156,7 @@ class Optimizer:
         sim_data_path = os.path.join(self.settings_global.output, 'sim_data')
         if not os.path.exists(sim_data_path):
             os.makedirs(sim_data_path)
-        _ = simulate(self.settings_global, parameters.process_stats, self.log_test)
+        _ = simulate(self.settings_global, parameters.process_stats)
         return model_path
 
     def _test_model(self, best_output, output_file, opt_strf, opt_timf):
@@ -167,8 +167,7 @@ class Optimizer:
         self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
         print_subsection("Simulation")
-        self.sim_values = simulate(self.settings_global, self.process_stats, self.log_test,
-                                   evaluate_fn=evaluate_logs_with_add_metrics)
+        self.sim_values = simulate(self.settings_global, self.process_stats, evaluate_fn=evaluate_logs_with_add_metrics)
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
         self.sim_values.to_csv(os.path.join(output_path, output_file), index=False)

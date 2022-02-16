@@ -59,7 +59,7 @@ def qbp_simulator(args: Tuple):
     execute_shell_cmd(args)
 
 
-def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, evaluate_fn: Callable = None):
+def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
     """General simulation function that takes in different simulators and evaluators."""
 
     if evaluate_fn is None:
@@ -106,7 +106,7 @@ def simulate(settings: Configuration, process_stats: pd.DataFrame, log_data, eva
     pbar_async(p, 'reading simulated logs:', reps)
 
     # Evaluate
-    args = [(settings, process_stats, log) for log in p.get()]
+    args = [(settings, log_data, log) for log in p.get()]
     if n_cases > 1000:
         pool.close()
         results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results:')]
