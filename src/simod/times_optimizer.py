@@ -1,12 +1,8 @@
 import copy
-import itertools
-import multiprocessing
 import os
-import subprocess
-import time
 import xml.etree.ElementTree as ET
-from multiprocessing import Pool
 from pathlib import Path
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -14,224 +10,185 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
-from tqdm import tqdm
 
-from simod.common_routines import extract_times_parameters, split_timeline, save_times
+from simod.common_routines import extract_times_parameters, split_timeline, hyperopt_pipeline_step
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_subsection, print_message, print_notice
-from .configuration import Configuration, MiningAlgorithm, ReadOptions, Metric, QBP_NAMESPACE_URI
-from .decorators import timeit, safe_exec_with_values_and_status
+from .cli_formatter import print_subsection, print_message
+from .configuration import Configuration, MiningAlgorithm, Metric, QBP_NAMESPACE_URI
 from .readers import bpmn_reader as br
-from .readers import log_reader as lr
 from .readers import process_structure as gph
 from .readers.log_reader import LogReader
+from .simulator import simulate
 from .support_utils import get_project_dir
 
 
 class TimesOptimizer:
     """Hyperparameter-optimizer class"""
+    best_output: Optional[Path]
+    best_parameters: dict
+    measurements_file_name: Path
+    temp_output: Path
 
-    # @profile(stream=open('logs/memprof_TimesOptimizer.log', 'a+'))
-    def __init__(self, settings: Configuration, args: Configuration, log, model_path):
-        self.space = self.define_search_space(settings, args)
-        # read inputs
-        self.log = log
-        self._split_timeline(0.8)
-        self.org_log = log
-        self.org_log_train = copy.deepcopy(self.log_train)
-        self.org_log_valdn = copy.deepcopy(self.log_valdn)
-        # Load settings
-        self.settings: Configuration = settings
+    _bayes_trials: Trials
+    _settings_global: Configuration
+    _settings_time: Configuration
+    _log_train: LogReader
+    _log_validation: pd.DataFrame
+    _original_log: LogReader
+    _original_log_train: LogReader
+    _original_log_validation: pd.DataFrame
+
+    def __init__(self, settings_global: Configuration, settings_time: Configuration, log: LogReader, model_path):
+        self._settings_global = settings_global
+        self._settings_time = settings_time
+        self._log = log
+
+        self._space = self._define_search_space(settings_global, settings_time)
+
+        train, validation = self._split_timeline(0.8)
+        self._log_train = LogReader.copy_without_data(self._log)
+        self._log_train.set_data(
+            train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
+        self._log_validation = validation
+
+        self._original_log = copy.deepcopy(log)
+        self._original_log_train = copy.deepcopy(self._log_train)
+        self._original_log_validation = copy.deepcopy(self._log_validation)
+
         self._load_sim_model(model_path)
 
-        # NOTE: with new replayer, we don't need conformant_traces or process_stats
-        # self._replay_process()
-        log_df = pd.DataFrame(self.log_train.data)
-        self.conformant_traces = log_df
-        self.process_stats = log_df
+        log_df = pd.DataFrame(self._log_train.data)
+        self._conformant_traces = log_df
+        self._process_stats = log_df
 
-        # Temp folder
         self.temp_output = get_project_dir() / 'outputs' / sup.folder_id()
-        if not os.path.exists(self.temp_output):
-            os.makedirs(self.temp_output)
-        self.file_name = os.path.join(self.temp_output, sup.file_id(prefix='OP_'))
-        # Results file
-        if not os.path.exists(self.file_name):
-            open(self.file_name, 'w').close()
-        self.args = args
-        # Trials object to track progress
-        self.bayes_trials = Trials()
-        self.best_output = None
-        self.best_parameters = dict()
+        self.temp_output.mkdir(parents=True, exist_ok=True)
 
-    @staticmethod
-    def define_search_space(settings: Configuration, args: Configuration):
-        space = {
-            **settings.__dict__,
-            'rp_similarity': hp.uniform('rp_similarity', args.rp_similarity[0], args.rp_similarity[1]),
-            'res_cal_met': hp.choice(
-                'res_cal_met',
-                [('discovered', {
-                    'res_support': hp.uniform('res_support', args.res_sup_dis[0], args.res_sup_dis[1]),
-                    'res_confidence': hp.uniform('res_confidence', args.res_con_dis[0], args.res_con_dis[1])}),
-                 ('default', {'res_dtype': hp.choice('res_dtype', args.res_dtype)})]),
-            'arr_cal_met': hp.choice(
-                'arr_cal_met',
-                [('discovered', {
-                    'arr_support': hp.uniform('arr_support', args.arr_support[0], args.arr_support[1]),
-                    'arr_confidence': hp.uniform('arr_confidence', args.arr_confidence[0], args.arr_confidence[1])}),
-                 ('default', {'arr_dtype': hp.choice('arr_dtype', args.arr_dtype)})])}
-        return space
+        self.measurements_file_name = self.temp_output / sup.file_id(prefix='OP_')
+        with self.measurements_file_name.open('w') as _:
+            pass
 
-    # @profile(stream=open('logs/memprof_TimesOptimizer.execute_trials.log', 'a+'))
+        self._bayes_trials = Trials()
+
     def execute_trials(self):
-        # create a new instance of Simod
-        # @profile(stream=open('logs/memprof_TimesOptimizer.execute_trials.exec_pipeline.log', 'a+'))
         def exec_pipeline(trial_stg):
             print_subsection('Trial')
-            print_message(f'train split: {len(pd.DataFrame(self.log_train.data).caseid.unique())}, '
-                          f'valdn split: {len(pd.DataFrame(self.log_valdn).caseid.unique())}')
+            print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
+                          f'valdn split: {len(pd.DataFrame(self._log_validation).caseid.unique())}')
 
-            status = STATUS_OK
-            exec_times = dict()
-            sim_values = []
+            if isinstance(trial_stg, dict):
+                trial_stg = Configuration(**trial_stg)
+
             trial_stg = self._filter_parms(trial_stg)
 
-            # Path redefinition
-            rsp = self._temp_path_redef(trial_stg, status=status, log_time=exec_times)
-            status = rsp['status']
-            trial_stg = rsp['values'] if status == STATUS_OK else trial_stg
+            status = STATUS_OK
 
-            # Parameters extraction
-            rsp = self._extract_parameters(Configuration(**trial_stg), status=status, log_time=exec_times)
-            status = rsp['status']
+            status, result = hyperopt_pipeline_step(status, self._temp_path_redef, trial_stg)
+            if status == STATUS_OK:
+                trial_stg = result
 
-            # Simulate model
-            rsp = self._simulate(trial_stg, self.log_valdn, status=status, log_time=exec_times)
-            status = rsp['status']
-            sim_values = rsp['values'] if status == STATUS_OK else sim_values
+            status, _ = hyperopt_pipeline_step(status, self._extract_parameters, trial_stg)
 
-            # Save times
-            save_times(exec_times, trial_stg, self.temp_output)
+            status, result = hyperopt_pipeline_step(status, self._simulate, trial_stg)
+            sim_values = result if status == STATUS_OK else []
 
-            # Optimizer results
-            rsp = self._define_response(trial_stg, status, sim_values)
+            response = self._define_response(trial_stg, status, sim_values)
 
             # reinstate log
-            self.log = self.org_log  # TODO: no need
-            self.log_train = copy.deepcopy(self.org_log_train)
-            self.log_valdn = copy.deepcopy(self.org_log_valdn)
+            self._log = self._original_log  # TODO: no need
+            self._log_train = copy.deepcopy(self._original_log_train)
+            self._log_validation = copy.deepcopy(self._original_log_validation)
 
-            return rsp
+            return response
 
         # Optimize
-        best = fmin(fn=exec_pipeline, space=self.space, algo=tpe.suggest, max_evals=self.args.max_eval_t,
-                    trials=self.bayes_trials, show_progressbar=False)
+        best = fmin(fn=exec_pipeline,
+                    space=self._space,
+                    algo=tpe.suggest,
+                    max_evals=self._settings_time.max_eval_t,
+                    trials=self._bayes_trials,
+                    show_progressbar=False)
         # Save results
         try:
-            results = (pd.DataFrame(self.bayes_trials.results).sort_values('loss', ascending=bool))
+            results = (pd.DataFrame(self._bayes_trials.results).sort_values('loss', ascending=bool))
             self.best_output = results[results.status == 'ok'].head(1).iloc[0].output
             self.best_parameters = best
         except Exception as e:
             print(e)
-            pass
 
-    @timeit(rec_name='PATH_DEF')
-    @safe_exec_with_values_and_status
-    def _temp_path_redef(self, settings, **kwargs) -> None:
-        # Paths redefinition
-        settings['output'] = os.path.join(self.temp_output, sup.folder_id())
-        # Output folder creation
-        if not os.path.exists(settings['output']):
-            os.makedirs(settings['output'])
-            os.makedirs(os.path.join(settings['output'], 'sim_data'))
+    @staticmethod
+    def _define_search_space(settings_global: Configuration, settings_time: Configuration):
+        space = {
+            **settings_global.__dict__,
+            'rp_similarity': hp.uniform('rp_similarity', settings_time.rp_similarity[0],
+                                        settings_time.rp_similarity[1]),
+            'res_cal_met': hp.choice(
+                'res_cal_met',
+                [('discovered', {
+                    'res_support':
+                        hp.uniform('res_support', settings_time.res_sup_dis[0], settings_time.res_sup_dis[1]),
+                    'res_confidence':
+                        hp.uniform('res_confidence', settings_time.res_con_dis[0], settings_time.res_con_dis[1])}),
+                 ('default', {'res_dtype': hp.choice('res_dtype', settings_time.res_dtype)})]),
+            'arr_cal_met': hp.choice(
+                'arr_cal_met',
+                [('discovered', {
+                    'arr_support':
+                        hp.uniform('arr_support', settings_time.arr_support[0], settings_time.arr_support[1]),
+                    'arr_confidence':
+                        hp.uniform('arr_confidence', settings_time.arr_confidence[0],
+                                   settings_time.arr_confidence[1])}),
+                 ('default', {'arr_dtype': hp.choice('arr_dtype', settings_time.arr_dtype)})])}
+        return space
+
+    def _temp_path_redef(self, settings: Configuration):
+        settings.output = self.temp_output / sup.folder_id()
+        simulation_data_path = settings.output / 'sim_data'
+        simulation_data_path.mkdir(parents=True, exist_ok=True)
         return settings
 
-    # @profile(stream=open('logs/memprof_TimesOptimizer._extract_parameters.log', 'a+'))
-    @timeit(rec_name='EXTRACTING_PARAMS')
-    @safe_exec_with_values_and_status
-    def _extract_parameters(self, settings: Configuration, **kwargs) -> None:
-        num_inst = len(self.log_valdn.caseid.unique())
-        start_time = self.log_valdn.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+    def _extract_parameters(self, settings: Configuration):
+        num_inst = len(self._log_validation.caseid.unique())
+        start_time = self._log_validation.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
 
         parameters = extract_times_parameters(
-            settings, self.process_graph, self.log_train, self.conformant_traces, self.process_stats)
+            settings, self.process_graph, self._log_train, self._conformant_traces, self._process_stats)
 
         parameters.instances = num_inst
         parameters.start_time = start_time
 
         self._xml_print(parameters.__dict__, os.path.join(settings.output, settings.project_name + '.bpmn'))
-        self.log_valdn.rename(columns={'user': 'resource'}, inplace=True)
-        self.log_valdn['source'] = 'log'
-        self.log_valdn['run_num'] = 0
-        self.log_valdn = self.log_valdn.merge(parameters.resource_table[['resource', 'role']],
-                                              on='resource', how='left')
-        self.log_valdn = self.log_valdn[~self.log_valdn.task.isin(['Start', 'End'])]
+        self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
+        self._log_validation['source'] = 'log'
+        self._log_validation['run_num'] = 0
+        self._log_validation = self._log_validation.merge(parameters.resource_table[['resource', 'role']],
+                                                          on='resource', how='left')
+        self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
         parameters.resource_table.to_pickle(os.path.join(settings.output, 'resource_table.pkl'))
 
-    @timeit(rec_name='SIMULATION_EVAL')
-    @safe_exec_with_values_and_status
-    def _simulate(self, settings, data, **kwargs) -> list:
-        def pbar_async(p, msg):
-            pbar = tqdm(total=reps, desc=msg)
-            processed = 0
-            while not p.ready():
-                cprocesed = (reps - p._number_left)
-                if processed < cprocesed:
-                    increment = cprocesed - processed
-                    pbar.update(n=increment)
-                    processed = cprocesed
-            time.sleep(1)
-            pbar.update(n=(reps - processed))
-            p.wait()
-            pbar.close()
+    def _simulate(self, trial_stg: Configuration):
+        return simulate(trial_stg, self._log_validation, evaluate_fn=self._evaluate_logs)
 
-        reps = settings['repetitions']
-        cpu_count = multiprocessing.cpu_count()
-        w_count = reps if reps <= cpu_count else cpu_count
-        pool = Pool(processes=w_count)
-        # Simulate
-        args = [(settings, rep) for rep in range(reps)]
-        p = pool.map_async(self.execute_simulator, args)
-        pbar_async(p, 'simulating:')
-        # Read simulated logs
-        p = pool.map_async(self.read_stats, args)
-        pbar_async(p, 'reading simulated logs:')
-        # Evaluate
-        args = [(settings, data, log) for log in p.get()]
-        if len(self.log_valdn.caseid.unique()) > 1000:
-            pool.close()
-            results = [self.evaluate_logs(arg) for arg in tqdm(args, 'evaluating results:')]
-            # Save results
-            sim_values = list(itertools.chain(*results))
-        else:
-            p = pool.map_async(self.evaluate_logs, args)
-            pbar_async(p, 'evaluating results:')
-            pool.close()
-            # Save results
-            sim_values = list(itertools.chain(*p.get()))
-        return sim_values
+    def _define_response(self, settings: Configuration, status: str, sim_values: list) -> dict:
+        data = {'rp_similarity': settings.rp_similarity,
+                'gate_management': settings.gate_management,
+                'output': settings.output}
 
-    def _define_response(self, settings, status, sim_values, **kwargs) -> None:
-        response = dict()
-        measurements = list()
-        data = {'rp_similarity': settings['rp_similarity'],
-                'gate_management': settings['gate_management'],
-                'output': settings['output']}
-        # Miner parms
-        if settings['mining_alg'] in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
-            data['epsilon'] = settings['epsilon']
-            data['eta'] = settings['eta']
-            data['and_prior'] = settings['and_prior']
-            data['or_rep'] = settings['or_rep']
-        elif settings['mining_alg'] is MiningAlgorithm.SM2:
-            data['concurrency'] = settings['concurrency']
+        # Miner parameters
+        if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+            data['epsilon'] = settings.epsilon
+            data['eta'] = settings.eta
+            data['and_prior'] = settings.and_prior
+            data['or_rep'] = settings.or_rep
+        elif settings.mining_alg is MiningAlgorithm.SM2:
+            data['concurrency'] = settings.concurrency
         else:
-            raise ValueError(settings['mining_alg'])
-        similarity = 0
-        # response['params'] = settings
-        response['output'] = settings['output']
+            raise ValueError(settings.mining_alg)
+
+        response = {}
+        measurements = []
+        response['output'] = settings.output
         if status == STATUS_OK:
             similarity = np.mean([x['sim_val'] for x in sim_values])
             loss = (1 - similarity)
@@ -245,85 +202,31 @@ class TimesOptimizer:
             response['status'] = status
             measurements.append(
                 {'similarity': 0, 'sim_metric': Metric.DAY_HOUR_EMD, 'status': response['status'], **data})
-        if os.path.getsize(self.file_name) > 0:
-            sup.create_csv_file(measurements, self.file_name, mode='a')
+
+        if os.path.getsize(self.measurements_file_name) > 0:
+            sup.create_csv_file(measurements, self.measurements_file_name, mode='a')
         else:
-            sup.create_csv_file_header(measurements, self.file_name)
+            sup.create_csv_file_header(measurements, self.measurements_file_name)
+
         return response
 
     @staticmethod
-    def read_stats(args):
-        def read(settings, rep):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            m_settings = dict()
-            m_settings['output'] = settings['output']
-            column_names = {'resource': 'user'}
-            read_options: ReadOptions = settings['read_options']
-            read_options.timeformat = '%Y-%m-%d %H:%M:%S.%f'
-            read_options.column_names = column_names
-            m_settings['read_options'] = read_options
-            m_settings['project_name'] = settings['project_name']
-            file_path = os.path.join(m_settings['output'], 'sim_data',
-                                     m_settings['project_name'] + '_' + str(rep + 1) + '.csv')
-            if not os.path.exists(file_path):
-                print_notice(f'File does not exist at {file_path}')
-                return
-            temp = lr.LogReader(Path(file_path), m_settings['read_options'].column_names)
-            temp = temp.log
-            temp.rename(columns={'user': 'resource'}, inplace=True)
-            temp['role'] = temp['resource']
-            temp['source'] = 'simulation'
-            temp['run_num'] = rep + 1
-            temp = temp[~temp.task.isin(['Start', 'End'])]
-            return temp
+    def _evaluate_logs(args) -> Optional[list]:
+        settings: Configuration = args[0]
+        if isinstance(settings, dict):
+            settings = Configuration(**settings)
+        data: pd.DataFrame = args[1]
+        sim_log = args[2]
+        if sim_log is None:
+            return None
 
-        return read(*args)
+        rep = sim_log.iloc[0].run_num - 1
+        sim_values = []
+        evaluator = sim.SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
+        evaluator.measure_distance(Metric.DAY_HOUR_EMD)
+        sim_values.append({**{'run_num': rep}, **evaluator.similarity})
 
-    @staticmethod
-    def evaluate_logs(args):
-        # settings, bpmn, rep = args
-        def evaluate(settings: Configuration, data, sim_log):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            if sim_log is None:
-                return
-
-            if isinstance(settings, dict):
-                settings = Configuration(**settings)
-
-            rep = sim_log.iloc[0].run_num - 1
-            sim_values = list()
-            evaluator = sim.SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
-            evaluator.measure_distance(Metric.DAY_HOUR_EMD)
-            sim_values.append({**{'run_num': rep}, **evaluator.similarity})
-            return sim_values
-
-        return evaluate(*args)
-
-    @staticmethod
-    def execute_simulator(args):
-        def sim_call(settings, rep):
-            """Executes BIMP Simulations.
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            args = ['java', '-jar', settings['bimp_path'],
-                    os.path.join(settings['output'],
-                                 settings['project_name'] + '.bpmn'),
-                    '-csv',
-                    os.path.join(settings['output'], 'sim_data',
-                                 settings['project_name'] + '_' + str(rep + 1) + '.csv')]
-            subprocess.run(args, check=True, stdout=subprocess.PIPE)
-
-        sim_call(*args)
+        return sim_values
 
     def _xml_print(self, params, path) -> None:
         ns = {'qbp': QBP_NAMESPACE_URI}
@@ -371,7 +274,6 @@ class TimesOptimizer:
             )
             return my_doc
 
-        # lxml.etree._Element
         def replace_parm(element, tag, xml_sim_model):
             childs = element.findall('qbp:' + tag, namespaces=ns)
             # Transform model from Etree to lxml
@@ -384,9 +286,7 @@ class TimesOptimizer:
                 node.insert((i + 1), child)
             return xml_sim_model
 
-        self.xml_sim_model = replace_parm(params['time_table'],
-                                          'timetable',
-                                          self.xml_sim_model)
+        self.xml_sim_model = replace_parm(params['time_table'], 'timetable', self.xml_sim_model)
         xml_new_elements = print_xml_resources(params)
         self.xml_sim_model = replace_parm(
             xml_new_elements.find('qbp:resources', namespaces=ns),
@@ -408,7 +308,6 @@ class TimesOptimizer:
         def create_file(output_file, element):
             with open(output_file, 'wb') as f:
                 f.write(element)
-            f.close()
 
         # Print model
         create_file(path, etree.tostring(self.xml_bpmn, pretty_print=True))
@@ -430,28 +329,27 @@ class TimesOptimizer:
         self.process_graph = gph.create_process_structure(self.bpmn)
 
     @staticmethod
-    def _filter_parms(parms):
+    def _filter_parms(settings: Configuration):
         # resources discovery
-        method, values = parms['res_cal_met']
+        method, values = settings.res_cal_met
         if method in 'discovered':
-            parms['res_confidence'] = values['res_confidence']
-            parms['res_support'] = values['res_support']
+            settings.res_confidence = values['res_confidence']
+            settings.res_support = values['res_support']
         else:
-            parms['res_dtype'] = values['res_dtype']
-        parms['res_cal_met'] = method
+            settings.res_dtype = values['res_dtype']
+        settings.res_cal_met = method
         # arrivals calendar
-        method, values = parms['arr_cal_met']
+        method, values = settings.arr_cal_met
         if method in 'discovered':
-            parms['arr_confidence'] = values['arr_confidence']
-            parms['arr_support'] = values['arr_support']
+            settings.arr_confidence = values['arr_confidence']
+            settings.arr_support = values['arr_support']
         else:
-            parms['arr_dtype'] = values['arr_dtype']
-        parms['arr_cal_met'] = method
-        return parms
+            settings.arr_dtype = values['arr_dtype']
+        settings.arr_cal_met = method
+        return settings
 
-    def _split_timeline(self, size: float) -> None:
-        train, valdn, key = split_timeline(self.log, size)
-        self.log_valdn = valdn.sort_values(key, ascending=True).reset_index(drop=True)
-        self.log_train = copy.deepcopy(self.log)
-        self.log_train = LogReader.copy_without_data(self.log)
-        self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
+    def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        train, validation, key = split_timeline(self._log, size)
+        validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
+        train = train.sort_values(key, ascending=True).reset_index(drop=True)
+        return train, validation
