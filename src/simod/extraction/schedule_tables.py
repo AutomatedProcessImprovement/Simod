@@ -9,11 +9,11 @@ from lxml.builder import ElementMaker  # lxml only !
 from tqdm import tqdm
 
 from .. import support_utils as sup
+from ..cli_formatter import print_step
 from ..configuration import Configuration, DataType, CalculationMethod, QBP_NAMESPACE_URI
-from ..multitasking import reformat_timestamps
 
 
-class TimeTablesCreator():
+class TimeTablesCreator:
     """This class creates the resources timetables and associates them to the resource pools"""
 
     def __init__(self, settings: Configuration):
@@ -247,9 +247,10 @@ class TimeTablesCreator():
     def _timetable_discoverer(calendar_path: Path, file: Path, sup, conf, mode, file_name=None) -> None:
         """Executes BIMP Simulations.
         """
-        args = ['java', '-jar', calendar_path.__str__(), file.__str__(), sup, conf, str(mode)]
-        if not file_name is None:
+        args = ['java', '-jar', str(calendar_path), str(file), sup, conf, str(mode)]
+        if file_name:
             args.append(file_name)
+        print_step(f'Timetable discovery, args = {args}')
         process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
         found = False
         xml = [f'<qbp:timetables xmlns:qbp="{QBP_NAMESPACE_URI}">']
