@@ -71,8 +71,8 @@ class TimesOptimizer:
 
         self._bayes_trials = Trials()
 
-    def execute_trials(self):
-        def exec_pipeline(trial_stg):
+    def run(self):
+        def pipeline(trial_stg):
             print_subsection('Trial')
             print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
                           f'valdn split: {len(pd.DataFrame(self._log_validation).caseid.unique())}')
@@ -103,7 +103,7 @@ class TimesOptimizer:
             return response
 
         # Optimize
-        best = fmin(fn=exec_pipeline,
+        best = fmin(fn=pipeline,
                     space=self._space,
                     algo=tpe.suggest,
                     max_evals=self._settings_time.max_eval_t,

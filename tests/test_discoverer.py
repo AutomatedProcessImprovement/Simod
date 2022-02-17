@@ -72,4 +72,4 @@ def test_execute_pipeline(entry_point):
         config = Configuration(**config_data)
         config.fill_in_derived_fields()
         discoverer = Discoverer(config)
-        discoverer.execute_pipeline()
+        discoverer.run()

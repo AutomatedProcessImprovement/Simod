@@ -70,11 +70,11 @@ class StructureOptimizer:
         self.best_parameters = dict()
         self._best_similarity = 0
 
-    def execute_trials(self):
+    def run(self):
         parameters = mine_resources(self._settings)
         self._log_train = copy.deepcopy(self._original_log_train)
 
-        def exec_pipeline(trial_stg: Union[Configuration, dict]):
+        def pipeline(trial_stg: Union[Configuration, dict]):
             print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
                           f'validation split: {len(self._log_validation.caseid.unique())}')
@@ -106,7 +106,7 @@ class StructureOptimizer:
             return response
 
         # Optimization
-        best = fmin(fn=exec_pipeline,
+        best = fmin(fn=pipeline,
                     space=self._space,
                     algo=tpe.suggest,
                     max_evals=self._settings.max_eval_s,
@@ -205,6 +205,7 @@ class StructureOptimizer:
             raise ValueError(settings.mining_alg)
         response['output'] = settings.output
         if status == STATUS_OK:
+
             similarity = np.mean([x['sim_val'] for x in sim_values])
             loss = (1 - similarity)
             response['loss'] = loss

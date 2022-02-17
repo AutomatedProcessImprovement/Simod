@@ -40,7 +40,7 @@ class Optimizer:
 
         self.log = LogReader(self.settings_global.log_path, log=processor.log)
 
-    def execute_pipeline(self, discover_model: bool = True) -> None:
+    def run(self, discover_model: bool = True) -> None:
         print_notice(f'Log path: {self.settings_global.log_path}')
         self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)
 
@@ -55,7 +55,7 @@ class Optimizer:
             print_section('Model Discovery and Parameters Extraction')
             # mining the structure
             strctr_optimizer = StructureOptimizer(self.settings_structure, self.log_train)
-            strctr_optimizer.execute_trials()
+            strctr_optimizer.run()
             # redefining local variables
             self._redefine_best_params_after_structure_optimization(strctr_optimizer)
             strctr_optimizer_file_name = strctr_optimizer.measurements_file_name
@@ -69,7 +69,7 @@ class Optimizer:
         # mining times
         times_optimizer = TimesOptimizer(
             self.settings_global, self.settings_time, self.log_train, model_path)
-        times_optimizer.execute_trials()
+        times_optimizer.run()
         # redefining local variables
         self._redefine_best_params_after_times_optimization(times_optimizer)
 

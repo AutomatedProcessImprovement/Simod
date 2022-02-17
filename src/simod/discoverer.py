@@ -34,7 +34,7 @@ class Discoverer:
         self._settings = settings
         self._output_file = sup.file_id(prefix='SE_')
 
-    def execute_pipeline(self):
+    def run(self):
         print_notice(f'Log path: {self._settings.log_path}')
         exec_times = dict()
         self._read_inputs()
