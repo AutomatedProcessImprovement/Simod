@@ -8,6 +8,22 @@ setup(
     include_package_data=True,
     install_requires=[
         'click',
+        'pandas',
+        'pm4py',
+        'numpy',
+        'networkx',
+        'matplotlib',
+        'opyenxes',
+        'lxml',
+        'xmltodict',
+        'jellyfish',
+        'scipy',
+        'tqdm',
+        'PyYAML',
+        'hyperopt',
+        'pytz',
+        'pytest',
+        'setuptools',
     ],
     entry_points={
         'console_scripts': [
