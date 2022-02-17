@@ -96,6 +96,7 @@ def adjust_durations(log: pd.DataFrame, output_path: Optional[Path] = None, verb
 
 def reformat_timestamps(log_path: Path, output_path: Path):
     """Converts timestamps in XES to a format suitable for the Simod's calendar Java dependency."""
+    ET.register_namespace('', 'http://www.xes-standard.org/')
     tree = ET.parse(log_path)
     root = tree.getroot()
     for element in root.iterfind(".//*[@key='time:timestamp']"):
