@@ -1,5 +1,6 @@
 import itertools
 import os
+import shutil
 import time
 import traceback
 from dataclasses import dataclass, field
@@ -438,3 +439,13 @@ def hyperopt_pipeline_step(status: str, fn, *args) -> Tuple[str, object]:
             return STATUS_FAIL, None
     else:
         return status, None
+
+
+def remove_asset(location: Path):
+    if location is None or not location.exists():
+        return
+    print_step(f'Removing {location}')
+    if location.is_dir():
+        shutil.rmtree(location)
+    elif location.is_file():
+        location.unlink()

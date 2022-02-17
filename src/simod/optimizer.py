@@ -1,5 +1,7 @@
 import os
 import shutil
+from pathlib import Path
+from typing import Optional
 from xml.dom import minidom
 
 import pandas as pd
@@ -21,9 +23,11 @@ from .writers.model_serialization import serialize_model
 
 
 class Optimizer:
-    """Hyperparameter Optimizer"""
+    """Main optimizer class that optimizes the structure and times."""
     log_train: LogReader
-    log_test: LogReader
+    log_test: pd.DataFrame
+
+    _preprocessor: Optional[Preprocessor] = None
 
     def __init__(self, settings):
         self.settings = settings
@@ -35,10 +39,10 @@ class Optimizer:
         if not os.path.exists(self.settings_global.output):
             os.makedirs(self.settings_global.output)
 
-        processor = Preprocessor(self.settings_global)
-        self.settings_global = processor.run()
+        self._preprocessor = Preprocessor(self.settings_global)
+        self.settings_global = self._preprocessor.run()
 
-        self.log = LogReader(self.settings_global.log_path, log=processor.log)
+        self.log = LogReader(self.settings_global.log_path, log=self._preprocessor.log)
 
     def run(self, discover_model: bool = True) -> None:
         print_notice(f'Log path: {self.settings_global.log_path}')
@@ -47,40 +51,38 @@ class Optimizer:
         print_step('Removing outliers from the training partition')
         self._remove_outliers()
 
-        strctr_optimizer_file_name = None
-        strctr_optimizer_temp_output = None
+        structure_optimizer = None
+        structure_measurements = None
 
         # optional model discovery if model is not provided
         if discover_model:
             print_section('Model Discovery and Parameters Extraction')
-            # mining the structure
-            strctr_optimizer = StructureOptimizer(self.settings_structure, self.log_train)
-            strctr_optimizer.run()
-            # redefining local variables
-            self._redefine_best_params_after_structure_optimization(strctr_optimizer)
-            strctr_optimizer_file_name = strctr_optimizer.measurements_file_name
-            strctr_optimizer_temp_output = strctr_optimizer._temp_output
-            model_path = os.path.join(strctr_optimizer.best_output, self.settings_global.project_name + '.bpmn')
+            structure_optimizer = StructureOptimizer(self.settings_structure, self.log_train)
+            structure_optimizer.run()
+            self._redefine_best_params_after_structure_optimization(structure_optimizer)
+            structure_measurements = structure_optimizer.measurements_file_name
+            model_path = os.path.join(structure_optimizer.best_output, self.settings_global.project_name + '.bpmn')
         else:
             print_section('Parameters Extraction')
             model_path = self._extract_parameters_and_rewrite_model()
 
         print_section('Times Optimization')
-        # mining times
-        times_optimizer = TimesOptimizer(
-            self.settings_global, self.settings_time, self.log_train, model_path)
+        times_optimizer = TimesOptimizer(self.settings_global, self.settings_time, self.log_train, model_path)
         times_optimizer.run()
-        # redefining local variables
         self._redefine_best_params_after_times_optimization(times_optimizer)
 
         print_section('Final Comparison')
-        output_file = sup.file_id(prefix='SE_')
-        self._test_model(
-            times_optimizer.best_output, output_file, strctr_optimizer_file_name, times_optimizer.measurements_file_name)
+        self._test_model_and_save_simulation_data(times_optimizer.best_output,
+                                                  structure_measurements,
+                                                  times_optimizer.measurements_file_name)
         self._export_canonical_model(times_optimizer.best_output)
-        if strctr_optimizer_temp_output:
-            shutil.rmtree(strctr_optimizer_temp_output)
-        shutil.rmtree(times_optimizer.temp_output)
+
+        times_optimizer.cleanup()
+        if structure_optimizer:
+            structure_optimizer.cleanup()
+        if self._preprocessor:
+            self._preprocessor.cleanup()
+
         print_asset(f"Output folder is at {self.settings_global.output}")
 
     def _remove_outliers(self):
@@ -159,21 +161,26 @@ class Optimizer:
         _ = simulate(self.settings_global, parameters.process_stats)
         return model_path
 
-    def _test_model(self, best_output, output_file, opt_strf, opt_timf):
+    def _test_model_and_save_simulation_data(
+            self, best_output: Path, structure_measurements: Path, times_measurements: Path):
+        output_file = sup.file_id(prefix='SE_')
         output_path = self.settings_global.output.parent / sup.folder_id()
+        self.settings_global.output = output_path
         sim_path = output_path / 'sim_data'
         sim_path.mkdir(parents=True, exist_ok=True)
-        self.settings_global.output = output_path
-        self._modify_simulation_model(os.path.join(best_output, self.settings_global.project_name + '.bpmn'))
+
+        self._modify_simulation_model(best_output / (self.settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
         print_subsection("Simulation")
         self.sim_values = simulate(self.settings_global, self.process_stats, evaluate_fn=evaluate_logs_with_add_metrics)
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
-        self.sim_values.to_csv(os.path.join(output_path, output_file), index=False)
-        if opt_strf:
-            shutil.move(opt_strf, output_path)
-        shutil.move(opt_timf, output_path)
+        self.sim_values.to_csv(output_path / output_file, index=False)
+
+        # Collecting files
+        if structure_measurements:
+            shutil.move(structure_measurements, output_path)
+        shutil.move(times_measurements, output_path)
 
     def _export_canonical_model(self, best_output):
         print_asset(f"Model file location: "
@@ -221,20 +228,19 @@ class Optimizer:
         self.log_train = LogReader.copy_without_data(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
-    def _modify_simulation_model(self, model):
+    def _modify_simulation_model(self, model: Path):
         """Modifies the number of instances of the BIMP simulation model
         to be equal to the number of instances in the testing log"""
         num_inst = len(self.log_test.caseid.unique())
         # Get minimum date
         start_time = self.log_test.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
-        mydoc = minidom.parse(model)
+        mydoc = minidom.parse(str(model))
         items = mydoc.getElementsByTagName('qbp:processSimulationInfo')
         items[0].attributes['processInstances'].value = str(num_inst)
         items[0].attributes['startDateTime'].value = start_time
-        new_model_path = os.path.join(self.settings_global.output, os.path.split(model)[1])
+        new_model_path = os.path.join(self.settings_global.output, os.path.split(str(model))[1])
         with open(new_model_path, 'wb') as f:
             f.write(mydoc.toxml().encode('utf-8'))
-        f.close()
         return new_model_path
 
     def _load_model_and_measures(self):

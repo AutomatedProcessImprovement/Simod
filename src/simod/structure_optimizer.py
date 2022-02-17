@@ -2,7 +2,7 @@ import copy
 import math
 import os
 import random
-import traceback
+import shutil
 from pathlib import Path
 from typing import Tuple, Union, Optional
 
@@ -12,9 +12,9 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 
 from . import support_utils as sup
-from .cli_formatter import print_message, print_subsection
+from .cli_formatter import print_message, print_subsection, print_step
 from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
-    hyperopt_pipeline_step
+    hyperopt_pipeline_step, remove_asset
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .readers.log_reader import LogReader
 from .simulator import simulate
@@ -39,6 +39,7 @@ class StructureOptimizer:
     _original_log_train: LogReader
     _original_log_validation: pd.DataFrame
     _space: dict
+    _temp_output: Path
 
     def __init__(self, settings: Configuration, log: LogReader):
         self._settings = settings
@@ -121,6 +122,9 @@ class StructureOptimizer:
             self._best_similarity = results[results.status == 'ok'].head(1).iloc[0].loss
         except Exception as e:
             print(e)
+
+    def cleanup(self):
+        remove_asset(self._temp_output)
 
     @staticmethod
     def _define_search_space(settings: Configuration) -> dict:

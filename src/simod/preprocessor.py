@@ -4,6 +4,7 @@ from typing import Optional
 import pandas as pd
 
 from .cli_formatter import print_step, print_section, print_notice
+from .common_routines import remove_asset
 from .configuration import Configuration
 from .multitasking import adjust_durations
 from .readers.log_reader import read
@@ -14,6 +15,8 @@ class Preprocessor:
     config: Configuration
     log: Optional[pd.DataFrame] = None
 
+    _tmp_dirs: [Path] = []
+
     def __init__(self, config: Configuration):
         self.config = config
 
@@ -23,6 +26,7 @@ class Preprocessor:
         processed_log_path = output_dir / (log_path.stem + '_processed.xes')
         self.log = adjust_durations(self.log, processed_log_path, is_concurrent=is_concurrent, verbose=verbose)
         self.config.log_path = processed_log_path
+        self._tmp_dirs.append(processed_log_path)
         print_notice(f'New log path: {self.config.log_path}')
 
     def run(self) -> Configuration:
@@ -33,3 +37,7 @@ class Preprocessor:
             self._multitasking_processing(self.config.log_path, self.config.output)
 
         return self.config
+
+    def cleanup(self):
+        for folder in self._tmp_dirs:
+            remove_asset(folder)

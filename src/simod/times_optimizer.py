@@ -1,5 +1,6 @@
 import copy
 import os
+import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional, Tuple
@@ -11,10 +12,10 @@ from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
 
-from simod.common_routines import extract_times_parameters, split_timeline, hyperopt_pipeline_step
+from simod.common_routines import extract_times_parameters, split_timeline, hyperopt_pipeline_step, remove_asset
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_subsection, print_message
+from .cli_formatter import print_subsection, print_message, print_step
 from .configuration import Configuration, MiningAlgorithm, Metric, QBP_NAMESPACE_URI
 from .readers import bpmn_reader as br
 from .readers import process_structure as gph
@@ -28,7 +29,7 @@ class TimesOptimizer:
     best_output: Optional[Path]
     best_parameters: dict
     measurements_file_name: Path
-    temp_output: Path
+    _temp_output: Path
 
     _bayes_trials: Trials
     _settings_global: Configuration
@@ -62,10 +63,10 @@ class TimesOptimizer:
         self._conformant_traces = log_df
         self._process_stats = log_df
 
-        self.temp_output = get_project_dir() / 'outputs' / sup.folder_id()
-        self.temp_output.mkdir(parents=True, exist_ok=True)
+        self._temp_output = get_project_dir() / 'outputs' / sup.folder_id()
+        self._temp_output.mkdir(parents=True, exist_ok=True)
 
-        self.measurements_file_name = self.temp_output / sup.file_id(prefix='OP_')
+        self.measurements_file_name = self._temp_output / sup.file_id(prefix='OP_')
         with self.measurements_file_name.open('w') as _:
             pass
 
@@ -117,6 +118,9 @@ class TimesOptimizer:
         except Exception as e:
             print(e)
 
+    def cleanup(self):
+        remove_asset(self._temp_output)
+
     @staticmethod
     def _define_search_space(settings_global: Configuration, settings_time: Configuration):
         space = {
@@ -143,7 +147,7 @@ class TimesOptimizer:
         return space
 
     def _temp_path_redef(self, settings: Configuration):
-        settings.output = self.temp_output / sup.folder_id()
+        settings.output = self._temp_output / sup.folder_id()
         simulation_data_path = settings.output / 'sim_data'
         simulation_data_path.mkdir(parents=True, exist_ok=True)
         return settings
