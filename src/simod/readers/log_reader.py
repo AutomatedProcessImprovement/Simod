@@ -49,6 +49,9 @@ class LogReader:
                  time_format: str = TIME_FORMAT,
                  load: bool = True,
                  log: Optional[pd.DataFrame] = None):
+        if isinstance(log_path, str):
+            log_path = Path(log_path)
+
         if not log_path.exists():
             raise FileNotFoundError
 

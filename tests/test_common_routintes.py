@@ -7,7 +7,7 @@ import pytest
 
 from simod.common_routines import remove_outliers, file_contains
 from simod.configuration import Configuration
-from simod.readers.log_reader import LogReader
+from simod.readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def test_remove_outliers(args):
     for arg in args:
         settings = Configuration()
         log_path = arg['log_path']
-        log = LogReader(log_path, settings.read_options)
+        log = LogReader(log_path)
         print(f'Running test for {log_path}')
         result = remove_outliers(log)
         assert result is not None
