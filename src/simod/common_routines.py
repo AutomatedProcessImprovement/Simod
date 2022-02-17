@@ -339,7 +339,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     print_step('Resource Miner')
 
     res_analyzer = ResourcePoolAnalyser(log, sim_threshold=settings.rp_similarity)
-    settings.log_path = log.log_path_xes  # TODO: remove this when CalenderImp Java is removed from Simod
+    # settings.log_path = log.log_path_xes  # TODO: remove this when CalenderImp Java is removed from Simod
     ttcreator = TimeTablesCreator(settings)
 
     args = {'res_cal_met': settings.res_cal_met,

@@ -10,7 +10,7 @@ import pm4py
 from pm4py.objects.conversion.log import converter as log_converter
 from pm4py.objects.log.util import interval_lifecycle
 
-DEFAULT_CSV_COLUMNS = {
+DEFAULT_XES_COLUMNS = {
     'concept:name': 'task',
     'case:concept:name': 'caseid',
     'lifecycle:transition': 'event_type',
@@ -22,20 +22,20 @@ QBP_CSV_COLUMNS = {
     'resource': 'user'
 }
 
-DEFAULT_XES_COLUMNS = {
-    'Start Timestamp': 'start_timestamp',
-    'Complete Timestamp': 'end_timestamp',
-    'resource': 'user'
-}
+# DEFAULT_XES_COLUMNS = {
+#     'Start Timestamp': 'start_timestamp',
+#     'Complete Timestamp': 'end_timestamp',
+#     'resource': 'user'
+# }
 
-DEFAULT_COLUMNS = ['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']
+DEFAULT_FILTER = ['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']
 
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 
 
 class LogReader:
     log_path: Path
-    log_path_xes: Path
+    # log_path_xes: Path
     log: pd.DataFrame
     data: list  # TODO: we need to get rid of list and use DataFrame everywhere
     _time_format: str
@@ -44,25 +44,26 @@ class LogReader:
 
     def __init__(self,
                  log_path: Path,
-                 column_names: dict = DEFAULT_CSV_COLUMNS,
-                 column_filter: Optional[list] = DEFAULT_COLUMNS,
+                 column_names: dict = DEFAULT_XES_COLUMNS,
+                 column_filter: Optional[list] = DEFAULT_FILTER,
                  time_format: str = TIME_FORMAT,
                  load: bool = True,
                  log: Optional[pd.DataFrame] = None):
         if not log_path.exists():
             raise FileNotFoundError
 
-        _, ext = os.path.splitext(log_path)
-        if ext != '.csv':
-            # NOTE: XES is needed for CalenderImp Java dependency which will be removed later
-            self.log_path_xes = log_path
-            self.log_path = log_path.with_suffix('.csv')
-            convert_xes_to_csv(log_path, self.log_path)
-        else:
-            self.log_path = log_path
-
-            # NOTE: we assume that XES is located at the same path
-            self.log_path_xes = log_path.with_suffix('.xes')  # TODO: should we convert CSV to XES if XES isn't provided
+        self.log_path = log_path
+        # _, ext = os.path.splitext(log_path)
+        # if ext != '.csv':
+        #     # NOTE: XES is needed for CalenderImp Java dependency which will be removed later
+        #     self.log_path_xes = log_path
+        #     self.log_path = log_path.with_suffix('.csv')
+        #     convert_xes_to_csv(log_path, self.log_path)
+        # else:
+        #     self.log_path = log_path
+        #
+        #     # NOTE: we assume that XES is located at the same path
+        #     self.log_path_xes = log_path.with_suffix('.xes')  # TODO: should we convert CSV to XES if XES isn't provided
 
         if load:
             self._read_log(log, column_filter, column_names, time_format)
@@ -73,7 +74,7 @@ class LogReader:
 
     def _read_log(self, log: Optional[pd.DataFrame], column_filter: list, column_names: dict, time_format: str):
         if log is None:
-            df = pd.read_csv(self.log_path)
+            df = read(self.log_path)
         else:
             df = log
 
@@ -81,9 +82,8 @@ class LogReader:
         df = df.rename(columns=column_names)
 
         # type conversion
-        df = df.astype({'caseid': object})
-        df['start_timestamp'] = pd.to_datetime(df['start_timestamp'], format=time_format, utc=True)
-        df['end_timestamp'] = pd.to_datetime(df['end_timestamp'], format=time_format, utc=True)
+        # df = df.astype({'caseid': object})
+        convert_timestamps(df)
 
         # filtering out Start and End fake events
         df = df[(df.task != 'Start') & (df.task != 'End')].reset_index(drop=True)
@@ -168,6 +168,12 @@ def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = N
 def read(log_path: Path) -> pd.DataFrame:
     log_path_csv = convert_xes_to_csv_if_needed(log_path)
     log = pd.read_csv(log_path_csv)
-    log['start_timestamp'] = pd.to_datetime(log['start_timestamp'], utc=True)
-    log['time:timestamp'] = pd.to_datetime(log['time:timestamp'], utc=True)
+    convert_timestamps(log)
     return log
+
+
+def convert_timestamps(log: pd.DataFrame):
+    time_columns = ['start_timestamp', 'enabled_timestamp', 'end_timestamp', 'time:timestamp']
+    for name in time_columns:
+        if name in log.columns:
+            log[name] = pd.to_datetime(log[name], utc=True)

@@ -13,7 +13,7 @@ from .common_routines import mine_resources_with_resource_table, \
     split_timeline, save_times
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .preprocessor import Preprocessor
-from .readers.log_reader import LogReader, DEFAULT_CSV_COLUMNS
+from .readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_miner import StructureMiner
@@ -55,7 +55,7 @@ class Discoverer:
     def _read_inputs(self):
         print_section("Log Parsing")
         # Event log reading
-        self._log = LogReader(self._settings.log_path, column_names=DEFAULT_CSV_COLUMNS)
+        self._log = LogReader(self._settings.log_path, column_names=DEFAULT_XES_COLUMNS)
         # Time splitting 80-20
         self._split_timeline(0.8)
 
