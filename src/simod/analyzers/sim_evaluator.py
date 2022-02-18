@@ -64,7 +64,6 @@ class SimilarityEvaluator():
         self.simulation_data = data[data.source == 'simulation']
         self.alias = self.create_task_alias(data, 'task')
 
-        # TODO: concurrency can be discovered with pm4py as well, does it suit the need? is it more performance-effective?
         self.alpha_concurrency = ao.AlphaOracle(self.log_data, self.alias, self.one_timestamp, True)
         # reformat and sampling data
         self.log_data = self.reformat_events(self.log_data.to_dict('records'), 'task')

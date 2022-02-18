@@ -6,10 +6,8 @@ import pandas as pd
 from opyenxes.data_out.XesXmlSerializer import XesXmlSerializer
 from opyenxes.extension.std.XLifecycleExtension import XLifecycleExtension as xlc
 from opyenxes.factory.XFactory import XFactory
-from pm4py.objects.conversion.log import converter
-from pm4py.objects.log.exporter.xes import exporter
-from pm4py.objects.log.util import interval_lifecycle
 
+from ..common_routines import convert_df_to_xes
 from ..configuration import ReadOptions
 from ..readers.log_reader import LogReader
 
@@ -28,7 +26,7 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
             raise Exception(f'Unimplemented type for {type(log)}')
         self.one_timestamp = read_options.one_timestamp
         self.column_names = read_options.column_names
-        self.output_file = str(output_path)
+        self.output_file = output_path
         self.write_xes()
 
     def write_xes(self):
@@ -63,10 +61,7 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
 
         log_df.fillna('UNDEFINED', inplace=True)
 
-        log_interval = converter.apply(log_df, variant=converter.Variants.TO_EVENT_LOG)
-        log_lifecycle = interval_lifecycle.to_lifecycle(log_interval)
-
-        exporter.apply(log_lifecycle, self.output_file)
+        convert_df_to_xes(log_df, self.output_file)
 
     def create_xes_file(self):
         csv_mapping = {v: k for k, v in self.column_names.items()}
@@ -88,8 +83,8 @@ class XesWriter(object):  # TODO: it makes sense to save data also with LogReade
             # log.set_info(classifier, info)
 
         # Save log in xes format
-        with open(self.output_file, "w") as file:
-            XesXmlSerializer().serialize(log, file)
+        with self.output_file.open('w') as f:
+            XesXmlSerializer().serialize(log, f)
 
     def convert_line_in_event(self, csv_mapping, event):
         """
