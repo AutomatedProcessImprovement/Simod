@@ -9,7 +9,7 @@ cvxopt==1.2.7
 cycler==0.11.0
 decorator==5.1.1
 deprecation==2.1.0
--e git+https://github.com/AutomatedProcessImprovement/DiffResBP_Simulator.git/@8accaf5469c5af981b885c21ca269de9557f806c#egg=DiffResBP_Simulator&subdirectory=../../../external_tools/DiffResBP_Simulator
+-e git+https://github.com/AutomatedProcessImprovement/Prosimos.git@7658d40da6e420f32ce51e3a3093783bf95f1358#egg=DiffResBP_Simulator&subdirectory=../../../external_tools/Prosimos
 executing==0.8.2
 future==0.18.2
 graphviz==0.19.1
@@ -42,6 +42,7 @@ pip-licenses==3.5.3
 platformdirs==2.5.0
 pluggy==1.0.0
 pm4py==2.2.19.1
+-e git+https://github.com/AutomatedProcessImprovement/pm4py-wrapper.git@7ea3946ca3fde0176f8c1a45260e7e878cffed4c#egg=pm4py_wrapper&subdirectory=../../../external_tools/pm4py-wrapper
 prompt-toolkit==3.0.28
 PTable==0.9.2
 ptyprocess==0.7.0
@@ -57,6 +58,7 @@ pytz==2021.3
 pyvis==0.1.9
 PyYAML==5.4.1
 scipy==1.7.3
+-e git+https://github.com/AdaptiveBProcess/Simod@f85e2f7d644eb4b6cfb384bac93bcdcd1ab9d92b#egg=simod
 simpy==4.0.1
 six==1.16.0
 sortedcontainers==2.4.0

@@ -9,7 +9,6 @@ setup(
     install_requires=[
         'click',
         'pandas',
-        'pm4py',
         'numpy',
         'networkx',
         'matplotlib',
