@@ -1,13 +1,12 @@
 import os
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 from simod.common_routines import remove_outliers, file_contains
 from simod.configuration import Configuration
-from simod.readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
+from simod.readers.log_reader import LogReader
 
 
 @pytest.fixture
