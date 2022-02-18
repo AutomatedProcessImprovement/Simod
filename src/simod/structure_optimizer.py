@@ -2,7 +2,6 @@ import copy
 import math
 import os
 import random
-import shutil
 from pathlib import Path
 from typing import Tuple, Union, Optional
 
@@ -12,15 +11,15 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 
 from . import support_utils as sup
-from .cli_formatter import print_message, print_subsection, print_step
+from .cli_formatter import print_message, print_subsection
 from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
-    hyperopt_pipeline_step, remove_asset
+    hyperopt_pipeline_step, remove_asset, write_xes
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
 from .readers.log_reader import LogReader
 from .simulator import simulate
 from .structure_miner import StructureMiner
 from .support_utils import get_project_dir
-from .writers import xml_writer as xml, xes_writer as xes
+from .writers import xml_writer as xml
 
 
 class StructureOptimizer:
@@ -149,7 +148,7 @@ class StructureOptimizer:
 
         # Create customized event-log for the external tools
         xes_path = output_path / (settings.project_name + '.xes')
-        xes.XesWriter(self._log_train, settings.read_options, xes_path)
+        write_xes(self._log_train, xes_path)
 
         settings.output = output_path
         settings.log_path = xes_path

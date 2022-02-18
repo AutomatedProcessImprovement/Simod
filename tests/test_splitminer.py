@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 import yaml
 
+from simod.common_routines import write_xes
 from simod.configuration import ReadOptions, config_data_from_yaml, Configuration, AndPriorORemove
 from simod.readers.log_reader import LogReader
 from simod.structure_miner import StructureMiner
-from simod.writers import xes_writer
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def test_splitminer(args, tmp_path):
         config.read_options = read_options
         config.output = tmp_path
         output_path = config.output / (config.project_name + '.xes')
-        xes_writer.XesWriter(log, config.read_options, output_path)
+        write_xes(log, output_path)
         print(tmp_path.absolute())
 
         config.epsilon = 0.5

@@ -10,14 +10,13 @@ from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
-    split_timeline, save_times
+    split_timeline, save_times, write_xes
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .preprocessor import Preprocessor
 from .readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_miner import StructureMiner
-from .writers import xes_writer as xes
 from .writers import xml_writer as xml
 
 
@@ -68,7 +67,7 @@ class Discoverer:
         # Create customized event-log for the external tools
         output_path = self._settings.output / (self._settings.project_name + '.xes')
         self._settings.log_path = output_path
-        xes.XesWriter(self._log_train, self._settings.read_options, output_path)
+        write_xes(self._log_train, output_path)
 
     def _mine_structure(self):
         print_section("Process Structure Mining")

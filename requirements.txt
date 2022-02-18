@@ -30,7 +30,6 @@ mpmath==1.2.1
 mypy-extensions==0.4.3
 networkx==2.6.3
 numpy==1.22.2
-opyenxes==0.3.0
 packaging==21.3
 pandas==1.2.5
 parso==0.8.3

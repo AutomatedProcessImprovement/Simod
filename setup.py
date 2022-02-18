@@ -12,7 +12,6 @@ setup(
         'numpy',
         'networkx',
         'matplotlib',
-        'opyenxes',
         'lxml',
         'xmltodict',
         'jellyfish',
