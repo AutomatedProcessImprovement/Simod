@@ -6,9 +6,8 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-import pm4py
-from pm4py.objects.conversion.log import converter as log_converter
-from pm4py.objects.log.util import interval_lifecycle
+
+import simod.common_routines as routines
 
 DEFAULT_XES_COLUMNS = {
     'concept:name': 'task',
@@ -21,12 +20,6 @@ DEFAULT_XES_COLUMNS = {
 QBP_CSV_COLUMNS = {
     'resource': 'user'
 }
-
-# DEFAULT_XES_COLUMNS = {
-#     'Start Timestamp': 'start_timestamp',
-#     'Complete Timestamp': 'end_timestamp',
-#     'resource': 'user'
-# }
 
 DEFAULT_FILTER = ['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']
 
@@ -148,13 +141,6 @@ class LogReader:
         return traces
 
 
-def convert_xes_to_csv(xes_path: Path, output_path: Path):
-    log = pm4py.read_xes(str(xes_path))
-    log_interval = interval_lifecycle.to_interval(log)
-    df = log_converter.apply(log_interval, variant=log_converter.Variants.TO_DATA_FRAME)
-    df.to_csv(output_path, index=False)
-
-
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
     _, ext = os.path.splitext(log_path)
     if ext != '.csv':
@@ -162,7 +148,7 @@ def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = N
             log_path_csv = output_path
         else:
             log_path_csv = log_path.with_suffix('.csv')
-        convert_xes_to_csv(log_path, log_path_csv)
+        routines.convert_xes_to_csv(log_path, log_path_csv)
         return log_path_csv
     else:
         return log_path
