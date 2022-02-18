@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import traceback
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple, Union, Optional
@@ -449,3 +450,8 @@ def remove_asset(location: Path):
         shutil.rmtree(location)
     elif location.is_file():
         location.unlink()
+
+
+def convert_df_to_xes(df: pd.DataFrame, output_path: Path):
+    df.to_csv(output_path, index=False)
+    execute_shell_cmd(['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes'])

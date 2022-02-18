@@ -9,10 +9,9 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 import pandas as pd
-from pm4py.objects.conversion.log import converter
-from pm4py.objects.log.exporter.xes import exporter as xes_exporter
-from pm4py.objects.log.util import interval_lifecycle
 from tqdm import tqdm
+
+from simod.common_routines import convert_df_to_xes
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'
@@ -85,24 +84,31 @@ def adjust_durations(log: pd.DataFrame, output_path: Optional[Path] = None, verb
             '@@origin_ev_idx'],
             errors='ignore')
 
-        event_log = converter.apply(log, variant=converter.Variants.TO_EVENT_LOG)
-        log_lifecycle = interval_lifecycle.to_lifecycle(event_log)
-        xes_exporter.apply(log_lifecycle, str(output_path))
+        convert_df_to_xes(log, output_path)
 
         reformat_timestamps(output_path, output_path)
 
     return log
 
 
-def reformat_timestamps(log_path: Path, output_path: Path):
+def reformat_timestamps(xes_path: Path, output_path: Path):
     """Converts timestamps in XES to a format suitable for the Simod's calendar Java dependency."""
-    ET.register_namespace('', 'http://www.xes-standard.org/')
-    tree = ET.parse(log_path)
+    ns = 'http://www.xes-standard.org/'
+    date_tag = f'{{{ns}}}date'
+
+    ET.register_namespace('', ns)
+    tree = ET.parse(xes_path)
     root = tree.getroot()
-    for element in root.iterfind(".//*[@key='time:timestamp']"):
-        timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%dT%H:%M:%S.%f')
-        value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
-        element.set('value', value)
+    xpaths = [
+        ".//*[@key='time:timestamp']",
+        ".//*[@key='start_timestamp']"
+    ]
+    for xpath in xpaths:
+        for element in root.iterfind(xpath):
+            timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%d %H:%M:%S%z')
+            value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
+            element.set('value', value)
+            element.tag = date_tag
     tree.write(output_path)
 
 
