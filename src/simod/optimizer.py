@@ -14,7 +14,7 @@ from .common_routines import extract_structure_parameters, extract_process_graph
 from .configuration import Configuration, MiningAlgorithm
 from .preprocessor import Preprocessor
 from .readers import log_splitter as ls
-from .readers.log_reader import LogReader
+from .event_log import LogReader
 from .simulator import simulate
 from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer

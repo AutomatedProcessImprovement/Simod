@@ -19,7 +19,7 @@ from .cli_formatter import print_subsection, print_message, print_step
 from .configuration import Configuration, MiningAlgorithm, Metric, QBP_NAMESPACE_URI
 from .readers import bpmn_reader as br
 from .readers import process_structure as gph
-from .readers.log_reader import LogReader
+from .event_log import LogReader
 from .simulator import simulate
 from .support_utils import get_project_dir
 

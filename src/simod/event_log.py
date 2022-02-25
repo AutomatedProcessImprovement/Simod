@@ -3,11 +3,11 @@ import os
 from datetime import timedelta
 from operator import itemgetter
 from pathlib import Path
-from typing import Optional
+from typing import Union, Optional
 
 import pandas as pd
 
-import simod.common_routines as routines
+from simod.cli_formatter import print_step
 
 DEFAULT_XES_COLUMNS = {
     'concept:name': 'task',
@@ -141,6 +141,54 @@ class LogReader:
         return traces
 
 
+def write_xes(log: Union[LogReader, pd.DataFrame, list], output_path: Path):
+    log_df: pd.DataFrame
+
+    if isinstance(log, pd.DataFrame):
+        log_df = log
+    elif isinstance(log, LogReader):
+        log_df = pd.DataFrame(log.data)
+    elif isinstance(log, list):
+        log_df = pd.DataFrame(log)
+    else:
+        raise Exception(f'Unimplemented type for {type(log)}')
+
+    log_df.rename(columns={
+        'task': 'concept:name',
+        'caseid': 'case:concept:name',
+        'event_type': 'lifecycle:transition',
+        'user': 'org:resource',
+        'end_timestamp': 'time:timestamp'
+    }, inplace=True)
+
+    log_df.drop(columns=['@@startevent_concept:name',
+                         '@@startevent_org:resource',
+                         '@@startevent_Activity',
+                         '@@startevent_Resource',
+                         '@@duration',
+                         'case:variant',
+                         'case:variant-index',
+                         'case:creator',
+                         'Activity',
+                         'Resource',
+                         'elementId',
+                         'processId',
+                         'resourceId',
+                         'resourceCost',
+                         '@@startevent_element',
+                         '@@startevent_elementId',
+                         '@@startevent_process',
+                         '@@startevent_processId',
+                         '@@startevent_resourceId',
+                         'etype'],
+                inplace=True,
+                errors='ignore')
+
+    log_df.fillna('UNDEFINED', inplace=True)
+
+    convert_df_to_xes(log_df, output_path)
+
+
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
     _, ext = os.path.splitext(log_path)
     if ext != '.csv':
@@ -148,7 +196,7 @@ def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = N
             log_path_csv = output_path
         else:
             log_path_csv = log_path.with_suffix('.csv')
-        routines.convert_xes_to_csv(log_path, log_path_csv)
+        convert_xes_to_csv(log_path, log_path_csv)
         return log_path_csv
     else:
         return log_path
@@ -166,3 +214,16 @@ def convert_timestamps(log: pd.DataFrame):
     for name in time_columns:
         if name in log.columns:
             log[name] = pd.to_datetime(log[name], utc=True)
+
+
+def convert_xes_to_csv(xes_path: Path, csv_path: Path):
+    args = ['pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv']
+    print_step(f'Executing shell command: {args}')
+    os.system(' '.join(args))
+
+
+def convert_df_to_xes(df: pd.DataFrame, output_path: Path):
+    args = ['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes']
+    print_step(f'Executing shell command: {args}')
+    os.system(' '.join(args))
+    df.to_csv(output_path, index=False)

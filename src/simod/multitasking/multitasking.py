@@ -11,7 +11,7 @@ from typing import List, Dict, Optional
 import pandas as pd
 from tqdm import tqdm
 
-from simod.common_routines import convert_df_to_xes
+from simod.event_log import convert_df_to_xes
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'
@@ -105,10 +105,13 @@ def reformat_timestamps(xes_path: Path, output_path: Path):
     ]
     for xpath in xpaths:
         for element in root.iterfind(xpath):
-            timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%d %H:%M:%S%z')
-            value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
-            element.set('value', value)
-            element.tag = date_tag
+            try:
+                timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%d %H:%M:%S%z')
+                value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
+                element.set('value', value)
+                element.tag = date_tag
+            except ValueError:
+                continue
     tree.write(output_path)
 
 

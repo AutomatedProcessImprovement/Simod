@@ -4,9 +4,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from simod.common_routines import write_xes
+from simod.event_log import write_xes, LogReader
 from simod.configuration import ReadOptions, config_data_from_yaml, Configuration, AndPriorORemove
-from simod.readers.log_reader import LogReader
 from simod.structure_miner import StructureMiner
 
 

@@ -1,9 +1,10 @@
 # NOTE: this file is not an actual test though, but could be helpful to debug the new replayer
 
 import os
+import sys
 from pathlib import Path
 
-from simod.readers.log_reader import LogReader
+from simod.event_log import LogReader
 from simod.replayer_datatypes import BPMNGraph, ElementInfo
 from simod.configuration import Configuration
 
@@ -125,12 +126,12 @@ def main():
         settings = Configuration(model_path=Path(model_path), log_path=Path(log_path))
         settings.fill_in_derived_fields()
 
-        event_log = LogReader(log_path, settings.read_options)
+        event_log = LogReader(log_path)
         bpmn_graph = BPMNGraph.from_bpmn_path(Path(model_path))
         print('Process: ' + experiment_logs[i])
         f_arcs_freq = reply_event_log(event_log, bpmn_graph, log_path)
         break
-    os._exit(0)
+    sys.exit(0)
 
 
 if __name__ == '__main__':

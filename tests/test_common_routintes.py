@@ -6,7 +6,7 @@ import pytest
 
 from simod.common_routines import remove_outliers, file_contains
 from simod.configuration import Configuration
-from simod.readers.log_reader import LogReader
+from simod.event_log import LogReader
 
 
 @pytest.fixture

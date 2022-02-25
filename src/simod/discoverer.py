@@ -10,10 +10,10 @@ from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
-    split_timeline, save_times, write_xes
+    split_timeline, save_times
+from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .preprocessor import Preprocessor
-from .readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_miner import StructureMiner

@@ -13,9 +13,9 @@ from hyperopt import tpe
 from . import support_utils as sup
 from .cli_formatter import print_message, print_subsection
 from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
-    hyperopt_pipeline_step, remove_asset, write_xes
+    hyperopt_pipeline_step, remove_asset
+from .event_log import write_xes, LogReader
 from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
-from .readers.log_reader import LogReader
 from .simulator import simulate
 from .structure_miner import StructureMiner
 from .support_utils import get_project_dir

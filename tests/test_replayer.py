@@ -11,7 +11,7 @@ import pytest
 from simod.common_routines import compute_sequence_flow_frequencies, mine_gateway_probabilities_alternative, \
     mine_gateway_probabilities_alternative_with_gateway_management
 from simod.configuration import Configuration, GateManagement
-from simod.readers.log_reader import LogReader
+from simod.event_log import LogReader
 from simod.readers.log_splitter import LogSplitter
 from simod.replayer_datatypes import BPMNGraph
 from simod.structure_optimizer import StructureOptimizer

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from simod.configuration import ReadOptions
-from simod.readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
+from simod.event_log import DEFAULT_XES_COLUMNS, LogReader
 
 
 @pytest.fixture

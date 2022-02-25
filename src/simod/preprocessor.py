@@ -7,7 +7,7 @@ from .cli_formatter import print_step, print_section, print_notice
 from .common_routines import remove_asset
 from .configuration import Configuration
 from .multitasking import adjust_durations
-from .readers.log_reader import read
+from .event_log import read
 
 
 class Preprocessor:
