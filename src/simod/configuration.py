@@ -264,7 +264,7 @@ class ExecutionMode(Enum):
 class ReadOptions:
     column_names: Dict[str, str]
     timeformat: str = '%Y-%m-%dT%H:%M:%S.%f'
-    one_timestamp: bool = False
+    one_timestamp: bool = False  # TODO: must be an obsolete attribute because Simod doesn't work with one_timestamp logs
     filter_d_attrib: bool = True
 
     @staticmethod
@@ -362,24 +362,15 @@ def config_data_with_datastructures(data: dict) -> dict:
 
     model_path = data.get('model_path')
     if model_path:
-        if not os.path.isabs(model_path):
-            data['model_path'] = PROJECT_DIR / model_path
-        else:
-            data['model_path'] = Path(model_path)
+        data['model_path'] = Path(model_path)
 
     log_path = data.get('log_path')
     if log_path:
-        if not os.path.isabs(log_path):
-            data['log_path'] = PROJECT_DIR / log_path
-        else:
-            data['log_path'] = Path(log_path)
+        data['log_path'] = Path(log_path)
 
     input = data.get('input')
     if input:
-        if not os.path.isabs(input):
-            data['input'] = PROJECT_DIR / input
-        else:
-            data['input'] = Path(input)
+        data['input'] = Path(input)
 
     mining_alg = data.get('mining_alg')
     if mining_alg:

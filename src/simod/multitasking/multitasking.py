@@ -9,11 +9,9 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 import pandas as pd
-import pm4py
-from pm4py.objects.conversion.log import converter
-from pm4py.objects.log.exporter.xes import exporter as xes_exporter
-from pm4py.objects.log.util import interval_lifecycle
 from tqdm import tqdm
+
+from simod.common_routines import convert_df_to_xes
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'
@@ -47,39 +45,36 @@ class _AuxiliaryLogRecord:
     adjusted_duration_s: float
 
 
-def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose=False,
+def adjust_durations(log: pd.DataFrame, output_path: Optional[Path] = None, verbose=False,
                      is_concurrent=False, max_workers=multiprocessing.cpu_count()) -> pd.DataFrame:
     """Changes end timestamps for multitasking events without changing the overall resource utilization."""
-    log = pm4py.read_xes(str(log_path))
-    log_interval = interval_lifecycle.to_interval(log)
-    log_interval_df = converter.apply(log_interval, variant=converter.Variants.TO_DATA_FRAME)
     if verbose:
-        metrics_before = _resource_metrics(log_interval_df)
+        metrics_before = _resource_metrics(log)
 
     # apply sweep line for each resource
-    resources = log_interval_df[_XES_RESOURCE_TAG].unique()
+    resources = log[_XES_RESOURCE_TAG].unique()
     if not is_concurrent:
         # sequential processing
         for resource in tqdm(resources, desc='processing resources'):
-            _adjust_duration_for_resource(log_interval_df, resource)
+            _adjust_duration_for_resource(log, resource)
     else:
         # concurrent processing
         aux_log = []
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = (executor.submit(_make_aux_log, log_interval_df, resource)
+            futures = (executor.submit(_make_aux_log, log, resource)
                        for resource in tqdm(resources, desc='submitting resources for concurrent processing'))
             for future in tqdm(concurrent.futures.as_completed(futures), desc='waiting for completion'):
                 aux_records = future.result()
                 aux_log.extend(aux_records)
-        _update_end_timestamps(aux_log, log_interval_df)
+        _update_end_timestamps(aux_log, log)
 
     if verbose:
-        metrics = _resource_metrics(log_interval_df)
+        metrics = _resource_metrics(log)
         print('Utilization before equals the one after: ', metrics_before['utilization'] == metrics['utilization'])
         print("Resource events equal:", metrics_before['number_of_events'] == metrics['number_of_events'])
 
     if output_path is not None:
-        log_interval_df = log_interval_df.drop(columns=[
+        log = log.drop(columns=[
             '@@startevent_org:resource',
             '@@startevent_concept:name',
             '@@startevent_Activity',
@@ -89,23 +84,31 @@ def adjust_durations(log_path: Path, output_path: Optional[Path] = None, verbose
             '@@origin_ev_idx'],
             errors='ignore')
 
-        log = converter.apply(log_interval_df, variant=converter.Variants.TO_EVENT_LOG)
-        log_lifecycle = interval_lifecycle.to_lifecycle(log)
-        xes_exporter.apply(log_lifecycle, str(output_path))
+        convert_df_to_xes(log, output_path)
 
         reformat_timestamps(output_path, output_path)
 
-    return log_interval_df
+    return log
 
 
-def reformat_timestamps(log_path: Path, output_path: Path):
+def reformat_timestamps(xes_path: Path, output_path: Path):
     """Converts timestamps in XES to a format suitable for the Simod's calendar Java dependency."""
-    tree = ET.parse(log_path)
+    ns = 'http://www.xes-standard.org/'
+    date_tag = f'{{{ns}}}date'
+
+    ET.register_namespace('', ns)
+    tree = ET.parse(xes_path)
     root = tree.getroot()
-    for element in root.iterfind(".//*[@key='time:timestamp']"):
-        timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%dT%H:%M:%S.%f')
-        value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
-        element.set('value', value)
+    xpaths = [
+        ".//*[@key='time:timestamp']",
+        ".//*[@key='start_timestamp']"
+    ]
+    for xpath in xpaths:
+        for element in root.iterfind(xpath):
+            timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%d %H:%M:%S%z')
+            value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
+            element.set('value', value)
+            element.tag = date_tag
     tree.write(output_path)
 
 

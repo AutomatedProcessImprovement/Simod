@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 from pathlib import Path
 
 import pytest
@@ -23,7 +22,7 @@ def test_remove_outliers(args):
     for arg in args:
         settings = Configuration()
         log_path = arg['log_path']
-        log = LogReader(log_path, settings.read_options)
+        log = LogReader(log_path)
         print(f'Running test for {log_path}')
         result = remove_outliers(log)
         assert result is not None

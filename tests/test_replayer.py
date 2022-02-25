@@ -30,7 +30,7 @@ def setup_data(model_path: Path, log_path: Path):
     settings = Configuration(model_path=Path(model_path), log_path=Path(log_path))
     settings.fill_in_derived_fields()
 
-    log = LogReader(log_path, settings.read_options)
+    log = LogReader(log_path)
     graph = BPMNGraph.from_bpmn_path(model_path)
 
     return graph, log, settings
@@ -58,15 +58,15 @@ def split_log_buckets(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.Dat
 
 
 def discover_model(settings: Configuration) -> Tuple[Path, LogReader, pd.DataFrame]:
-    log = LogReader(settings.log_path, settings.read_options)
+    log = LogReader(settings.log_path)
 
     if not os.path.exists(settings.output.parent):
         os.makedirs(settings.output.parent)
 
     log_test, log_train = split_log_buckets(log, 0.8, settings.read_options.one_timestamp)
 
-    structure_optimizer = StructureOptimizer(settings, copy.deepcopy(log_train), discover_model=True)
-    structure_optimizer.execute_trials()
+    structure_optimizer = StructureOptimizer(settings, copy.deepcopy(log_train))
+    structure_optimizer.run()
     model_path = Path(os.path.join(structure_optimizer.best_output, settings.project_name + '.bpmn'))
 
     return model_path, log_train, log_test

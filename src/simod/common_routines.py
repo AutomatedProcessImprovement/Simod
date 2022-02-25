@@ -1,12 +1,14 @@
 import itertools
 import os
-import subprocess
+import shutil
 import time
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple, Union, Optional
 
 import pandas as pd
+from hyperopt import STATUS_OK, STATUS_FAIL
 from networkx import DiGraph
 
 from simod.readers.log_splitter import LogSplitter
@@ -29,7 +31,7 @@ from .replayer_datatypes import BPMNGraph
 # introducing code duplication. We can stay with the functional approach, like I'm proposing at the moment, or create
 # a more general class for Discoverer and Optimizer for them to inherit from it all the general routines.
 
-TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'  # TODO: should be used from LogReader
 
 
 @dataclass
@@ -46,12 +48,11 @@ class ProcessParameters:
     elements_data: list = field(default_factory=list)
 
 
-# @profile(stream=open('logs/memprof_extract_structure_parameters.log', 'a+'))
-def extract_structure_parameters(settings: Configuration, process_graph, log: LogReader,
+def extract_structure_parameters(settings: Configuration, process_graph, log_reader: LogReader,
                                  model_path: Path) -> ProcessParameters:
     settings.pdef_method = PDFMethod.DEFAULT  # TODO: why do we overwrite it here?
-    traces = log.get_traces()
-    log_df = pd.DataFrame(log.data)
+    traces = log_reader.get_traces()
+    log_df = pd.DataFrame(log_reader.data)
 
     resource_pool, time_table = mine_resources_wrapper(settings)
     arrival_rate = mine_inter_arrival(process_graph, log_df, settings)
@@ -60,8 +61,6 @@ def extract_structure_parameters(settings: Configuration, process_graph, log: Lo
         traces, bpmn_graph, settings.gate_management)
     log_df['role'] = 'SYSTEM'
     elements_data = process_tasks(process_graph, log_df, resource_pool, settings)
-
-    log_df = pd.DataFrame(log.data)
 
     return ProcessParameters(
         process_stats=log_df,
@@ -156,7 +155,8 @@ def mine_gateway_probabilities_alternative_with_gateway_management(
         arcs_frequencies = compute_sequence_flow_frequencies(log_traces, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:
-        raise Exception(f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, {type(gate_management)}')
+        raise Exception(
+            f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, {type(gate_management)}')
 
     sequences = []
     for gateway_id in gateways_branching:
@@ -180,12 +180,8 @@ def extract_process_graph(model_path) -> DiGraph:
 
 
 def execute_shell_cmd(args):
-    completed_process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
-    message = f'Shell debug information:' \
-              f'\n\targs = {completed_process.args}' \
-              f'\n\tstdout = {completed_process.stdout.__str__()}' \
-              f'\n\tstderr = {completed_process.stderr.__str__()}'
-    print_notice(message)
+    print_step(f'Executing shell command: {args}')
+    os.system(' '.join(args))
 
 
 def read_stats(args):
@@ -200,11 +196,10 @@ def read_stats(args):
         m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
         m_settings['read_options'].column_names = column_names
         m_settings['project_name'] = settings.project_name
-        temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                      m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                         m_settings['read_options'],
-                         verbose=False)
-        temp = pd.DataFrame(temp.data)
+        log_path = Path(os.path.join(m_settings['output'], 'sim_data',
+                                     m_settings['project_name'] + '_' + str(rep + 1) + '.csv'))
+        temp = LogReader(log_path=log_path, column_names=column_names)
+        temp = temp.log
         temp.rename(columns={'user': 'resource'}, inplace=True)
         temp['role'] = temp['resource']
         temp['source'] = 'simulation'
@@ -226,11 +221,10 @@ def read_stats_alt(args):
         m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
         m_settings['read_options'].column_names = settings.read_options.column_names
         m_settings['project_name'] = settings.project_name
-        temp = LogReader(os.path.join(m_settings['output'], 'sim_data',
-                                      m_settings['project_name'] + '_' + str(rep + 1) + '.csv'),
-                         m_settings['read_options'],
-                         verbose=False)
-        temp = pd.DataFrame(temp.data)
+        log_path = Path(os.path.join(m_settings['output'], 'sim_data',
+                                     m_settings['project_name'] + '_' + str(rep + 1) + '.csv'))
+        temp = LogReader(log_path=log_path, column_names=settings.read_options.column_names)
+        temp = temp.log
         temp.rename(columns={'user': 'resource'}, inplace=True)
         temp['role'] = temp['resource']
         temp['source'] = 'simulation'
@@ -346,6 +340,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     print_step('Resource Miner')
 
     res_analyzer = ResourcePoolAnalyser(log, sim_threshold=settings.rp_similarity)
+    # settings.log_path = log.log_path_xes  # TODO: remove this when CalenderImp Java is removed from Simod
     ttcreator = TimeTablesCreator(settings)
 
     args = {'res_cal_met': settings.res_cal_met,
@@ -364,9 +359,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     return ttcreator.time_table, resource_pool, resource_table
 
 
-# @profile(stream=open('logs/memprof_split_timeline.log', 'a+'))
-def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: bool) -> Tuple[
-    pd.DataFrame, pd.DataFrame, str]:
+def split_timeline(log: Union[LogReader, pd.DataFrame], size: float) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
     """
     Split an event log dataframe by time to perform split-validation.
     preferred method time splitting removing incomplete traces.
@@ -378,22 +371,21 @@ def split_timeline(log: Union[LogReader, pd.DataFrame], size: float, one_ts: boo
     ----------
     log: LogRead, log to split.
     size: float, validation percentage.
-    one_ts: bool, Support only one timestamp.
     """
     if isinstance(log, LogReader):
         log = pd.DataFrame(log.data)
 
     # Split log data
     splitter = LogSplitter(log)
-    partition1, partition2 = splitter.split_log('timeline_contained', size, one_ts)
+    partition1, partition2 = splitter.split_log('timeline_contained', size)
     total_events = len(log)
 
     # Check size and change time splitting method if necesary
     if len(partition2) < int(total_events * 0.1):
-        partition1, partition2 = splitter.split_log('timeline_trace', size, one_ts)
+        partition1, partition2 = splitter.split_log('timeline_trace', size)
 
     # Set splits
-    key = 'end_timestamp' if one_ts else 'start_timestamp'
+    key = 'start_timestamp'
     partition1 = pd.DataFrame(partition1)
     partition2 = pd.DataFrame(partition2)
     return partition1, partition2, key
@@ -434,3 +426,83 @@ def file_contains(file_path: Path, substr: str) -> Optional[bool]:
         contains = next((line for line in f if substr in line), None)
 
     return contains is not None
+
+
+def hyperopt_pipeline_step(status: str, fn, *args) -> Tuple[str, object]:
+    """Function executes the provided function with arguments in hyperopt safe way."""
+    if status == STATUS_OK:
+        try:
+            return STATUS_OK, fn(*args)
+        except Exception as error:
+            print(error)
+            traceback.print_exc()
+            return STATUS_FAIL, None
+    else:
+        return status, None
+
+
+def remove_asset(location: Path):
+    if location is None or not location.exists():
+        return
+    print_step(f'Removing {location}')
+    if location.is_dir():
+        shutil.rmtree(location)
+    elif location.is_file():
+        location.unlink()
+
+
+def convert_xes_to_csv(xes_path: Path, csv_path: Path):
+    execute_shell_cmd(['pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv'])
+
+
+def convert_df_to_xes(df: pd.DataFrame, output_path: Path):
+    df.to_csv(output_path, index=False)
+    execute_shell_cmd(['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes'])
+
+
+def write_xes(log: Union[LogReader, pd.DataFrame, list], output_path: Path):
+    log_df: pd.DataFrame
+
+    if isinstance(log, pd.DataFrame):
+        log_df = log
+    elif isinstance(log, LogReader):
+        log_df = pd.DataFrame(log.data)
+    elif isinstance(log, list):
+        log_df = pd.DataFrame(log)
+    else:
+        raise Exception(f'Unimplemented type for {type(log)}')
+
+    log_df.rename(columns={
+        'task': 'concept:name',
+        'caseid': 'case:concept:name',
+        'event_type': 'lifecycle:transition',
+        'user': 'org:resource',
+        'end_timestamp': 'time:timestamp'
+    }, inplace=True)
+
+    log_df.drop(columns=['@@startevent_concept:name',
+                         '@@startevent_org:resource',
+                         '@@startevent_Activity',
+                         '@@startevent_Resource',
+                         '@@duration',
+                         'case:variant',
+                         'case:variant-index',
+                         'case:creator',
+                         'Activity',
+                         'Resource',
+                         'elementId',
+                         'processId',
+                         'resourceId',
+                         'resourceCost',
+                         '@@startevent_element',
+                         '@@startevent_elementId',
+                         '@@startevent_process',
+                         '@@startevent_processId',
+                         '@@startevent_resourceId',
+                         'etype'],
+                inplace=True,
+                errors='ignore')
+
+    log_df.fillna('UNDEFINED', inplace=True)
+
+    convert_df_to_xes(log_df, output_path)

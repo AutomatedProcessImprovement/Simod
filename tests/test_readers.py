@@ -1,39 +1,46 @@
 import os
+from pathlib import Path
 
 import pytest
 
 from simod.configuration import ReadOptions
-from simod.readers.log_reader import LogReader
+from simod.readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
 
 
 @pytest.fixture
-def args(entry_point) -> dict:
+def args(entry_point) -> list:
     # log_path = os.path.join(entry_point, 'BPI_Challenge_2012_W_Two_TS.xes')
     # log_path = os.path.join(entry_point, 'confidential_1000.xes')
     # log_path = os.path.join(entry_point, 'cvs_pharmacy.xes')
-    log_path = os.path.join(entry_point, 'Production.xes')
-    options = ReadOptions(column_names=ReadOptions.column_names_default())
-    return {'log_path': log_path, 'read_options': options}
+    prosimos_csv_columns = {
+        'CaseID': 'caseid',
+        'Activity': 'task',
+        'EnableTimestamp': 'enabled_timestamp',
+        'StartTimestamp': 'start_timestamp',
+        'EndTimestamp': 'end_timestamp',
+        'Resource': 'user',
+    }
+    return [
+        {'log_path': Path(os.path.join(entry_point, 'Production.xes')), 'column_names': DEFAULT_XES_COLUMNS},
+        {'log_path': Path(os.path.join(entry_point, 'PurchasingExampleCustomSim.csv')), 'column_names': prosimos_csv_columns}
+    ]
 
 
 def test_logreader_new(args):
-    log = LogReader(args['log_path'], args['read_options'])
-    assert len(log.data) != 0
+    for arg in args:
+        log = LogReader(arg['log_path'], arg['column_names'])
+        assert len(log.data) != 0
 
     # log_df = pd.DataFrame(log.data)
     # assert log_df.isna().all().all() is True  # TODO: is it OK to have NaN values in Activity, Resource, etc. for task = {Start, End, ...}?
 
 
 def test_copy_without_data(args):
-    copy1 = LogReader(input=args['log_path'], settings=args['read_options'], verbose=True, load=False)
-    copy1.set_data(['foo'])
-    copy2 = LogReader.copy_without_data(copy1)
-    copy2.set_data(['foo', 'bar'])
-    assert copy1._time_format == copy2._time_format
-    assert copy1._column_names == copy2._column_names
-    assert copy1._filter_attributes == copy2._filter_attributes
-    assert copy1._verbose == copy2._verbose
-
-    copy1._verbose = False
-    assert copy1._verbose != copy2._verbose
-
+    for arg in args:
+        copy1 = LogReader(log_path=arg['log_path'], column_names=arg['column_names'], load=False)
+        copy1.set_data(['foo'])
+        copy2 = LogReader.copy_without_data(copy1)
+        copy2.set_data(['foo', 'bar'])
+        assert copy1._time_format == copy2._time_format
+        assert copy1._column_names == copy2._column_names
+        assert copy1._column_filter == copy2._column_filter

@@ -1,6 +1,5 @@
 import copy
 import os
-import types
 from pathlib import Path
 
 import pandas as pd
@@ -11,102 +10,88 @@ from . import support_utils as sup
 from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
-    split_timeline, save_times
+    split_timeline, save_times, write_xes
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
-from .decorators import safe_exec, timeit
-from .readers import log_reader as lr
+from .preprocessor import Preprocessor
+from .readers.log_reader import LogReader, DEFAULT_XES_COLUMNS
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_miner import StructureMiner
-from .writers import xes_writer as xes
 from .writers import xml_writer as xml
-from .preprocessor import Preprocessor
 
 
 class Discoverer:
     """Main class of the Simulation Models Discoverer"""
+    _settings: Configuration
+    _output_file: str
+    _log: LogReader
+    _log_train: LogReader
+    _log_test: LogReader
+    _sim_values: list = []
 
     def __init__(self, settings: Configuration):
-        self.settings = settings
+        self._settings = settings
+        self._output_file = sup.file_id(prefix='SE_')
 
-        self.log = types.SimpleNamespace()
-        self.log_train = types.SimpleNamespace()
-        self.log_test = types.SimpleNamespace()
-
-        self.sim_values = list()
-        self.response = dict()
-        self.is_safe = True
-        self.output_file = sup.file_id(prefix='SE_')
-
-    def execute_pipeline(self) -> None:
-        print_notice(f'Log path: {self.settings.log_path}')
+    def run(self):
+        print_notice(f'Log path: {self._settings.log_path}')
         exec_times = dict()
-        self.is_safe = self._read_inputs(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self._temp_path_creation(log_time=exec_times, is_safe=self.is_safe)
+        self._read_inputs()
+        self._temp_path_creation()
         self._preprocess()
-        self.is_safe = self._mine_structure(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self._extract_parameters(log_time=exec_times, is_safe=self.is_safe)
-        self.is_safe = self._simulate(log_time=exec_times, is_safe=self.is_safe)
+        self._mine_structure()
+        self._extract_parameters()
+        self._simulate()
         self._manage_results()
-        save_times(exec_times, self.settings, self.settings.output.parent)
-        self.is_safe = self._export_canonical_model(is_safe=self.is_safe)
-        print_asset(f"Output folder is at {self.settings.output}")
+        save_times(exec_times, self._settings, self._settings.output.parent)
+        self._export_canonical_model()
+        print_asset(f"Output folder is at {self._settings.output}")
 
     def _preprocess(self):
-        processor = Preprocessor(self.settings)
-        self.settings = processor.run()
+        processor = Preprocessor(self._settings)
+        self._settings = processor.run()
 
-    @timeit(rec_name='READ_INPUTS')
-    @safe_exec
-    def _read_inputs(self, **kwargs) -> None:
+    def _read_inputs(self):
         print_section("Log Parsing")
         # Event log reading
-        self.log = lr.LogReader(os.path.join(self.settings.log_path), self.settings.read_options)
+        self._log = LogReader(self._settings.log_path, column_names=DEFAULT_XES_COLUMNS)
         # Time splitting 80-20
-        self._split_timeline(0.8, self.settings.read_options.one_timestamp)
+        self._split_timeline(0.8)
 
-    @timeit(rec_name='PATH_DEF')
-    @safe_exec
-    def _temp_path_creation(self, **kwargs) -> None:
+    def _temp_path_creation(self):
         print_section("Log Customization")
         # Output folder creation
-        if not os.path.exists(self.settings.output):
-            os.makedirs(self.settings.output)
-            os.makedirs(os.path.join(self.settings.output, 'sim_data'))
+        if not os.path.exists(self._settings.output):
+            os.makedirs(self._settings.output)
+            os.makedirs(os.path.join(self._settings.output, 'sim_data'))
         # Create customized event-log for the external tools
-        output_path = self.settings.output / (self.settings.project_name + '.xes')
-        xes.XesWriter(self.log_train, self.settings.read_options, output_path)
+        output_path = self._settings.output / (self._settings.project_name + '.xes')
+        self._settings.log_path = output_path
+        write_xes(self._log_train, output_path)
 
-    @timeit(rec_name='MINING_STRUCTURE')
-    @safe_exec
-    def _mine_structure(self, **kwargs) -> None:
+    def _mine_structure(self):
         print_section("Process Structure Mining")
-        structure_miner = StructureMiner(self.settings)
+        structure_miner = StructureMiner(self._settings.log_path, self._settings)
         structure_miner.execute_pipeline()
-        if structure_miner.is_safe:
-            self.bpmn = structure_miner.bpmn
-            self.process_graph = structure_miner.process_graph
-        else:
-            raise RuntimeError('Structure Mining error')
+        self.bpmn = structure_miner.bpmn
+        self.process_graph = structure_miner.process_graph
 
-    @timeit(rec_name='EXTRACTION')
-    @safe_exec
-    def _extract_parameters(self, **kwargs) -> None:
+    def _extract_parameters(self):
         print_section("Simulation Parameters Mining")
 
-        time_table, resource_pool, resource_table = mine_resources_with_resource_table(self.log_train, self.settings)
+        time_table, resource_pool, resource_table = mine_resources_with_resource_table(self._log_train, self._settings)
 
-        log_train_df = pd.DataFrame(self.log_train.data)
-        arrival_rate = mine_inter_arrival(self.process_graph, log_train_df, self.settings)
+        log_train_df = pd.DataFrame(self._log_train.data)
+        arrival_rate = mine_inter_arrival(self.process_graph, log_train_df, self._settings)
 
-        bpmn_path = os.path.join(self.settings.output, self.settings.project_name + '.bpmn')
+        bpmn_path = os.path.join(self._settings.output, self._settings.project_name + '.bpmn')
         bpmn_graph = BPMNGraph.from_bpmn_path(Path(bpmn_path))
-        traces = self.log_train.get_traces()
+        traces = self._log_train.get_traces()
         sequences = mine_gateway_probabilities(traces, bpmn_graph)
 
         self.process_stats = log_train_df.merge(resource_table[['resource', 'role']],
                                                 left_on='user', right_on='resource', how='left')
-        elements_data = process_tasks(self.process_graph, self.process_stats, resource_pool, self.settings)
+        elements_data = process_tasks(self.process_graph, self.process_stats, resource_pool, self._settings)
 
         # rewriting the model file
         num_inst = len(log_train_df.caseid.unique())
@@ -124,26 +109,22 @@ class Discoverer:
 
         xml.print_parameters(bpmn_path, bpmn_path, parameters)
 
-    @timeit(rec_name='SIMULATION_EVAL')
-    @safe_exec
-    def _simulate(self, **kwargs):
+    def _simulate(self):
         print_section("Simulation")
-        self.sim_values = simulate(self.settings, self.process_stats, self.log_test,
-                                   evaluate_fn=evaluate_logs_with_add_metrics)
+        self._sim_values = simulate(self._settings, self.process_stats, evaluate_fn=evaluate_logs_with_add_metrics)
 
     def _manage_results(self):
-        self.sim_values = pd.DataFrame.from_records(self.sim_values)
-        self.sim_values['output'] = self.settings.output
-        self.sim_values.to_csv(os.path.join(self.settings.output, self.output_file), index=False)
+        self._sim_values = pd.DataFrame.from_records(self._sim_values)
+        self._sim_values['output'] = self._settings.output
+        self._sim_values.to_csv(os.path.join(self._settings.output, self._output_file), index=False)
 
-    @safe_exec
-    def _export_canonical_model(self, **kwargs):
+    def _export_canonical_model(self):
         ns = {'qbp': QBP_NAMESPACE_URI}
         time_table = etree.tostring(self.parameters['time_table'], pretty_print=True)
         time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
         self.parameters['time_table'] = time_table
-        self.parameters['discovery_parameters'] = self._filter_dic_params(self.settings)
-        sup.create_json(self.parameters, os.path.join(self.settings.output, self.settings.project_name + '_canon.json'))
+        self.parameters['discovery_parameters'] = self._filter_dic_params(self._settings)
+        sup.create_json(self.parameters, os.path.join(self._settings.output, self._settings.project_name + '_canon.json'))
 
     @staticmethod
     def _filter_dic_params(settings: Configuration) -> dict:
@@ -168,8 +149,8 @@ class Discoverer:
             best_params['arr_confidence'] = str(settings.arr_confidence)
         return best_params
 
-    def _split_timeline(self, size: float, one_ts: bool):
-        train, test, key = split_timeline(self.log, size, one_ts)
-        self.log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
-        self.log_train = copy.deepcopy(self.log)
-        self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
+    def _split_timeline(self, size: float):
+        train, test, key = split_timeline(self._log, size)
+        self._log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
+        self._log_train = copy.deepcopy(self._log)
+        self._log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))

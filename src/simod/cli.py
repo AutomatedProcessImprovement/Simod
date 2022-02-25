@@ -27,7 +27,7 @@ def discover(ctx, config_path):
     config.fill_in_derived_fields()
 
     discoverer = Discoverer(config)
-    discoverer.execute_pipeline()
+    discoverer.run()
 
 
 @main.command()
@@ -56,7 +56,7 @@ def optimize(ctx, config_path):
     time_optimizer_config.fill_in_derived_fields()
 
     optimizer = Optimizer({'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
-    optimizer.execute_pipeline(discover_model=global_config.model_path is None)
+    optimizer.run(discover_model=global_config.model_path is None)
 
 
 if __name__ == "__main__":
