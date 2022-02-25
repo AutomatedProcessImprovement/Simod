@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: nokal/simod-testing:v1.2.1
+      image: nokal/simod-testing:v1.3.0
     env:
       BRANCH_NAME: master
     steps:
