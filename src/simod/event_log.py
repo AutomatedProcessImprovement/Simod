@@ -4,6 +4,7 @@ from datetime import timedelta
 from operator import itemgetter
 from pathlib import Path
 from typing import Union, Optional
+from xml.etree import ElementTree as ET
 
 import pandas as pd
 
@@ -227,3 +228,27 @@ def convert_df_to_xes(df: pd.DataFrame, output_path: Path):
     args = ['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes']
     print_step(f'Executing shell command: {args}')
     os.system(' '.join(args))
+
+
+def reformat_timestamps(xes_path: Path, output_path: Path):
+    """Converts timestamps in XES to a format suitable for the Simod's calendar Java dependency."""
+    ns = 'http://www.xes-standard.org/'
+    date_tag = f'{{{ns}}}date'
+
+    ET.register_namespace('', ns)
+    tree = ET.parse(xes_path)
+    root = tree.getroot()
+    xpaths = [
+        ".//*[@key='time:timestamp']",
+        ".//*[@key='start_timestamp']"
+    ]
+    for xpath in xpaths:
+        for element in root.iterfind(xpath):
+            try:
+                timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%d %H:%M:%S')
+                value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
+                element.set('value', value)
+                element.tag = date_tag
+            except ValueError:
+                continue
+    tree.write(output_path)

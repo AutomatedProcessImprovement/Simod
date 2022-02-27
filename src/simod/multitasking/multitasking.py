@@ -1,6 +1,5 @@
 import concurrent.futures
 import multiprocessing
-import xml.etree.ElementTree as ET
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -11,7 +10,7 @@ from typing import List, Dict, Optional
 import pandas as pd
 from tqdm import tqdm
 
-from simod.event_log import convert_df_to_xes
+from simod.event_log import convert_df_to_xes, reformat_timestamps
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'
@@ -89,30 +88,6 @@ def adjust_durations(log: pd.DataFrame, output_path: Optional[Path] = None, verb
         reformat_timestamps(output_path, output_path)
 
     return log
-
-
-def reformat_timestamps(xes_path: Path, output_path: Path):
-    """Converts timestamps in XES to a format suitable for the Simod's calendar Java dependency."""
-    ns = 'http://www.xes-standard.org/'
-    date_tag = f'{{{ns}}}date'
-
-    ET.register_namespace('', ns)
-    tree = ET.parse(xes_path)
-    root = tree.getroot()
-    xpaths = [
-        ".//*[@key='time:timestamp']",
-        ".//*[@key='start_timestamp']"
-    ]
-    for xpath in xpaths:
-        for element in root.iterfind(xpath):
-            try:
-                timestamp = pd.to_datetime(element.get('value'), format='%Y-%m-%d %H:%M:%S%z')
-                value = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
-                element.set('value', value)
-                element.tag = date_tag
-            except ValueError:
-                continue
-    tree.write(output_path)
 
 
 def _adjust_duration_for_resource(log_interval_df, resource):

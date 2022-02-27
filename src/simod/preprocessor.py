@@ -6,8 +6,8 @@ import pandas as pd
 from .cli_formatter import print_step, print_section, print_notice
 from .common_routines import remove_asset
 from .configuration import Configuration
-from .multitasking import adjust_durations
 from .event_log import read
+from .multitasking import adjust_durations
 
 
 class Preprocessor:

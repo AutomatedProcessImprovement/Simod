@@ -11,7 +11,7 @@ from .cli_formatter import print_asset, print_section, print_notice
 from .common_routines import mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
     split_timeline, save_times
-from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader
+from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_timestamps
 from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
 from .preprocessor import Preprocessor
 from .replayer_datatypes import BPMNGraph
@@ -68,6 +68,7 @@ class Discoverer:
         output_path = self._settings.output / (self._settings.project_name + '.xes')
         self._settings.log_path = output_path
         write_xes(self._log_train, output_path)
+        reformat_timestamps(output_path, output_path)
 
     def _mine_structure(self):
         print_section("Process Structure Mining")
