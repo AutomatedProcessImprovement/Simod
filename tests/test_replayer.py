@@ -67,7 +67,8 @@ def discover_model(settings: Configuration) -> Tuple[Path, LogReader, pd.DataFra
 
     structure_optimizer = StructureOptimizer(settings, copy.deepcopy(log_train))
     structure_optimizer.run()
-    model_path = Path(os.path.join(structure_optimizer.best_output, settings.project_name + '.bpmn'))
+    assert structure_optimizer.best_output is not None
+    model_path = structure_optimizer.best_output / (settings.project_name + '.bpmn')
 
     return model_path, log_train, log_test
 

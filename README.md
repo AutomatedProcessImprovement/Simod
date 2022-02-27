@@ -42,6 +42,8 @@ The optimizer finds optimal parameters for a model and saves them in `outputs/<i
 
 ## Testing
 
+### Using a local development environment
+
 We use `pytest` to run tests on the package:
 
 ```shell
@@ -58,6 +60,14 @@ Coverage:
 
 ```shell
 $ pytest -m "not slow" --cov=simod
+```
+
+### Using Docker
+
+To run the full test suit:
+
+```shell
+$ bash test.sh
 ```
 
 ## Docker
