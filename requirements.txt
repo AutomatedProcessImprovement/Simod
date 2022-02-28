@@ -9,7 +9,7 @@ cvxopt==1.2.7
 cycler==0.11.0
 decorator==5.1.1
 deprecation==2.1.0
--e git+https://github.com/AutomatedProcessImprovement/Prosimos.git@7658d40da6e420f32ce51e3a3093783bf95f1358#egg=DiffResBP_Simulator&subdirectory=../../../external_tools/Prosimos
+-e git+https://github.com/AutomatedProcessImprovement/Prosimos.git@7eae9c9cf7b18e48fadd2e49a4397c7aac74fa16#egg=DiffResBP_Simulator&subdirectory=../../../external_tools/Prosimos
 executing==0.8.2
 future==0.18.2
 graphviz==0.19.1
