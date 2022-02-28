@@ -57,20 +57,20 @@ def split_log_buckets(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.Dat
     return log_test, log_train
 
 
-def discover_model(settings: Configuration) -> Tuple[Path, LogReader, pd.DataFrame]:
-    log = LogReader(settings.log_path)
-
-    if not os.path.exists(settings.output.parent):
-        os.makedirs(settings.output.parent)
-
-    log_test, log_train = split_log_buckets(log, 0.8, settings.read_options.one_timestamp)
-
-    structure_optimizer = StructureOptimizer(settings, copy.deepcopy(log_train))
-    structure_optimizer.run()
-    assert structure_optimizer.best_output is not None
-    model_path = structure_optimizer.best_output / (settings.project_name + '.bpmn')
-
-    return model_path, log_train, log_test
+# def discover_model(settings: Configuration) -> Tuple[Path, LogReader, pd.DataFrame]:
+#     log = LogReader(settings.log_path)
+#
+#     if not os.path.exists(settings.output.parent):
+#         os.makedirs(settings.output.parent)
+#
+#     log_test, log_train = split_log_buckets(log, 0.8, settings.read_options.one_timestamp)
+#
+#     structure_optimizer = StructureOptimizer(settings, copy.deepcopy(log_train))
+#     structure_optimizer.run()
+#     assert structure_optimizer.best_output is not None
+#     model_path = structure_optimizer.best_output / (settings.project_name + '.bpmn')
+#
+#     return model_path, log_train, log_test
 
 
 def test_replay_trace(args):
@@ -113,37 +113,37 @@ def test_compute_sequence_flow_frequencies(args):
             assert flow_arcs_frequency[node_id] != 0
 
 
-@pytest.mark.slow
-def test_compute_sequence_flow_frequencies_without_model(args):
-    for arg in args:
-        log_path = arg['log_path']
-        print(f'\n\nTesting {log_path.name}')
-
-        config = Configuration(log_path=log_path)
-        config.fill_in_derived_fields()
-
-        # settings for StructureOptimizer
-        config.max_eval_s = 2
-        config.concurrency = [0.0, 1.0]
-        config.epsilon = [0.0, 1.0]
-        config.eta = [0.0, 1.0]
-        config.gate_management = [GateManagement.DISCOVERY]
-
-        model_path, log_train, _ = discover_model(config)
-        print(f'\nmodel_path = {model_path}\n')
-
-        graph = BPMNGraph.from_bpmn_path(model_path)
-        traces = log_train.get_traces()
-
-        try:
-            flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
-        except Exception as e:
-            pytest.fail(f'Should not fail, failed with: {e}')
-
-        assert flow_arcs_frequency is not None
-        assert len(flow_arcs_frequency) > 0
-        for node_id in flow_arcs_frequency:
-            assert flow_arcs_frequency[node_id] != 0
+# @pytest.mark.slow
+# def test_compute_sequence_flow_frequencies_without_model(args):
+#     for arg in args:
+#         log_path = arg['log_path']
+#         print(f'\n\nTesting {log_path.name}')
+#
+#         config = Configuration(log_path=log_path)
+#         config.fill_in_derived_fields()
+#
+#         # settings for StructureOptimizer
+#         config.max_eval_s = 2
+#         config.concurrency = [0.0, 1.0]
+#         config.epsilon = [0.0, 1.0]
+#         config.eta = [0.0, 1.0]
+#         config.gate_management = [GateManagement.DISCOVERY]
+#
+#         model_path, log_train, _ = discover_model(config)
+#         print(f'\nmodel_path = {model_path}\n')
+#
+#         graph = BPMNGraph.from_bpmn_path(model_path)
+#         traces = log_train.get_traces()
+#
+#         try:
+#             flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
+#         except Exception as e:
+#             pytest.fail(f'Should not fail, failed with: {e}')
+#
+#         assert flow_arcs_frequency is not None
+#         assert len(flow_arcs_frequency) > 0
+#         for node_id in flow_arcs_frequency:
+#             assert flow_arcs_frequency[node_id] != 0
 
 
 def test_mine_gateway_probabilities_stochastic_alternative(args):

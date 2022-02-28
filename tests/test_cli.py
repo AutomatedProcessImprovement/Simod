@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 
@@ -28,9 +29,9 @@ def test_discover(entry_point, runner):
 
 
 @pytest.mark.slow
-def test_optimize(entry_point, runner):
+def test_optimize(entry_point: Path, runner):
     for path in optimize_config_files:
-        config_path = os.path.join(entry_point, path)
+        config_path = entry_point / path
         result = runner.invoke(main, ['optimize', '--config_path', config_path])
         assert not result.exception
         assert result.exit_code == 0
