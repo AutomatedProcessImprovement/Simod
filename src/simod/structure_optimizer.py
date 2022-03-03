@@ -117,7 +117,7 @@ class StructureOptimizer:
         # Saving results
         self.best_parameters = best
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
-        results_ok = results[results.status == 'ok']
+        results_ok = results[results.status == STATUS_OK]
         try:
             self.best_output = results_ok.iloc[0].output
             self._best_similarity = results_ok.iloc[0].loss

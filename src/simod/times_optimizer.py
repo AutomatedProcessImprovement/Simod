@@ -111,12 +111,13 @@ class TimesOptimizer:
                     trials=self._bayes_trials,
                     show_progressbar=False)
         # Save results
+        self.best_parameters = best
+        results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
+        results_ok = results[results.status == STATUS_OK]
         try:
-            results = (pd.DataFrame(self._bayes_trials.results).sort_values('loss', ascending=bool))
-            self.best_output = results[results.status == 'ok'].head(1).iloc[0].output
-            self.best_parameters = best
+            self.best_output = results_ok.iloc[0].output
         except Exception as e:
-            print(e)
+            raise e
 
     def cleanup(self):
         remove_asset(self._temp_output)
