@@ -16,7 +16,7 @@ graphviz==0.19.1
 hyperopt==0.2.7
 iniconfig==1.1.1
 intervaltree==3.1.0
-ipython==8.0.1
+ipython==8.1.1
 jedi==0.18.1
 jellyfish==0.8.9
 Jinja2==3.0.3

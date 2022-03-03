@@ -103,6 +103,7 @@ class StructureOptimizer:
             self._log_train = copy.deepcopy(self._original_log_train)
             self._log_validation = copy.deepcopy(self._original_log_validation)
 
+            print(f'StructureOptimizer pipeline response: {response}')
             return response
 
         # Optimization
@@ -114,13 +115,14 @@ class StructureOptimizer:
                     show_progressbar=False)
 
         # Saving results
+        self.best_parameters = best
+        results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
+        results_ok = results[results.status == 'ok']
         try:
-            results = pd.DataFrame(self._bayes_trials.results).sort_values('loss', ascending=bool)
-            self.best_output = results[results.status == 'ok'].head(1).iloc[0].output
-            self.best_parameters = best
-            self._best_similarity = results[results.status == 'ok'].head(1).iloc[0].loss
+            self.best_output = results_ok.iloc[0].output
+            self._best_similarity = results_ok.iloc[0].loss
         except Exception as e:
-            print(e)
+            raise e
 
     def cleanup(self):
         remove_asset(self._temp_output)
@@ -207,8 +209,8 @@ class StructureOptimizer:
         else:
             raise ValueError(settings.mining_alg)
         response['output'] = settings.output
-        if status == STATUS_OK:
 
+        if status == STATUS_OK:
             similarity = np.mean([x['sim_val'] for x in sim_values])
             loss = (1 - similarity)
             response['loss'] = loss
