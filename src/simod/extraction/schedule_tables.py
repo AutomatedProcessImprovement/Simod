@@ -15,6 +15,8 @@ from ..configuration import Configuration, DataType, CalendarType, QBP_NAMESPACE
 
 class TimeTablesCreator:
     """This class creates the resources timetables and associates them to the resource pools"""
+    res_ttable_name: dict
+    time_table: str
 
     def __init__(self, settings: Configuration):
         self.settings = settings
@@ -42,7 +44,7 @@ class TimeTablesCreator:
         else:
             raise ValueError(res_cal_met, arr_cal_met)
 
-    def _def_timetables(self) -> None:
+    def _def_timetables(self):
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._default_creator(self.settings.res_dtype, 1)
         pbar.update(1)
@@ -63,7 +65,7 @@ class TimeTablesCreator:
 
         pbar.close()
 
-    def _defres_disarr(self) -> None:
+    def _defres_disarr(self):
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._default_creator(self.settings.res_dtype, 1)
         pbar.update(1)
@@ -83,7 +85,7 @@ class TimeTablesCreator:
                                 'resources': restimetable.attrib['id']}
         pbar.close()
 
-    def _disres_defarr(self) -> None:
+    def _disres_defarr(self):
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
             self.settings.calender_path,
@@ -106,7 +108,7 @@ class TimeTablesCreator:
                                 'resources': restimetable.attrib['id']}
         pbar.close()
 
-    def _disres_disarr(self) -> None:
+    def _disres_disarr(self):
         pbar = tqdm(total=2, desc='mining calendars:')
         xmlres = self._timetable_discoverer(
             self.settings.calender_path,
@@ -132,7 +134,7 @@ class TimeTablesCreator:
         self.res_ttable_name = {'arrival': arrivaltable[0].attrib['id'], 'resources': restimetable.attrib['id']}
         pbar.close()
 
-    def _dispoolres_defarr(self, timetable) -> None:
+    def _dispoolres_defarr(self, timetable):
         pbar = tqdm(total=2, desc='mining calendars:')
         ns = {'qbp': QBP_NAMESPACE_URI}
         xmlarr = self._default_creator(self.settings.arr_dtype, 2)
@@ -161,7 +163,7 @@ class TimeTablesCreator:
         self.res_ttable_name = tablenames
         pbar.close()
 
-    def _dispoolres_disarr(self, timetable) -> None:
+    def _dispoolres_disarr(self, timetable):
         pbar = tqdm(total=2, desc='mining calendars:')
         ns = {'qbp': QBP_NAMESPACE_URI}
         xmlarr = self._timetable_discoverer(
@@ -194,7 +196,7 @@ class TimeTablesCreator:
         pbar.close()
 
     @staticmethod
-    def _default_creator(dtype: DataType, mode) -> None:
+    def _default_creator(dtype: DataType, mode):
         """
         Creates predefined timetables for BIMP simulator
         """
@@ -244,14 +246,15 @@ class TimeTablesCreator:
         return print_xml_bimp(time_table)
 
     @staticmethod
-    def _timetable_discoverer(calendar_path: Path, file: Path, sup, conf, mode, file_name=None) -> None:
-        """Executes BIMP Simulations.
-        """
+    def _timetable_discoverer(calendar_path: Path, file: Path, sup, conf, mode, file_name=None):
+        # discovering timetables
         args = ['java', '-jar', str(calendar_path), str(file), sup, conf, str(mode)]
         if file_name:
             args.append(file_name)
         print_step(f'Timetable discovery, args = {args}')
         process = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+
+        # parsing results
         found = False
         xml = [f'<qbp:timetables xmlns:qbp="{QBP_NAMESPACE_URI}">']
         for line in process.stdout.decode('utf-8').splitlines():
