@@ -15,7 +15,7 @@ from simod.readers.log_splitter import LogSplitter
 from . import support_utils as sup
 from .analyzers import sim_evaluator
 from .cli_formatter import print_step, print_notice
-from .configuration import CalculationMethod, DataType, GateManagement
+from .configuration import CalendarType, DataType, GateManagement
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.role_discovery import ResourcePoolAnalyser
@@ -300,17 +300,17 @@ def pbar_async(p, msg, reps):
 
 def mine_resources(settings: Configuration):
     parameters = dict()
-    settings.res_cal_met = CalculationMethod.DEFAULT
+    settings.res_cal_met = CalendarType.DEFAULT
     settings.res_dtype = DataType.DT247
-    settings.arr_cal_met = CalculationMethod.DEFAULT
+    settings.arr_cal_met = CalendarType.DEFAULT
     settings.arr_dtype = DataType.DT247
     time_table_creator = TimeTablesCreator(settings)
     args = {'res_cal_met': settings.res_cal_met, 'arr_cal_met': settings.arr_cal_met}
 
-    if not isinstance(args['res_cal_met'], CalculationMethod):
-        args['res_cal_met'] = CalculationMethod.from_str(args['res_cal_met'])
-    if not isinstance(args['arr_cal_met'], CalculationMethod):
-        args['arr_cal_met'] = CalculationMethod.from_str(args['arr_cal_met'])
+    if not isinstance(args['res_cal_met'], CalendarType):
+        args['res_cal_met'] = CalendarType.from_str(args['res_cal_met'])
+    if not isinstance(args['arr_cal_met'], CalendarType):
+        args['arr_cal_met'] = CalendarType.from_str(args['arr_cal_met'])
 
     time_table_creator.create_timetables(args)
     resource_pool = [
@@ -347,10 +347,10 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
             'arr_cal_met': settings.arr_cal_met,
             'resource_table': res_analyzer.resource_table}
 
-    if not isinstance(args['res_cal_met'], CalculationMethod):
-        args['res_cal_met'] = CalculationMethod.from_str(settings.res_cal_met)
-    if not isinstance(args['arr_cal_met'], CalculationMethod):
-        args['arr_cal_met'] = CalculationMethod.from_str(settings.arr_cal_met)
+    if not isinstance(args['res_cal_met'], CalendarType):
+        args['res_cal_met'] = CalendarType.from_str(settings.res_cal_met)
+    if not isinstance(args['arr_cal_met'], CalendarType):
+        args['arr_cal_met'] = CalendarType.from_str(settings.arr_cal_met)
 
     ttcreator.create_timetables(args)
     resource_pool = create_resource_pool(res_analyzer.resource_table, ttcreator.res_ttable_name)

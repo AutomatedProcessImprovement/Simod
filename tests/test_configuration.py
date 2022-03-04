@@ -3,7 +3,7 @@ from pathlib import Path
 import yaml
 
 from simod.configuration import config_data_from_file, AndPriorORemove, Configuration, GateManagement, MiningAlgorithm, \
-    CalculationMethod, DataType, PDFMethod, Metric, ExecutionMode, SimulatorKind
+    CalendarType, DataType, PDFMethod, Metric, ExecutionMode, SimulatorKind
 
 
 class TestConfigurationFromStringConversion:
@@ -40,16 +40,16 @@ class TestConfigurationFromStringConversion:
 
     def test_CalculationMethod_from_str(self):
         args = {
-            'default': CalculationMethod.DEFAULT,
-            'discovered': CalculationMethod.DISCOVERED,
-            'pool': CalculationMethod.POOL,
-            'DEFAULT': CalculationMethod.DEFAULT,
-            'DISCOVERED': CalculationMethod.DISCOVERED,
-            'POOL': CalculationMethod.POOL,
+            'default': CalendarType.DEFAULT,
+            'discovered': CalendarType.DISCOVERED,
+            'pool': CalendarType.POOL,
+            'DEFAULT': CalendarType.DEFAULT,
+            'DISCOVERED': CalendarType.DISCOVERED,
+            'POOL': CalendarType.POOL,
         }
 
         for arg in args:
-            result = CalculationMethod.from_str(arg)
+            result = CalendarType.from_str(arg)
             assert result == args[arg]
 
     def test_DataType_from_str(self):
@@ -198,10 +198,10 @@ def test_config_data_from_file(entry_point):
         if 'dicover' in config_path.name.__str__():
             assert isinstance(config['log_path'], Path)
             assert isinstance(config['gate_management'], GateManagement)
-            assert isinstance(config['res_cal_met'], CalculationMethod)
+            assert isinstance(config['res_cal_met'], CalendarType)
             assert isinstance(config['pdef_method'], PDFMethod)
             assert config['gate_management'] == GateManagement.from_str(config_data['gate_management'])
-            assert config['res_cal_met'] == CalculationMethod.from_str(config_data['res_cal_met'])
+            assert config['res_cal_met'] == CalendarType.from_str(config_data['res_cal_met'])
             assert config['pdef_method'] == PDFMethod.from_str(config_data['pdef_method'])
         elif 'optimize' in config_path.name.__str__():
             assert isinstance(config['log_path'], Path)

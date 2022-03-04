@@ -131,13 +131,13 @@ class GateManagement(Enum):
         return f'Unknown GateManagement {str(self)}'
 
 
-class CalculationMethod(Enum):
+class CalendarType(Enum):
     DEFAULT = auto()
     DISCOVERED = auto()
     POOL = auto()
 
     @classmethod
-    def from_str(cls, value: str) -> 'CalculationMethod':
+    def from_str(cls, value: str) -> 'CalendarType':
         if value.lower() == 'default':
             return cls.DEFAULT
         elif value.lower() == 'discovered':
@@ -298,7 +298,7 @@ class Configuration:
     add_metrics: List[Metric] = field(
         default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])
     concurrency: Union[float, List[float]] = 0.0  # array
-    arr_cal_met: CalculationMethod = CalculationMethod.DISCOVERED
+    arr_cal_met: CalendarType = CalendarType.DISCOVERED
     arr_confidence: Optional[Union[float, List[float]]] = None
     arr_support: Optional[Union[float, List[float]]] = None
     epsilon: Optional[Union[float, List[float]]] = None
@@ -308,7 +308,7 @@ class Configuration:
     gate_management: Optional[Union[GateManagement, List[GateManagement]]] = None
     res_confidence: Optional[float] = None
     res_support: Optional[float] = None
-    res_cal_met: Optional[CalculationMethod] = None
+    res_cal_met: Optional[CalendarType] = None
     res_dtype: Optional[Union[DataType, List[DataType]]] = None
     arr_dtype: Optional[Union[DataType, List[DataType]]] = None
     rp_similarity: Optional[Union[float, List[float]]] = None
@@ -390,7 +390,7 @@ def config_data_with_datastructures(data: dict) -> dict:
 
     res_cal_met = data.get('res_cal_met')
     if res_cal_met:
-        data['res_cal_met'] = CalculationMethod.from_str(res_cal_met)
+        data['res_cal_met'] = CalendarType.from_str(res_cal_met)
 
     res_dtype = data.get('res_dtype')
     if res_dtype:

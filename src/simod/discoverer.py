@@ -12,7 +12,7 @@ from .common_routines import mine_resources_with_resource_table, \
     mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
     split_timeline, save_times
 from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_timestamps
-from .configuration import Configuration, MiningAlgorithm, CalculationMethod, QBP_NAMESPACE_URI
+from .configuration import Configuration, MiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
 from .preprocessor import Preprocessor
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
@@ -138,12 +138,12 @@ class Discoverer:
             best_params['eta'] = str(settings.eta)
         elif settings.mining_alg == MiningAlgorithm.SM2:
             best_params['concurrency'] = str(settings.concurrency)
-        if settings.res_cal_met == CalculationMethod.DEFAULT:
+        if settings.res_cal_met == CalendarType.DEFAULT:
             best_params['res_dtype'] = settings.res_dtype.__str__().split('.')[1]
         else:
             best_params['res_support'] = str(settings.res_support)
             best_params['res_confidence'] = str(settings.res_confidence)
-        if settings.arr_cal_met == CalculationMethod.DEFAULT:
+        if settings.arr_cal_met == CalendarType.DEFAULT:
             best_params['arr_dtype'] = settings.res_dtype.__str__().split('.')[1]
         else:
             best_params['arr_support'] = str(settings.arr_support)

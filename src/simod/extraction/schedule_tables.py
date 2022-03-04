@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from .. import support_utils as sup
 from ..cli_formatter import print_step
-from ..configuration import Configuration, DataType, CalculationMethod, QBP_NAMESPACE_URI
+from ..configuration import Configuration, DataType, CalendarType, QBP_NAMESPACE_URI
 
 
 class TimeTablesCreator:
@@ -21,23 +21,23 @@ class TimeTablesCreator:
 
     def create_timetables(self, args):
         creator = self._get_creator(args['res_cal_met'], args['arr_cal_met'])
-        if args['res_cal_met'] is CalculationMethod.POOL:
+        if args['res_cal_met'] is CalendarType.POOL:
             return creator(args['resource_table'])
         else:
             return creator()
 
-    def _get_creator(self, res_cal_met: CalculationMethod, arr_cal_met: CalculationMethod):
-        if res_cal_met is CalculationMethod.DEFAULT and arr_cal_met is CalculationMethod.DEFAULT:
+    def _get_creator(self, res_cal_met: CalendarType, arr_cal_met: CalendarType):
+        if res_cal_met is CalendarType.DEFAULT and arr_cal_met is CalendarType.DEFAULT:
             return self._def_timetables
-        elif res_cal_met is CalculationMethod.DEFAULT and arr_cal_met is CalculationMethod.DISCOVERED:
+        elif res_cal_met is CalendarType.DEFAULT and arr_cal_met is CalendarType.DISCOVERED:
             return self._defres_disarr
-        elif res_cal_met is CalculationMethod.DISCOVERED and arr_cal_met is CalculationMethod.DEFAULT:
+        elif res_cal_met is CalendarType.DISCOVERED and arr_cal_met is CalendarType.DEFAULT:
             return self._disres_defarr
-        elif res_cal_met is CalculationMethod.DISCOVERED and arr_cal_met is CalculationMethod.DISCOVERED:
+        elif res_cal_met is CalendarType.DISCOVERED and arr_cal_met is CalendarType.DISCOVERED:
             return self._disres_disarr
-        elif res_cal_met is CalculationMethod.POOL and arr_cal_met is CalculationMethod.DEFAULT:
+        elif res_cal_met is CalendarType.POOL and arr_cal_met is CalendarType.DEFAULT:
             return self._dispoolres_defarr
-        elif res_cal_met is CalculationMethod.POOL and arr_cal_met is CalculationMethod.DISCOVERED:
+        elif res_cal_met is CalendarType.POOL and arr_cal_met is CalendarType.DISCOVERED:
             return self._dispoolres_disarr
         else:
             raise ValueError(res_cal_met, arr_cal_met)
