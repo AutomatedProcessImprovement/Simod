@@ -10,8 +10,8 @@ RUN echo "git submodule update --init --recursive" >> test_simod.sh
 RUN echo "python3 -m pip install --upgrade pip" >> test_simod.sh
 RUN echo "cd external_tools/Prosimos && pip install -e . && cd ../.." >> test_simod.sh
 RUN echo "cd external_tools/pm4py-wrapper && pip install -e . && cd ../.." >> test_simod.sh
-RUN echo "pip install -r requirements.txt" >> test_simod.sh
 RUN echo "pip install -e ." >> test_simod.sh
+RUN echo "pip install -r requirements.txt" >> test_simod.sh
 RUN echo "Xvfb :99 &>/dev/null & disown; pytest" >> test_simod.sh
 
 ENV DISPLAY=:99

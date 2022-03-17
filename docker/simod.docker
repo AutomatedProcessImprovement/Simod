@@ -1,16 +1,8 @@
 FROM nokal/simod-base:v1.1.4
 
-# Simod installation
 WORKDIR /usr/src/
-RUN git clone https://github.com/AutomatedProcessImprovement/Simod.git simod
-WORKDIR /usr/src/simod
-RUN git checkout master
-RUN git submodule update --init --recursive
-RUN cd external_tools/Prosimos && pip install -e . && cd ../..
-RUN cd external_tools/pm4py-wrapper && pip install -e . && cd ../..
-RUN python3 -m pip install --upgrade pip
-RUN pip install -r requirements.txt
-RUN pip install -e .
+ADD build.bash .
+RUN bash build.bash
 
 # NOTE: run `Xvfb :99` inside the loaded container when you need a display dummy
 ENV DISPLAY=:99
