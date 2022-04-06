@@ -30,6 +30,7 @@ jobs:
           file: docker/simod_build.dockerfile
           context: docker/
   test:
+    needs: [ build ]
     runs-on: ubuntu-latest
     container:
       image: nokal/simod:latest
