@@ -29,16 +29,19 @@ jobs:
           tags: nokal/simod:latest
           file: docker/simod_build.dockerfile
           context: docker/
-#  test:
-#    runs-on: ubuntu-latest
-#    container:
-#      image: nokal/simod-testing:v1.3.0
-#    env:
-#      BRANCH_NAME: master
-#    steps:
-#      - name: Test
-#        run: |
-#          cd /usr/src && bash test_simod.sh
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: nokal/simod:latest
+    env:
+      BRANCH_NAME: master
+    steps:
+      - name: Test
+        run: |
+          Xvfb :99 &>/dev/null & disown
+          cd /usr/src/Simod
+          source venv/bin/activate
+          pytest --exitfirst
 #  security:
 #    runs-on: ubuntu-latest
 #    steps:

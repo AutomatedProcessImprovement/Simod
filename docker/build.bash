@@ -2,25 +2,27 @@
 
 BRANCH_NAME="master"
 BASE_DIR=/usr/src
+PROJECT_DIR=${BASE_DIR}/Simod
+VENV_DIR=${PROJECT_DIR}/venv
 
-# cloning repositories
+# Cloning repositories
 cd $BASE_DIR
-git clone https://github.com/AutomatedProcessImprovement/Simod.git
-cd Simod
+git clone https://github.com/AutomatedProcessImprovement/Simod.git $PROJECT_DIR
+cd $PROJECT_DIR
 git checkout $BRANCH_NAME
 git submodule update --init --recursive
 
-# creating virtual environment
-python3 -m pip install --upgrade pip
+# Creating virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source $VENV_DIR/bin/activate
+pip install --upgrade pip
 
-# installing dependencies
-cd $BASE_DIR/Simod/external_tools/Prosimos
+# Installing dependencies
+cd ${PROJECT_DIR}/external_tools/Prosimos
 pip install -e .
-cd $BASE_DIR/Simod/external_tools/pm4py-wrapper
+cd ${PROJECT_DIR}/external_tools/pm4py-wrapper
 pip install -e .
 
-# installing Simod
-cd $BASE_DIR/Simod
+# Installing Simod
+cd $PROJECT_DIR
 pip install -e .
