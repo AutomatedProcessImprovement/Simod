@@ -10,17 +10,18 @@ cd Simod
 git checkout $BRANCH_NAME
 git submodule update --init --recursive
 
-# creating virtual environment
+# creating conda environment
+conda create -y --name simod python=3.9
+conda activate simod
 python3 -m pip install --upgrade pip
-python3 -m venv venv
-source venv/bin/activate
 
 # installing dependencies
-cd $BASE_DIR/Simod/external_tools/Prosimos
+cd external_tools/pm4py-wrapper
 pip install -e .
-cd $BASE_DIR/Simod/external_tools/pm4py-wrapper
+cd ../Prosimos
 pip install -e .
+cd ../..
+conda install -y -c conda-forge click pandas numpy networkx matplotlib lxml xmltodict jellyfish scipy tqdm PyYAML hyperopt pytz pytest cvxopt
 
 # installing Simod
-cd $BASE_DIR/Simod
 pip install -e .
