@@ -1,6 +1,4 @@
-FROM nokal/simod-base:v1.1.4
-
-RUN apt-get update && apt-get install -y python3-venv
+FROM nokal/simod-base:v1.1.5
 
 WORKDIR /usr/src/
 ADD build.bash .

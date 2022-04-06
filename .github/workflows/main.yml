@@ -39,22 +39,22 @@ jobs:
     steps:
       - name: Test
         run: |
-          Xvfb :99 &>/dev/null & disown
+          Xvfb :99 &>/dev/null &
           cd /usr/src/Simod
           source venv/bin/activate
           pytest --exitfirst
-#  security:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@master
-#      - name: Snyk Scan
-#        uses: snyk/actions/python-3.8@master
-#        continue-on-error: true
-#        env:
-#          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-#        with:
-#          args: --sarif-file-output=snyk.sarif
-#      - name: Upload result to GitHub Code Scanning
-#        uses: github/codeql-action/upload-sarif@v1
-#        with:
-#          sarif_file: snyk.sarif
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Snyk Scan
+        uses: snyk/actions/python-3.8@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=snyk.sarif
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: snyk.sarif
