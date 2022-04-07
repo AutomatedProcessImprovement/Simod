@@ -12,22 +12,99 @@ Simod combines several process mining techniques to automate the generation and 
 - For external tools: **Java 1.8**
 - **Prosimos** simulator is available at https://github.com/AutomatedProcessImprovement/Prosimos
 
-## Getting Started
-
-Getting the source code:
+## Installation via Docker
 
 ```shell
-$ git clone https://github.com/AutomatedProcessImprovement/Simod.git
+$ docker pull nokal/simod:latest
+```
+
+To start a container:
+
+```shell
+$ docker run -it nokal/simod:latest bash
+```
+
+In the container, you need to activate the Python environment pre-installed during Docker building:
+
+```shell
+> cd /usr/src/Simod
+> source venv/bin/activate
+> simod --help
+```
+
+Base image for Simod is available at https://hub.docker.com/r/nokal/simod-base and can be downloaded with `docker pull nokal/simod-base:v1.1.6`. The image has a proper Java version for dependencies, Xvfb (for faking X server for the Java dependencies) and Python 3 installed. It doesn't contain Simod itself.
+
+Different Simod versions are available at https://hub.docker.com/r/nokal/simod/tags. 
+
+## Installation from source
+
+Getting the source:
+
+```shell
+$ git clone https://github.com/AutomatedProcessImprovement/Simod.git Simod
+$ cd Simod
+$ git checkout master
 $ git submodule update --init --recursive
 ```
 
-Python environment can be set up using *Anaconda* from `environment.yml` or using the built-in *venv* module from `requirements.txt`.
+### PIP
 
-To install the CLI-tool from the root directory run:
+
+
+Creating the virtual environment:
 
 ```shell
+$ python3 -m venv venv
+$ source $VENV_DIR/bin/activate
+$ pip install --upgrade pip
+```
+
+Installing the dependencies:
+
+```shell
+$ cd external_tools/Prosimos
+$ pip install -e .
+$ cd ../pm4py-wrapper
 $ pip install -e .
 ```
+
+Installing Simod:
+
+```shell
+$ cd ../..
+$ pip install -e .
+```
+
+### Conda
+
+Creating the virtual environment:
+
+```shell
+$ conda create -y --name simod python=3.9
+$ conda activate simod
+$ python3 -m pip install --upgrade pip
+```
+
+Installing the dependencies:
+
+```shell
+$ conda install -y -c conda-forge click pandas numpy networkx matplotlib lxml xmltodict jellyfish scipy tqdm PyYAML hyperopt pytz pytest cvxopt
+$ cd external_tools/Prosimos
+$ pip install -e .
+$ cd ../pm4py-wrapper
+$ pip install -e .
+```
+
+Installing Simod:
+
+```shell
+$ cd ../..
+$ pip install -e .
+```
+
+Conda environment is also available at `environment.yml`.
+
+## Getting started
 
 Invoke the tool with either of these:
 
@@ -69,11 +146,6 @@ To run the full test suit:
 ```shell
 $ bash test.sh
 ```
-
-## Docker
-
-- Docker files are available in the `docker` folder.
-- Base image for Simod is available at https://hub.docker.com/r/nokal/simod-base and can be downloaded with `docker pull nokal/simod-base:v1.1.4`. The image has a proper Java version for dependencies, Xvfb (for faking X server for the Java dependencies) and Python 3 installed. It doesn't contain Simod itself.
 
 ## Benchmarking in HPC with SLURM
 

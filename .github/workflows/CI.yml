@@ -31,7 +31,6 @@ jobs:
           tag_prefix: "v"
           major_pattern: "BREAKING CHANGE:"
           minor_pattern: "feat:"
-          patch_pattern: "fix:"
           format: "${major}.${minor}.${patch}-prerelease${increment}"
 
       - name: Set up QEMU

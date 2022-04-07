@@ -65,8 +65,6 @@ dependencies:
   - numpy-base=1.21.2=py39h6269429_0
   - openblas=0.3.18=openmp_h3b88efd_0
   - openssl=1.1.1n=h1a28f6b_0
-  - packaging=21.3=pyhd8ed1ab_0
-  - pip=21.2.4=py39hca03da5_0
   - pluggy=1.0.0=py39h2804cbe_1
   - py=1.11.0=pyh6c4a22f_0
   - pymongo=3.12.0=py39hc377ac9_0
@@ -97,42 +95,72 @@ dependencies:
     - appnope==0.1.2
     - asttokens==2.0.5
     - backcall==0.2.0
+    - cachecontrol==0.12.10
+    - cachy==0.3.0
+    - charset-normalizer==2.0.12
+    - cleo==0.8.1
     - click==8.1.2
+    - clikit==0.6.2
+    - crashtest==0.3.1
     - decorator==5.1.1
     - deprecation==2.1.0
+    - distlib==0.3.4
     - executing==0.8.3
+    - filelock==3.6.0
     - fonttools==4.31.2
+    - html5lib==1.1
+    - idna==3.3
+    - importlib-metadata==4.11.3
     - intervaltree==3.1.0
     - ipython==8.2.0
     - jedi==0.18.1
     - jinja2==3.1.1
     - jsonpickle==2.1.0
+    - keyring==23.5.0
     - kiwisolver==1.4.2
+    - lockfile==0.12.2
     - markupsafe==2.1.1
     - matplotlib-inline==0.1.3
     - mpmath==1.2.1
+    - msgpack==1.0.3
     - numpy==1.22.3
+    - packaging==20.9
     - pandas==1.4.1
     - parso==0.8.3
+    - pastel==0.2.1
     - pexpect==4.8.0
     - pickleshare==0.7.5
     - pillow==9.0.1
+    - pip==22.0.4
+    - pkginfo==1.8.2
+    - platformdirs==2.5.1
     - pm4py==2.2.19.2
+    - poetry==1.1.13
+    - poetry-core==1.0.8
     - prompt-toolkit==3.0.28
     - ptyprocess==0.7.0
     - pure-eval==0.2.2
     - pydotplus==2.0.2
     - pygments==2.11.2
+    - pylev==1.4.0
     - pytest==7.1.1
     - python-graphviz==0.19.1
     - pyvis==0.1.9
+    - requests==2.27.1
+    - requests-toolbelt==0.9.1
     - scipy==1.8.0
+    - shellingham==1.4.0
     - simpy==4.0.1
     - sortedcontainers==2.4.0
     - stack-data==0.2.0
     - stringdist==1.0.9
     - sympy==1.10.1
     - tomli==2.0.1
+    - tomlkit==0.10.1
     - traitlets==5.1.1
+    - urllib3==1.26.9
+    - virtualenv==20.14.0
     - wcwidth==0.2.5
+    - webencodings==0.5.1
+    - zipp==3.8.0
 prefix: /Users/ihar/.miniconda3/envs/simod
