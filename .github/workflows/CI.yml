@@ -78,21 +78,15 @@ jobs:
           Xvfb :99 &>/dev/null & disown
           cd /usr/src/Simod
           source venv/bin/activate
-          pytest --exitfirst
+          pytest --exitfirst --cov=. --cov-report=xml
 
-  security:
-    needs: [ build ]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Snyk scan
-        uses: snyk/actions/python-3.8@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
         with:
-          args: --sarif-file-output=snyk.sarif
-      - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: snyk.sarif
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/reports
+          env_vars: OS,PYTHON
+          fail_ci_if_error: false
+          name: codecov-umbrella
+          path_to_write_report: ./coverage/codecov_report.txt
+          verbose: true
