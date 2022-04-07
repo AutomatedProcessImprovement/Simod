@@ -68,7 +68,7 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
     container:
-      image: ${{ env.DOCKERHUB_REPO }}:${{ jobs.build.steps.versioning.outputs.version }}
+      image: $DOCKERHUB_REPO:${{ jobs.build.steps.versioning.outputs.version }}
     env:
       BRANCH_NAME: master
     steps:
