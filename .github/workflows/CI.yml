@@ -74,9 +74,14 @@ jobs:
       BRANCH_NAME: master
     steps:
       - name: Testing
-        run: bash docker/test.bash
+        run: |
+          Xvfb :99 &>/dev/null &
+          cd /usr/src/Simod
+          source venv/bin/activate
+          pytest --exitfirst
 
   security:
+    needs: [ build ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
