@@ -11,6 +11,7 @@ Simod combines several process mining techniques to automate the generation and 
 - For dependencies, please, check `requirements.txt` or `environment.yml`
 - For external tools: **Java 1.8**
 - **Prosimos** simulator is available at https://github.com/AutomatedProcessImprovement/Prosimos
+- **pm4py-wrapper** is available at https://pypi.org/project/pm4py-wrapper/ or in the `external_tools` folder. 
 
 ## Installation via Docker
 

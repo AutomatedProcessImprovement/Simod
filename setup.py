@@ -21,6 +21,7 @@ setup(
         'hyperopt',
         'pytz',
         'pytest',
+        'pytest-cov',
         'setuptools',
     ],
     entry_points={

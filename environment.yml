@@ -13,6 +13,7 @@ dependencies:
   - certifi=2021.10.8=py39hca03da5_2
   - cloudpickle=2.0.0=pyhd8ed1ab_0
   - colorama=0.4.4=pyh9f0ad1d_0
+  - coverage=6.3.2=py39h1a28f6b_0
   - cvxopt=1.2.6=py39hc9edfa2_0
   - cycler=0.11.0=pyhd8ed1ab_0
   - dsdp=5.8=hc9edfa2_0
@@ -69,6 +70,7 @@ dependencies:
   - py=1.11.0=pyh6c4a22f_0
   - pymongo=3.12.0=py39hc377ac9_0
   - pyparsing=3.0.7=pyhd8ed1ab_0
+  - pytest-cov=3.0.0=pyhd3eb1b0_0
   - python=3.9.11=hbdb9e5c_2
   - python-dateutil=2.8.2=pyhd8ed1ab_0
   - python_abi=3.9=2_cp39
