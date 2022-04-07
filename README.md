@@ -1,6 +1,6 @@
 # Simod
 
-![Build & Test](https://github.com/AutomatedProcessImprovement/Simod/actions/workflows/main.yml/badge.svg)
+![CI](https://github.com/AutomatedProcessImprovement/Simod/actions/workflows/CI.yml/badge.svg)
 
 Simod combines several process mining techniques to automate the generation and validation of BPS models.  The only input required by the Simod method is an event log in XES, or CSV format. These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
 
