@@ -28,7 +28,7 @@ jobs:
         id: versioning
         uses: paulhatch/semantic-version@v4.0.2
         with:
-          prefix: "v"
+          tag_prefix: "v"
           major_pattern: "BREAKING CHANGE:"
           minor_pattern: "feat:"
           patch_pattern: "fix:"
@@ -74,8 +74,9 @@ jobs:
       BRANCH_NAME: master
     steps:
       - name: Testing
+        shell: bash
         run: |
-          Xvfb :99 &>/dev/null &
+          Xvfb :99 &>/dev/null & disown
           cd /usr/src/Simod
           source venv/bin/activate
           pytest --exitfirst
