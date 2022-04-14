@@ -187,7 +187,7 @@ for LOG_NAME in "${files[@]}"; do
 	mkdir -p $OUTPUT_PATH
 	
 	echo "* Running Simod"
-	docker run --name simod_benchmarking -v /home/ihar/config:/usr/src/simod/config_benchmarking -v /home/ihar/inputs:/usr/src/simod/inputs nokal/simod bash -c "Xvfb :99 &>/dev/null & disown; cd /usr/src/simod; git checkout ${BRANCH_NAME}; git pull && pip install -e .; simod optimize --config_path ${CONFIG_PATH}" &> $OUTPUT_LOG_PATH
+	docker run --name simod_benchmarking -v /home/ihar/config:/usr/src/simod/resources/config_benchmarking -v /home/ihar/inputs:/usr/src/simod/resources/event_logs nokal/simod bash -c "Xvfb :99 &>/dev/null & disown; cd /usr/src/simod; git checkout ${BRANCH_NAME}; git pull && pip install -e .; simod optimize --config_path ${CONFIG_PATH}" &> $OUTPUT_LOG_PATH
 
 	echo "* Copying output"
 	docker container cp simod_benchmarking:/usr/src/simod/outputs $OUTPUT_PATH	
@@ -197,11 +197,10 @@ done
 Sample configuration for PurchasingExample.xes:
 
 ```yaml
-log_path: inputs/PurchasingExample.xes
+log_path: resources/event_logs/PurchasingExample.xes
 mining_alg: sm2
 exec_mode: optimizer
 repetitions: 5
-simulator: bimp
 sim_metric: tsd
 multitasking: true
 add_metrics:

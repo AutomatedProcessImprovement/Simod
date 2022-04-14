@@ -8,7 +8,7 @@ from simod.configuration import Configuration, config_data_from_yaml
 from simod.discoverer import Discoverer
 
 base_config = '''
-log_path: inputs/PurchasingExample.xes
+log_path: resources/event_logs/PurchasingExample.xes
 mining_alg: sm3
 arr_confidence: 9.2
 arr_support: 0.098

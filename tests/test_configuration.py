@@ -128,8 +128,6 @@ class TestConfigurationFromStringConversion:
 
     def test_SimulatorKind_from_str(self):
         args = {
-            'bimp': SimulatorKind.BIMP,
-            'qbp': SimulatorKind.BIMP,
             'custom': SimulatorKind.CUSTOM,
         }
 

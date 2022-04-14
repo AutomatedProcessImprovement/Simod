@@ -26,3 +26,5 @@ log/
 
 .coverage*
 htmlcov/
+
+resources/private

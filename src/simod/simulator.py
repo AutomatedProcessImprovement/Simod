@@ -42,23 +42,6 @@ def diffresbp_simulator(args: Tuple):
     execute_shell_cmd(args)
 
 
-def qbp_simulator(args: Tuple):
-    """BIMP simulator."""
-
-    print_notice(f'BIMP simulator has been called')
-
-    settings: Configuration
-    repetitions: int
-    settings, repetitions = args
-    args = ['java', '-jar', settings.bimp_path.absolute().__str__(),
-            (settings.output / (settings.project_name + '.bpmn')).__str__(),
-            '-csv',
-            (settings.output / 'sim_data' / (settings.project_name + '_' + str(repetitions + 1) + '.csv')).__str__()]
-    # NOTE: the call generates a CSV event log from a model
-    # NOTE: might fail silently, because stderr or stdout aren't checked
-    execute_shell_cmd(args)
-
-
 def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
     """General simulation function that takes in different simulators and evaluators."""
 
@@ -70,10 +53,7 @@ def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
 
     # Simulator choice based on configuration
     if settings.simulator is SimulatorKind.BIMP:
-        simulate_fn = qbp_simulator
-        settings.read_options.column_names = {
-            'resource': 'user'
-        }
+        raise NotImplementedError('BIMP simulator is not implemented')
     elif settings.simulator is SimulatorKind.CUSTOM:
         simulate_fn = diffresbp_simulator
         settings.read_options.column_names = {

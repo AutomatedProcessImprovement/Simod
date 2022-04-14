@@ -197,7 +197,7 @@ class SimulatorKind(Enum):
     def from_str(cls, value: str) -> 'SimulatorKind':
         value = value.lower()
         if value in ('bimp', 'qbp'):
-            return cls.BIMP
+            raise NotImplementedError('QBP/BIMP is not supported')
         elif value == 'custom':
             return cls.CUSTOM
         else:
@@ -283,7 +283,6 @@ class Configuration:
     sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
     sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
     sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
-    bimp_path: Path = PROJECT_DIR / 'external_tools/bimp/qbp-simulator-engine.jar'
     align_path: Path = PROJECT_DIR / 'external_tools/proconformance/ProConformance2.jar'
     calender_path: Path = PROJECT_DIR / 'external_tools/calenderimp/CalenderImp.jar'
     aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
@@ -291,7 +290,7 @@ class Configuration:
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
     repetitions: int = 1
-    simulator: SimulatorKind = SimulatorKind.BIMP
+    simulator: SimulatorKind = SimulatorKind.CUSTOM
     simulation_cases: int = 0
     simulation: bool = True  # TODO: is this condition checked anywhere?
     sim_metric: Metric = Metric.TSD
