@@ -9,15 +9,20 @@ dependencies:
   - bottleneck=1.3.4=py39heec5a64_0
   - brotli=1.0.9=h3422bc3_6
   - brotli-bin=1.0.9=h3422bc3_6
-  - ca-certificates=2022.3.29=hca03da5_0
-  - certifi=2021.10.8=py39hca03da5_2
+  - bzip2=1.0.8=h3422bc3_4
+  - ca-certificates=2021.10.8=h4653dfc_0
+  - certifi=2021.10.8=py39h2804cbe_2
+  - cffi=1.15.0=py39h52b1de0_0
+  - cfgv=3.3.1=pyhd8ed1ab_0
   - cloudpickle=2.0.0=pyhd8ed1ab_0
   - colorama=0.4.4=pyh9f0ad1d_0
   - coverage=6.3.2=py39h1a28f6b_0
   - cvxopt=1.2.6=py39hc9edfa2_0
   - cycler=0.11.0=pyhd8ed1ab_0
+  - distlib=0.3.4=pyhd8ed1ab_0
   - dsdp=5.8=hc9edfa2_0
   - fftw=3.3.9=h1a28f6b_1
+  - filelock=3.6.0=pyhd8ed1ab_0
   - freetype=2.11.0=h1192e45_0
   - future=0.18.2=py39h2804cbe_3
   - giflib=5.2.1=h27ca646_2
@@ -26,6 +31,7 @@ dependencies:
   - gsl=2.6=hc9edfa2_0
   - hyperopt=0.2.5=pyh9f0ad1d_0
   - icu=68.2=hbdafb3b_0
+  - identify=2.4.12=pyhd8ed1ab_0
   - iniconfig=1.1.1=pyh9f0ad1d_0
   - jbig=2.1=h3422bc3_2003
   - jellyfish=0.9.0=py39h1a28f6b_0
@@ -52,6 +58,7 @@ dependencies:
   - libwebp-base=1.2.2=h3422bc3_1
   - libxml2=2.9.12=h538f51a_0
   - libxslt=1.1.34=h9833966_0
+  - libzlib=1.2.11=h90dfc92_1014
   - llvm-openmp=13.0.1=h455960f_1
   - lxml=4.8.0=py39h2fae87d_0
   - lz4-c=1.9.3=hbdafb3b_1
@@ -62,16 +69,20 @@ dependencies:
   - munkres=1.1.4=pyh9f0ad1d_0
   - ncurses=6.3=h1a28f6b_2
   - networkx=2.7.1=pyhd8ed1ab_0
+  - nodeenv=1.6.0=pyhd8ed1ab_0
   - numexpr=2.8.1=py39h144ceef_0
   - numpy-base=1.21.2=py39h6269429_0
   - openblas=0.3.18=openmp_h3b88efd_0
-  - openssl=1.1.1n=h1a28f6b_0
+  - openssl=3.0.2=h90dfc92_1
+  - platformdirs=2.5.1=pyhd8ed1ab_0
   - pluggy=1.0.0=py39h2804cbe_1
+  - pre-commit=2.18.1=py39h2804cbe_1
   - py=1.11.0=pyh6c4a22f_0
+  - pycparser=2.21=pyhd8ed1ab_0
   - pymongo=3.12.0=py39hc377ac9_0
   - pyparsing=3.0.7=pyhd8ed1ab_0
   - pytest-cov=3.0.0=pyhd3eb1b0_0
-  - python=3.9.11=hbdb9e5c_2
+  - python=3.9.12=h14b404e_1_cpython
   - python-dateutil=2.8.2=pyhd8ed1ab_0
   - python_abi=3.9=2_cp39
   - pytz=2022.1=pyhd8ed1ab_0
@@ -82,16 +93,17 @@ dependencies:
   - sqlite=3.38.2=h1058600_0
   - suitesparse=5.10.1=hee66609_0
   - tbb=2021.5.0=h525c30c_0
-  - tk=8.6.11=hb8d0fd4_0
+  - tk=8.6.12=he1e0b03_0
   - toml=0.10.2=pyhd8ed1ab_0
   - tornado=6.1=py39h5161555_1
   - tqdm=4.63.1=pyhd8ed1ab_0
   - tzdata=2022a=hda174b7_0
+  - ukkonen=1.0.1=py39h4d2d688_1
   - wheel=0.37.1=pyhd3eb1b0_0
   - xmltodict=0.12.0=py_0
   - xz=5.2.5=h1a28f6b_0
   - yaml=0.2.5=h3422bc3_2
-  - zlib=1.2.11=h5a0b063_4
+  - zlib=1.2.11=h90dfc92_1014
   - zstd=1.5.0=h8574219_0
   - pip:
     - appnope==0.1.2
@@ -106,9 +118,7 @@ dependencies:
     - crashtest==0.3.1
     - decorator==5.1.1
     - deprecation==2.1.0
-    - distlib==0.3.4
     - executing==0.8.3
-    - filelock==3.6.0
     - fonttools==4.31.2
     - html5lib==1.1
     - idna==3.3
@@ -135,7 +145,6 @@ dependencies:
     - pillow==9.0.1
     - pip==22.0.4
     - pkginfo==1.8.2
-    - platformdirs==2.5.1
     - pm4py==2.2.19.2
     - poetry==1.1.13
     - poetry-core==1.0.8

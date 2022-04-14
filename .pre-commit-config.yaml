@@ -1,0 +1,13 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+ci:
+  skip: [ pytest-check ]
+repos:
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: pytest --exitfirst -m "not acceptance"
+        language: system
+        pass_filenames: false
+        always_run: true

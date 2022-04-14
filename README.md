@@ -128,24 +128,16 @@ We use `pytest` to run tests on the package:
 $ pytest
 ```
 
-To run only relatively fast tests, execute:
+To run unit tests, execute:
 
 ```shell
-$ pytest -m "not slow"
+$ pytest -m "not acceptance"
 ```
 
 Coverage:
 
 ```shell
-$ pytest -m "not slow" --cov=simod
-```
-
-### Using Docker
-
-To run the full test suit:
-
-```shell
-$ bash test.sh
+$ pytest -m "not acceptance" --cov=simod
 ```
 
 ## Benchmarking in HPC with SLURM

@@ -22,6 +22,7 @@ setup(
         'pytz',
         'pytest',
         'pytest-cov',
+        'pre-commit',
         'setuptools',
     ],
     entry_points={
