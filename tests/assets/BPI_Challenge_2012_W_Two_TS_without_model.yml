@@ -3,7 +3,6 @@ mining_alg: sm3
 exec_mode: optimizer
 repetitions: 1
 sim_metric: dl
-simulator: custom
 structure_optimizer:
   max_eval_s: 2
   concurrency:

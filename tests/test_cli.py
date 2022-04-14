@@ -31,8 +31,8 @@ def test_discover(entry_point, runner):
 @pytest.mark.acceptance
 def test_optimize(entry_point, runner):
     for path in optimize_config_files:
-        print(f'\nConfig file: {path}')
         config_path = os.path.join(entry_point, path)
+        print(f'\nConfig file: {config_path}')
         result = runner.invoke(main, ['optimize', '--config_path', config_path])
         assert not result.exception
         assert result.exit_code == 0

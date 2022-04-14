@@ -375,9 +375,9 @@ class SimilarityEvaluator():
             return dataframe
 
         data = split_date_time(log_data, 'start_time', 'log')
-        data = data.append(split_date_time(log_data, 'end_time', 'log'), ignore_index=True)
-        data = data.append(split_date_time(simulation_data, 'start_time', 'sim'), ignore_index=True)
-        data = data.append(split_date_time(simulation_data, 'end_time', 'sim'), ignore_index=True)
+        data = pd.concat([data, split_date_time(log_data, 'end_time', 'log')], ignore_index=True)
+        data = pd.concat([data, split_date_time(simulation_data, 'start_time', 'sim')], ignore_index=True)
+        data = pd.concat([data, split_date_time(simulation_data, 'end_time', 'sim')], ignore_index=True)
         data['weekday'] = data.apply(lambda x: x.date.weekday(), axis=1)
         g_criteria = {Metric.HOUR_EMD: 'window', Metric.DAY_EMD: 'weekday', Metric.DAY_HOUR_EMD: ['weekday', 'window'],
                       Metric.CAL_EMD: 'date'}

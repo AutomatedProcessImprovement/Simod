@@ -12,4 +12,3 @@ res_dtype: !!str 247
 arr_dtype: !!str 247
 rp_similarity: 0.8
 pdef_method: automatic
-simulator: custom

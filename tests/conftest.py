@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -11,7 +12,7 @@ def runner(request):
 
 @pytest.fixture(scope='module')
 def entry_point():
-    if os.path.basename(os.getcwd()) == 'tests':
+    if Path.cwd().name == 'tests':
         return 'assets'
     else:
         return 'tests/assets'

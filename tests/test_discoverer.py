@@ -37,33 +37,18 @@ def test_execute_pipeline(entry_point):
     config_data_1 = copy.deepcopy(config_data)
     config_data_1['log_path'] = str(xes_path)
     config_data_1['multitasking'] = True
-    config_data_1['simulator'] = 'custom'
 
     config_data_2 = copy.deepcopy(config_data)
     config_data_2['log_path'] = str(xes_path)
     config_data_2['multitasking'] = False
-    config_data_2['simulator'] = 'custom'
-
-    config_data_3 = copy.deepcopy(config_data)
-    config_data_3['log_path'] = str(xes_path)
-    config_data_3['multitasking'] = True
-    config_data_3['simulator'] = 'bimp'
-
-    config_data_4 = copy.deepcopy(config_data)
-    config_data_4['log_path'] = str(xes_path)
-    config_data_4['multitasking'] = False
-    config_data_4['simulator'] = 'bimp'
 
     config_data_5 = copy.deepcopy(config_data)
     config_data_5['log_path'] = str(csv_path)
     config_data_5['multitasking'] = False
-    config_data_5['simulator'] = 'custom'
 
     data = [
         config_data_1,
         config_data_2,
-        config_data_3,
-        config_data_4,
         config_data_5
     ]
 
