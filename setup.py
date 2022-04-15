@@ -23,6 +23,7 @@ setup(
         'pytest',
         'pytest-cov',
         'pre-commit',
+        'invoke',
         'setuptools',
     ],
     entry_points={

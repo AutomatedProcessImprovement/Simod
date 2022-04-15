@@ -28,3 +28,5 @@ log/
 htmlcov/
 
 resources/private
+build/
+vendor/
