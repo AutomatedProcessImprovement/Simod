@@ -131,13 +131,13 @@ $ pytest
 To run unit tests, execute:
 
 ```shell
-$ pytest -m "not acceptance"
+$ pytest -m "not integration"
 ```
 
 Coverage:
 
 ```shell
-$ pytest -m "not acceptance" --cov=simod
+$ pytest -m "not integration" --cov=simod
 ```
 
 ## Benchmarking in HPC with SLURM

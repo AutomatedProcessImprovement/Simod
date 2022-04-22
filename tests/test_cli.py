@@ -18,7 +18,7 @@ optimize_config_files = [
 ]
 
 
-@pytest.mark.acceptance
+@pytest.mark.integration
 def test_discover(entry_point, runner):
     for path in discover_config_files:
         config_path = os.path.join(entry_point, path)
@@ -28,7 +28,7 @@ def test_discover(entry_point, runner):
         assert result.exit_code == 0
 
 
-@pytest.mark.acceptance
+@pytest.mark.integration
 def test_optimize(entry_point, runner):
     for path in optimize_config_files:
         config_path = os.path.join(entry_point, path)

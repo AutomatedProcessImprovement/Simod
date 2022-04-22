@@ -12,7 +12,7 @@ optimize_config_files = [
 ]
 
 # NOTE: This is a very slow test which is already executed inside test_cli.py. So, we comment this out for now until
-# we separate unit tests from system and acceptance tests.
+# we separate unit tests from system and integration tests.
 #
 # def test_best_parameters(entry_point):
 #     for path in optimize_config_files:

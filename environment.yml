@@ -9,6 +9,7 @@ dependencies:
   - bottleneck=1.3.4=py39heec5a64_0
   - brotli=1.0.9=h3422bc3_6
   - brotli-bin=1.0.9=h3422bc3_6
+  - brotlipy=0.7.0=py39h1a28f6b_1002
   - bzip2=1.0.8=h3422bc3_4
   - ca-certificates=2022.3.29=hca03da5_0
   - certifi=2021.10.8=py39hca03da5_2
@@ -16,7 +17,10 @@ dependencies:
   - cfgv=3.3.1=pyhd8ed1ab_0
   - cloudpickle=2.0.0=pyhd8ed1ab_0
   - colorama=0.4.4=pyh9f0ad1d_0
+  - conda=4.12.0=py39hca03da5_0
+  - conda-package-handling=1.8.1=py39h1a28f6b_0
   - coverage=6.3.2=py39h1a28f6b_0
+  - cryptography=36.0.0=py39h834c97f_0
   - cvxopt=1.2.6=py39hc9edfa2_0
   - cycler=0.11.0=pyhd8ed1ab_0
   - distlib=0.3.4=pyhd8ed1ab_0
@@ -32,6 +36,7 @@ dependencies:
   - hyperopt=0.2.5=pyh9f0ad1d_0
   - icu=68.2=hbdafb3b_0
   - identify=2.4.12=pyhd8ed1ab_0
+  - idna=3.3=pyhd3eb1b0_0
   - iniconfig=1.1.1=pyh9f0ad1d_0
   - invoke=1.6.0=py39hca03da5_0
   - jbig=2.1=h3422bc3_2003
@@ -79,9 +84,12 @@ dependencies:
   - pluggy=1.0.0=py39h2804cbe_1
   - pre-commit=2.18.1=py39h2804cbe_1
   - py=1.11.0=pyh6c4a22f_0
+  - pycosat=0.6.3=py39h1a28f6b_0
   - pycparser=2.21=pyhd8ed1ab_0
   - pymongo=3.12.0=py39hc377ac9_0
+  - pyopenssl=22.0.0=pyhd3eb1b0_0
   - pyparsing=3.0.7=pyhd8ed1ab_0
+  - pysocks=1.7.1=py39hca03da5_0
   - pytest-cov=3.0.0=pyhd3eb1b0_0
   - python=3.9.12=h14b404e_1_cpython
   - python-dateutil=2.8.2=pyhd8ed1ab_0
@@ -89,6 +97,8 @@ dependencies:
   - pytz=2022.1=pyhd8ed1ab_0
   - pyyaml=6.0=py39h5161555_0
   - readline=8.1.2=h1a28f6b_1
+  - requests=2.27.1=pyhd3eb1b0_0
+  - ruamel_yaml=0.15.100=py39h1a28f6b_0
   - setuptools=58.0.4=py39hca03da5_1
   - six=1.16.0=pyh6c4a22f_0
   - sqlite=3.38.2=h1058600_0
@@ -122,7 +132,6 @@ dependencies:
     - executing==0.8.3
     - fonttools==4.31.2
     - html5lib==1.1
-    - idna==3.3
     - importlib-metadata==4.11.3
     - intervaltree==3.1.0
     - ipython==8.2.0
@@ -158,7 +167,6 @@ dependencies:
     - pytest==7.1.1
     - python-graphviz==0.19.1
     - pyvis==0.1.9
-    - requests==2.27.1
     - requests-toolbelt==0.9.1
     - scipy==1.8.0
     - shellingham==1.4.0

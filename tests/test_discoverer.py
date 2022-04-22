@@ -27,7 +27,7 @@ multitasking: false
 '''
 
 
-@pytest.mark.acceptance
+@pytest.mark.integration
 def test_execute_pipeline(entry_point):
     global base_config
     xes_path = Path(entry_point) / 'PurchasingExample.xes'
