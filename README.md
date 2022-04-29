@@ -107,16 +107,11 @@ Conda environment is also available at `environment.yml`.
 
 ## Getting started
 
-Invoke the tool with either of these:
-
 ```shell
-$ simod
-$ simod optimize --config_path config/optimize_config.yml
-$ simod discover --config_path config/discover_without_model_config.yml  # does automatic model discovery from the log
-$ simod discover --config_path config/discover_with_model_config.yml     # no need for model discovery
+$ simod optimize --config_path <path-to-config>
 ```
 
-The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/PurchasingExample_canon.json`. 
+The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/<event-log-name>_canon.json`. 
 
 ## Testing
 

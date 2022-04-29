@@ -246,9 +246,18 @@ class TimeTablesCreator:
         return print_xml_bimp(time_table)
 
     @staticmethod
-    def _timetable_discoverer(calendar_path: Path, file: Path, sup, conf, mode, file_name=None):
+    def _timetable_discoverer(calendar_bin_path: Path, log_path: Path, sup, conf, mode, file_name=None):
+        """
+        Discovers timetables using the CalenderImp Java tool.
+
+        :param calendar_bin_path: Path to the CalendarImp.jar file
+        :param log_path: Path to the log file
+        :param sup: Support
+        :param conf: Confidence
+        :param mode: 1 to discover Default Calendar, 2 to discover Case Arrivals Calendar, 3 to discover Resources Calendars
+        """
         # discovering timetables
-        args = ['java', '-jar', str(calendar_path), str(file), sup, conf, str(mode)]
+        args = ['java', '-jar', str(calendar_bin_path), str(log_path), sup, conf, str(mode)]
         if file_name:
             args.append(file_name)
         print_step(f'Timetable discovery, args = {args}')
