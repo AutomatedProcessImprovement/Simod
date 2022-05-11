@@ -8,8 +8,11 @@ Simod combines several process mining techniques to automate the generation and 
 
 - **Python 3.8**+
 - **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
-- For dependencies, please, check `requirements.txt` or `environment.yml`
+- For Python dependencies, please, check `requirements.txt` or `environment.yml`
 - For external tools: **Java 1.8**
+- Java dependencies alongside with others are located at `external_tools` folder
+  - [CalenderImp](https://bitbucket.org/Ibrahim_Mahdy/calendar/src/master/)
+  - [SplitMiner](https://apromore.com/research-lab/) (v1, 2, 3)
 - **Prosimos** simulator is available at https://github.com/AutomatedProcessImprovement/Prosimos
 - **pm4py-wrapper** is available at https://pypi.org/project/pm4py-wrapper/ or in the `external_tools` folder. 
 
