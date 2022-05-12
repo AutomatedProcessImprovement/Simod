@@ -80,6 +80,12 @@ jobs:
           source venv/bin/activate
           pytest --cov=. --cov-report=xml --durations=0 -v
 
+      - name: Upload Simod output
+        uses: actions/upload-artifact@v3
+        with:
+          name: output
+          path: /usr/src/Simod/outputs
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
