@@ -1,11 +1,13 @@
 import copy
+import os.path
 from pathlib import Path
 
 import pytest
 import yaml
 
-from simod.configuration import Configuration, config_data_from_yaml
+from simod.configuration import Configuration, config_data_from_yaml, config_data_from_file
 from simod.discoverer import Discoverer
+from simod.support_utils import get_project_dir
 
 base_config = '''
 log_path: resources/event_logs/PurchasingExample.xes
@@ -58,3 +60,29 @@ def test_execute_pipeline(entry_point):
         config.fill_in_derived_fields()
         discoverer = Discoverer(config)
         discoverer.run()
+
+
+discover_config_files = [
+    'discover_without_model_config.yml',
+    'discover_with_model_config.yml',
+]
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize('path', discover_config_files)
+def test_discover(entry_point, path):
+    repository_dir = get_project_dir()
+    config_path = os.path.join(entry_point, path)
+    params = {'config_path': repository_dir.joinpath(config_path).absolute()}
+
+    config_data = config_data_from_file(Path(config_path))
+    params['log_path'] = repository_dir.joinpath(config_data['log_path']).absolute()
+    model_path = config_data.get('model_path', None)
+    if model_path:
+        params['model_path'] = repository_dir.joinpath(model_path).absolute()
+    config_data.update(params)
+    config = Configuration(**config_data)
+    config.fill_in_derived_fields()
+
+    discoverer = Discoverer(config)
+    discoverer.run()

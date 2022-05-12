@@ -30,9 +30,10 @@ class StructureMiner:
             self._mining_structure(self._xes_path)
         else:
             print_step("Copying the model")
-            shutil.copy(self._settings.model_path, self._settings.output)
+            shutil.copy(self._settings.model_path.absolute(), self._settings.output.absolute())
 
-        model_path = self._settings.output / (self._settings.project_name + '.bpmn')
+        model_path = (self._settings.output / (self._settings.project_name + '.bpmn')).absolute()
+        assert model_path.exists(), f"Model file {model_path} hasn't been mined"
         self.bpmn = br.BpmnReader(model_path)
         self.process_graph = process_structure.create_process_structure(self.bpmn)
 

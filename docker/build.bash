@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 BRANCH_NAME="master"
+PROSIMOS_BRANCH_NAME="previous_json_format"
 BASE_DIR=/usr/src
 PROJECT_DIR=${BASE_DIR}/Simod
 VENV_DIR=${PROJECT_DIR}/venv
@@ -11,6 +12,7 @@ git clone https://github.com/AutomatedProcessImprovement/Simod.git $PROJECT_DIR
 cd $PROJECT_DIR
 git checkout $BRANCH_NAME
 git submodule update --init --recursive
+cd external_tools/Prosimos && git checkout $PROSIMOS_BRANCH_NAME && git pull && cd ../..
 
 # Creating virtual environment
 python3 -m venv venv

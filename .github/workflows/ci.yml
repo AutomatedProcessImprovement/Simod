@@ -78,7 +78,7 @@ jobs:
           Xvfb :99 &>/dev/null & disown
           cd /usr/src/Simod
           source venv/bin/activate
-          pytest --exitfirst --cov=. --cov-report=xml --durations=0 -v
+          pytest --cov=. --cov-report=xml --durations=0 -v
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2

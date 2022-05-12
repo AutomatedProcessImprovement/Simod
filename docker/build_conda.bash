@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 BRANCH_NAME="master"
+PROSIMOS_BRANCH_NAME="previous_json_format"
 BASE_DIR=/usr/src
 
 # Cloning repositories
@@ -9,6 +10,7 @@ git clone https://github.com/AutomatedProcessImprovement/Simod.git
 cd Simod
 git checkout $BRANCH_NAME
 git submodule update --init --recursive
+cd external_tools/Prosimos && git checkout $PROSIMOS_BRANCH_NAME && git pull && cd ../..
 
 # Creating conda environment
 conda create -y --name simod python=3.9

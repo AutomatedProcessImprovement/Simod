@@ -279,7 +279,7 @@ class Configuration:
     log_path: Optional[Path] = None
     model_path: Optional[Path] = None
     config_path: Optional[Path] = None
-    output: Path = PROJECT_DIR / 'outputs' / sup.folder_id()
+    output: Path = (PROJECT_DIR / 'outputs' / sup.folder_id()).absolute()
     sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
     sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
     sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
@@ -361,7 +361,11 @@ def config_data_with_datastructures(data: dict) -> dict:
 
     model_path = data.get('model_path')
     if model_path:
-        data['model_path'] = Path(model_path)
+        model_path = Path(model_path)
+        if model_path.is_absolute():
+            data['model_path'] = model_path.absolute()
+        else:
+            data['model_path'] = (PROJECT_DIR / model_path).absolute()
 
     log_path = data.get('log_path')
     if log_path:

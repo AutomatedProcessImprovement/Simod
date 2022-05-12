@@ -1,8 +1,9 @@
 import os
 
+import click
 import pytest
 
-from simod.cli import main
+from simod import cli
 
 # NOTE: these are mostly general overall long-running tests to check if everything finishes without exceptions
 
@@ -18,21 +19,21 @@ optimize_config_files = [
 ]
 
 
-@pytest.mark.integration
-def test_discover(entry_point, runner):
-    for path in discover_config_files:
-        config_path = os.path.join(entry_point, path)
-        print(f'\nConfig file: {config_path}')
-        result = runner.invoke(main, ['discover', '--config_path', config_path])
-        assert not result.exception
-        assert result.exit_code == 0
+# @pytest.mark.integration
+# @pytest.mark.parametrize('path', discover_config_files)
+# def test_discover(entry_point, runner, path):
+#     config_path = os.path.join(entry_point, path)
+#     assert os.path.exists(config_path)
+#     result = runner.invoke(cli.main, ['discover', '--config_path', config_path])
+#     assert not result.exception
+#     assert result.exit_code == 0
 
 
 @pytest.mark.integration
-def test_optimize(entry_point, runner):
-    for path in optimize_config_files:
-        config_path = os.path.join(entry_point, path)
-        print(f'\nConfig file: {config_path}')
-        result = runner.invoke(main, ['optimize', '--config_path', config_path])
-        assert not result.exception
-        assert result.exit_code == 0
+@pytest.mark.parametrize('path', optimize_config_files)
+def test_optimize(entry_point, runner, path):
+    config_path = os.path.join(entry_point, path)
+    print(f'\nConfig file: {config_path}')
+    result = runner.invoke(cli.main, ['optimize', '--config_path', config_path])
+    assert not result.exception
+    assert result.exit_code == 0
