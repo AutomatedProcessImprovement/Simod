@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from operator import itemgetter
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 from xml.etree import ElementTree as ET
 
 import pandas as pd
@@ -71,7 +71,7 @@ class LogReader:
 
     def _read_log(self, log: Optional[pd.DataFrame], column_filter: list, column_names: dict, time_format: str):
         if log is None:
-            df = read(self.log_path)
+            df, log_path_csv = read(self.log_path)
         else:
             df = log
 
@@ -203,11 +203,11 @@ def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = N
         return log_path
 
 
-def read(log_path: Path) -> pd.DataFrame:
+def read(log_path: Path) -> Tuple[pd.DataFrame, Path]:
     log_path_csv = convert_xes_to_csv_if_needed(log_path)
     log = pd.read_csv(log_path_csv)
     convert_timestamps(log)
-    return log
+    return log, log_path_csv
 
 
 def convert_timestamps(log: pd.DataFrame):

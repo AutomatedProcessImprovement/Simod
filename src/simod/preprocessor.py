@@ -22,7 +22,7 @@ class Preprocessor:
 
     def _multitasking_processing(self, log_path: Path, output_dir: Path, is_concurrent=False, verbose=False):
         print_step('Multitasking pre-processing')
-        self.log = read(log_path)
+        self.log, log_path_csv = read(log_path)
         processed_log_path = output_dir / (log_path.stem + '_processed.xes')
         self.log = adjust_durations(self.log, processed_log_path, is_concurrent=is_concurrent, verbose=verbose)
         self.config.log_path = processed_log_path
