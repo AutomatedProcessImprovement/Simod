@@ -15,7 +15,7 @@ arguments = [
 
 @pytest.mark.parametrize('arg', arguments, ids=map(lambda x: x['log_path'], arguments))
 def test_splitminer(entry_point, arg, tmp_path):
-    log_path = Path(os.path.join(entry_point, arg['log_path']))
+    log_path = entry_point / arg['log_path']
     read_options = arg['read_options']
     log = LogReader(log_path)
     assert len(log.data) != 0

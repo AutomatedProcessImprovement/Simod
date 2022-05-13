@@ -1,5 +1,4 @@
 import copy
-import os.path
 from pathlib import Path
 
 import pytest
@@ -68,7 +67,7 @@ discover_config_files = [
 @pytest.mark.parametrize('path', discover_config_files)
 def test_discover(entry_point, path):
     repository_dir = get_project_dir()
-    config_path = os.path.join(entry_point, path)
+    config_path = entry_point / path
     params = {'config_path': repository_dir.joinpath(config_path).absolute()}
 
     config_data = config_data_from_file(Path(config_path))

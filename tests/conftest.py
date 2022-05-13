@@ -11,8 +11,8 @@ def runner(request):
 
 
 @pytest.fixture(scope='module')
-def entry_point():
+def entry_point() -> Path:
     if Path.cwd().name == 'tests':
-        return 'assets'
+        return Path('assets')
     else:
-        return 'tests/assets'
+        return Path('tests/assets')

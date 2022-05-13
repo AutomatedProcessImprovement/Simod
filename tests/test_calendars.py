@@ -9,7 +9,7 @@ from pm4py_wrapper.wrapper import convert_xes_to_csv
 
 
 def test_calendar_module(entry_point):
-    log_path = Path(os.path.join(entry_point, 'PurchasingExample.xes'))
+    log_path = entry_point / 'PurchasingExample.xes'
     log_path_csv = log_path.with_stem(str(uuid.uuid4())).with_suffix('.csv')
     convert_xes_to_csv(log_path, log_path_csv)
 

@@ -12,8 +12,8 @@ from simod.event_log import LogReader
 @pytest.fixture
 def args(entry_point):
     args = [
-        {'model_path': Path(os.path.join(entry_point, 'PurchasingExample.bpmn')),
-         'log_path': Path(os.path.join(entry_point, 'PurchasingExample.xes'))},
+        {'model_path': entry_point / 'PurchasingExample.bpmn',
+         'log_path': entry_point / 'PurchasingExample.xes'},
     ]
     return args
 
@@ -32,12 +32,12 @@ def test_remove_outliers(args):
 
 def test_file_contains(entry_point):
     paths_without_inclusive = [
-        Path(os.path.join(entry_point, 'PurchasingExample.bpmn')),
-        Path(os.path.join(entry_point, 'Production.bpmn')),
+        entry_point / 'PurchasingExample.bpmn',
+        entry_point / 'Production.bpmn',
     ]
 
     paths_with_inclusive = [
-        Path(os.path.join(entry_point, 'ProductionTestFileContains.bpmn')),
+        entry_point / 'ProductionTestFileContains.bpmn',
     ]
 
     for file_path in paths_without_inclusive:
@@ -76,7 +76,7 @@ def test_invalid_xml(entry_point):
         return line
 
     paths = [
-        Path(os.path.join(entry_point, 'Production.xes')),
+        entry_point / 'Production.xes',
     ]
 
     for path in paths:

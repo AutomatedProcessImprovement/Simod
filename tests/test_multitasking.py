@@ -15,7 +15,7 @@ def test_adjust_durations_purchasing_example(entry_point):
 
 
 def test_adjust_durations_purchasing_example2(entry_point):
-    log_path = Path(entry_point) / 'PurchasingExampleMultitasking2.xes'
+    log_path = entry_point / 'PurchasingExampleMultitasking2.xes'
     log, log_path_csv = read(log_path)
     result = adjust_durations(log, verbose=True)
     assert result is not None
@@ -25,7 +25,7 @@ def test_adjust_durations_purchasing_example2(entry_point):
 
 
 def test_adjust_durations_purchasing_example3(entry_point):
-    log_path = Path(entry_point) / 'PurchasingExampleMultitasking3.xes'
+    log_path = entry_point / 'PurchasingExampleMultitasking3.xes'
     log, log_path_csv = read(log_path)
     result = adjust_durations(log, verbose=True)
     assert result is not None
@@ -36,7 +36,7 @@ def test_adjust_durations_purchasing_example3(entry_point):
 
 
 def test_adjust_durations_consulta(entry_point):
-    log_path = Path(entry_point) / 'ConsultaDataMining201618.xes'
+    log_path = entry_point / 'ConsultaDataMining201618.xes'
     log, log_path_csv = read(log_path)
     result = adjust_durations(log, verbose=False)
     assert result is not None
@@ -44,7 +44,7 @@ def test_adjust_durations_consulta(entry_point):
 
 
 def test_reformat_timestamps(entry_point):
-    log_path = Path(entry_point) / 'PurchasingExample_Timestamps.xes'
+    log_path = entry_point / 'PurchasingExample_Timestamps.xes'
     output_path = log_path.with_name(log_path.stem + '_Reformatted.xes')
     reformat_timestamps(log_path, output_path)
     assert output_path.exists()

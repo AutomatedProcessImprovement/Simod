@@ -20,8 +20,8 @@ from simod.structure_optimizer import StructureOptimizer
 @pytest.fixture
 def args(entry_point):
     args = [
-        {'model_path': Path(os.path.join(entry_point, 'PurchasingExample.bpmn')),
-         'log_path': Path(os.path.join(entry_point, 'PurchasingExample.xes'))},
+        {'model_path': entry_point / 'PurchasingExample.bpmn',
+         'log_path': entry_point / 'PurchasingExample.xes'},
     ]
     return args
 

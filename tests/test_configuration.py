@@ -172,7 +172,7 @@ class TestConfigurationStringRepresentation:
 
 
 def test_AndPriorORemove_default(entry_point):
-    config_path = Path(entry_point) / 'optimize_debug_config_2.yml'
+    config_path = entry_point / 'optimize_debug_config_2.yml'
     config = config_data_from_file(config_path)
     assert config['strc'] is not None
 
@@ -183,8 +183,8 @@ def test_AndPriorORemove_default(entry_point):
 
 def test_config_data_from_file(entry_point):
     paths = [
-        Path(entry_point) / 'discover_with_model_config.yml',
-        Path(entry_point) / 'optimize_debug_config.yml'
+        entry_point / 'discover_with_model_config.yml',
+        entry_point / 'optimize_debug_config.yml'
     ]
 
     for config_path in paths:

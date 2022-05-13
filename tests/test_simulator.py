@@ -1,6 +1,5 @@
 import os
 import shutil
-from pathlib import Path
 
 import pytest
 
@@ -15,7 +14,7 @@ test_data = [
 
 @pytest.mark.parametrize('arg', test_data, ids=map(lambda x: x['qbp_path'], test_data))
 def test_diffresbp_simulator(entry_point, arg):
-    qbp_path = Path(entry_point) / arg['qbp_path']
+    qbp_path = entry_point / arg['qbp_path']
 
     config = Configuration()
     config.output = qbp_path.parent
@@ -34,7 +33,7 @@ def test_diffresbp_simulator(entry_point, arg):
 
 @pytest.mark.parametrize('arg', test_data, ids=map(lambda x: f'n_cases={x["n_cases"]}', test_data))
 def test_get_number_of_cases(entry_point, arg):
-    qbp_path = Path(entry_point) / arg['qbp_path']
+    qbp_path = entry_point / arg['qbp_path']
 
     n_cases = get_number_of_cases(qbp_path)
     assert arg['n_cases'] == n_cases

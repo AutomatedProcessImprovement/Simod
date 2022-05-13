@@ -1,6 +1,3 @@
-import os
-
-import click
 import pytest
 
 from simod import cli
@@ -32,7 +29,7 @@ optimize_config_files = [
 @pytest.mark.integration
 @pytest.mark.parametrize('path', optimize_config_files)
 def test_optimize(entry_point, runner, path):
-    config_path = os.path.join(entry_point, path)
+    config_path = entry_point / path
     print(f'\nConfig file: {config_path}')
     result = runner.invoke(cli.main, ['optimize', '--config_path', config_path])
     assert not result.exception

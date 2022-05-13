@@ -1,6 +1,3 @@
-import os
-from pathlib import Path
-
 import pytest
 
 from simod.event_log import DEFAULT_XES_COLUMNS, LogReader
@@ -21,14 +18,14 @@ arguments = [
 
 @pytest.mark.parametrize('arg', arguments, ids=map(lambda x: x['log_path'], arguments))
 def test_logreader_new(entry_point, arg):
-    log_path = Path(os.path.join(entry_point, arg['log_path']))
+    log_path = entry_point / arg['log_path']
     log = LogReader(log_path, arg['column_names'])
     assert len(log.data) != 0
 
 
 @pytest.mark.parametrize('arg', arguments, ids=map(lambda x: x['log_path'], arguments))
 def test_copy_without_data(entry_point, arg):
-    log_path = Path(os.path.join(entry_point, arg['log_path']))
+    log_path = entry_point / arg['log_path']
     copy1 = LogReader(log_path=log_path, column_names=arg['column_names'], load=False)
     copy1.set_data(['foo'])
     copy2 = LogReader.copy_without_data(copy1)
