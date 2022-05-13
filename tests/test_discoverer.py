@@ -29,37 +29,33 @@ multitasking: false
 '''
 
 
-@pytest.mark.integration
-def test_execute_pipeline(entry_point):
+def test_data():
     global base_config
-    xes_path = Path(entry_point) / 'PurchasingExample.xes'
-    csv_path = Path(entry_point) / 'PurchasingExample.csv'
-    config_data = yaml.load(base_config, Loader=yaml.FullLoader)
 
-    config_data_1 = copy.deepcopy(config_data)
-    config_data_1['log_path'] = str(xes_path)
-    config_data_1['multitasking'] = True
+    config = yaml.load(base_config, Loader=yaml.FullLoader)
+    config['log_path'] = get_project_dir() / 'resources/event_logs/PurchasingExample.xes'
 
-    config_data_2 = copy.deepcopy(config_data)
-    config_data_2['log_path'] = str(xes_path)
-    config_data_2['multitasking'] = False
+    test_case_1 = copy.deepcopy(config)
+    test_case_1['multitasking'] = True
 
-    config_data_5 = copy.deepcopy(config_data)
-    config_data_5['log_path'] = str(csv_path)
-    config_data_5['multitasking'] = False
+    test_case_2 = copy.deepcopy(config)
+    test_case_2['multitasking'] = False
 
-    data = [
-        config_data_1,
-        config_data_2,
-        config_data_5
+    return [
+        test_case_1,
+        test_case_2
     ]
 
-    for config_data in data:
-        config_data = config_data_from_yaml(config_data)
-        config = Configuration(**config_data)
-        config.fill_in_derived_fields()
-        discoverer = Discoverer(config)
-        discoverer.run()
+
+@pytest.mark.integration
+@pytest.mark.parametrize('config_data', test_data(),
+                         ids=map(lambda x: f'multitasking={x["multitasking"]}', test_data()))
+def test_execute_pipeline(config_data):
+    config_data = config_data_from_yaml(config_data)
+    config = Configuration(**config_data)
+    config.fill_in_derived_fields()
+    discoverer = Discoverer(config)
+    discoverer.run()
 
 
 discover_config_files = [
