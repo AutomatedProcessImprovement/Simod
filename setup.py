@@ -25,6 +25,7 @@ setup(
         'pre-commit',
         'invoke',
         'setuptools',
+        'pendulum'
     ],
     entry_points={
         'console_scripts': [
