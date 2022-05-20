@@ -1,4 +1,4 @@
-from typing import NewType, Dict, List, Optional
+from typing import NewType, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -35,6 +35,13 @@ def __resource_pool_analyser_result_to_pool_mapping(resource_table: List[dict]) 
     return PoolMapping(mapping)
 
 
+def _get_simod_column_names(keys: List[str], mapping: dict = None) -> Tuple:
+    if not mapping:
+        return tuple(keys)
+    result = [mapping[key] for key in keys]
+    return tuple(result)
+
+
 def make(event_log: pd.DataFrame,
          granularity=60,
          min_confidence=0.1,
@@ -59,26 +66,21 @@ def make(event_log: pd.DataFrame,
     """
     calendar_factory = CalendarFactory(granularity)
     for (index, event) in event_log.iterrows():
-        # handling custom Simod column names
-        resource_column = RESOURCE_KEY
-        activity_column = ACTIVITY_KEY
-        end_time_column = END_TIMESTAMP_KEY
-        if columns_mapping:
-            resource_column = columns_mapping[RESOURCE_KEY]
-            activity_column = columns_mapping[ACTIVITY_KEY]
-            end_time_column = columns_mapping[END_TIMESTAMP_KEY]
+        resource_key, activity_key, end_time_key = _get_simod_column_names(
+            keys=[RESOURCE_KEY, ACTIVITY_KEY, END_TIMESTAMP_KEY],
+            mapping=columns_mapping)
 
         if differentiated:
             if pool_mapping:
-                resource = pool_mapping[event[resource_column]]
+                resource = pool_mapping[event[resource_key]]
             else:
-                resource = event[resource_column]
+                resource = event[resource_key]
         else:
             resource = UNDIFFERENTIATED_RESOURCE_POOL_KEY
 
-        activity = event[activity_column]
+        activity = event[activity_key]
         start_time = event[START_TIMESTAMP_KEY]
-        end_time = event[end_time_column]
+        end_time = event[end_time_key]
         calendar_factory.check_date_time(resource, activity, start_time)
         calendar_factory.check_date_time(resource, activity, end_time)
     calendar_candidates = calendar_factory.build_weekly_calendars(min_confidence, desired_support, min_participation)

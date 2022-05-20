@@ -1,19 +1,17 @@
 """
 This module provides adapters for the previous Simod's TimeTablesCreator.
 """
-from io import StringIO, BytesIO
+from io import BytesIO
 from typing import Optional, List
 
+import pandas as pd
 import pendulum
 from lxml import etree
 
-import pandas as pd
-
 from simod.configuration import Configuration, CalendarType
 from .case_arrival import discover as discover_arrival_calendar, CASE_ID_KEY
-from .resource import PoolMapping, UNDIFFERENTIATED_RESOURCE_POOL_KEY, ACTIVITY_KEY, RESOURCE_KEY, END_TIMESTAMP_KEY
+from .resource import UNDIFFERENTIATED_RESOURCE_POOL_KEY, ACTIVITY_KEY, RESOURCE_KEY, END_TIMESTAMP_KEY
 from .resource import discover as discover_resource_calendar
-from ..cli_formatter import print_notice
 from ..event_log import LogReader, read
 
 
@@ -75,22 +73,6 @@ def __prosimos_calendar_item_to_qbp_rule(item: dict) -> str:
         .replace('{toDay}', item['to'])
 
 
-def pool_mapping_to_resource_pool(pool_mapping: PoolMapping):
-    """
-    Converts PoolMapping to the TimeTablesCreator's resource pool.
-    """
-    pass
-
-
-def pool_mapping_to_resource_table(pool_mapping: PoolMapping) -> pd.DataFrame:
-    """
-    Converts PoolMapping to the TimeTablesCreator's resource table.
-    """
-    roles = list(pool_mapping.keys())
-    resources = list(pool_mapping.values())
-    return pd.DataFrame({'role': roles, 'resource': resources})
-
-
 class TimeTablesCreator:
     """
     This is an adapter class for extractions.schedule_tables.TimeTablesCreator.
@@ -104,7 +86,6 @@ class TimeTablesCreator:
     settings: Configuration
 
     def __init__(self, settings: Configuration):
-        print_notice('TimeTablesCreator adapter initialized')
         self.settings = settings
 
     def create_timetables(self, log: Optional[LogReader] = None):

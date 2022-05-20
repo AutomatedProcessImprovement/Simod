@@ -1,6 +1,7 @@
 import pandas as pd
 
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
+from simod.calendar_discovery.resource import _get_simod_column_names
 
 CASE_ID_KEY = 'case:concept:name'
 START_TIMESTAMP_KEY = "start_timestamp"
@@ -15,18 +16,12 @@ def discover(
         desired_support=0.7,
         min_participation=0.4,
         columns_mapping: dict = None):
-    # handling custom Simod column names
-    case_id_column = CASE_ID_KEY
-    end_time_column = END_TIMESTAMP_KEY
-    if columns_mapping:
-        case_id_column = columns_mapping[CASE_ID_KEY]
-        end_time_column = columns_mapping[END_TIMESTAMP_KEY]
-
+    case_id_key, end_time_key = _get_simod_column_names(keys=[CASE_ID_KEY, END_TIMESTAMP_KEY], mapping=columns_mapping)
     calendar_factory = CalendarFactory(granularity)
-    for (case_id, group) in event_log.groupby(by=[case_id_column]):
+    for (case_id, group) in event_log.groupby(by=[case_id_key]):
         resource = UNDIFFERENTIATED_RESOURCE_POOL_KEY
         start_time = group[START_TIMESTAMP_KEY].min()
-        end_time = group[end_time_column].max()
+        end_time = group[end_time_key].max()
         activity = case_id
         calendar_factory.check_date_time(resource, activity, start_time)
         calendar_factory.check_date_time(resource, activity, end_time)

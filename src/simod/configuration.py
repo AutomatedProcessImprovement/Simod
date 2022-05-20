@@ -293,8 +293,6 @@ class Configuration:
     sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
     sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
     sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
-    align_path: Path = PROJECT_DIR / 'external_tools/proconformance/ProConformance2.jar'
-    calender_path: Path = PROJECT_DIR / 'external_tools/calenderimp/CalenderImp.jar'
     aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
     aligntype: Path = output / 'AlignmentStatistics.csv'
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
