@@ -1,11 +1,16 @@
-import os
 import uuid
-from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from pm4py_wrapper.wrapper import convert_xes_to_csv
+from simod.calendar_discovery import resource as resource_calendar
+from simod.calendar_discovery import case_arrival
+from simod.configuration import Configuration, CalendarType
+from simod.event_log import read
+from simod.extraction.role_discovery import ResourcePoolAnalyser
+from simod.extraction.schedule_tables import TimeTablesCreator
 
 
 def test_calendar_module(entry_point):
@@ -38,3 +43,63 @@ def test_calendar_module(entry_point):
     assert 'Kim Passa' in calendar
 
 
+@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+def test_calendar_discover_undifferentiated(entry_point, log_name):
+    log_path = entry_point / log_name
+    log, log_path_csv = read(log_path)
+    result = resource_calendar.discover_undifferentiated(log)
+    assert result
+    log_path_csv.unlink()
+
+
+@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+def test_calendar_discover_per_resource_pool(entry_point, log_name):
+    log_path = entry_point / log_name
+    log, log_path_csv = read(log_path)
+    result = resource_calendar.discover_per_resource_pool(log)
+    assert result
+    log_path_csv.unlink()
+
+
+@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+def test_calendar_discover_per_resource(entry_point, log_name):
+    log_path = entry_point / log_name
+    log, log_path_csv = read(log_path)
+    result = resource_calendar.discover_per_resource(log)
+    assert result
+    log_path_csv.unlink()
+
+
+def test_resource_pool_analyzer(entry_point):
+    log_path = entry_point / 'PurchasingExample.xes'
+    log, log_path_csv = read(log_path)
+    result = ResourcePoolAnalyser(log, activity_key='concept:name', resource_key='org:resource')
+    assert result.resource_table
+    assert len(result.resource_table) > 0
+    log_path_csv.unlink()
+
+
+# def test_time_tables_creator(entry_point):
+#     log_path = entry_point / 'PurchasingExample.xes'
+#     settings = Configuration()
+#     settings.log_path = log_path
+#     settings.arr_support = 0.7
+#     settings.arr_confidence = 0.1
+#     settings.res_support = 0.7
+#     settings.res_confidence = 0.1
+#     tt = TimeTablesCreator(settings)
+#     args = {
+#         'res_cal_met': CalendarType.DEFAULT,
+#         'arr_cal_met': CalendarType.DEFAULT,
+#     }
+#     result = tt.create_timetables(args)
+#     assert result
+
+
+@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+def test_calendar_case_arrival_discover(entry_point, log_name):
+    log_path = entry_point / log_name
+    log, log_path_csv = read(log_path)
+    result = case_arrival.discover(log)
+    assert result
+    log_path_csv.unlink()

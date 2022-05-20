@@ -135,6 +135,10 @@ class CalendarType(Enum):
     DEFAULT = auto()
     DISCOVERED = auto()
     POOL = auto()
+    UNDIFFERENTIATED = auto()
+    DIFFERENTIATED_BY_POOL = auto()
+    DIFFERENTIATED_BY_RESOURCE = auto()
+    # TODO: update configuration and adopt dependencies to the new calendar_discovery package
 
     @classmethod
     def from_str(cls, value: str) -> 'CalendarType':
@@ -144,6 +148,12 @@ class CalendarType(Enum):
             return cls.DISCOVERED
         elif value.lower() == 'pool':
             return cls.POOL
+        elif value.lower() == 'undifferentiated':
+            return cls.UNDIFFERENTIATED
+        elif value.lower() == 'differentiated_by_pool':
+            return cls.DIFFERENTIATED_BY_POOL
+        elif value.lower() == 'differentiated_by_resource':
+            return cls.DIFFERENTIATED_BY_RESOURCE
         else:
             raise ValueError(f'Unknown value {value}')
 
@@ -297,7 +307,7 @@ class Configuration:
     add_metrics: List[Metric] = field(
         default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])
     concurrency: Union[float, List[float]] = 0.0  # array
-    arr_cal_met: CalendarType = CalendarType.DISCOVERED
+    arr_cal_met: CalendarType = CalendarType.UNDIFFERENTIATED  # TODO: this can be only undifferentiated
     arr_confidence: Optional[Union[float, List[float]]] = None
     arr_support: Optional[Union[float, List[float]]] = None
     epsilon: Optional[Union[float, List[float]]] = None
@@ -307,7 +317,7 @@ class Configuration:
     gate_management: Optional[Union[GateManagement, List[GateManagement]]] = None
     res_confidence: Optional[float] = None
     res_support: Optional[float] = None
-    res_cal_met: Optional[CalendarType] = None
+    res_cal_met: Optional[CalendarType] = CalendarType.UNDIFFERENTIATED
     res_dtype: Optional[Union[DataType, List[DataType]]] = None
     arr_dtype: Optional[Union[DataType, List[DataType]]] = None
     rp_similarity: Optional[Union[float, List[float]]] = None

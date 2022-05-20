@@ -7,6 +7,7 @@ from typing import Union, Optional, Tuple
 from xml.etree import ElementTree as ET
 
 import pandas as pd
+import pendulum
 
 from simod.cli_formatter import print_step
 
@@ -47,7 +48,7 @@ class LogReader:
             log_path = Path(log_path)
 
         if not log_path.exists():
-            raise FileNotFoundError
+            raise FileNotFoundError(f'Log file {log_path} does not exist.')
 
         self.log_path = log_path
         # _, ext = os.path.splitext(log_path)
@@ -219,14 +220,19 @@ def convert_timestamps(log: pd.DataFrame):
 
 def convert_xes_to_csv(xes_path: Path, csv_path: Path):
     args = ['pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv']
-    print_step(f'Executing shell command: {args}')
+    print_step(f'Executing shell command [convert_xes_to_csv]: {args}')
     os.system(' '.join(args))
 
 
 def convert_df_to_xes(df: pd.DataFrame, output_path: Path):
+    xes_datetime_format = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
+    df['start_timestamp'] = df['start_timestamp'].apply(
+        lambda x: pendulum.parse(x.isoformat()).format(xes_datetime_format))
+    df['time:timestamp'] = df['time:timestamp'].apply(
+        lambda x: pendulum.parse(x.isoformat()).format(xes_datetime_format))
     df.to_csv(output_path, index=False)
     args = ['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes']
-    print_step(f'Executing shell command: {args}')
+    print_step(f'Executing shell command [convert_df_to_xes]: {args}')
     os.system(' '.join(args))
 
 

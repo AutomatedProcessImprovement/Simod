@@ -40,12 +40,12 @@ class TestConfigurationFromStringConversion:
 
     def test_CalculationMethod_from_str(self):
         args = {
-            'default': CalendarType.DEFAULT,
-            'discovered': CalendarType.DISCOVERED,
-            'pool': CalendarType.POOL,
-            'DEFAULT': CalendarType.DEFAULT,
-            'DISCOVERED': CalendarType.DISCOVERED,
-            'POOL': CalendarType.POOL,
+            'undifferentiated': CalendarType.UNDIFFERENTIATED,
+            'differentiated_by_pool': CalendarType.DIFFERENTIATED_BY_POOL,
+            'differentiated_by_resource': CalendarType.DIFFERENTIATED_BY_RESOURCE,
+            'UNDIFFERENTIATED': CalendarType.UNDIFFERENTIATED,
+            'DIFFERENTIATED_BY_POOL': CalendarType.DIFFERENTIATED_BY_POOL,
+            'DIFFERENTIATED_BY_RESOURCE': CalendarType.DIFFERENTIATED_BY_RESOURCE,
         }
 
         for arg in args:

@@ -138,12 +138,12 @@ class Discoverer:
             best_params['eta'] = str(settings.eta)
         elif settings.mining_alg == MiningAlgorithm.SM2:
             best_params['concurrency'] = str(settings.concurrency)
-        if settings.res_cal_met == CalendarType.DEFAULT:
+        if settings.res_cal_met == CalendarType.DEFAULT:  # TODO: do we need this?
             best_params['res_dtype'] = settings.res_dtype.__str__().split('.')[1]
         else:
             best_params['res_support'] = str(settings.res_support)
             best_params['res_confidence'] = str(settings.res_confidence)
-        if settings.arr_cal_met == CalendarType.DEFAULT:
+        if settings.arr_cal_met == CalendarType.DEFAULT:  # TODO: do we need this?
             best_params['arr_dtype'] = settings.res_dtype.__str__().split('.')[1]
         else:
             best_params['arr_support'] = str(settings.arr_support)

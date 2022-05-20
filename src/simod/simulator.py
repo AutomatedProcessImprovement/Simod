@@ -81,17 +81,17 @@ def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
 
     # Read simulated logs
     p = pool.map_async(read_stats_alt, args)
-    pbar_async(p, 'reading simulated logs:', reps)
+    pbar_async(p, 'reading simulated logs', reps)
 
     # Evaluate
     args = [(settings, log_data, log) for log in p.get()]
     if n_cases > 1000:
         pool.close()
-        results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results:')]
+        results = [evaluate_fn(arg) for arg in tqdm(args, 'evaluating results')]
         sim_values = list(itertools.chain(*results))
     else:
         p = pool.map_async(evaluate_fn, args)
-        pbar_async(p, 'evaluating results:', reps)
+        pbar_async(p, 'evaluating results', reps)
         pool.close()
         sim_values = list(itertools.chain(*p.get()))
     return sim_values

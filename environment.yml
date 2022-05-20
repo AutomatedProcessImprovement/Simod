@@ -11,8 +11,8 @@ dependencies:
   - brotli-bin=1.0.9=h3422bc3_6
   - brotlipy=0.7.0=py39h1a28f6b_1002
   - bzip2=1.0.8=h3422bc3_4
-  - ca-certificates=2022.3.29=hca03da5_0
-  - certifi=2021.10.8=py39hca03da5_2
+  - ca-certificates=2022.5.18.1=h4653dfc_0
+  - certifi=2022.5.18.1=py39h2804cbe_0
   - cffi=1.15.0=py39h52b1de0_0
   - cfgv=3.3.1=pyhd8ed1ab_0
   - cloudpickle=2.0.0=pyhd8ed1ab_0
@@ -21,7 +21,6 @@ dependencies:
   - conda-package-handling=1.8.1=py39h1a28f6b_0
   - coverage=6.3.2=py39h1a28f6b_0
   - cryptography=36.0.0=py39h834c97f_0
-  - cvxopt=1.2.6=py39hc9edfa2_0
   - cycler=0.11.0=pyhd8ed1ab_0
   - distlib=0.3.4=pyhd8ed1ab_0
   - dsdp=5.8=hc9edfa2_0
@@ -30,7 +29,7 @@ dependencies:
   - freetype=2.11.0=h1192e45_0
   - future=0.18.2=py39h2804cbe_3
   - giflib=5.2.1=h27ca646_2
-  - glpk=4.65=h695f6f0_2
+  - glpk=4.65=h6d7a090_1004
   - gmp=6.2.1=h9f76cd9_0
   - gsl=2.6=hc9edfa2_0
   - hyperopt=0.2.5=pyh9f0ad1d_0
@@ -79,7 +78,8 @@ dependencies:
   - numexpr=2.8.1=py39h144ceef_0
   - numpy-base=1.21.2=py39h6269429_0
   - openblas=0.3.18=openmp_h3b88efd_0
-  - openssl=3.0.2=h90dfc92_1
+  - openssl=3.0.3=ha287fd2_0
+  - pendulum=2.1.2=pyhd3eb1b0_1
   - platformdirs=2.5.1=pyhd8ed1ab_0
   - pluggy=1.0.0=py39h2804cbe_1
   - pre-commit=2.18.1=py39h2804cbe_1
@@ -95,6 +95,7 @@ dependencies:
   - python-dateutil=2.8.2=pyhd8ed1ab_0
   - python_abi=3.9=2_cp39
   - pytz=2022.1=pyhd8ed1ab_0
+  - pytzdata=2020.1=pyhd3eb1b0_0
   - pyyaml=6.0=py39h5161555_0
   - readline=8.1.2=h1a28f6b_1
   - requests=2.27.1=pyhd3eb1b0_0
@@ -127,6 +128,7 @@ dependencies:
     - click==8.1.2
     - clikit==0.6.2
     - crashtest==0.3.1
+    - cvxopt==1.3.0
     - decorator==5.1.1
     - deprecation==2.1.0
     - executing==0.8.3
@@ -156,6 +158,7 @@ dependencies:
     - pip==22.0.4
     - pkginfo==1.8.2
     - pm4py==2.2.19.2
+    - pm4py-wrapper==1.1.4
     - poetry==1.1.13
     - poetry-core==1.0.8
     - prompt-toolkit==3.0.28

@@ -19,7 +19,7 @@ from .configuration import CalendarType, DataType, GateManagement
 from .configuration import Configuration, PDFMethod, Metric
 from .extraction.interarrival_definition import InterArrivalEvaluator
 from .extraction.role_discovery import ResourcePoolAnalyser
-from .extraction.schedule_tables import TimeTablesCreator
+from .calendar_discovery.adapter import TimeTablesCreator
 from .extraction.tasks_evaluator import TaskEvaluator
 from .readers import bpmn_reader
 from .readers import process_structure
@@ -300,9 +300,9 @@ def pbar_async(p, msg, reps):
 
 def mine_resources(settings: Configuration):
     parameters = dict()
-    settings.res_cal_met = CalendarType.DEFAULT
-    settings.res_dtype = DataType.DT247
-    settings.arr_cal_met = CalendarType.DEFAULT
+    # settings.res_cal_met = CalendarType.DEFAULT
+    settings.res_dtype = DataType.DT247  # TODO: deal with this type
+    # settings.arr_cal_met = CalendarType.DEFAULT
     settings.arr_dtype = DataType.DT247
     time_table_creator = TimeTablesCreator(settings)
     args = {'res_cal_met': settings.res_cal_met, 'arr_cal_met': settings.arr_cal_met}
@@ -312,7 +312,7 @@ def mine_resources(settings: Configuration):
     if not isinstance(args['arr_cal_met'], CalendarType):
         args['arr_cal_met'] = CalendarType.from_str(args['arr_cal_met'])
 
-    time_table_creator.create_timetables(args)
+    time_table_creator.create_timetables()
     resource_pool = [
         {'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM', 'total_amount': '100000', 'costxhour': '20',
          'timetable_id': time_table_creator.res_ttable_name['arrival']}
@@ -352,7 +352,7 @@ def mine_resources_with_resource_table(log: LogReader, settings: Configuration):
     if not isinstance(args['arr_cal_met'], CalendarType):
         args['arr_cal_met'] = CalendarType.from_str(settings.arr_cal_met)
 
-    ttcreator.create_timetables(args)
+    ttcreator.create_timetables(log=log)
     resource_pool = create_resource_pool(res_analyzer.resource_table, ttcreator.res_ttable_name)
     resource_table = pd.DataFrame.from_records(res_analyzer.resource_table)
 
