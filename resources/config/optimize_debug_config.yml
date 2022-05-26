@@ -46,3 +46,4 @@ time_optimizer:
   arr_confidence:
     - 1
     - 10
+  res_cal_met: pool

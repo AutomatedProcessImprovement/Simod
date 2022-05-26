@@ -14,7 +14,7 @@ class Rel(Enum):
     PARALLEL = 4
 
 
-class AlphaOracle(object):
+class AlphaOracle:
     """This class provides the alpha concurrency oracle information"""
 
     def __init__(self, log, tasks_alias, one_timestamp, look_for_loops=False):

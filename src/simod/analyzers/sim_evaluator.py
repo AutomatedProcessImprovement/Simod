@@ -1,13 +1,7 @@
-"""
-Created on Fri Jan 10 11:40:46 2020
-
-@author: Manuel Camargo
-"""
 import copy
 import itertools
 import multiprocessing
 import string
-import time
 import traceback
 import warnings
 from multiprocessing import Pool
@@ -18,17 +12,15 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import wasserstein_distance
-from tqdm import tqdm
 
 from simod.configuration import Configuration, Metric
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
+from ..support_utils import progress_bar_async
 
 
-class SimilarityEvaluator():
-    """
-        This class evaluates the similarity of two event-logs
-     """
+class SimilarityEvaluator:
+    """Evaluates the similarity of two event-logs."""
 
     def __init__(self, log_data: pd.DataFrame, simulation_data: pd.DataFrame, settings: Configuration, max_cases=500,
                  dtype='log'):
@@ -135,20 +127,6 @@ class SimilarityEvaluator():
         """
         similarity = list()
 
-        def pbar_async(p, msg):
-            pbar = tqdm(total=reps, desc=msg)
-            processed = 0
-            while not p.ready():
-                cprocesed = (reps - p._number_left)
-                if processed < cprocesed:
-                    increment = cprocesed - processed
-                    pbar.update(n=increment)
-                    processed = cprocesed
-            time.sleep(1)
-            pbar.update(n=(reps - processed))
-            p.wait()
-            pbar.close()
-
         # define the type of processing sequencial or parallel
         cases = len(set([x['caseid'] for x in log_data]))
         if cases <= self.max_cases:
@@ -171,7 +149,7 @@ class SimilarityEvaluator():
                      r) for r in ranges]
             p = pool.map_async(self._compare_traces, args)
             if self.verbose:
-                pbar_async(p, f'evaluating {metric}:')
+                progress_bar_async(p, f'evaluating {metric}:', reps)
             pool.close()
             # Save results
             df_matrix = pd.concat(list(p.get()), axis=0, ignore_index=True)
@@ -595,3 +573,35 @@ class SimilarityEvaluator():
             else:
                 folds.append({'min': sidx, 'max': eidx})
         return folds
+
+
+def evaluate_logs(args):
+    """Reads the simulation results stats"""
+    settings: Configuration
+    data: pd.DataFrame
+    sim_log: pd.DataFrame
+    settings, data, sim_log = args
+
+    rep = sim_log.iloc[0].run_num
+    evaluator = SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
+    evaluator.measure_distance(Metric.DL)
+    sim_values = [{'run_num': rep, **evaluator.similarity}]  # TODO: why list for a single dict?
+    return sim_values
+
+
+def evaluate_logs_with_add_metrics(args):
+    settings: Configuration
+    process_stats: pd.DataFrame
+    sim_log: pd.DataFrame
+    settings, process_stats, sim_log = args
+
+    rep = sim_log.iloc[0].run_num
+    evaluator = SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
+    metrics = [settings.sim_metric]
+    if settings.add_metrics:
+        metrics = list(set(list(settings.add_metrics) + metrics))
+    sim_values = []
+    for metric in metrics:
+        evaluator.measure_distance(metric)
+        sim_values.append({'run_num': rep, **evaluator.similarity})
+    return sim_values

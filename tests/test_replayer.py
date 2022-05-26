@@ -1,6 +1,5 @@
 import copy
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Tuple
@@ -8,13 +7,11 @@ from typing import Tuple
 import pandas as pd
 import pytest
 
-from simod.common_routines import compute_sequence_flow_frequencies, mine_gateway_probabilities_alternative, \
-    mine_gateway_probabilities_alternative_with_gateway_management
 from simod.configuration import Configuration, GateManagement
+from simod.discovery import gateway_probabilities
 from simod.event_log import LogReader
 from simod.readers.log_splitter import LogSplitter
 from simod.replayer_datatypes import BPMNGraph
-from simod.structure_optimizer import StructureOptimizer
 
 
 @pytest.fixture
@@ -103,7 +100,7 @@ def test_compute_sequence_flow_frequencies(args):
         traces = log.get_traces()
 
         try:
-            flow_arcs_frequency = compute_sequence_flow_frequencies(traces, graph)
+            flow_arcs_frequency = gateway_probabilities.__compute_sequence_flow_frequencies(traces, graph)
         except Exception as e:
             pytest.fail(f'Should not fail, failed with: {e}')
 
@@ -146,23 +143,23 @@ def test_compute_sequence_flow_frequencies(args):
 #             assert flow_arcs_frequency[node_id] != 0
 
 
-def test_mine_gateway_probabilities_stochastic_alternative(args):
-    for arg in args:
-        model_path = arg['model_path']
-        log_path = arg['log_path']
-        print(f'\nTesting {log_path.name}')
-
-        graph, log, _ = setup_data(model_path, log_path)
-        traces = log.get_traces()
-
-        try:
-            sequences = mine_gateway_probabilities_alternative(traces, graph)
-        except Exception as e:
-            logging.exception(e)
-            pytest.fail(f'Should not fail, failed with: {e}')
-
-        print(sequences)
-        assert len(sequences) != 0
+# def test_mine_gateway_probabilities_stochastic_alternative(args):
+#     for arg in args:
+#         model_path = arg['model_path']
+#         log_path = arg['log_path']
+#         print(f'\nTesting {log_path.name}')
+#
+#         graph, log, _ = setup_data(model_path, log_path)
+#         traces = log.get_traces()
+#
+#         try:
+#             sequences = mine_gateway_probabilities_alternative(traces, graph)
+#         except Exception as e:
+#             logging.exception(e)
+#             pytest.fail(f'Should not fail, failed with: {e}')
+#
+#         print(sequences)
+#         assert len(sequences) != 0
 
 
 def test_mine_gateway_probabilities_alternative_with_gateway_management(args):
@@ -176,8 +173,7 @@ def test_mine_gateway_probabilities_alternative_with_gateway_management(args):
 
         for gateway_management in [GateManagement.DISCOVERY, GateManagement.EQUIPROBABLE]:
             try:
-                sequences = mine_gateway_probabilities_alternative_with_gateway_management(
-                    traces, graph, gateway_management)
+                sequences = gateway_probabilities.discover_with_gateway_management(traces, graph, gateway_management)
             except Exception as e:
                 logging.exception(e)
                 pytest.fail(f'Should not fail, failed with: {e}')

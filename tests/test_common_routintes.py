@@ -1,12 +1,12 @@
-import os
 import re
 from pathlib import Path
 
 import pytest
 
-from simod.common_routines import remove_outliers, file_contains
+from simod.support_utils import file_contains
 from simod.configuration import Configuration
 from simod.event_log import LogReader
+from simod.processing.core import remove_outliers
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def test_remove_outliers(args):
         log_path = arg['log_path']
         log = LogReader(log_path)
         print(f'Running test for {log_path}')
-        result = remove_outliers(log)
+        result = remove_outliers(log.df)
         assert result is not None
         assert 'caseid' in result.keys()
         assert 'duration_seconds' not in result.keys()

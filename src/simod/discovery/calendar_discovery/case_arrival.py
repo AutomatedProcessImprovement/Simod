@@ -1,7 +1,7 @@
 import pandas as pd
 
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
-from simod.calendar_discovery.resource import _get_simod_column_names
+from simod.discovery.calendar_discovery.resource import _get_simod_column_names
 
 CASE_ID_KEY = 'case:concept:name'
 START_TIMESTAMP_KEY = "start_timestamp"

@@ -10,6 +10,7 @@ import pandas as pd
 import pendulum
 
 from simod.cli_formatter import print_step
+from simod.readers.log_splitter import LogSplitter
 
 DEFAULT_XES_COLUMNS = {
     'concept:name': 'task',
@@ -31,7 +32,7 @@ TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 class LogReader:
     log_path: Path
     # log_path_xes: Path
-    log: pd.DataFrame
+    df: pd.DataFrame
     data: list  # TODO: we need to get rid of list and use DataFrame everywhere
     _time_format: str
     _column_names: dict
@@ -50,6 +51,7 @@ class LogReader:
         if not log_path.exists():
             raise FileNotFoundError(f'Log file {log_path} does not exist.')
 
+        self.df = log
         self.log_path = log_path
         # _, ext = os.path.splitext(log_path)
         # if ext != '.csv':
@@ -61,7 +63,8 @@ class LogReader:
         #     self.log_path = log_path
         #
         #     # NOTE: we assume that XES is located at the same path
-        #     self.log_path_xes = log_path.with_suffix('.xes')  # TODO: should we convert CSV to XES if XES isn't provided
+        #     self.log_path_xes = log_path.with_suffix('.xes')
+        # TODO: should we convert CSV to XES if XES isn't provided
 
         if load:
             self._read_log(log, column_filter, column_names, time_format)
@@ -77,7 +80,7 @@ class LogReader:
             df = log
 
         # renaming for internal use
-        df = df.rename(columns=column_names)
+        df.rename(columns=column_names, inplace=True)
 
         # type conversion
         # df = df.astype({'caseid': object})
@@ -90,9 +93,9 @@ class LogReader:
         if column_filter is not None:
             df = df[column_filter]
 
-        self.log = df
         self.data = df.to_dict('records')
         self.data = self._append_csv_start_end_entries(self.data)
+        self.df = pd.DataFrame(self.data)  # TODO: can we these log manipulations clearer?
 
     @staticmethod
     def copy_without_data(log: 'LogReader') -> 'LogReader':
@@ -141,6 +144,26 @@ class LogReader:
             trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter(order_key))
             traces.append(trace)
         return traces
+
+    def split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Split an event log dataframe by time to perform split-validation. preferred method time splitting removing
+        incomplete traces. If the testing set is smaller than the 10% of the log size the second method is sort by traces
+        start and split taking the whole traces no matter if they are contained in the timeframe or not
+        """
+        # Split log data
+        splitter = LogSplitter(self.df)
+        partition1, partition2 = splitter.split_log('timeline_contained', size)
+        total_events = len(self.df)
+
+        # Check size and change time splitting method if necesary
+        if len(partition2) < int(total_events * 0.1):
+            partition1, partition2 = splitter.split_log('timeline_trace', size)
+
+        # Set splits
+        partition1 = pd.DataFrame(partition1)
+        partition2 = pd.DataFrame(partition2)
+        return partition1, partition2
 
 
 def write_xes(log: Union[LogReader, pd.DataFrame, list], output_path: Path):

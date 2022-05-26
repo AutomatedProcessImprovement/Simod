@@ -4,20 +4,15 @@ import numpy as np
 import pandas as pd
 import scipy.stats as st
 
-from .. import support_utils as sup
+from simod import support_utils as sup
 
 
-# import support as sup
-
-
-class DistributionFinder():
+class DistributionFinder:
     """
-        This class evaluates a series of data and adjust a
-        Probability Distribution Function
-     """
+    This class evaluates a series of data and adjust a Probability Distribution Function.
+    """
 
     def __init__(self, data_serie, bins='auto'):
-        """constructor"""
         self.data_serie = data_serie
         self.bins = bins
 

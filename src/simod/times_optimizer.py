@@ -1,7 +1,7 @@
 import copy
 import os
-import shutil
 import xml.etree.ElementTree as ET
+from collections import namedtuple
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -12,20 +12,26 @@ from hyperopt import tpe
 from lxml import etree
 from lxml.builder import ElementMaker
 
-from simod.common_routines import extract_times_parameters, split_timeline, hyperopt_pipeline_step, remove_asset
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
-from .cli_formatter import print_subsection, print_message, print_step
-from .configuration import Configuration, MiningAlgorithm, Metric, QBP_NAMESPACE_URI
+from .cli_formatter import print_subsection, print_message
+from .configuration import Configuration, MiningAlgorithm, Metric, QBP_NAMESPACE_URI, PDFMethod
+from .discovery import inter_arrival_distribution
+from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
+from .discovery.tasks_evaluator import TaskEvaluator
+from .event_log import LogReader
+from .hyperopt_pipeline import HyperoptPipeline
 from .readers import bpmn_reader as br
 from .readers import process_structure as gph
-from .event_log import LogReader
 from .simulator import simulate
-from .support_utils import get_project_dir
+from .support_utils import get_project_dir, remove_asset
+
+Parameters = namedtuple('Parameters',
+                        ['time_table', 'resource_pool', 'resource_table', 'arrival_rate', 'elements_data', 'instances',
+                         'start_time'])
 
 
-class TimesOptimizer:
-    """Hyperparameter-optimizer class"""
+class TimesOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: dict
     measurements_file_name: Path
@@ -85,13 +91,13 @@ class TimesOptimizer:
 
             status = STATUS_OK
 
-            status, result = hyperopt_pipeline_step(status, self._temp_path_redef, trial_stg)
+            status, result = self.step(status, self._temp_path_redef, trial_stg)
             if status == STATUS_OK:
                 trial_stg = result
 
-            status, _ = hyperopt_pipeline_step(status, self._extract_parameters, trial_stg)
+            status, _ = self.step(status, self._extract_parameters, trial_stg)
 
-            status, result = hyperopt_pipeline_step(status, self._simulate, trial_stg)
+            status, result = self.step(status, self._simulate, trial_stg)
             sim_values = result if status == STATUS_OK else []
 
             response = self._define_response(trial_stg, status, sim_values)
@@ -154,16 +160,9 @@ class TimesOptimizer:
         return settings
 
     def _extract_parameters(self, settings: Configuration):
-        num_inst = len(self._log_validation.caseid.unique())
-        start_time = self._log_validation.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+        parameters = self._extract_time_parameters(settings)
 
-        parameters = extract_times_parameters(
-            settings, self.process_graph, self._log_train, self._conformant_traces, self._process_stats)
-
-        parameters.instances = num_inst
-        parameters.start_time = start_time
-
-        self._xml_print(parameters.__dict__, os.path.join(settings.output, settings.project_name + '.bpmn'))
+        self._xml_print(parameters._asdict(), os.path.join(settings.output, settings.project_name + '.bpmn'))
         self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
         self._log_validation['source'] = 'log'
         self._log_validation['run_num'] = 0
@@ -214,6 +213,25 @@ class TimesOptimizer:
             sup.create_csv_file_header(measurements, self.measurements_file_name)
 
         return response
+
+    def _extract_time_parameters(self, settings):
+        pdef_method = PDFMethod.AUTOMATIC  # TODO: reassigned configuration, are there any other PDF methods supported?
+        time_table, resource_pool, resource_table = discover_timetables_with_resource_pools(self._log_train, settings)
+        arrival_rate = inter_arrival_distribution.discover(self.process_graph, self._conformant_traces, pdef_method)
+        process_stats = self._process_stats.merge(resource_table, left_on='user', right_on='resource', how='left')
+        elements_data = TaskEvaluator(self.process_graph, process_stats, resource_pool, pdef_method).elements_data
+        num_inst = len(self._log_validation.caseid.unique())
+        start_time = self._log_validation.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+
+        return Parameters(
+            time_table=time_table,
+            resource_pool=resource_pool,
+            resource_table=resource_table,
+            arrival_rate=arrival_rate,
+            elements_data=elements_data,
+            instances=num_inst,
+            start_time=start_time
+        )
 
     @staticmethod
     def _evaluate_logs(args) -> Optional[list]:
@@ -354,7 +372,8 @@ class TimesOptimizer:
         return settings
 
     def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        train, validation, key = split_timeline(self._log, size)
+        train, validation = self._log.split_timeline(size)
+        key = 'start_timestamp'
         validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
         train = train.sort_values(key, ascending=True).reset_index(drop=True)
         return train, validation

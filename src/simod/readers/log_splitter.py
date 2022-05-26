@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 26 21:35:36 2020
-
-@author: Manuel Camargo
-"""
 import copy
 import itertools
 from operator import itemgetter
@@ -12,13 +6,13 @@ import numpy as np
 import pandas as pd
 
 
-class LogSplitter(object):
+class LogSplitter:
     """
     This class reads and parse the elements of a given event-log
     expected format .xes or .csv
     """
 
-    def __init__(self, log: pd.DataFrame, verbose=True):
+    def __init__(self, log: pd.DataFrame):
         self.log = log
         self._sort_log()
 

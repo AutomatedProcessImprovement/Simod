@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import networkx as nx
 import matplotlib.pyplot as plt
 from .. import support_utils as sup

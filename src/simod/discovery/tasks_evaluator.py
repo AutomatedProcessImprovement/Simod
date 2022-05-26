@@ -3,16 +3,15 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from .pdf_finder import DistributionFinder
-from .. import support_utils as sup
-from ..configuration import Configuration, PDFMethod
+from simod.discovery.pdf_finder import DistributionFinder
+from simod import support_utils as sup
+from simod.configuration import PDFMethod
 
 
 class TaskEvaluator:
     """This class evaluates the tasks durations and associates resources to it."""
 
-    def __init__(self, process_graph, process_stats: pd.DataFrame, resource_pool, settings: Configuration):
-        """constructor"""
+    def __init__(self, process_graph, process_stats: pd.DataFrame, resource_pool, pdef_method: PDFMethod):
         self.tasks = self.get_task_list(process_graph)
         self.model_data = self.get_model_data(process_graph)
 
@@ -24,10 +23,9 @@ class TaskEvaluator:
 
         self.resource_pool = resource_pool
 
-        self.pdef_method = settings.pdef_method
+        self.pdef_method = pdef_method
         self.pdef_values = dict()
 
-        self.one_timestamp = settings.read_options.one_timestamp
         self.elements_data = self.evaluate_tasks()
 
     def evaluate_tasks(self):
@@ -69,7 +67,7 @@ class TaskEvaluator:
         """
         elements_data = list()
         for task in tqdm(self.tasks, desc='mining tasks distributions:'):
-            s_key = 'duration' if self.one_timestamp else 'processing_time'
+            s_key = 'processing_time'
             task_processing = self.process_stats[self.process_stats.task == task][s_key].tolist()
             dist = DistributionFinder(task_processing).distribution
             elements_data.append({'id': sup.gen_id(),
@@ -92,7 +90,7 @@ class TaskEvaluator:
         """
         elements_data = list()
         for task in tqdm(self.tasks, desc='mining tasks distributions:'):
-            s_key = 'duration' if self.one_timestamp else 'processing_time'
+            s_key = 'processing_time'
             task_processing = self.process_stats[self.process_stats.task == task][s_key].tolist()
             try:
                 mean_time = np.mean(task_processing) if task_processing else 0

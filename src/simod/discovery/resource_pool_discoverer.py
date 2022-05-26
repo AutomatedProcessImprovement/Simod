@@ -5,12 +5,11 @@ import networkx as nx
 import pandas as pd
 import scipy
 from scipy.stats import pearsonr
-from tqdm import tqdm
 
 from simod.event_log import LogReader
 
 
-class ResourcePoolAnalyser:
+class ResourcePoolDiscoverer:
     """Evaluates the tasks durations and associates resources to it."""
     tasks: dict
     users: dict

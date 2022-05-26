@@ -3,11 +3,17 @@ import datetime
 import json
 import os
 import platform as pl
+import shutil
+import time
 import uuid
 from pathlib import Path
 from sys import stdout
+from typing import Optional
 
 import numpy as np
+from tqdm import tqdm
+
+from simod.cli_formatter import print_step
 
 
 def folder_id():
@@ -119,3 +125,43 @@ def copy(source, destiny):
 
 def get_project_dir() -> Path:
     return Path(os.path.dirname(__file__)).parent.parent
+
+
+def execute_shell_cmd(args):
+    print_step(f'Executing shell command: {args}')
+    os.system(' '.join(args))
+
+
+def progress_bar_async(pool, message, number_of_iterations):
+    progress_bar = tqdm(total=number_of_iterations, desc=message)
+    processed = 0
+    while not pool.ready():
+        cprocesed = (number_of_iterations - pool._number_left)
+        if processed < cprocesed:
+            increment = cprocesed - processed
+            progress_bar.update(n=increment)
+            processed = cprocesed
+    time.sleep(1)
+    progress_bar.update(n=(number_of_iterations - processed))
+    pool.wait()
+    progress_bar.close()
+
+
+def file_contains(file_path: Path, substr: str) -> Optional[bool]:
+    if not file_path.exists():
+        return None
+
+    with file_path.open('r') as f:
+        contains = next((line for line in f if substr in line), None)
+
+    return contains is not None
+
+
+def remove_asset(location: Path):
+    if location is None or not location.exists():
+        return
+    print_step(f'Removing {location}')
+    if location.is_dir():
+        shutil.rmtree(location)
+    elif location.is_file():
+        location.unlink()

@@ -5,10 +5,9 @@ import pytest
 
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from pm4py_wrapper.wrapper import convert_xes_to_csv
-from simod.calendar_discovery import case_arrival
-from simod.calendar_discovery import resource as resource_calendar
+from simod.discovery.calendar_discovery import case_arrival, resource as resource_calendar
 from simod.event_log import read
-from simod.extraction.role_discovery import ResourcePoolAnalyser
+from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 
 
 def test_calendar_module(entry_point):
@@ -71,7 +70,7 @@ def test_calendar_discover_per_resource(entry_point, log_name):
 def test_resource_pool_analyzer(entry_point):
     log_path = entry_point / 'PurchasingExample.xes'
     log, log_path_csv = read(log_path)
-    result = ResourcePoolAnalyser(log, activity_key='concept:name', resource_key='org:resource')
+    result = ResourcePoolDiscoverer(log, activity_key='concept:name', resource_key='org:resource')
     assert result.resource_table
     assert len(result.resource_table) > 0
     log_path_csv.unlink()

@@ -4,7 +4,7 @@ import pandas as pd
 
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from simod.configuration import CalendarType
-from simod.extraction.role_discovery import ResourcePoolAnalyser
+from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 
 UNDIFFERENTIATED_RESOURCE_POOL_KEY = "undifferentiated_resource_pool"
 RESOURCE_KEY = "org:resource"
@@ -15,6 +15,7 @@ END_TIMESTAMP_KEY = "time:timestamp"
 # TODO: Include min_participation into configuration and hyperopt
 # TODO: Use existing hyperopt for confidence and support
 # TODO: Update the configuration: res_cal_met, arr_cal_met, ...
+# TODO: move calendar discovery code from Prosimos into Simod
 
 PoolName = NewType('PoolName', str)
 ResourceName = NewType('ResourceName', str)
@@ -108,7 +109,7 @@ def discover_per_resource_pool(
         desired_support=0.7,
         min_participation=0.4,
         columns_mapping: dict = None) -> dict:
-    analyzer = ResourcePoolAnalyser(
+    analyzer = ResourcePoolDiscoverer(
         event_log[[ACTIVITY_KEY, RESOURCE_KEY]], activity_key=ACTIVITY_KEY, resource_key=RESOURCE_KEY)
     pool_mapping = __resource_pool_analyser_result_to_pool_mapping(analyzer.resource_table)
     return make(event_log, granularity, min_confidence, desired_support, min_participation, True, pool_mapping, columns_mapping=columns_mapping)

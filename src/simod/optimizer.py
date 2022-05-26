@@ -1,40 +1,54 @@
 import os
 import shutil
+from collections import namedtuple
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 from xml.dom import minidom
 
 import pandas as pd
 
+from simod.discovery.tasks_evaluator import TaskEvaluator
 from . import support_utils as sup
-from .analyzers import sim_evaluator as sim
+from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics, SimilarityEvaluator
 from .cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
-from .common_routines import extract_structure_parameters, extract_process_graph, evaluate_logs_with_add_metrics, \
-    remove_outliers
 from .configuration import Configuration, MiningAlgorithm
-from .preprocessor import Preprocessor
-from .readers import log_splitter as ls
+from .discovery import inter_arrival_distribution
+from .discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
+from .discovery.gateway_probabilities import discover_with_gateway_management
 from .event_log import LogReader
+from .preprocessor import Preprocessor
+from .processing.core import remove_outliers
+from .readers import log_splitter as ls, bpmn_reader, process_structure
+from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers import xml_writer
 from .writers.model_serialization import serialize_model
 
+Parameters = namedtuple('Parameters',
+                        ['time_table', 'resource_pool', 'arrival_rate', 'sequences', 'elements_data',
+                         'instances', 'start_time', 'process_stats'])
+
 
 class Optimizer:
-    """Main optimizer class that optimizes the structure and times."""
+    log_reader: LogReader
     log_train: LogReader
     log_test: pd.DataFrame
+    settings: Configuration
+    settings_global: Configuration
+    settings_structure: Configuration
+    settings_time: Configuration
+    best_params: dict = {}
 
     _preprocessor: Optional[Preprocessor] = None
 
     def __init__(self, settings):
         self.settings = settings
-        self.settings_global: Configuration = settings['gl']
-        self.settings_structure: Configuration = settings['strc']
-        self.settings_time: Configuration = settings['tm']
-        self.best_params = dict()
+        self.settings_global = settings['gl']
+        self.settings_structure = settings['strc']
+        self.settings_time = settings['tm']
 
         if not os.path.exists(self.settings_global.output):
             os.makedirs(self.settings_global.output)
@@ -42,12 +56,11 @@ class Optimizer:
         self._preprocessor = Preprocessor(self.settings_global)
         self.settings_global = self._preprocessor.run()
 
-        self.log = LogReader(self.settings_global.log_path, log=self._preprocessor.log)
+        print_notice(f'Log path: {self.settings_global.log_path}')
+        self.log_reader = LogReader(self.settings_global.log_path, log=self._preprocessor.log)
+        self.split_and_set_log_buckets(0.8)
 
     def run(self, discover_model: bool = True) -> None:
-        print_notice(f'Log path: {self.settings_global.log_path}')
-        self.split_and_set_log_buckets(0.8, self.settings['gl'].read_options.one_timestamp)
-
         print_step('Removing outliers from the training partition')
         self._remove_outliers()
 
@@ -56,14 +69,14 @@ class Optimizer:
 
         # optional model discovery if model is not provided
         if discover_model:
-            print_section('Model Discovery and Parameters Extraction')
-            structure_optimizer = StructureOptimizer(self.settings_structure, self.log_train)
+            print_section('Model Discovery and Structure Optimization')
+            structure_optimizer = StructureOptimizer(self.settings_structure, deepcopy(self.log_train))
             structure_optimizer.run()
             self._redefine_best_params_after_structure_optimization(structure_optimizer)
             structure_measurements = structure_optimizer.measurements_file_name
             model_path = os.path.join(structure_optimizer.best_output, self.settings_global.project_name + '.bpmn')
         else:
-            print_section('Parameters Extraction')
+            print_section('Parameters Extraction without model discovery')
             model_path = self._extract_parameters_and_rewrite_model()
 
         print_section('Times Optimization')
@@ -135,23 +148,48 @@ class Optimizer:
     def _extract_parameters_and_rewrite_model(self):
         # extracting parameters
         model_path = self.settings_global.model_path
-        process_graph = extract_process_graph(model_path)
-        parameters = extract_structure_parameters(
-            settings=self.settings_structure, process_graph=process_graph, log_reader=self.log_train, model_path=model_path)
+
+        bpmn = bpmn_reader.BpmnReader(model_path)
+        process_graph = process_structure.create_process_structure(bpmn)
+
+        # TODO: why only arrival resource pool is used and why it's hardcoded in mine_resource_pool_and_calendars?
+        arrival_default_resource_pool, time_table = \
+            discover_timetables_and_get_default_arrival_resource_pool(self.settings_structure.log_path)
+
+        log_df = pd.DataFrame(self.log_train.data)
+        arrival_rate = inter_arrival_distribution.discover(process_graph, log_df, self.settings_structure.pdef_method)
+
+        bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+        traces = self.log_train.get_traces()
+        sequences = discover_with_gateway_management(
+            traces, bpmn_graph, self.settings_structure.gate_management)
+
+        log_df['role'] = 'SYSTEM'
+        elements_data = TaskEvaluator(process_graph, log_df, arrival_default_resource_pool,
+                                      self.settings_structure.pdef_method).elements_data
 
         # TODO: usually, self.log_valdn is used, but we don't have it here, in Discoverer,
-        #  self.log_test is used instead. What whould be used here?
+        #  self.log_test is used instead. What would be used here?
         num_inst = len(self.log_test.caseid.unique())
         start_time = self.log_test.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
-        parameters.instances = num_inst
-        parameters.start_time = start_time
+
+        parameters = Parameters(
+            resource_pool=arrival_default_resource_pool,
+            time_table=time_table,
+            arrival_rate=arrival_rate,
+            sequences=sequences,
+            elements_data=elements_data,
+            instances=num_inst,
+            start_time=start_time,
+            process_stats=log_df
+        )
 
         # copying the original model and rewriting it with extracted parameters
         if not os.path.exists(self.settings_global.output):
             os.makedirs(self.settings_global.output)
         bpmn_path = os.path.join(self.settings_global.output, os.path.basename(model_path))
         shutil.copy(model_path, bpmn_path)
-        xml_writer.print_parameters(bpmn_path, bpmn_path, parameters.__dict__)
+        xml_writer.print_parameters(bpmn_path, bpmn_path, parameters._asdict())
         model_path = bpmn_path
 
         # simulation
@@ -199,33 +237,12 @@ class Optimizer:
         sup.create_json(canonical_model, os.path.join(
             self.settings_global.output, self.settings_global.project_name + '_canon.json'))
 
-    def split_and_set_log_buckets(self, size: float, one_ts: bool) -> None:
-        """
-        Split an event log dataframe by time to peform split-validation.
-        prefered method time splitting removing incomplete traces.
-        If the testing set is smaller than the 10% of the log size
-        the second method is sort by traces start and split taking the whole
-        traces no matter if they are contained in the timeframe or not
-
-        Parameters
-        ----------
-        size : float, validation percentage.
-        one_ts : bool, Support only one timestamp.
-        """
-        # Split log data
-        splitter = ls.LogSplitter(pd.DataFrame(self.log.data))
-        train, test = splitter.split_log('timeline_contained', size, one_ts)
-        total_events = len(self.log.data)
-        # Check size and change time splitting method if necesary
-        if len(test) < int(total_events * 0.1):
-            train, test = splitter.split_log('timeline_trace', size, one_ts)
-        # Set splits
-        key = 'end_timestamp' if one_ts else 'start_timestamp'
-        test = pd.DataFrame(test)
-        train = pd.DataFrame(train)
+    def split_and_set_log_buckets(self, size: float):
+        key = 'start_timestamp'
+        train, test = self.log_reader.split_timeline(size)
         self.log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
-        # self.log_train = copy.deepcopy(self.log)
-        self.log_train = LogReader.copy_without_data(self.log)
+        self.log_train = deepcopy(self.log_reader)
+        # self.log_train = LogReader.copy_without_data(self.log)
         self.log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
     def _modify_simulation_model(self, model: Path):
@@ -250,22 +267,14 @@ class Optimizer:
 
     @staticmethod
     def evaluate_logs(args):
-        def evaluate(settings: Configuration, process_stats, sim_log):
-            """Reads the simulation results stats
-            Args:
-                settings (dict): Path to jar and file names
-                rep (int): repetition number
-            """
-            # print('Reading repetition:', (rep+1), sep=' ')
-            rep = sim_log.iloc[0].run_num
-            sim_values = list()
-            evaluator = sim.SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
-            metrics = [settings.sim_metric]
-            if 'add_metrics' in settings.__dict__.keys():
-                metrics = list(set(list(settings.add_metrics) + metrics))
-            for metric in metrics:
-                evaluator.measure_distance(metric)
-                sim_values.append({**{'run_num': rep}, **evaluator.similarity})
-            return sim_values
-
-        return evaluate(*args)
+        settings, process_stats, sim_log = args
+        rep = sim_log.iloc[0].run_num
+        sim_values = list()
+        evaluator = SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
+        metrics = [settings.sim_metric]
+        if 'add_metrics' in settings.__dict__.keys():
+            metrics = list(set(list(settings.add_metrics) + metrics))
+        for metric in metrics:
+            evaluator.measure_distance(metric)
+            sim_values.append({**{'run_num': rep}, **evaluator.similarity})
+        return sim_values

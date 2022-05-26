@@ -1,5 +1,6 @@
 import itertools
 import multiprocessing
+import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable, Tuple
@@ -7,10 +8,13 @@ from typing import Callable, Tuple
 from tqdm import tqdm
 
 from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
+from simod.analyzers.sim_evaluator import evaluate_logs
 from simod.cli_formatter import print_notice
-from simod.common_routines import evaluate_logs, read_stats_alt
-from simod.common_routines import execute_shell_cmd, pbar_async
+from simod.support_utils import execute_shell_cmd, progress_bar_async
 from simod.configuration import Configuration, SimulatorKind
+from simod.event_log import LogReader
+
+TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
 
 def diffresbp_simulator(args: Tuple):
@@ -27,7 +31,7 @@ def diffresbp_simulator(args: Tuple):
     total_cases = settings.simulation_cases
     print_notice(f'Number of simulation cases: {total_cases}')
 
-    parse_qbp_simulation_process(bpmn_path.__str__(), json_path.__str__())
+    parse_qbp_simulation_process(bpmn_path.__str__(), json_path.__str__())  # TODO: this json is Simod's json?
 
     args = [
         'diff_res_bpsim', 'start-simulation',
@@ -77,11 +81,11 @@ def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
     # Simulate
     args = [(settings, rep) for rep in range(reps)]
     p = pool.map_async(simulate_fn, args)
-    pbar_async(p, 'simulating:', reps)
+    progress_bar_async(p, 'simulating', reps)
 
     # Read simulated logs
-    p = pool.map_async(read_stats_alt, args)
-    pbar_async(p, 'reading simulated logs', reps)
+    p = pool.map_async(_read_stats_alt, args)
+    progress_bar_async(p, 'reading simulated logs', reps)
 
     # Evaluate
     args = [(settings, log_data, log) for log in p.get()]
@@ -91,7 +95,7 @@ def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
         sim_values = list(itertools.chain(*results))
     else:
         p = pool.map_async(evaluate_fn, args)
-        pbar_async(p, 'evaluating results', reps)
+        progress_bar_async(p, 'evaluating results', reps)
         pool.close()
         sim_values = list(itertools.chain(*p.get()))
     return sim_values
@@ -110,3 +114,25 @@ def get_number_of_cases(bpmn: Path) -> int:
         print_notice(f'get_number_of_cases failed with {e}')
         return n_cases
     return n_cases
+
+
+def _read_stats_alt(args):
+    global TIMESTAMP_FORMAT
+
+    settings, rep = args
+    m_settings = dict()
+    m_settings['output'] = settings.output
+    m_settings['read_options'] = settings.read_options
+    m_settings['read_options'].timeformat = TIMESTAMP_FORMAT
+    m_settings['read_options'].column_names = settings.read_options.column_names
+    m_settings['project_name'] = settings.project_name
+    log_path = Path(os.path.join(m_settings['output'], 'sim_data',
+                                 m_settings['project_name'] + '_' + str(rep + 1) + '.csv'))
+    temp = LogReader(log_path=log_path, column_names=settings.read_options.column_names)
+    temp = temp.df
+    temp.rename(columns={'user': 'resource'}, inplace=True)
+    temp['role'] = temp['resource']
+    temp['source'] = 'simulation'
+    temp['run_num'] = rep + 1
+    temp = temp[~temp.task.isin(['Start', 'End'])]
+    return temp

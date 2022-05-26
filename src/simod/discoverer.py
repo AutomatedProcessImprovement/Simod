@@ -6,13 +6,14 @@ import pandas as pd
 import xmltodict as xtd
 from lxml import etree
 
+from simod.discovery.tasks_evaluator import TaskEvaluator
 from . import support_utils as sup
+from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics
 from .cli_formatter import print_asset, print_section, print_notice
-from .common_routines import mine_resources_with_resource_table, \
-    mine_inter_arrival, mine_gateway_probabilities, process_tasks, evaluate_logs_with_add_metrics, \
-    split_timeline, save_times
-from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_timestamps
 from .configuration import Configuration, MiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
+from .discovery import inter_arrival_distribution, gateway_probabilities
+from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
+from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_timestamps
 from .preprocessor import Preprocessor
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
@@ -21,7 +22,6 @@ from .writers import xml_writer as xml
 
 
 class Discoverer:
-    """Main class of the Simulation Models Discoverer"""
     _settings: Configuration
     _output_file: str
     _log: LogReader
@@ -35,7 +35,6 @@ class Discoverer:
 
     def run(self):
         print_notice(f'Log path: {self._settings.log_path}')
-        exec_times = dict()
         self._read_inputs()
         self._temp_path_creation()
         self._preprocess()
@@ -43,7 +42,6 @@ class Discoverer:
         self._extract_parameters()
         self._simulate()
         self._manage_results()
-        save_times(exec_times, self._settings, self._settings.output.parent)
         self._export_canonical_model()
         print_asset(f"Output folder is at {self._settings.output}")
 
@@ -80,19 +78,21 @@ class Discoverer:
     def _extract_parameters(self):
         print_section("Simulation Parameters Mining")
 
-        time_table, resource_pool, resource_table = mine_resources_with_resource_table(self._log_train, self._settings)
+        time_table, resource_pool, resource_table = \
+            discover_timetables_with_resource_pools(self._log_train, self._settings)
 
         log_train_df = pd.DataFrame(self._log_train.data)
-        arrival_rate = mine_inter_arrival(self.process_graph, log_train_df, self._settings)
+        arrival_rate = inter_arrival_distribution.discover(self.process_graph, log_train_df, self._settings.pdef_method)
 
         bpmn_path = os.path.join(self._settings.output, self._settings.project_name + '.bpmn')
         bpmn_graph = BPMNGraph.from_bpmn_path(Path(bpmn_path))
         traces = self._log_train.get_traces()
-        sequences = mine_gateway_probabilities(traces, bpmn_graph)
+        sequences = gateway_probabilities.discover(traces, bpmn_graph)
 
         self.process_stats = log_train_df.merge(resource_table[['resource', 'role']],
                                                 left_on='user', right_on='resource', how='left')
-        elements_data = process_tasks(self.process_graph, self.process_stats, resource_pool, self._settings)
+        elements_data = TaskEvaluator(
+            self.process_graph, self.process_stats, resource_pool, self._settings.pdef_method).elements_data
 
         # rewriting the model file
         num_inst = len(log_train_df.caseid.unique())
@@ -151,7 +151,8 @@ class Discoverer:
         return best_params
 
     def _split_timeline(self, size: float):
-        train, test, key = split_timeline(self._log, size)
+        train, test = self._log.split_timeline(size)
+        key = 'start_timestamp'
         self._log_test = test.sort_values(key, ascending=True).reset_index(drop=True)
         self._log_train = copy.deepcopy(self._log)
         self._log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))

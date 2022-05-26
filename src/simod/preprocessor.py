@@ -4,10 +4,10 @@ from typing import Optional
 import pandas as pd
 
 from .cli_formatter import print_step, print_section, print_notice
-from .common_routines import remove_asset
+from .support_utils import remove_asset
 from .configuration import Configuration
 from .event_log import read
-from .multitasking import adjust_durations
+from .processing.multitasking import adjust_durations
 
 
 class Preprocessor:
@@ -30,7 +30,7 @@ class Preprocessor:
         print_notice(f'New log path: {self.config.log_path}')
 
     def run(self) -> Configuration:
-        """run function executes all pre-processing steps and updates the configuration if necessary."""
+        """Executes all pre-processing steps and updates the configuration if necessary."""
         print_section('Pre-processing')
 
         if self.config.multitasking:

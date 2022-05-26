@@ -10,28 +10,31 @@ import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 
+from simod.discovery.tasks_evaluator import TaskEvaluator
 from . import support_utils as sup
-from .cli_formatter import print_message, print_subsection
-from .common_routines import mine_resources, extract_structure_parameters, split_timeline, evaluate_logs, \
-    hyperopt_pipeline_step, remove_asset
+from .analyzers.sim_evaluator import evaluate_logs
+from .cli_formatter import print_message, print_subsection, print_warning
+from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove, PDFMethod
+from .discovery import inter_arrival_distribution
+from .discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
+from .discovery.gateway_probabilities import discover_with_gateway_management
 from .event_log import write_xes, LogReader
-from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove
+from .hyperopt_pipeline import HyperoptPipeline
+from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_miner import StructureMiner
-from .support_utils import get_project_dir
+from .support_utils import get_project_dir, remove_asset
 from .writers import xml_writer as xml
 
 
-class StructureOptimizer:
-    """Hyperparameter-optimizer class"""
+class StructureOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: dict
     measurements_file_name: Path
 
-    _best_similarity: float
     _bayes_trials: Trials
     _settings: Configuration
-    _log: LogReader
+    _log_reader: LogReader
     _log_train: LogReader
     _log_validation: pd.DataFrame
     _original_log: LogReader
@@ -42,15 +45,17 @@ class StructureOptimizer:
 
     def __init__(self, settings: Configuration, log: LogReader):
         self._settings = settings
-        self._log = log
+        self._log_reader = log
 
         self._space = self._define_search_space(self._settings)
 
-        train, validation = self._split_timeline(self._log, 0.8)
-        self._log_train = LogReader.copy_without_data(self._log)
+        train, validation = self._log_reader.split_timeline(0.8)
+        train = StructureOptimizer._sample_log(train)
+
+        self._log_validation = validation.sort_values('start_timestamp', ascending=True).reset_index(drop=True)
+        self._log_train = LogReader.copy_without_data(self._log_reader)
         self._log_train.set_data(
             train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
-        self._log_validation = validation
 
         self._original_log = copy.deepcopy(log)
         self._original_log_train = copy.deepcopy(self._log_train)
@@ -68,10 +73,13 @@ class StructureOptimizer:
         self._bayes_trials = Trials()
         self.best_output = None
         self.best_parameters = dict()
-        self._best_similarity = 0
 
     def run(self):
-        parameters = mine_resources(self._settings)
+        resource_pool, timetable = discover_timetables_and_get_default_arrival_resource_pool(self._settings.log_path)
+        parameters = {
+            'resource_pool': resource_pool,
+            'time_table': timetable
+        }
         self._log_train = copy.deepcopy(self._original_log_train)
 
         def pipeline(trial_stg: Union[Configuration, dict]):
@@ -84,22 +92,22 @@ class StructureOptimizer:
 
             status = STATUS_OK
 
-            status, result = hyperopt_pipeline_step(status, self._update_config_and_export_xes, trial_stg)
+            status, result = self.step(status, self._update_config_and_export_xes, trial_stg)
             if status == STATUS_OK:
                 trial_stg = result
 
-            status, result = hyperopt_pipeline_step(status, self._mine_structure, trial_stg)
+            status, result = self.step(status, self._mine_structure, trial_stg)
 
-            status, result = hyperopt_pipeline_step(
+            status, result = self.step(
                 status, self._extract_parameters, trial_stg, result, copy.deepcopy(parameters))
 
-            status, result = hyperopt_pipeline_step(status, self._simulate, trial_stg)
+            status, result = self.step(status, self._simulate, trial_stg)
             sim_values = result if status == STATUS_OK else []
 
             response = self._define_response(trial_stg, status, sim_values)
 
             # reinstate log
-            self._log = copy.deepcopy(self._original_log)
+            self._log_reader = copy.deepcopy(self._original_log)
             self._log_train = copy.deepcopy(self._original_log_train)
             self._log_validation = copy.deepcopy(self._original_log_validation)
 
@@ -120,7 +128,6 @@ class StructureOptimizer:
         results_ok = results[results.status == STATUS_OK]
         try:
             self.best_output = results_ok.iloc[0].output
-            self._best_similarity = results_ok.iloc[0].loss
         except Exception as e:
             raise e
 
@@ -162,23 +169,45 @@ class StructureOptimizer:
         structure_miner.execute_pipeline()
         return [structure_miner.bpmn, structure_miner.process_graph]
 
-    def _extract_parameters(self, settings: Configuration, structure_values, parameters):
+    def _extract_parameters(self, settings: Configuration, structure_values, parameters: dict):
         _, process_graph = structure_values
         num_inst = len(self._log_validation.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
         start_time = self._log_validation.start_timestamp.min().strftime(
             "%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
 
         model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
-        structure_parameters = extract_structure_parameters(
-            settings=settings, process_graph=process_graph, log_reader=self._log_train, model_path=model_path)
 
-        parameters = {**parameters, **{'resource_pool': structure_parameters.resource_pool,
-                                       'time_table': structure_parameters.time_table,
-                                       'arrival_rate': structure_parameters.arrival_rate,
-                                       'sequences': structure_parameters.sequences,
-                                       'elements_data': structure_parameters.elements_data,
-                                       'instances': num_inst,
-                                       'start_time': start_time}}
+        # extract resource pool, resource timetable and arrival timetable
+        # TODO: why do we mine and overwrite resource pool and time table when it comes from input arg 'parameters'?
+        resource_pool, time_table = discover_timetables_and_get_default_arrival_resource_pool(settings.log_path)
+
+        # extract inter-arrival distribution
+        log_df = pd.DataFrame(self._log_train.data)
+        pdef_method = settings.pdef_method
+        if not pdef_method:
+            pdef_method = PDFMethod.DEFAULT
+            print_warning(f'PDFMethod is missing, setting it to the default: {pdef_method}')
+        arrival_rate = inter_arrival_distribution.discover(process_graph, log_df, pdef_method)
+
+        # extract sequences
+        bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+        traces = self._log_train.get_traces()
+        sequences = discover_with_gateway_management(
+            traces, bpmn_graph, settings.gate_management)
+
+        # extract elements data
+        log_df['role'] = 'SYSTEM'
+        elements_data = TaskEvaluator(process_graph, log_df, resource_pool, pdef_method).elements_data
+
+        parameters = parameters | {
+            'resource_pool': resource_pool,
+            'time_table': time_table,
+            'arrival_rate': arrival_rate,
+            'sequences': sequences,
+            'elements_data': elements_data,
+            'instances': num_inst,
+            'start_time': start_time
+        }
         bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')
         xml.print_parameters(bpmn_path, bpmn_path, parameters)
 
@@ -232,21 +261,6 @@ class StructureOptimizer:
         else:
             sup.create_csv_file_header(measurements, self.measurements_file_name)
         return response
-
-    @staticmethod
-    def _split_timeline(log: LogReader, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Split an event log dataframe by time to perform split-validation. preferred method time splitting removing
-        incomplete traces. If the testing set is smaller than the 10% of the log size the second method is sort by
-        traces start and split taking the whole traces no matter if they are contained in the timeframe or not.
-        """
-        train, validation, key = split_timeline(log, size)
-        train = StructureOptimizer._sample_log(train)
-
-        # Save partitions
-        validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
-        train = train.sort_values(key, ascending=True).reset_index(drop=True)
-        return train, validation
 
     @staticmethod
     def _sample_log(train):

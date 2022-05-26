@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from simod.multitasking import adjust_durations
+from simod.processing.multitasking import adjust_durations
 from simod.event_log import read, reformat_timestamps
 
 
