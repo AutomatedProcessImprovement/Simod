@@ -9,8 +9,7 @@ import pytest
 
 from simod.configuration import Configuration, GateManagement
 from simod.discovery import gateway_probabilities
-from simod.event_log import LogReader
-from simod.readers.log_splitter import LogSplitter
+from simod.event_log import LogReader, LogSplitter
 from simod.replayer_datatypes import BPMNGraph
 
 

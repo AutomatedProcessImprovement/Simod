@@ -12,14 +12,14 @@ from simod.discovery.tasks_evaluator import TaskEvaluator
 from . import support_utils as sup
 from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics, SimilarityEvaluator
 from .cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
-from .configuration import Configuration, MiningAlgorithm
+from .configuration import Configuration, MiningAlgorithm, PDFMethod
 from .discovery import inter_arrival_distribution
 from .discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
 from .discovery.gateway_probabilities import discover_with_gateway_management
 from .event_log import LogReader
 from .preprocessor import Preprocessor
 from .processing.core import remove_outliers
-from .readers import log_splitter as ls, bpmn_reader, process_structure
+from .readers import bpmn_reader, process_structure
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .structure_optimizer import StructureOptimizer
@@ -49,6 +49,9 @@ class Optimizer:
         self.settings_global = settings['gl']
         self.settings_structure = settings['strc']
         self.settings_time = settings['tm']
+
+        if not self.settings_structure.pdef_method:
+            self.settings_structure.pdef_method = PDFMethod.AUTOMATIC  # TODO: move to configuration module
 
         if not os.path.exists(self.settings_global.output):
             os.makedirs(self.settings_global.output)

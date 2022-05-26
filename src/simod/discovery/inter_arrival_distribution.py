@@ -92,5 +92,4 @@ def __define_interarrival_distribution(inter_arrival_times: list, pdf_method: PD
                 'arg2': 0
             }
         }
-    else:
-        raise ValueError(pdf_method)
+    raise ValueError(f'PDF method not supported: {pdf_method}')

@@ -21,8 +21,8 @@ from .discovery.calendar_discovery.adapter import discover_timetables_with_resou
 from .discovery.tasks_evaluator import TaskEvaluator
 from .event_log import LogReader
 from .hyperopt_pipeline import HyperoptPipeline
-from .readers import bpmn_reader as br
 from .readers import process_structure as gph
+from .readers.bpmn_reader import BpmnReader
 from .simulator import simulate
 from .support_utils import get_project_dir, remove_asset
 
@@ -35,6 +35,7 @@ class TimesOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: dict
     measurements_file_name: Path
+    xml_sim_model: etree.ElementTree
     _temp_output: Path
 
     _bayes_trials: Trials
@@ -63,7 +64,7 @@ class TimesOptimizer(HyperoptPipeline):
         self._original_log_train = copy.deepcopy(self._log_train)
         self._original_log_validation = copy.deepcopy(self._log_validation)
 
-        self._load_sim_model(model_path)
+        self._load_simulation_model(model_path)
 
         log_df = pd.DataFrame(self._log_train.data)
         self._conformant_traces = log_df
@@ -91,7 +92,7 @@ class TimesOptimizer(HyperoptPipeline):
 
             status = STATUS_OK
 
-            status, result = self.step(status, self._temp_path_redef, trial_stg)
+            status, result = self.step(status, self._create_folder, trial_stg)
             if status == STATUS_OK:
                 trial_stg = result
 
@@ -100,7 +101,7 @@ class TimesOptimizer(HyperoptPipeline):
             status, result = self.step(status, self._simulate, trial_stg)
             sim_values = result if status == STATUS_OK else []
 
-            response = self._define_response(trial_stg, status, sim_values)
+            response = self._make_hyperopt_response(trial_stg, status, sim_values)
 
             # reinstate log
             self._log = self._original_log  # TODO: no need
@@ -153,7 +154,7 @@ class TimesOptimizer(HyperoptPipeline):
                  ('default', {'arr_dtype': hp.choice('arr_dtype', settings_time.arr_dtype)})])}
         return space
 
-    def _temp_path_redef(self, settings: Configuration):
+    def _create_folder(self, settings: Configuration):
         settings.output = self._temp_output / sup.folder_id()
         simulation_data_path = settings.output / 'sim_data'
         simulation_data_path.mkdir(parents=True, exist_ok=True)
@@ -174,7 +175,7 @@ class TimesOptimizer(HyperoptPipeline):
     def _simulate(self, trial_stg: Configuration):
         return simulate(trial_stg, self._log_validation, evaluate_fn=self._evaluate_logs)
 
-    def _define_response(self, settings: Configuration, status: str, sim_values: list) -> dict:
+    def _make_hyperopt_response(self, settings: Configuration, status: str, sim_values: list) -> dict:
         data = {'rp_similarity': settings.rp_similarity,
                 'gate_management': settings.gate_management,
                 'output': settings.output}
@@ -335,7 +336,7 @@ class TimesOptimizer(HyperoptPipeline):
         # Print model
         create_file(path, etree.tostring(self.xml_bpmn, pretty_print=True))
 
-    def _load_sim_model(self, model_path) -> None:
+    def _load_simulation_model(self, model_path) -> None:
         tree = ET.parse(model_path)
         root = tree.getroot()
         ns = {'qbp': QBP_NAMESPACE_URI}
@@ -348,7 +349,7 @@ class TimesOptimizer(HyperoptPipeline):
         self.xml_sim_model = etree.fromstring(
             ET.tostring(root.find('qbp:processSimulationInfo', ns)), parser)
         # load bpmn model
-        self.bpmn = br.BpmnReader(model_path)
+        self.bpmn = BpmnReader(model_path)
         self.process_graph = gph.create_process_structure(self.bpmn)
 
     @staticmethod
