@@ -17,3 +17,11 @@ def create_env(ctx):
         ctx.run('venv/bin/pip install -e .')
 
     ctx.run('venv/bin/pip install -e .')
+
+
+@task
+def dump_requirements(ctx):
+    """
+    Dump requirements.txt.
+    """
+    ctx.run('venv/bin/pip list --format=freeze > requirements.txt')
