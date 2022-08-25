@@ -24,7 +24,6 @@ def args(entry_point):
 
 def setup_data(model_path: Path, log_path: Path):
     settings = Configuration(model_path=Path(model_path), log_path=Path(log_path))
-    settings.fill_in_derived_fields()
 
     log = LogReader(log_path)
     graph = BPMNGraph.from_bpmn_path(model_path)
@@ -116,7 +115,6 @@ def test_compute_sequence_flow_frequencies(args):
 #         print(f'\n\nTesting {log_path.name}')
 #
 #         config = Configuration(log_path=log_path)
-#         config.fill_in_derived_fields()
 #
 #         # settings for StructureOptimizer
 #         config.max_eval_s = 2
@@ -215,7 +213,6 @@ def test_mine_gateway_probabilities_alternative_with_gateway_management(args):
 #         print(f'\n\nTesting {log_path.name}')
 #
 #         config = Configuration(log_path=log_path)
-#         config.fill_in_derived_fields()
 #
 #         # settings for StructureOptimizer
 #         config.max_eval_s = 2

@@ -132,9 +132,9 @@ class GateManagement(Enum):
 
 
 class CalendarType(Enum):
-    DEFAULT = auto()
-    DISCOVERED = auto()
-    POOL = auto()
+    DEFAULT = auto()  # TODO: deprecated
+    DISCOVERED = auto()  # TODO: deprecated
+    POOL = auto()  # TODO: deprecated
     UNDIFFERENTIATED = auto()
     DIFFERENTIATED_BY_POOL = auto()
     DIFFERENTIATED_BY_RESOURCE = auto()
@@ -329,9 +329,13 @@ class Configuration:
     res_sup_dis: Optional[List[float]] = None
     res_con_dis: Optional[List[float]] = None
 
-    def fill_in_derived_fields(self):
+    def __post_init__(self):
         if self.log_path:
             self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
+
+    @staticmethod
+    def from_yaml_str(yaml_str: str) -> 'Configuration':
+        return Configuration(**config_data_with_datastructures(yaml.safe_load(yaml_str)))
 
 
 def config_data_from_file(config_path: Path) -> dict:

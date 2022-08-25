@@ -24,7 +24,6 @@ def discover(ctx, config_path):
     config_data = config_data_from_file(config_path)
     config_data.update(ctx.params)
     config = Configuration(**config_data)
-    config.fill_in_derived_fields()
 
     discoverer = Discoverer(config)
     discoverer.run()
@@ -45,15 +44,12 @@ def optimize(ctx, config_path):
     global_data = config_data
 
     global_config = Configuration(**global_data)
-    global_config.fill_in_derived_fields()
 
     strc_data.update(global_data)
     structure_optimizer_config = Configuration(**strc_data)
-    structure_optimizer_config.fill_in_derived_fields()
 
     tm_data.update(global_data)
     time_optimizer_config = Configuration(**tm_data)
-    time_optimizer_config.fill_in_derived_fields()
 
     optimizer = Optimizer({'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
     optimizer.run(discover_model=global_config.model_path is None)

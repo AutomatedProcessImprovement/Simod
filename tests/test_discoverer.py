@@ -52,7 +52,6 @@ def test_data():
 def test_execute_pipeline(config_data):
     config_data = config_data_from_yaml(config_data)
     config = Configuration(**config_data)
-    config.fill_in_derived_fields()
     discoverer = Discoverer(config)
     discoverer.run()
 
@@ -77,7 +76,6 @@ def test_discover(entry_point, path):
         params['model_path'] = repository_dir.joinpath(model_path).absolute()
     config_data.update(params)
     config = Configuration(**config_data)
-    config.fill_in_derived_fields()
 
     discoverer = Discoverer(config)
     discoverer.run()
