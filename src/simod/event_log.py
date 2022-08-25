@@ -2,6 +2,7 @@ import copy
 import itertools
 import os
 from _operator import itemgetter
+from dataclasses import dataclass
 from datetime import timedelta
 from operator import itemgetter
 from pathlib import Path
@@ -29,6 +30,18 @@ QBP_CSV_COLUMNS = {
 DEFAULT_FILTER = ['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']
 
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
+
+
+@dataclass
+class EventLogIDs:
+    """Column mapping between the event log."""
+    case: str = 'case_id'
+    activity: str = 'activity'
+    resource: str = 'resource'
+    start_time: str = 'start_timestamp'
+    end_time: str = 'end_timestamp'
+    enabled_times: str = 'enabled_timestamp'
+    role: str = 'role'
 
 
 class LogReader:
@@ -306,7 +319,7 @@ class LogSplitter:
 
     def _timeline_contained(self, size: float, one_timestamp: bool):
         # log = self.log.data.to_dict('records')
-        num_events = int(np.round(len(self.log)*(1 - size)))
+        num_events = int(np.round(len(self.log) * (1 - size)))
 
         df_train = self.log.iloc[num_events:]
         df_test = self.log.iloc[:num_events]
@@ -341,7 +354,7 @@ class LogSplitter:
         key = 'end_timestamp' if one_timestamp else 'start_timestamp'
         cases = cases.sort_values(key, ascending=False)
         cases = cases.caseid.to_list()
-        num_test_cases = int(np.round(len(cases)*(1 - size)))
+        num_test_cases = int(np.round(len(cases) * (1 - size)))
         test_cases = cases[:num_test_cases]
         train_cases = cases[num_test_cases:]
         df_train = self.log[self.log.caseid.isin(train_cases)]
@@ -352,7 +365,7 @@ class LogSplitter:
 
     def _random(self, size: float, one_timestamp: bool):
         cases = list(self.log.caseid.unique())
-        sample_sz = int(np.ceil(len(cases)*size))
+        sample_sz = int(np.ceil(len(cases) * size))
         scases = list(map(lambda i: cases[i], np.random.randint(0, len(cases), sample_sz)))
         df_train = self.log[self.log.caseid.isin(scases)]
         df_test = self.log[~self.log.caseid.isin(scases)]
