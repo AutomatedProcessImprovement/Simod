@@ -22,7 +22,7 @@ from .processing.core import remove_outliers
 from .readers import bpmn_reader, process_structure
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
-from .structure_optimizer import StructureOptimizer
+from .structure_optimizer.structure_optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers import xml_writer
 from .writers.model_serialization import serialize_model

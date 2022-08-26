@@ -1,14 +1,15 @@
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from simod.configuration import BPMN_NAMESPACE_URI
 
 
 class BpmnReader:
-    """
-    This class reads and parse the elements of a given bpmn 2.0 model
-    """
+    """BPMN 2.0 model reader."""
+    model_path: Path
 
     def __init__(self, input):
+        self.model_path = Path(input)
         self.tree = ET.parse(input)
         self.root = self.tree.getroot()
         self.ns = {'xmlns': BPMN_NAMESPACE_URI}

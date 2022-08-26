@@ -40,7 +40,7 @@ class EventLogIDs:
     resource: str = 'resource'
     start_time: str = 'start_timestamp'
     end_time: str = 'end_timestamp'
-    enabled_times: str = 'enabled_timestamp'
+    enabled_time: str = 'enabled_timestamp'
     role: str = 'role'
 
 
@@ -159,6 +159,11 @@ class LogReader:
             trace = sorted(list(filter(lambda x: (x['caseid'] == case), self.data)), key=itemgetter(order_key))
             traces.append(trace)
         return traces
+
+    def get_traces_df(self, include_start_end_events: bool = False) -> pd.DataFrame:
+        if include_start_end_events:
+            return self.df
+        return self.df[(self.df.task != 'Start') & (self.df.task != 'End')].reset_index(drop=True)
 
     def split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """

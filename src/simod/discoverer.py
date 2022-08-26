@@ -17,7 +17,7 @@ from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_times
 from .preprocessor import Preprocessor
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
-from .structure_miner import StructureMiner
+from simod.structure_optimizer.structure_miner import StructureMiner
 from .writers import xml_writer as xml
 
 

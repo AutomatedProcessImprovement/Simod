@@ -6,10 +6,10 @@ from pathlib import Path
 
 from networkx import DiGraph
 
-from .cli_formatter import print_subsection, print_step, print_asset
-from .configuration import Configuration, MiningAlgorithm
-from .readers import bpmn_reader as br
-from .readers import process_structure
+from simod.cli_formatter import print_subsection, print_step, print_asset
+from simod.configuration import Configuration, MiningAlgorithm
+from simod.readers import bpmn_reader as br
+from simod.readers import process_structure
 
 
 class StructureMiner:

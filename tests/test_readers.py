@@ -1,6 +1,7 @@
 import pytest
 
 from simod.event_log import DEFAULT_XES_COLUMNS, LogReader
+from simod.readers.bpmn_reader import BpmnReader
 
 arguments = [
     {'log_path': 'Production.xes', 'column_names': DEFAULT_XES_COLUMNS},
@@ -33,3 +34,11 @@ def test_copy_without_data(entry_point, arg):
     assert copy1._time_format == copy2._time_format
     assert copy1._column_names == copy2._column_names
     assert copy1._column_filter == copy2._column_filter
+
+
+def test_BpmnReader(entry_point):
+    bpmn_path = entry_point / 'PurchasingExample.bpmn'
+    bpmn_reader = BpmnReader(bpmn_path)
+    activities = bpmn_reader.get_tasks_info()
+
+    assert len(activities) > 0

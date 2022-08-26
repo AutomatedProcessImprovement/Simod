@@ -3,28 +3,29 @@ import math
 import os
 import random
 from pathlib import Path
-from typing import Tuple, Union, Optional
+from typing import Union, Optional
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 
+from simod import support_utils as sup
+from simod.analyzers.sim_evaluator import evaluate_logs
+from simod.cli_formatter import print_message, print_subsection, print_warning
+from simod.configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove, PDFMethod
+from simod.discovery import inter_arrival_distribution
+from simod.discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
+from simod.discovery.gateway_probabilities import discover_with_gateway_management
 from simod.discovery.tasks_evaluator import TaskEvaluator
-from . import support_utils as sup
-from .analyzers.sim_evaluator import evaluate_logs
-from .cli_formatter import print_message, print_subsection, print_warning
-from .configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove, PDFMethod
-from .discovery import inter_arrival_distribution
-from .discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
-from .discovery.gateway_probabilities import discover_with_gateway_management
-from .event_log import write_xes, LogReader
-from .hyperopt_pipeline import HyperoptPipeline
-from .replayer_datatypes import BPMNGraph
-from .simulator import simulate
+from simod.event_log import write_xes, LogReader, EventLogIDs
+from simod.hyperopt_pipeline import HyperoptPipeline
+from simod.replayer_datatypes import BPMNGraph
+from simod.simulator import simulate
+from simod.support_utils import get_project_dir, remove_asset
+from simod.writers import xml_writer as xml
+from . import simulation
 from .structure_miner import StructureMiner
-from .support_utils import get_project_dir, remove_asset
-from .writers import xml_writer as xml
 
 
 class StructureOptimizer(HyperoptPipeline):
@@ -42,8 +43,18 @@ class StructureOptimizer(HyperoptPipeline):
     _original_log_validation: pd.DataFrame
     _space: dict
     _temp_output: Path
+    _log_ids: EventLogIDs
 
     def __init__(self, settings: Configuration, log: LogReader):
+        self._log_ids = EventLogIDs(
+            case='caseid',
+            activity='task',
+            resource='user',
+            end_time='end_timestamp',
+            start_time='start_timestamp',
+            enabled_time='enabled_timestamp',
+        )
+
         self._settings = settings
         self._log_reader = log
 
@@ -168,6 +179,23 @@ class StructureOptimizer(HyperoptPipeline):
         structure_miner = StructureMiner(settings.log_path, settings)
         structure_miner.execute_pipeline()
         return [structure_miner.bpmn, structure_miner.process_graph]
+
+    # TODO: use this function in the pipeline and make sure the downstream simulation routine uses output from it
+    def _extract_parameters_undifferentiated(self, settings: Configuration, previous_step_result):
+        bpmn_reader, process_graph = previous_step_result
+        bpmn_path: Path = bpmn_reader.model_path
+        log = self._log_train.get_traces_df()
+        pdf_method = self._settings.pdef_method
+
+        simulation_parameters = simulation.undifferentiated_resources_parameters(
+            log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader, settings.gate_management)
+
+        json_path = bpmn_path.with_suffix('.json')
+        simulation_parameters.to_json_file(json_path)
+
+        simulation_cases = log[self._log_ids.case].nunique()
+
+        return bpmn_path, json_path, simulation_cases
 
     def _extract_parameters(self, settings: Configuration, structure_values, parameters: dict):
         _, process_graph = structure_values
