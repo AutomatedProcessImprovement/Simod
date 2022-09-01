@@ -58,3 +58,8 @@ class Calendar:
             'name': self.name,
             'time_periods': [timetable.to_dict() for timetable in self.timetables]
         }
+
+    def to_array(self) -> list:
+        """For arrival calendars, Prosimos doesn't use 'id', 'name' and 'time_periods' keys, but accepts array of
+        timetable dictionaries:"""
+        return self.to_dict()['time_periods']

@@ -77,29 +77,53 @@ class ResourceProfile:
             ],
         }
         """
+        # each resource except Start and End has all activities assigned to it
+        assigned_activities = []
 
-        # activities IDs
-        activities_ids = []
+        start_activity_id: Optional[str] = None
+        end_activity_id: Optional[str] = None
+
         for activity in BpmnReader(bpmn_path).get_tasks_info():
-            if activity['task_name'].lower() not in ['start', 'end']:
-                activities_ids.append(activity['task_id'])
+            activity_name_lowered = activity['task_name'].lower()
+            if activity_name_lowered == 'start':
+                start_activity_id = activity['task_id']
+            elif activity_name_lowered == 'end':
+                end_activity_id = activity['task_id']
+            else:
+                assigned_activities.append(activity['task_id'])
 
-        # resource names
         if total_number_of_resources is not None and total_number_of_resources > 0:
             resources_names = (f'SYSTEM_{i}' for i in range(total_number_of_resources))
         else:
-            resources_names = log[log_ids.resource].unique()
+            resources_names = list(
+                filter(lambda name: name.lower() not in ['start', 'end'],
+                       log[log_ids.resource].unique().tolist()))
 
-        # undifferentiated resources
         resources = [
             Resource(id=name,
                      name=name,
                      amount=resource_amount,
                      cost_per_hour=cost_per_hour,
                      calendar_id=calendar_id,
-                     assigned_tasks=activities_ids)
+                     assigned_tasks=assigned_activities)
             for name in resources_names
         ]
+
+        # handling Start and End
+        if start_activity_id is not None:
+            resources.append(Resource(id='Start',
+                                      name='Start',
+                                      amount=1,
+                                      cost_per_hour=0,
+                                      calendar_id=calendar_id,
+                                      assigned_tasks=[start_activity_id]))
+        if end_activity_id is not None:
+            resources.append(Resource(id='End',
+                                      name='End',
+                                      amount=1,
+                                      cost_per_hour=0,
+                                      calendar_id=calendar_id,
+                                      assigned_tasks=[end_activity_id]))
 
         profile_name = 'UNDIFFERENTIATED_RESOURCE_PROFILE'
         profile = ResourceProfile(id=profile_name, name=profile_name, resources=list(resources))

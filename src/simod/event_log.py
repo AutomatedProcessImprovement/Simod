@@ -94,6 +94,8 @@ class LogReader:
         else:
             df = log
 
+        assert len(df) > 0, 'Log is empty'
+
         # renaming for internal use
         df.rename(columns=column_names, inplace=True)
 
@@ -149,6 +151,7 @@ class LogReader:
 
     def set_data(self, data: list):
         self.data = data
+        self.df = pd.DataFrame(self.data)
 
     def get_traces(self):
         """Returns the data split by caseid and ordered by start_timestamp."""

@@ -1,5 +1,6 @@
 import copy
 import math
+import multiprocessing
 import os
 import random
 from pathlib import Path
@@ -13,7 +14,7 @@ from hyperopt import tpe
 from simod import support_utils as sup
 from simod.analyzers.sim_evaluator import evaluate_logs
 from simod.cli_formatter import print_message, print_subsection, print_warning
-from simod.configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove, PDFMethod
+from simod.configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove, PDFMethod, SimulatorKind
 from simod.discovery import inter_arrival_distribution
 from simod.discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
 from simod.discovery.gateway_probabilities import discover_with_gateway_management
@@ -21,8 +22,10 @@ from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log import write_xes, LogReader, EventLogIDs
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.replayer_datatypes import BPMNGraph
-from simod.simulator import simulate
+from simod.simulator import simulate, diffresbp_simulator
+from .simulation import ProsimosSettings, simulate_undifferentiated
 from simod.support_utils import get_project_dir, remove_asset
+from simod.support_utils import progress_bar_async
 from simod.writers import xml_writer as xml
 from . import simulation
 from .structure_miner import StructureMiner
@@ -56,6 +59,15 @@ class StructureOptimizer(HyperoptPipeline):
         )
 
         self._settings = settings
+        self._settings.read_options.column_names = {  # TODO: deal with that later, no need in overriding configuration
+            'CaseID': 'caseid',
+            'Activity': 'task',
+            'EnableTimestamp': 'enabled_timestamp',
+            'StartTimestamp': 'start_timestamp',
+            'EndTimestamp': 'end_timestamp',
+            'Resource': 'user'
+        }
+
         self._log_reader = log
 
         self._space = self._define_search_space(self._settings)
@@ -86,12 +98,10 @@ class StructureOptimizer(HyperoptPipeline):
         self.best_parameters = dict()
 
     def run(self):
-        resource_pool, timetable = discover_timetables_and_get_default_arrival_resource_pool(self._settings.log_path)
-        parameters = {
-            'resource_pool': resource_pool,
-            'time_table': timetable
-        }
         self._log_train = copy.deepcopy(self._original_log_train)
+
+        # resource_pool, timetable = discover_timetables_and_get_default_arrival_resource_pool(self._settings.log_path)
+        # parameters = {'resource_pool': resource_pool, 'time_table': timetable}
 
         def pipeline(trial_stg: Union[Configuration, dict]):
             print_subsection("Trial")
@@ -109,10 +119,12 @@ class StructureOptimizer(HyperoptPipeline):
 
             status, result = self.step(status, self._mine_structure, trial_stg)
 
-            status, result = self.step(
-                status, self._extract_parameters, trial_stg, result, copy.deepcopy(parameters))
+            # status, result = self.step(status, self._extract_parameters, trial_stg, result, copy.deepcopy(parameters))
+            status, result = self.step(status, self._extract_parameters_undifferentiated, trial_stg, result)
 
-            status, result = self.step(status, self._simulate, trial_stg)
+            # status, result = self.step(status, self._simulate, trial_stg)
+            status, result = self.step(status, self._simulate_undifferentiated, result, trial_stg)
+
             sim_values = result if status == STATUS_OK else []
 
             response = self._define_response(trial_stg, status, sim_values)
@@ -184,7 +196,7 @@ class StructureOptimizer(HyperoptPipeline):
     def _extract_parameters_undifferentiated(self, settings: Configuration, previous_step_result):
         bpmn_reader, process_graph = previous_step_result
         bpmn_path: Path = bpmn_reader.model_path
-        log = self._log_train.get_traces_df()
+        log = self._log_train.get_traces_df(include_start_end_events=True)
         pdf_method = self._settings.pdef_method
 
         simulation_parameters = simulation.undifferentiated_resources_parameters(
@@ -197,53 +209,66 @@ class StructureOptimizer(HyperoptPipeline):
 
         return bpmn_path, json_path, simulation_cases
 
-    def _extract_parameters(self, settings: Configuration, structure_values, parameters: dict):
-        _, process_graph = structure_values
-        num_inst = len(self._log_validation.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
-        start_time = self._log_validation.start_timestamp.min().strftime(
-            "%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
+    # def _extract_parameters(self, settings: Configuration, structure_values, parameters: dict):
+    #     _, process_graph = structure_values
+    #     num_inst = len(self._log_validation.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
+    #     start_time = self._log_validation.start_timestamp.min().strftime(
+    #         "%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
+    #
+    #     model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
+    #
+    #     # extract resource pool, resource timetable and arrival timetable
+    #     # TODO: why do we mine and overwrite resource pool and time table when it comes from input arg 'parameters'?
+    #     resource_pool, time_table = discover_timetables_and_get_default_arrival_resource_pool(settings.log_path)
+    #
+    #     # extract inter-arrival distribution
+    #     log_df = pd.DataFrame(self._log_train.data)
+    #     pdef_method = settings.pdef_method
+    #     if not pdef_method:
+    #         pdef_method = PDFMethod.DEFAULT
+    #         print_warning(f'PDFMethod is missing, setting it to the default: {pdef_method}')
+    #     arrival_rate = inter_arrival_distribution.discover(process_graph, log_df, pdef_method)
+    #
+    #     # extract sequences
+    #     bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+    #     traces = self._log_train.get_traces()
+    #     sequences = discover_with_gateway_management(
+    #         traces, bpmn_graph, settings.gate_management)
+    #
+    #     # extract elements data
+    #     log_df['role'] = 'SYSTEM'
+    #     elements_data = TaskEvaluator(process_graph, log_df, resource_pool, pdef_method).elements_data
+    #
+    #     parameters = parameters | {
+    #         'resource_pool': resource_pool,
+    #         'time_table': time_table,
+    #         'arrival_rate': arrival_rate,
+    #         'sequences': sequences,
+    #         'elements_data': elements_data,
+    #         'instances': num_inst,
+    #         'start_time': start_time
+    #     }
+    #     bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')
+    #     xml.print_parameters(bpmn_path, bpmn_path, parameters)
+    #
+    #     self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
+    #     self._log_validation['source'] = 'log'
+    #     self._log_validation['run_num'] = 0
+    #     self._log_validation['role'] = 'SYSTEM'
+    #     self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
 
-        model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
-
-        # extract resource pool, resource timetable and arrival timetable
-        # TODO: why do we mine and overwrite resource pool and time table when it comes from input arg 'parameters'?
-        resource_pool, time_table = discover_timetables_and_get_default_arrival_resource_pool(settings.log_path)
-
-        # extract inter-arrival distribution
-        log_df = pd.DataFrame(self._log_train.data)
-        pdef_method = settings.pdef_method
-        if not pdef_method:
-            pdef_method = PDFMethod.DEFAULT
-            print_warning(f'PDFMethod is missing, setting it to the default: {pdef_method}')
-        arrival_rate = inter_arrival_distribution.discover(process_graph, log_df, pdef_method)
-
-        # extract sequences
-        bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-        traces = self._log_train.get_traces()
-        sequences = discover_with_gateway_management(
-            traces, bpmn_graph, settings.gate_management)
-
-        # extract elements data
-        log_df['role'] = 'SYSTEM'
-        elements_data = TaskEvaluator(process_graph, log_df, resource_pool, pdef_method).elements_data
-
-        parameters = parameters | {
-            'resource_pool': resource_pool,
-            'time_table': time_table,
-            'arrival_rate': arrival_rate,
-            'sequences': sequences,
-            'elements_data': elements_data,
-            'instances': num_inst,
-            'start_time': start_time
-        }
-        bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')
-        xml.print_parameters(bpmn_path, bpmn_path, parameters)
-
+    def _simulate_undifferentiated(self, previous_step_result, settings: Configuration):
         self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
         self._log_validation['source'] = 'log'
         self._log_validation['run_num'] = 0
         self._log_validation['role'] = 'SYSTEM'
         self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
+
+        return simulate_undifferentiated(
+            settings=settings,
+            previous_step_result=previous_step_result,
+            validation_log=self._log_validation,
+        )
 
     def _simulate(self, trial_stg: Configuration):
         return simulate(trial_stg, self._log_validation, evaluate_fn=evaluate_logs)

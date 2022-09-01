@@ -17,7 +17,7 @@ from simod.event_log import LogReader
 TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
 
-def diffresbp_simulator(args: Tuple):
+def diffresbp_simulator(args: Tuple):  # TODO: deprecated
     """Custom built simulator."""
 
     print_notice(f'Custom simulator has been chosen')
@@ -31,7 +31,7 @@ def diffresbp_simulator(args: Tuple):
     total_cases = settings.simulation_cases
     print_notice(f'Number of simulation cases: {total_cases}')
 
-    parse_qbp_simulation_process(bpmn_path.__str__(), json_path.__str__())  # TODO: this json is Simod's json?
+    parse_qbp_simulation_process(bpmn_path.__str__(), json_path.__str__())
 
     args = [
         'diff_res_bpsim', 'start-simulation',

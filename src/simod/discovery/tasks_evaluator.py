@@ -119,42 +119,43 @@ class TaskEvaluator:
             on='name',
             how='left').sort_values(by='name')
         temp_elements_data['r_name'] = 'SYSTEM'
+
         # resource id addition
-        resource_id = (pd.DataFrame.from_dict(self.resource_pool)[['id', 'name']]
-                       .rename(columns={'id': 'resource', 'name': 'r_name'}))
-        temp_elements_data = (temp_elements_data.merge(
-            resource_id, on='r_name', how='left').drop(columns=['r_name']))
+        resource_id = pd.DataFrame([self.resource_pool])[['id', 'name']] \
+            .rename(columns={'id': 'resource', 'name': 'r_name'})
+
+        temp_elements_data = temp_elements_data\
+            .merge(resource_id, on='r_name', how='left')\
+            .drop(columns=['r_name'])
+
         # Appending to the elements data
         temp_elements_data = temp_elements_data.to_dict('records')
         elements_data.extend(temp_elements_data)
         return elements_data
 
     def associate_resource(self, elements_data):
-        """
-        Merge the resource information with the task data
+        """Merge the resource information with the task data."""
+        roles_table = self.process_stats[['caseid', 'role', 'task']] \
+            .groupby(['task', 'role']) \
+            .count() \
+            .sort_values(by=['caseid']) \
+            .groupby(level=0) \
+            .tail(1) \
+            .reset_index()
 
-        Parameters
-        ----------
-        elements_data : Dataframe
+        resource_id = pd.DataFrame([self.resource_pool])[['id', 'name']] \
+            .rename(columns={'id': 'resource', 'name': 'r_name'})
 
-        Returns
-        -------
-        elements_data : Dataframe
+        roles_table = roles_table \
+            .merge(resource_id, left_on='role', right_on='r_name', how='left') \
+            .drop(columns=['role', 'r_name', 'caseid'])
 
-        """
-        roles_table = (self.process_stats[['caseid', 'role', 'task']]
-                       .groupby(['task', 'role']).count()
-                       .sort_values(by=['caseid'])
-                       .groupby(level=0)
-                       .tail(1)
-                       .reset_index())
-        resource_id = (pd.DataFrame.from_dict(self.resource_pool)[['id', 'name']]
-                       .rename(columns={'id': 'resource', 'name': 'r_name'}))
-        roles_table = (roles_table.merge(resource_id, left_on='role', right_on='r_name', how='left').drop(
-            columns=['role', 'r_name', 'caseid']))
-        elements_data = elements_data.merge(roles_table, left_on='name', right_on='task', how='left').drop(
-            columns=['task'])
+        elements_data = elements_data \
+            .merge(roles_table, left_on='name', right_on='task', how='left') \
+            .drop(columns=['task'])
+
         elements_data['resource'].fillna('QBP_DEFAULT_RESOURCE', inplace=True)
+
         return elements_data
 
     def get_task_list(self, process_graph):

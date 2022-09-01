@@ -55,8 +55,8 @@ and_prior:
 
 
 def test_StructureOptimizer(entry_point):
+    """Smoke test to check that the structure optimizer can be instantiated and run successfully."""
     config = Configuration.from_yaml_str(structure_config_yaml)
-
     config.log_path = entry_point / 'PurchasingExample.xes'
 
     log_reader = LogReader(config.log_path)

@@ -1,22 +1,38 @@
+import itertools
 import json
+import multiprocessing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 from networkx import DiGraph
+from tqdm import tqdm
 
+from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
 from . import gateway_probabilities
 from .activity_resources import ActivityResourceDistribution, ResourceDistribution
 from .calendars import Calendar
 from .distributions import Distribution
 from .gateway_probabilities import GatewayProbabilities
 from .resource_profiles import ResourceProfile
-from ..configuration import PDFMethod, GateManagement
+from ..analyzers.sim_evaluator import evaluate_logs
+from ..cli_formatter import print_notice
+from ..configuration import PDFMethod, GateManagement, Configuration, SimulatorKind
 from ..discovery import inter_arrival_distribution
 from ..discovery.tasks_evaluator import TaskEvaluator
-from ..event_log import EventLogIDs
+from ..event_log import EventLogIDs, LogReader
 from ..readers.bpmn_reader import BpmnReader
+from ..support_utils import execute_shell_cmd, progress_bar_async
+
+PROSIMOS_COLUMN_MAPPING = {  # TODO: replace with EventLogIDs
+    'case_id': 'caseid',
+    'activity': 'task',
+    'enable_time': 'enabled_timestamp',
+    'start_time': 'start_timestamp',
+    'end_time': 'end_timestamp',
+    'resource': 'user'
+}
 
 
 @dataclass
@@ -41,7 +57,7 @@ class Parameters:
             'arrival_time_distribution':
                 self.arrival_distribution.to_dict(),
             'arrival_time_calendar':
-                self.arrival_calendar.to_dict(),
+                self.arrival_calendar.to_array(),
             'gateway_branching_probabilities':
                 [gateway_probabilities.to_dict() for gateway_probabilities in self.gateway_branching_probabilities]
         }
@@ -74,7 +90,7 @@ def undifferentiated_resources_parameters(
 
     gateway_probabilities_ = gateway_probabilities.discover(log, bpmn_path, gateways_probability_type)
 
-    task_resource_distributions = __task_resource_distribution(
+    task_resource_distributions = _task_resource_distribution(
         log, process_graph, pdf_method, bpmn_reader, undifferentiated_resource_profile)
 
     return Parameters(
@@ -87,28 +103,44 @@ def undifferentiated_resources_parameters(
     )
 
 
-def __task_resource_distribution(
+def _task_resource_distribution(
         log: pd.DataFrame,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
         bpmn_reader: BpmnReader,
-        undifferentiated_resource_profile: ResourceProfile):
+        undifferentiated_resource_profile: ResourceProfile) -> List[ActivityResourceDistribution]:
+    # extracting activities distribution
     log['role'] = 'SYSTEM'  # TaskEvaluator requires a role column
-    resource_pool_metadata = {
-        'id': 'QBP_DEFAULT_RESOURCE',
-        'name': 'SYSTEM',
-    }
+    resource_pool_metadata = {'id': 'QBP_DEFAULT_RESOURCE', 'name': 'SYSTEM'}
     activities_distributions = TaskEvaluator(process_graph, log, resource_pool_metadata, pdf_method).elements_data
 
+    # activities' IDs and names from BPMN model
     activities_info = bpmn_reader.get_tasks_info()
 
-    activities_bpmn_elements_ids = []
-    for activity in activities_info:
-        if activity['task_name'].lower() not in ['start', 'end']:
-            activities_bpmn_elements_ids.append(activity['task_id'])
-
     task_resource_distributions = []
-    for activity_id in activities_bpmn_elements_ids:
+    normal_activities_bpmn_elements_ids = []
+
+    # handling Start and End activities if present which always have fixed duration of 0
+    for activity in activities_info:
+        if activity['task_name'].lower() in ['start', 'end']:
+            task_resource_distributions.append(
+                ActivityResourceDistribution(
+                    activity_id=activity['task_id'],
+                    activity_resources_distributions=[
+                        ResourceDistribution(resource_id=activity['task_name'], distribution=Distribution.fixed(0))
+                    ]
+                )
+            )
+        else:
+            normal_activities_bpmn_elements_ids.append(activity['task_id'])
+
+    normal_resources = list(
+        filter(lambda r: r.name.lower() not in ['start', 'end'],
+               undifferentiated_resource_profile.resources)
+    )
+
+    # handling other (normal) activities without Start and End
+    for activity_id in normal_activities_bpmn_elements_ids:
         # getting activity distribution from BPMN
         activity_distribution: Optional[Distribution] = None
         for item in activities_distributions:
@@ -126,12 +158,115 @@ def __task_resource_distribution(
         if activity_distribution is None:
             raise Exception(f'Distribution for activity {activity_id} not found')
 
-        # assigning activity distribution to all resources
-        resources_distributions = []
-        for resource in undifferentiated_resource_profile.resources:
-            resources_distributions.append(
-                ResourceDistribution(resource_id=resource.id, distribution=activity_distribution))
+        # in undifferentiated resources, all activities are assigned to each resource except Start and End,
+        # Start and End have their own distinct resource
+        resources_distributions = [
+            ResourceDistribution(resource.id, activity_distribution)
+            for resource in normal_resources
+        ]
 
-        task_resource_distributions.append(
-            ActivityResourceDistribution(activity_id=activity_id,
-                                         activity_resources_distributions=resources_distributions))
+        task_resource_distributions.append(ActivityResourceDistribution(activity_id, resources_distributions))
+
+    return task_resource_distributions
+
+
+@dataclass
+class ProsimosSettings:
+    """Prosimos settings."""
+
+    bpmn_path: Path
+    parameters_path: Path
+    output_log_path: Path
+    num_simulation_cases: int
+
+    @staticmethod
+    def from_configuration(
+            settings: Configuration,
+            simulation_repetition_index: str,
+            num_simulation_cases: Optional[int] = None) -> 'ProsimosSettings':
+        bpmn_path = settings.output / (settings.project_name + '.bpmn')
+        output_log_path = settings.output / 'sim_data' / f'{settings.project_name}_{simulation_repetition_index}.csv'
+        parameters_path = bpmn_path.with_suffix('.json')
+        if num_simulation_cases is None:
+            num_simulation_cases = settings.simulation_cases
+        else:
+            num_simulation_cases = num_simulation_cases
+
+        return ProsimosSettings(
+            bpmn_path=bpmn_path,
+            output_log_path=output_log_path,
+            parameters_path=parameters_path,
+            num_simulation_cases=num_simulation_cases,
+        )
+
+
+def _simulate_with_prosimos(settings: ProsimosSettings):
+    print_notice(f'Prosimos simulator has been chosen')
+    print_notice(f'Number of simulation cases: {settings.num_simulation_cases}')
+
+    args = [
+        'diff_res_bpsim', 'start-simulation',
+        '--bpmn_path', settings.bpmn_path.__str__(),
+        '--json_path', settings.parameters_path.__str__(),
+        '--log_out_path', settings.output_log_path.__str__(),
+        '--total_cases', str(settings.num_simulation_cases)
+    ]
+
+    execute_shell_cmd(args)
+
+
+def simulate_undifferentiated(settings: Configuration, previous_step_result: Tuple, validation_log: pd.DataFrame):
+    bpmn_path, json_path, simulation_cases = previous_step_result
+
+    if settings.simulator is not SimulatorKind.CUSTOM:
+        raise ValueError(f'Unknown simulator {settings.simulator}')
+
+    num_simulations = settings.repetitions
+    cpu_count = multiprocessing.cpu_count()
+    w_count = num_simulations if num_simulations <= cpu_count else cpu_count
+    pool = multiprocessing.Pool(processes=w_count)
+
+    # Simulate
+    simulation_arguments = [
+        ProsimosSettings(
+            bpmn_path=bpmn_path,
+            parameters_path=json_path,
+            output_log_path=settings.output / 'sim_data' / f'{settings.project_name}_{rep}.csv',
+            num_simulation_cases=simulation_cases)
+        for rep in range(num_simulations)]
+    p = pool.map_async(_simulate_with_prosimos, simulation_arguments)
+    progress_bar_async(p, 'simulating', num_simulations)
+
+    # Read simulated logs
+    read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
+                      for index in range(num_simulations)]
+    p = pool.map_async(_read_simulated_log, read_arguments)
+    progress_bar_async(p, 'reading simulated logs', num_simulations)
+
+    # Evaluate
+    evaluation_arguments = [(settings, validation_log, log) for log in p.get()]
+    if simulation_cases > 1000:
+        pool.close()
+        results = [evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
+        evaluation_measurements = list(itertools.chain(*results))
+    else:
+        p = pool.map_async(evaluate_logs, evaluation_arguments)
+        progress_bar_async(p, 'evaluating results', num_simulations)
+        pool.close()
+        evaluation_measurements = list(itertools.chain(*p.get()))
+
+    return evaluation_measurements
+
+
+def _read_simulated_log(arguments: Tuple):
+    log_path, log_column_mapping, simulation_repetition_index = arguments
+
+    reader = LogReader(log_path=log_path, column_names=log_column_mapping)
+
+    reader.df.rename(columns={'user': 'resource'}, inplace=True)
+    reader.df['role'] = reader.df['resource']
+    reader.df['source'] = 'simulation'
+    reader.df['run_num'] = simulation_repetition_index
+    reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
+
+    return reader.df

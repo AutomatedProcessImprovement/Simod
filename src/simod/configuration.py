@@ -7,6 +7,7 @@ from typing import List, Dict, Optional, Union
 import yaml
 
 from . import support_utils as sup
+from .cli_formatter import print_warning
 from .support_utils import get_project_dir
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
@@ -138,6 +139,7 @@ class CalendarType(Enum):
     UNDIFFERENTIATED = auto()
     DIFFERENTIATED_BY_POOL = auto()
     DIFFERENTIATED_BY_RESOURCE = auto()
+
     # TODO: update configuration and adopt dependencies to the new calendar_discovery package
 
     @classmethod
@@ -332,6 +334,10 @@ class Configuration:
     def __post_init__(self):
         if self.log_path:
             self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
+
+        if not self.pdef_method:
+            self.pdef_method = PDFMethod.DEFAULT
+            print_warning(f'PDFMethod is missing, setting it to the default: {self.pdef_method}')
 
     @staticmethod
     def from_yaml_str(yaml_str: str) -> 'Configuration':
