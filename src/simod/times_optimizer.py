@@ -21,7 +21,7 @@ from .discovery.calendar_discovery.adapter import discover_timetables_with_resou
 from .discovery.tasks_evaluator import TaskEvaluator
 from .event_log import LogReader
 from .hyperopt_pipeline import HyperoptPipeline
-from .readers.bpmn_reader import BPMNReader
+from .process_model.bpmn import BPMNReaderWriter
 from .simulator import simulate
 from .support_utils import get_project_dir, remove_asset
 
@@ -348,7 +348,7 @@ class TimesOptimizer(HyperoptPipeline):
         self.xml_sim_model = etree.fromstring(
             ET.tostring(root.find('qbp:processSimulationInfo', ns)), parser)
         # load bpmn model
-        self.bpmn = BPMNReader(model_path)
+        self.bpmn = BPMNReaderWriter(model_path)
         self.process_graph = self.bpmn.as_graph()
 
     @staticmethod

@@ -21,7 +21,7 @@ from ..configuration import PDFMethod, GateManagement, Configuration, SimulatorK
 from ..discovery import inter_arrival_distribution
 from ..discovery.tasks_evaluator import TaskEvaluator
 from ..event_log import EventLogIDs, LogReader
-from ..readers.bpmn_reader import BPMNReader
+from ..process_model.bpmn import BPMNReaderWriter
 from ..support_utils import execute_shell_cmd, progress_bar_async
 
 PROSIMOS_COLUMN_MAPPING = {  # TODO: replace with EventLogIDs
@@ -73,7 +73,7 @@ def undifferentiated_resources_parameters(
         bpmn_path: Path,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BPMNReader,
+        bpmn_reader: BPMNReaderWriter,
         gateways_probability_type: GateManagement) -> Parameters:
     calendar_24_7 = Calendar.all_day_long()
 
@@ -106,7 +106,7 @@ def _task_resource_distribution(
         log: pd.DataFrame,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BPMNReader,
+        bpmn_reader: BPMNReaderWriter,
         undifferentiated_resource_profile: ResourceProfile) -> List[ActivityResourceDistribution]:
     # extracting activities distribution
     log['role'] = 'SYSTEM'  # TaskEvaluator requires a role column

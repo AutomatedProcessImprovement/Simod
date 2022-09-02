@@ -16,7 +16,7 @@ from .discovery import inter_arrival_distribution, gateway_probabilities
 from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
 from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_timestamps
 from .preprocessor import Preprocessor
-from .readers.bpmn_reader import BPMNReader
+from .process_model.bpmn import BPMNReaderWriter
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .process_structure.miner import StructureMiner, Settings as StructureMinerSettings
@@ -99,7 +99,7 @@ class Discoverer:
             shutil.copy(self._settings.model_path.absolute(), self._settings.output.absolute())
             model_path = (self._settings.output / self._settings.model_path.name).absolute()
 
-        bpmn_reader = BPMNReader(model_path)
+        bpmn_reader = BPMNReaderWriter(model_path)
         self.process_graph = bpmn_reader.as_graph()
 
     def _extract_parameters(self):

@@ -18,14 +18,14 @@ from .discovery.calendar_discovery.adapter import discover_timetables_and_get_de
 from .discovery.gateway_probabilities import discover_with_gateway_management
 from .event_log import LogReader
 from .preprocessor import Preprocessor
+from .process_model import bpmn
+from .process_model.bpmn import BPMNReaderWriter
+from .process_structure.optimizer import StructureOptimizer
 from .processing.core import remove_outliers
-from .readers import bpmn_reader, bpm_graph
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
-from .process_structure.optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers import xml_writer
-from .writers.model_serialization import serialize_model
 
 Parameters = namedtuple('Parameters',
                         ['time_table', 'resource_pool', 'arrival_rate', 'sequences', 'elements_data',
@@ -152,7 +152,7 @@ class Optimizer:
         # extracting parameters
         model_path = self.settings_global.model_path
 
-        bpmn = bpmn_reader.BPMNReader(model_path)
+        bpmn = bpmn_reader.BPMNReaderWriter(model_path)
         process_graph = bpmn.as_graph()
 
         # TODO: why only arrival resource pool is used and why it's hardcoded in mine_resource_pool_and_calendars?
@@ -224,17 +224,18 @@ class Optimizer:
         shutil.move(times_measurements, output_path)
 
     def _export_canonical_model(self, best_output):
-        print_asset(f"Model file location: "
-                    f"{os.path.join(self.settings_global.output, self.settings_global.project_name + '.bpmn')}")
-        canonical_model = serialize_model(
-            os.path.join(self.settings_global.output, self.settings_global.project_name + '.bpmn'))
+        model_path = os.path.join(self.settings_global.output, self.settings_global.project_name + '.bpmn')
+        print_asset(f"Model file location: {model_path}")
+        canonical_model = BPMNReaderWriter(model_path).serialize_model()
+
         # Users in rol data
         resource_table = pd.read_pickle(os.path.join(best_output, 'resource_table.pkl'))
         user_rol = dict()
         for key, group in resource_table.groupby('role'):
             user_rol[key] = list(group.resource)
         canonical_model['rol_user'] = user_rol
-        # Json creation
+
+        # JSON creation
         self.best_params = {k: str(v) for k, v in self.best_params.items()}
         canonical_model['discovery_parameters'] = self.best_params
         sup.create_json(canonical_model, os.path.join(

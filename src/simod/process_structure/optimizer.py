@@ -21,7 +21,7 @@ from simod.support_utils import get_project_dir, remove_asset
 from . import simulation
 from .simulation import simulate_undifferentiated
 from .miner import StructureMiner, Settings as StructureMinerSettings
-from ..readers.bpmn_reader import BPMNReader
+from ..process_model.bpmn import BPMNReaderWriter
 
 
 class StructureOptimizer(HyperoptPipeline):
@@ -192,7 +192,7 @@ class StructureOptimizer(HyperoptPipeline):
 
         _ = StructureMiner(settings)
 
-        bpmn_reader = BPMNReader(settings.output_model_path)
+        bpmn_reader = BPMNReaderWriter(settings.output_model_path)
         process_graph = bpmn_reader.as_graph()
 
         return [bpmn_reader, process_graph]
