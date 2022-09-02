@@ -220,7 +220,7 @@ def simulate_undifferentiated(settings: Configuration, previous_step_result: Tup
     if settings.simulator is not SimulatorKind.CUSTOM:
         raise ValueError(f'Unknown simulator {settings.simulator}')
 
-    num_simulations = settings.repetitions
+    num_simulations = settings.simulation_repetitions
     cpu_count = multiprocessing.cpu_count()
     w_count = num_simulations if num_simulations <= cpu_count else cpu_count
     pool = multiprocessing.Pool(processes=w_count)

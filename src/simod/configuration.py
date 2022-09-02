@@ -308,7 +308,7 @@ class Configuration:
     aligntype: Path = output / 'AlignmentStatistics.csv'
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
     structure_mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
-    repetitions: int = 1
+    simulation_repetitions: int = 1
     simulator: SimulatorKind = SimulatorKind.CUSTOM
     simulation_cases: int = 0
     simulation: bool = True  # TODO: is this condition checked anywhere?

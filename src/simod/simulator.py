@@ -73,7 +73,7 @@ def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
     n_cases = len(log_data.caseid.unique())
     settings.simulation_cases = n_cases
 
-    reps = settings.repetitions
+    reps = settings.simulation_repetitions
     cpu_count = multiprocessing.cpu_count()
     w_count = reps if reps <= cpu_count else cpu_count
     pool = multiprocessing.Pool(processes=w_count)

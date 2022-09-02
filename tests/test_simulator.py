@@ -19,10 +19,10 @@ def test_diffresbp_simulator(entry_point, arg):
     config = Configuration()
     config.output = qbp_path.parent
     config.project_name, _ = os.path.splitext(qbp_path.name)
-    config.repetitions = 1
+    config.simulation_repetitions = 1
     config.simulation_cases = get_number_of_cases(qbp_path)
 
-    diffresbp_simulator((config, config.repetitions))
+    diffresbp_simulator((config, config.simulation_repetitions))
 
     json_path = qbp_path.with_suffix('.json')
     assert json_path.exists()
