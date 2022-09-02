@@ -9,7 +9,8 @@ import pytest
 
 from simod.configuration import Configuration, GateManagement
 from simod.discovery import gateway_probabilities
-from simod.event_log import LogReader, LogSplitter
+from simod.event_log_processing.reader import EventLogReader
+from simod.event_log_processing.splitter import LogSplitter
 from simod.replayer_datatypes import BPMNGraph
 
 
@@ -25,13 +26,13 @@ def args(entry_point):
 def setup_data(model_path: Path, log_path: Path):
     settings = Configuration(model_path=Path(model_path), log_path=Path(log_path))
 
-    log = LogReader(log_path)
+    log = EventLogReader(log_path)
     graph = BPMNGraph.from_bpmn_path(model_path)
 
     return graph, log, settings
 
 
-def split_log_buckets(log: LogReader, size: float, one_ts: bool) -> Tuple[pd.DataFrame, LogReader]:
+def split_log_buckets(log: EventLogReader, size: float, one_ts: bool) -> Tuple[pd.DataFrame, EventLogReader]:
     # Split log data
     splitter = LogSplitter(pd.DataFrame(log.data))
     train, test = splitter.split_log('timeline_contained', size, one_ts)

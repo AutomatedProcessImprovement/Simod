@@ -16,12 +16,11 @@ from .configuration import Configuration, StructureMiningAlgorithm, PDFMethod
 from .discovery import inter_arrival_distribution
 from .discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
 from .discovery.gateway_probabilities import discover_with_gateway_management
-from .event_log import LogReader
+from simod.event_log_processing.reader import EventLogReader
 from .preprocessor import Preprocessor
-from .process_model import bpmn
 from .process_model.bpmn import BPMNReaderWriter
 from .process_structure.optimizer import StructureOptimizer
-from .processing.core import remove_outliers
+from .event_log_processing.utilities import remove_outliers
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
 from .times_optimizer import TimesOptimizer
@@ -33,8 +32,8 @@ Parameters = namedtuple('Parameters',
 
 
 class Optimizer:
-    log_reader: LogReader
-    log_train: LogReader
+    log_reader: EventLogReader
+    log_train: EventLogReader
     log_test: pd.DataFrame
     settings: Configuration
     settings_global: Configuration
@@ -60,7 +59,7 @@ class Optimizer:
         self.settings_global = self._preprocessor.run()
 
         print_notice(f'Log path: {self.settings_global.log_path}')
-        self.log_reader = LogReader(self.settings_global.log_path, log=self._preprocessor.log)
+        self.log_reader = EventLogReader(self.settings_global.log_path, log=self._preprocessor.log)
         self.split_and_set_log_buckets(0.8)
 
     def run(self, discover_model: bool = True) -> None:
@@ -152,7 +151,7 @@ class Optimizer:
         # extracting parameters
         model_path = self.settings_global.model_path
 
-        bpmn = bpmn_reader.BPMNReaderWriter(model_path)
+        bpmn = BPMNReaderWriter(model_path)
         process_graph = bpmn.as_graph()
 
         # TODO: why only arrival resource pool is used and why it's hardcoded in mine_resource_pool_and_calendars?

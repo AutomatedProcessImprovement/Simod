@@ -20,7 +20,8 @@ from ..cli_formatter import print_notice
 from ..configuration import PDFMethod, GateManagement, Configuration, SimulatorKind
 from ..discovery import inter_arrival_distribution
 from ..discovery.tasks_evaluator import TaskEvaluator
-from ..event_log import EventLogIDs, LogReader
+from simod.event_log_processing.reader import EventLogReader
+from ..event_log_processing.event_log_ids import EventLogIDs
 from ..process_model.bpmn import BPMNReaderWriter
 from ..support_utils import execute_shell_cmd, progress_bar_async
 
@@ -260,7 +261,7 @@ def simulate_undifferentiated(settings: Configuration, previous_step_result: Tup
 def _read_simulated_log(arguments: Tuple):
     log_path, log_column_mapping, simulation_repetition_index = arguments
 
-    reader = LogReader(log_path=log_path, column_names=log_column_mapping)
+    reader = EventLogReader(log_path=log_path, column_names=log_column_mapping)
 
     reader.df.rename(columns={'user': 'resource'}, inplace=True)
     reader.df['role'] = reader.df['resource']

@@ -12,7 +12,7 @@ from simod.analyzers.sim_evaluator import evaluate_logs
 from simod.cli_formatter import print_notice
 from simod.support_utils import execute_shell_cmd, progress_bar_async
 from simod.configuration import Configuration, SimulatorKind
-from simod.event_log import LogReader
+from simod.event_log_processing.reader import EventLogReader
 
 TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
@@ -128,7 +128,7 @@ def _read_stats_alt(args):
     m_settings['project_name'] = settings.project_name
     log_path = Path(os.path.join(m_settings['output'], 'sim_data',
                                  m_settings['project_name'] + '_' + str(rep + 1) + '.csv'))
-    temp = LogReader(log_path=log_path, column_names=settings.read_options.column_names)
+    temp = EventLogReader(log_path=log_path, column_names=settings.read_options.column_names)
     temp = temp.df
     temp.rename(columns={'user': 'resource'}, inplace=True)
     temp['role'] = temp['resource']

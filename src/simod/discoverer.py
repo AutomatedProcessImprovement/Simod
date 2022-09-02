@@ -14,7 +14,8 @@ from .cli_formatter import print_asset, print_section, print_notice, print_step
 from .configuration import Configuration, StructureMiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
 from .discovery import inter_arrival_distribution, gateway_probabilities
 from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
-from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_timestamps
+from simod.event_log_processing.reader import DEFAULT_XES_COLUMNS, EventLogReader
+from .event_log_processing.utilities import write_xes, reformat_timestamps
 from .preprocessor import Preprocessor
 from .process_model.bpmn import BPMNReaderWriter
 from .replayer_datatypes import BPMNGraph
@@ -26,9 +27,9 @@ from .writers import xml_writer as xml
 class Discoverer:
     _settings: Configuration
     _output_file: str
-    _log: LogReader
-    _log_train: LogReader
-    _log_test: LogReader
+    _log: EventLogReader
+    _log_train: EventLogReader
+    _log_test: EventLogReader
     _sim_values: list = []
 
     def __init__(self, settings: Configuration):
@@ -54,7 +55,7 @@ class Discoverer:
     def _read_inputs(self):
         print_section("Log Parsing")
         # Event log reading
-        self._log = LogReader(self._settings.log_path, column_names=DEFAULT_XES_COLUMNS)
+        self._log = EventLogReader(self._settings.log_path, column_names=DEFAULT_XES_COLUMNS)
         # Time splitting 80-20
         self._split_timeline(0.8)
 

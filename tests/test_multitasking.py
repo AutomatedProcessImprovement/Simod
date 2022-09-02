@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from simod.processing.multitasking import adjust_durations
-from simod.event_log import read, reformat_timestamps
+from simod.event_log_processing.multitasking import adjust_durations
+from simod.event_log_processing.utilities import read, reformat_timestamps
 
 
 def test_adjust_durations_purchasing_example(entry_point):

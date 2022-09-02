@@ -6,7 +6,7 @@ import pytest
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from pm4py_wrapper.wrapper import convert_xes_to_csv
 from simod.discovery.calendar_discovery import case_arrival, resource as resource_calendar
-from simod.event_log import read
+from simod.event_log_processing.utilities import read
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 
 

@@ -1,6 +1,6 @@
 import pytest
 
-from simod.event_log import DEFAULT_XES_COLUMNS, LogReader
+from simod.event_log_processing.reader import DEFAULT_XES_COLUMNS, EventLogReader
 from simod.process_model.bpmn import BPMNReaderWriter
 
 arguments = [
@@ -20,16 +20,16 @@ arguments = [
 @pytest.mark.parametrize('arg', arguments, ids=map(lambda x: x['log_path'], arguments))
 def test_logreader_new(entry_point, arg):
     log_path = entry_point / arg['log_path']
-    log = LogReader(log_path, arg['column_names'])
+    log = EventLogReader(log_path, arg['column_names'])
     assert len(log.data) != 0
 
 
 @pytest.mark.parametrize('arg', arguments, ids=map(lambda x: x['log_path'], arguments))
 def test_copy_without_data(entry_point, arg):
     log_path = entry_point / arg['log_path']
-    copy1 = LogReader(log_path=log_path, column_names=arg['column_names'], load=False)
+    copy1 = EventLogReader(log_path=log_path, column_names=arg['column_names'], load=False)
     copy1.set_data(['foo'])
-    copy2 = LogReader.copy_without_data(copy1)
+    copy2 = EventLogReader.copy_without_data(copy1)
     copy2.set_data(['foo', 'bar'])
     assert copy1._time_format == copy2._time_format
     assert copy1._column_names == copy2._column_names

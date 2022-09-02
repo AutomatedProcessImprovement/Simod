@@ -3,7 +3,8 @@ import os
 import pytest
 
 from simod.configuration import ReadOptions, Configuration, AndPriorORemove
-from simod.event_log import write_xes, LogReader
+from simod.event_log_processing.reader import EventLogReader
+from simod.event_log_processing.utilities import write_xes
 from simod.process_structure.miner import StructureMiner
 
 arguments = [
@@ -16,7 +17,7 @@ arguments = [
 def test_splitminer(entry_point, arg, tmp_path):
     log_path = entry_point / arg['log_path']
     read_options = arg['read_options']
-    log = LogReader(log_path)
+    log = EventLogReader(log_path)
     assert len(log.data) != 0
 
     config = Configuration()

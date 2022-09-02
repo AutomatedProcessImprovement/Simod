@@ -19,7 +19,7 @@ from .configuration import Configuration, StructureMiningAlgorithm, Metric, QBP_
 from .discovery import inter_arrival_distribution
 from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
 from .discovery.tasks_evaluator import TaskEvaluator
-from .event_log import LogReader
+from simod.event_log_processing.reader import EventLogReader
 from .hyperopt_pipeline import HyperoptPipeline
 from .process_model.bpmn import BPMNReaderWriter
 from .simulator import simulate
@@ -40,13 +40,13 @@ class TimesOptimizer(HyperoptPipeline):
     _bayes_trials: Trials
     _settings_global: Configuration
     _settings_time: Configuration
-    _log_train: LogReader
+    _log_train: EventLogReader
     _log_validation: pd.DataFrame
-    _original_log: LogReader
-    _original_log_train: LogReader
+    _original_log: EventLogReader
+    _original_log_train: EventLogReader
     _original_log_validation: pd.DataFrame
 
-    def __init__(self, settings_global: Configuration, settings_time: Configuration, log: LogReader, model_path):
+    def __init__(self, settings_global: Configuration, settings_time: Configuration, log: EventLogReader, model_path):
         self._settings_global = settings_global
         self._settings_time = settings_time
         self._log = log
@@ -54,7 +54,7 @@ class TimesOptimizer(HyperoptPipeline):
         self._space = self._define_search_space(settings_global, settings_time)
 
         train, validation = self._split_timeline(0.8)
-        self._log_train = LogReader.copy_without_data(self._log)
+        self._log_train = EventLogReader.copy_without_data(self._log)
         self._log_train.set_data(
             train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
         self._log_validation = validation

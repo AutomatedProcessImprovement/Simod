@@ -14,13 +14,14 @@ from simod import support_utils as sup
 from simod.analyzers.sim_evaluator import evaluate_logs
 from simod.cli_formatter import print_message, print_subsection
 from simod.configuration import Configuration, StructureMiningAlgorithm, Metric, AndPriorORemove
-from simod.event_log import write_xes, LogReader, EventLogIDs
+from simod.event_log_processing.reader import EventLogReader
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulator import simulate
 from simod.support_utils import get_project_dir, remove_asset
-from . import simulation
-from .simulation import simulate_undifferentiated
 from .miner import StructureMiner, Settings as StructureMinerSettings
+from .simulation import simulate_undifferentiated, undifferentiated_resources_parameters
+from ..event_log_processing.event_log_ids import EventLogIDs
+from ..event_log_processing.utilities import write_xes
 from ..process_model.bpmn import BPMNReaderWriter
 
 
@@ -31,17 +32,17 @@ class StructureOptimizer(HyperoptPipeline):
 
     _bayes_trials: Trials
     _settings: Configuration
-    _log_reader: LogReader
-    _log_train: LogReader
+    _log_reader: EventLogReader
+    _log_train: EventLogReader
     _log_validation: pd.DataFrame
-    _original_log: LogReader
-    _original_log_train: LogReader
+    _original_log: EventLogReader
+    _original_log_train: EventLogReader
     _original_log_validation: pd.DataFrame
     _space: dict
     _temp_output: Path
     _log_ids: EventLogIDs
 
-    def __init__(self, settings: Configuration, log: LogReader):
+    def __init__(self, settings: Configuration, log: EventLogReader):
         self._log_ids = EventLogIDs(
             case='caseid',
             activity='task',
@@ -69,7 +70,7 @@ class StructureOptimizer(HyperoptPipeline):
         train = StructureOptimizer._sample_log(train)
 
         self._log_validation = validation.sort_values('start_timestamp', ascending=True).reset_index(drop=True)
-        self._log_train = LogReader.copy_without_data(self._log_reader)
+        self._log_train = EventLogReader.copy_without_data(self._log_reader)
         self._log_train.set_data(
             train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
 
@@ -203,7 +204,7 @@ class StructureOptimizer(HyperoptPipeline):
         log = self._log_train.get_traces_df(include_start_end_events=True)
         pdf_method = self._settings.pdef_method
 
-        simulation_parameters = simulation.undifferentiated_resources_parameters(
+        simulation_parameters = undifferentiated_resources_parameters(
             log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader, settings.gate_management)
 
         json_path = bpmn_path.with_suffix('.json')

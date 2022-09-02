@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import pandas as pd
 
-from simod.event_log import EventLogIDs
+from simod.event_log_processing.event_log_ids import EventLogIDs
 from simod.process_model.bpmn import BPMNReaderWriter
 
 
