@@ -41,22 +41,30 @@ class TraceAlignmentAlgorithm(Enum):
         return f'Unknown TraceAlignmentAlgorithm {str(self)}'
 
 
-class MiningAlgorithm(Enum):
-    SM1 = auto()
-    SM2 = auto()
-    SM3 = auto()
+class StructureMiningAlgorithm(Enum):
+    SPLIT_MINER_1 = auto()
+    SPLIT_MINER_2 = auto()
+    SPLIT_MINER_3 = auto()
 
     @classmethod
-    def from_str(cls, value: str) -> 'MiningAlgorithm':
-        if value.lower() == 'sm1':
-            return cls.SM1
-        elif value.lower() == 'sm2':
-            return cls.SM2
-        elif value.lower() == 'sm3':
-            return cls.SM3
+    def from_str(cls, value: str) -> 'StructureMiningAlgorithm':
+        if value.lower() in ['sm1', 'splitminer1', 'split miner 1', 'split_miner_1', 'split-miner-1']:
+            return cls.SPLIT_MINER_1
+        elif value.lower() in ['sm2', 'splitminer2', 'split miner 2', 'split_miner_2', 'split-miner-2']:
+            return cls.SPLIT_MINER_2
+        elif value.lower() in ['sm3', 'splitminer3', 'split miner 3', 'split_miner_3', 'split-miner-3']:
+            return cls.SPLIT_MINER_3
         else:
-            raise ValueError(f'Unknown value {value}')
+            raise ValueError(f'Unknown structure mining algorithm: {value}')
 
+    def __str__(self):
+        if self == StructureMiningAlgorithm.SPLIT_MINER_1:
+            return 'Split Miner 1'
+        elif self == StructureMiningAlgorithm.SPLIT_MINER_2:
+            return 'Split Miner 2'
+        elif self == StructureMiningAlgorithm.SPLIT_MINER_3:
+            return 'Split Miner 3'
+        return f'Unknown StructureMiningAlgorithm {str(self)}'
 
 class AndPriorORemove(Enum):
     TRUE = auto()
@@ -284,6 +292,7 @@ class ReadOptions:
         return {'Case ID': 'caseid', 'Activity': 'task', 'lifecycle:transition': 'event_type', 'Resource': 'user'}
 
 
+# TODO: split class into UserConfiguration (StructureOptimizationConfiguration, TimesOptimization), SystemConfiguration
 @dataclass
 class Configuration:
     # General
@@ -292,13 +301,13 @@ class Configuration:
     model_path: Optional[Path] = None
     config_path: Optional[Path] = None
     output: Path = (PROJECT_DIR / 'outputs' / sup.folder_id()).absolute()
-    sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
+    sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer/splitminer.jar'
     sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
     sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
     aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
     aligntype: Path = output / 'AlignmentStatistics.csv'
     read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
-    mining_alg: MiningAlgorithm = MiningAlgorithm.SM3
+    structure_mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
     repetitions: int = 1
     simulator: SimulatorKind = SimulatorKind.CUSTOM
     simulation_cases: int = 0
@@ -395,7 +404,7 @@ def config_data_with_datastructures(data: dict) -> dict:
 
     mining_alg = data.get('mining_alg')
     if mining_alg:
-        data['mining_alg'] = MiningAlgorithm.from_str(mining_alg)
+        data['mining_alg'] = StructureMiningAlgorithm.from_str(mining_alg)
 
     and_prior = data.get('and_prior')
     if and_prior and (isinstance(and_prior, str) or isinstance(and_prior, list)):

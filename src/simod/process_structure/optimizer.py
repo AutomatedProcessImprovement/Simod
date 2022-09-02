@@ -1,6 +1,5 @@
 import copy
 import math
-import multiprocessing
 import os
 import random
 from pathlib import Path
@@ -13,22 +12,16 @@ from hyperopt import tpe
 
 from simod import support_utils as sup
 from simod.analyzers.sim_evaluator import evaluate_logs
-from simod.cli_formatter import print_message, print_subsection, print_warning
-from simod.configuration import Configuration, MiningAlgorithm, Metric, AndPriorORemove, PDFMethod, SimulatorKind
-from simod.discovery import inter_arrival_distribution
-from simod.discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
-from simod.discovery.gateway_probabilities import discover_with_gateway_management
-from simod.discovery.tasks_evaluator import TaskEvaluator
+from simod.cli_formatter import print_message, print_subsection
+from simod.configuration import Configuration, StructureMiningAlgorithm, Metric, AndPriorORemove
 from simod.event_log import write_xes, LogReader, EventLogIDs
 from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.replayer_datatypes import BPMNGraph
-from simod.simulator import simulate, diffresbp_simulator
-from .simulation import ProsimosSettings, simulate_undifferentiated
+from simod.simulator import simulate
 from simod.support_utils import get_project_dir, remove_asset
-from simod.support_utils import progress_bar_async
-from simod.writers import xml_writer as xml
 from . import simulation
-from .structure_miner import StructureMiner
+from .simulation import simulate_undifferentiated
+from .miner import StructureMiner, Settings as StructureMinerSettings
+from ..readers.bpmn_reader import BPMNReader
 
 
 class StructureOptimizer(HyperoptPipeline):
@@ -119,17 +112,15 @@ class StructureOptimizer(HyperoptPipeline):
 
             status, result = self.step(status, self._mine_structure, trial_stg)
 
-            # status, result = self.step(status, self._extract_parameters, trial_stg, result, copy.deepcopy(parameters))
             status, result = self.step(status, self._extract_parameters_undifferentiated, trial_stg, result)
 
-            # status, result = self.step(status, self._simulate, trial_stg)
             status, result = self.step(status, self._simulate_undifferentiated, result, trial_stg)
 
-            sim_values = result if status == STATUS_OK else []
+            evaluation_measurements = result if status == STATUS_OK else []
 
-            response = self._define_response(trial_stg, status, sim_values)
+            response = self._define_response(trial_stg, status, evaluation_measurements)
 
-            # reinstate log
+            # reset the log
             self._log_reader = copy.deepcopy(self._original_log)
             self._log_train = copy.deepcopy(self._original_log_train)
             self._log_validation = copy.deepcopy(self._original_log_validation)
@@ -160,12 +151,12 @@ class StructureOptimizer(HyperoptPipeline):
     @staticmethod
     def _define_search_space(settings: Configuration) -> dict:
         var_dim = {'gate_management': hp.choice('gate_management', settings.gate_management)}
-        if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
             var_dim['epsilon'] = hp.uniform('epsilon', settings.epsilon[0], settings.epsilon[1])
             var_dim['eta'] = hp.uniform('eta', settings.eta[0], settings.eta[1])
             var_dim['and_prior'] = hp.choice('and_prior', AndPriorORemove.to_str(settings.and_prior))
             var_dim['or_rep'] = hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep))
-        elif settings.mining_alg is MiningAlgorithm.SM2:
+        elif settings.structure_mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             var_dim['concurrency'] = hp.uniform('concurrency', settings.concurrency[0], settings.concurrency[1])
         new_settings = copy.deepcopy(settings.__dict__)
         for key in var_dim.keys():
@@ -188,11 +179,24 @@ class StructureOptimizer(HyperoptPipeline):
 
     @staticmethod
     def _mine_structure(settings: Configuration):
-        structure_miner = StructureMiner(settings.log_path, settings)
-        structure_miner.execute_pipeline()
-        return [structure_miner.bpmn, structure_miner.process_graph]
+        settings = StructureMinerSettings(
+            xes_path=settings.log_path,
+            mining_algorithm=settings.structure_mining_algorithm,
+            output_model_path=(settings.output / (settings.project_name + '.bpmn')).absolute(),
+            epsilon=settings.epsilon,
+            eta=settings.eta,
+            concurrency=settings.concurrency,
+            and_prior=settings.and_prior,
+            or_rep=settings.or_rep,
+        )
 
-    # TODO: use this function in the pipeline and make sure the downstream simulation routine uses output from it
+        _ = StructureMiner(settings)
+
+        bpmn_reader = BPMNReader(settings.output_model_path)
+        process_graph = bpmn_reader.as_graph()
+
+        return [bpmn_reader, process_graph]
+
     def _extract_parameters_undifferentiated(self, settings: Configuration, previous_step_result):
         bpmn_reader, process_graph = previous_step_result
         bpmn_path: Path = bpmn_reader.model_path
@@ -208,54 +212,6 @@ class StructureOptimizer(HyperoptPipeline):
         simulation_cases = log[self._log_ids.case].nunique()
 
         return bpmn_path, json_path, simulation_cases
-
-    # def _extract_parameters(self, settings: Configuration, structure_values, parameters: dict):
-    #     _, process_graph = structure_values
-    #     num_inst = len(self._log_validation.caseid.unique())  # TODO: why do we use log_valdn instead of log_train?
-    #     start_time = self._log_validation.start_timestamp.min().strftime(
-    #         "%Y-%m-%dT%H:%M:%S.%f+00:00")  # getting minimum date
-    #
-    #     model_path = Path(os.path.join(settings.output, settings.project_name + '.bpmn'))
-    #
-    #     # extract resource pool, resource timetable and arrival timetable
-    #     # TODO: why do we mine and overwrite resource pool and time table when it comes from input arg 'parameters'?
-    #     resource_pool, time_table = discover_timetables_and_get_default_arrival_resource_pool(settings.log_path)
-    #
-    #     # extract inter-arrival distribution
-    #     log_df = pd.DataFrame(self._log_train.data)
-    #     pdef_method = settings.pdef_method
-    #     if not pdef_method:
-    #         pdef_method = PDFMethod.DEFAULT
-    #         print_warning(f'PDFMethod is missing, setting it to the default: {pdef_method}')
-    #     arrival_rate = inter_arrival_distribution.discover(process_graph, log_df, pdef_method)
-    #
-    #     # extract sequences
-    #     bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
-    #     traces = self._log_train.get_traces()
-    #     sequences = discover_with_gateway_management(
-    #         traces, bpmn_graph, settings.gate_management)
-    #
-    #     # extract elements data
-    #     log_df['role'] = 'SYSTEM'
-    #     elements_data = TaskEvaluator(process_graph, log_df, resource_pool, pdef_method).elements_data
-    #
-    #     parameters = parameters | {
-    #         'resource_pool': resource_pool,
-    #         'time_table': time_table,
-    #         'arrival_rate': arrival_rate,
-    #         'sequences': sequences,
-    #         'elements_data': elements_data,
-    #         'instances': num_inst,
-    #         'start_time': start_time
-    #     }
-    #     bpmn_path = os.path.join(settings.output, settings.project_name + '.bpmn')
-    #     xml.print_parameters(bpmn_path, bpmn_path, parameters)
-    #
-    #     self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
-    #     self._log_validation['source'] = 'log'
-    #     self._log_validation['run_num'] = 0
-    #     self._log_validation['role'] = 'SYSTEM'
-    #     self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
 
     def _simulate_undifferentiated(self, previous_step_result, settings: Configuration):
         self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
@@ -281,15 +237,15 @@ class StructureOptimizer(HyperoptPipeline):
             'output': settings.output,
         }
         # Miner parameters
-        if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
             data['epsilon'] = settings.epsilon
             data['eta'] = settings.eta
             data['and_prior'] = settings.and_prior
             data['or_rep'] = settings.or_rep
-        elif settings.mining_alg is MiningAlgorithm.SM2:
+        elif settings.structure_mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             data['concurrency'] = settings.concurrency
         else:
-            raise ValueError(settings.mining_alg)
+            raise ValueError(settings.structure_mining_algorithm)
         response['output'] = settings.output
 
         if status == STATUS_OK:

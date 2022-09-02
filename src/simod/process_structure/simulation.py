@@ -9,20 +9,19 @@ import pandas as pd
 from networkx import DiGraph
 from tqdm import tqdm
 
-from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
-from . import gateway_probabilities
-from .activity_resources import ActivityResourceDistribution, ResourceDistribution
-from .calendars import Calendar
-from .distributions import Distribution
-from .gateway_probabilities import GatewayProbabilities
-from .resource_profiles import ResourceProfile
+from .simulation_parameters import gateway_probabilities
+from simod.process_structure.simulation_parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
+from simod.process_structure.simulation_parameters.calendars import Calendar
+from simod.process_structure.simulation_parameters.distributions import Distribution
+from simod.process_structure.simulation_parameters.gateway_probabilities import GatewayProbabilities
+from simod.process_structure.simulation_parameters.resource_profiles import ResourceProfile
 from ..analyzers.sim_evaluator import evaluate_logs
 from ..cli_formatter import print_notice
 from ..configuration import PDFMethod, GateManagement, Configuration, SimulatorKind
 from ..discovery import inter_arrival_distribution
 from ..discovery.tasks_evaluator import TaskEvaluator
 from ..event_log import EventLogIDs, LogReader
-from ..readers.bpmn_reader import BpmnReader
+from ..readers.bpmn_reader import BPMNReader
 from ..support_utils import execute_shell_cmd, progress_bar_async
 
 PROSIMOS_COLUMN_MAPPING = {  # TODO: replace with EventLogIDs
@@ -74,7 +73,7 @@ def undifferentiated_resources_parameters(
         bpmn_path: Path,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BpmnReader,
+        bpmn_reader: BPMNReader,
         gateways_probability_type: GateManagement) -> Parameters:
     calendar_24_7 = Calendar.all_day_long()
 
@@ -107,7 +106,7 @@ def _task_resource_distribution(
         log: pd.DataFrame,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BpmnReader,
+        bpmn_reader: BPMNReader,
         undifferentiated_resource_profile: ResourceProfile) -> List[ActivityResourceDistribution]:
     # extracting activities distribution
     log['role'] = 'SYSTEM'  # TaskEvaluator requires a role column
@@ -115,7 +114,7 @@ def _task_resource_distribution(
     activities_distributions = TaskEvaluator(process_graph, log, resource_pool_metadata, pdf_method).elements_data
 
     # activities' IDs and names from BPMN model
-    activities_info = bpmn_reader.get_tasks_info()
+    activities_info = bpmn_reader.read_activities()
 
     task_resource_distributions = []
     normal_activities_bpmn_elements_ids = []

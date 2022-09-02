@@ -2,23 +2,23 @@ from pathlib import Path
 
 import yaml
 
-from simod.configuration import config_data_from_file, AndPriorORemove, Configuration, GateManagement, MiningAlgorithm, \
+from simod.configuration import config_data_from_file, AndPriorORemove, Configuration, GateManagement, StructureMiningAlgorithm, \
     CalendarType, DataType, PDFMethod, Metric, ExecutionMode, SimulatorKind
 
 
 class TestConfigurationFromStringConversion:
     def test_MiningAlgorithm_from_str(self):
         args = {
-            'sm1': MiningAlgorithm.SM1,
-            'sm2': MiningAlgorithm.SM2,
-            'sm3': MiningAlgorithm.SM3,
-            'SM1': MiningAlgorithm.SM1,
-            'SM2': MiningAlgorithm.SM2,
-            'SM3': MiningAlgorithm.SM3,
+            'sm1': StructureMiningAlgorithm.SPLIT_MINER_1,
+            'sm2': StructureMiningAlgorithm.SPLIT_MINER_2,
+            'sm3': StructureMiningAlgorithm.SPLIT_MINER_3,
+            'SM1': StructureMiningAlgorithm.SPLIT_MINER_1,
+            'SM2': StructureMiningAlgorithm.SPLIT_MINER_2,
+            'SM3': StructureMiningAlgorithm.SPLIT_MINER_3,
         }
 
         for arg in args:
-            result = MiningAlgorithm.from_str(arg)
+            result = StructureMiningAlgorithm.from_str(arg)
             assert result == args[arg]
 
     def test_GateManagement_from_str(self):
@@ -203,5 +203,5 @@ def test_config_data_from_file(entry_point):
             assert config['pdef_method'] == PDFMethod.from_str(config_data['pdef_method'])
         elif 'optimize' in config_path.name.__str__():
             assert isinstance(config['log_path'], Path)
-            assert isinstance(config['mining_alg'], MiningAlgorithm)
-            assert config['mining_alg'] == MiningAlgorithm.from_str(config_data['mining_alg'])
+            assert isinstance(config['mining_alg'], StructureMiningAlgorithm)
+            assert config['mining_alg'] == StructureMiningAlgorithm.from_str(config_data['mining_alg'])

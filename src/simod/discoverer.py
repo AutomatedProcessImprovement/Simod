@@ -1,5 +1,6 @@
 import copy
 import os
+import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -9,15 +10,16 @@ from lxml import etree
 from simod.discovery.tasks_evaluator import TaskEvaluator
 from . import support_utils as sup
 from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics
-from .cli_formatter import print_asset, print_section, print_notice
-from .configuration import Configuration, MiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
+from .cli_formatter import print_asset, print_section, print_notice, print_step
+from .configuration import Configuration, StructureMiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
 from .discovery import inter_arrival_distribution, gateway_probabilities
 from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
 from .event_log import write_xes, DEFAULT_XES_COLUMNS, LogReader, reformat_timestamps
 from .preprocessor import Preprocessor
+from .readers.bpmn_reader import BPMNReader
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
-from simod.structure_optimizer.structure_miner import StructureMiner
+from .process_structure.miner import StructureMiner, Settings as StructureMinerSettings
 from .writers import xml_writer as xml
 
 
@@ -69,11 +71,36 @@ class Discoverer:
         reformat_timestamps(output_path, output_path)
 
     def _mine_structure(self):
+        """Mines structure from the event log, saves it as a BPMN file and updates the process graph."""
         print_section("Process Structure Mining")
-        structure_miner = StructureMiner(self._settings.log_path, self._settings)
-        structure_miner.execute_pipeline()
-        self.bpmn = structure_miner.bpmn
-        self.process_graph = structure_miner.process_graph
+
+        if self._settings.model_path is None:
+            # Structure mining
+            print_step("Mining the model structure")
+
+            model_path = (self._settings.output / (self._settings.project_name + '.bpmn')).absolute()
+
+            settings = StructureMinerSettings(
+                xes_path=self._settings.log_path,
+                output_model_path=model_path,
+                mining_algorithm=self._settings.structure_mining_algorithm,
+                epsilon=self._settings.epsilon,
+                eta=self._settings.eta,
+                concurrency=self._settings.concurrency,
+                and_prior=self._settings.and_prior,
+                or_rep=self._settings.or_rep,
+            )
+
+            _ = StructureMiner(settings)
+        else:
+            # Taking provided structure
+            print_step("Copying the model")
+
+            shutil.copy(self._settings.model_path.absolute(), self._settings.output.absolute())
+            model_path = (self._settings.output / self._settings.model_path.name).absolute()
+
+        bpmn_reader = BPMNReader(model_path)
+        self.process_graph = bpmn_reader.as_graph()
 
     def _extract_parameters(self):
         print_section("Simulation Parameters Mining")
@@ -133,10 +160,10 @@ class Discoverer:
         best_params['gate_management'] = str(settings.gate_management)
         best_params['rp_similarity'] = str(settings.rp_similarity)
         # best structure mining parameters
-        if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
             best_params['epsilon'] = str(settings.epsilon)
             best_params['eta'] = str(settings.eta)
-        elif settings.mining_alg == MiningAlgorithm.SM2:
+        elif settings.structure_mining_algorithm == StructureMiningAlgorithm.SPLIT_MINER_2:
             best_params['concurrency'] = str(settings.concurrency)
         if settings.res_cal_met == CalendarType.DEFAULT:  # TODO: do we need this?
             best_params['res_dtype'] = settings.res_dtype.__str__().split('.')[1]

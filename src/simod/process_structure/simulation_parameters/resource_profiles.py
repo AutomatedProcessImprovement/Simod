@@ -5,7 +5,7 @@ from typing import List, Optional
 import pandas as pd
 
 from simod.event_log import EventLogIDs
-from simod.readers.bpmn_reader import BpmnReader
+from simod.readers.bpmn_reader import BPMNReader
 
 
 @dataclass
@@ -83,7 +83,7 @@ class ResourceProfile:
         start_activity_id: Optional[str] = None
         end_activity_id: Optional[str] = None
 
-        for activity in BpmnReader(bpmn_path).get_tasks_info():
+        for activity in BPMNReader(bpmn_path).read_activities():
             activity_name_lowered = activity['task_name'].lower()
             if activity_name_lowered == 'start':
                 start_activity_id = activity['task_id']

@@ -4,7 +4,7 @@ import pytest
 
 from simod.configuration import ReadOptions, Configuration, AndPriorORemove
 from simod.event_log import write_xes, LogReader
-from simod.structure_optimizer.structure_miner import StructureMiner
+from simod.process_structure.miner import StructureMiner
 
 arguments = [
     {'log_path': 'Production.xes',

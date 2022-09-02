@@ -1,15 +1,15 @@
 import xml.etree.ElementTree as ET
 
 import xmltodict as xtd
-from simod.configuration import QBP_NAMESPACE_URI
 
-from ..readers import bpmn_reader as br
+from simod.configuration import QBP_NAMESPACE_URI
+from ..readers.bpmn_reader import BPMNReader
 
 
 def serialize_model(filename):
-    bpmn = br.BpmnReader(filename)
-    tasks = {x['task_id']: x['task_name'] for x in bpmn.get_tasks_info()}
-    seqs = bpmn.get_edges_info()
+    bpmn = BPMNReader(filename)
+    tasks = {x['task_id']: x['task_name'] for x in bpmn.read_activities()}
+    seqs = bpmn.read_sequence_flows()
 
     ns = {'qbp': QBP_NAMESPACE_URI}
     tree = ET.parse(filename)

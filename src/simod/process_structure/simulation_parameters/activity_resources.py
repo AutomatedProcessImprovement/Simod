@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from simod.structure_optimizer.distributions import Distribution
+from simod.process_structure.simulation_parameters.distributions import Distribution
 
 
 @dataclass

@@ -12,17 +12,17 @@ from simod.discovery.tasks_evaluator import TaskEvaluator
 from . import support_utils as sup
 from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics, SimilarityEvaluator
 from .cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
-from .configuration import Configuration, MiningAlgorithm, PDFMethod
+from .configuration import Configuration, StructureMiningAlgorithm, PDFMethod
 from .discovery import inter_arrival_distribution
 from .discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
 from .discovery.gateway_probabilities import discover_with_gateway_management
 from .event_log import LogReader
 from .preprocessor import Preprocessor
 from .processing.core import remove_outliers
-from .readers import bpmn_reader, process_structure
+from .readers import bpmn_reader, bpm_graph
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
-from .structure_optimizer.structure_optimizer import StructureOptimizer
+from .process_structure.optimizer import StructureOptimizer
 from .times_optimizer import TimesOptimizer
 from .writers import xml_writer
 from .writers.model_serialization import serialize_model
@@ -118,7 +118,7 @@ class Optimizer:
             best_parameters['gate_management']]
         self.best_params['gate_management'] = self.settings_global.gate_management
         # best structure mining parameters
-        if self.settings_global.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+        if self.settings_global.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
             self.settings_global.epsilon = best_parameters['epsilon']
             self.settings_global.eta = best_parameters['eta']
             self.settings_global.and_prior = self.settings_structure.and_prior[best_parameters['and_prior']]
@@ -127,7 +127,7 @@ class Optimizer:
             self.best_params['eta'] = best_parameters['eta']
             self.best_params['and_prior'] = self.settings_global.and_prior
             self.best_params['or_rep'] = self.settings_global.or_rep
-        elif self.settings_global.mining_alg is MiningAlgorithm.SM2:
+        elif self.settings_global.structure_mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             self.settings_global.concurrency = best_parameters['concurrency']
             self.best_params['concurrency'] = best_parameters['concurrency']
         for key in ['rp_similarity', 'res_dtype', 'arr_dtype', 'res_sup_dis', 'res_con_dis', 'arr_support',
@@ -152,8 +152,8 @@ class Optimizer:
         # extracting parameters
         model_path = self.settings_global.model_path
 
-        bpmn = bpmn_reader.BpmnReader(model_path)
-        process_graph = process_structure.create_process_structure(bpmn)
+        bpmn = bpmn_reader.BPMNReader(model_path)
+        process_graph = bpmn.as_graph()
 
         # TODO: why only arrival resource pool is used and why it's hardcoded in mine_resource_pool_and_calendars?
         arrival_default_resource_pool, time_table = \

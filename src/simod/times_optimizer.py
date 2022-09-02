@@ -15,14 +15,13 @@ from lxml.builder import ElementMaker
 from . import support_utils as sup
 from .analyzers import sim_evaluator as sim
 from .cli_formatter import print_subsection, print_message
-from .configuration import Configuration, MiningAlgorithm, Metric, QBP_NAMESPACE_URI, PDFMethod
+from .configuration import Configuration, StructureMiningAlgorithm, Metric, QBP_NAMESPACE_URI, PDFMethod
 from .discovery import inter_arrival_distribution
 from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
 from .discovery.tasks_evaluator import TaskEvaluator
 from .event_log import LogReader
 from .hyperopt_pipeline import HyperoptPipeline
-from .readers import process_structure as gph
-from .readers.bpmn_reader import BpmnReader
+from .readers.bpmn_reader import BPMNReader
 from .simulator import simulate
 from .support_utils import get_project_dir, remove_asset
 
@@ -181,15 +180,15 @@ class TimesOptimizer(HyperoptPipeline):
                 'output': settings.output}
 
         # Miner parameters
-        if settings.mining_alg in [MiningAlgorithm.SM1, MiningAlgorithm.SM3]:
+        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
             data['epsilon'] = settings.epsilon
             data['eta'] = settings.eta
             data['and_prior'] = settings.and_prior
             data['or_rep'] = settings.or_rep
-        elif settings.mining_alg is MiningAlgorithm.SM2:
+        elif settings.structure_mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             data['concurrency'] = settings.concurrency
         else:
-            raise ValueError(settings.mining_alg)
+            raise ValueError(settings.structure_mining_algorithm)
 
         response = {}
         measurements = []
@@ -349,8 +348,8 @@ class TimesOptimizer(HyperoptPipeline):
         self.xml_sim_model = etree.fromstring(
             ET.tostring(root.find('qbp:processSimulationInfo', ns)), parser)
         # load bpmn model
-        self.bpmn = BpmnReader(model_path)
-        self.process_graph = gph.create_process_structure(self.bpmn)
+        self.bpmn = BPMNReader(model_path)
+        self.process_graph = self.bpmn.as_graph()
 
     @staticmethod
     def _filter_parms(settings: Configuration):

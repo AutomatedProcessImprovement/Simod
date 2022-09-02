@@ -1,7 +1,9 @@
-from simod.configuration import Configuration
+import pytest
+
+from simod.configuration import Configuration, StructureMiningAlgorithm
 from simod.event_log import LogReader, EventLogIDs
-from simod.structure_optimizer.resource_profiles import ResourceProfile
-from simod.structure_optimizer.structure_optimizer import StructureOptimizer
+from simod.process_structure.simulation_parameters.resource_profiles import ResourceProfile
+from simod.process_structure.optimizer import StructureOptimizer
 
 optimize_config_files = [
     'optimize_debug_config.yml',
@@ -53,11 +55,20 @@ and_prior:
 - false
 """
 
+structure_optimizer_test_data = [
+    {'structure_mining_algorithm': StructureMiningAlgorithm.SPLIT_MINER_1},
+    {'structure_mining_algorithm': StructureMiningAlgorithm.SPLIT_MINER_2},
+    {'structure_mining_algorithm': StructureMiningAlgorithm.SPLIT_MINER_3},
+]
 
-def test_StructureOptimizer(entry_point):
+
+@pytest.mark.parametrize('test_data', structure_optimizer_test_data,
+                         ids=list(map(lambda x: str(x['structure_mining_algorithm']), structure_optimizer_test_data)))
+def test_StructureOptimizer(entry_point, test_data):
     """Smoke test to check that the structure optimizer can be instantiated and run successfully."""
     config = Configuration.from_yaml_str(structure_config_yaml)
     config.log_path = entry_point / 'PurchasingExample.xes'
+    config.structure_mining_algorithm = test_data['structure_mining_algorithm']
 
     log_reader = LogReader(config.log_path)
 
