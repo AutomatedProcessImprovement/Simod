@@ -49,9 +49,6 @@ class Optimizer:
         self.settings_structure = settings['strc']
         self.settings_time = settings['tm']
 
-        if not self.settings_structure.pdef_method:
-            self.settings_structure.pdef_method = PDFMethod.AUTOMATIC  # TODO: move to configuration module
-
         if not os.path.exists(self.settings_global.output):
             os.makedirs(self.settings_global.output)
 

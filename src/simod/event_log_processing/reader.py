@@ -8,7 +8,7 @@ from typing import Optional, Tuple
 import pandas as pd
 
 from simod.event_log_processing.splitter import LogSplitter
-from simod.event_log_processing.utilities import read, convert_timestamps
+from simod.event_log_processing.utilities import read, convert_timestamps, convert_df_to_xes
 
 DEFAULT_XES_COLUMNS = {
     'concept:name': 'task',
@@ -171,4 +171,41 @@ class EventLogReader:
         partition2 = pd.DataFrame(partition2)
         return partition1, partition2
 
+    def write_xes(self, output_path: Path):
+        log_df = pd.DataFrame(self.data)
 
+        # TODO: use EventLogIDs
+        log_df.rename(columns={
+            'task': 'concept:name',
+            'caseid': 'case:concept:name',
+            'event_type': 'lifecycle:transition',
+            'user': 'org:resource',
+            'end_timestamp': 'time:timestamp'
+        }, inplace=True)
+
+        log_df.drop(columns=['@@startevent_concept:name',
+                             '@@startevent_org:resource',
+                             '@@startevent_Activity',
+                             '@@startevent_Resource',
+                             '@@duration',
+                             'case:variant',
+                             'case:variant-index',
+                             'case:creator',
+                             'Activity',
+                             'Resource',
+                             'elementId',
+                             'processId',
+                             'resourceId',
+                             'resourceCost',
+                             '@@startevent_element',
+                             '@@startevent_elementId',
+                             '@@startevent_process',
+                             '@@startevent_processId',
+                             '@@startevent_resourceId',
+                             'etype'],
+                    inplace=True,
+                    errors='ignore')
+
+        log_df.fillna('UNDEFINED', inplace=True)
+
+        convert_df_to_xes(log_df, output_path)

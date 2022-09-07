@@ -1,28 +1,135 @@
 import copy
-import math
+import itertools
+import multiprocessing
 import os
-import random
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, List, Tuple
 
 import numpy as np
 import pandas as pd
+import yaml
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from tqdm import tqdm
 
 from simod import support_utils as sup
 from simod.analyzers.sim_evaluator import evaluate_logs
 from simod.cli_formatter import print_message, print_subsection
-from simod.configuration import Configuration, StructureMiningAlgorithm, Metric, AndPriorORemove
+from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove, GateManagement, PDFMethod
 from simod.event_log_processing.reader import EventLogReader
 from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.simulator import simulate
-from simod.support_utils import get_project_dir, remove_asset
+from simod.support_utils import get_project_dir, remove_asset, progress_bar_async
 from .miner import StructureMiner, Settings as StructureMinerSettings
-from .simulation import simulate_undifferentiated, undifferentiated_resources_parameters
+from .simulation import undifferentiated_resources_parameters, ProsimosSettings, simulate_with_prosimos, \
+    PROSIMOS_COLUMN_MAPPING
 from ..event_log_processing.event_log_ids import EventLogIDs
-from ..event_log_processing.utilities import write_xes
+from ..event_log_processing.utilities import sample_log
 from ..process_model.bpmn import BPMNReaderWriter
+
+
+@dataclass
+class Settings:
+    """Settings for the structure optimizer."""
+    project_name: Optional[str]
+
+    gateway_probabilities: Optional[Union[GateManagement, List[GateManagement]]] = GateManagement.DISCOVERY
+    max_evaluations: int = 1
+    simulation_repetitions: int = 1
+    pdef_method: Optional[PDFMethod] = None  # TODO: rename to distribution_discovery_method
+
+    # Structure Miner Settings can be arrays of values, in that case different values are used for different repetition.
+    # Structure Miner accepts only singular values for the following settings:
+    #
+    # for Split Miner 1 and 3
+    epsilon: Optional[Union[float, List[float]]] = None
+    eta: Optional[Union[float, List[float]]] = None
+    # for Split Miner 2
+    concurrency: Optional[Union[float, List[float]]] = 0.0
+    #
+    # Singular Structure Miner configuration used to compose the search space and split epsilon, eta and concurrency
+    # lists into singular values.
+    mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
+    #
+    # Split Miner 3
+    and_prior: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
+    or_rep: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
+
+    @staticmethod
+    def from_stream(stream: Union[str, bytes]) -> 'Settings':
+        settings = yaml.load(stream, Loader=yaml.FullLoader)
+
+        project_name = settings.get('project_name', None)
+
+        if 'structure_optimizer' in settings:
+            settings = settings['structure_optimizer']
+
+        gateway_probabilities = settings.get('gateway_probabilities', None)
+        if gateway_probabilities is None:
+            gateway_probabilities = settings.get('gate_management', None)  # legacy key support
+        if gateway_probabilities is not None:
+            if isinstance(gateway_probabilities, list):
+                gateway_probabilities = [GateManagement.from_str(g) for g in gateway_probabilities]
+            elif isinstance(gateway_probabilities, str):
+                gateway_probabilities = GateManagement.from_str(gateway_probabilities)
+            else:
+                raise ValueError('Gateway probabilities must be a list or a string.')
+
+        max_evaluations = settings.get('max_evaluations', None)
+        if max_evaluations is None:
+            max_evaluations = settings.get('max_eval_s', 1)  # legacy key support
+
+        simulation_repetitions = settings.get('simulation_repetitions', 1)
+
+        pdef_method = settings.get('pdef_method', None)
+        if pdef_method is not None:
+            pdef_method = PDFMethod.from_str(pdef_method)
+        else:
+            pdef_method = PDFMethod.DEFAULT
+
+        epsilon = settings.get('epsilon', None)
+
+        eta = settings.get('eta', None)
+
+        concurrency = settings.get('concurrency', 0.0)
+
+        mining_algorithm = settings.get('mining_algorithm', None)
+        if mining_algorithm is None:
+            mining_algorithm = settings.get('mining_alg', None)  # legacy key support
+        if mining_algorithm is not None:
+            mining_algorithm = StructureMiningAlgorithm.from_str(mining_algorithm)
+
+        and_prior = settings.get('and_prior', None)
+        if and_prior is not None:
+            if isinstance(and_prior, list):
+                and_prior = [AndPriorORemove.from_str(a) for a in and_prior]
+            elif isinstance(and_prior, str):
+                and_prior = [AndPriorORemove.from_str(and_prior)]
+            else:
+                raise ValueError('and_prior must be a list or a string.')
+
+        or_rep = settings.get('or_rep', None)
+        if or_rep is not None:
+            if isinstance(or_rep, list):
+                or_rep = [AndPriorORemove.from_str(o) for o in or_rep]
+            elif isinstance(or_rep, str):
+                or_rep = [AndPriorORemove.from_str(or_rep)]
+            else:
+                raise ValueError('or_rep must be a list or a string.')
+
+        return Settings(
+            project_name=project_name,
+            gateway_probabilities=gateway_probabilities,
+            max_evaluations=max_evaluations,
+            simulation_repetitions=simulation_repetitions,
+            pdef_method=pdef_method,
+            epsilon=epsilon,
+            eta=eta,
+            concurrency=concurrency,
+            mining_algorithm=mining_algorithm,
+            and_prior=and_prior,
+            or_rep=or_rep
+        )
 
 
 class StructureOptimizer(HyperoptPipeline):
@@ -31,18 +138,17 @@ class StructureOptimizer(HyperoptPipeline):
     measurements_file_name: Path
 
     _bayes_trials: Trials
-    _settings: Configuration
+    _settings: Settings
     _log_reader: EventLogReader
     _log_train: EventLogReader
     _log_validation: pd.DataFrame
     _original_log: EventLogReader
     _original_log_train: EventLogReader
     _original_log_validation: pd.DataFrame
-    _space: dict
     _temp_output: Path
     _log_ids: EventLogIDs
 
-    def __init__(self, settings: Configuration, log: EventLogReader):
+    def __init__(self, settings: Settings, log: EventLogReader, log_ids: Optional[EventLogIDs] = None):
         self._log_ids = EventLogIDs(
             case='caseid',
             activity='task',
@@ -50,24 +156,13 @@ class StructureOptimizer(HyperoptPipeline):
             end_time='end_timestamp',
             start_time='start_timestamp',
             enabled_time='enabled_timestamp',
-        )
+        ) if log_ids is None else log_ids
 
         self._settings = settings
-        self._settings.read_options.column_names = {  # TODO: deal with that later, no need in overriding configuration
-            'CaseID': 'caseid',
-            'Activity': 'task',
-            'EnableTimestamp': 'enabled_timestamp',
-            'StartTimestamp': 'start_timestamp',
-            'EndTimestamp': 'end_timestamp',
-            'Resource': 'user'
-        }
-
         self._log_reader = log
 
-        self._space = self._define_search_space(self._settings)
-
         train, validation = self._log_reader.split_timeline(0.8)
-        train = StructureOptimizer._sample_log(train)
+        train = sample_log(train)
 
         self._log_validation = validation.sort_values('start_timestamp', ascending=True).reset_index(drop=True)
         self._log_train = EventLogReader.copy_without_data(self._log_reader)
@@ -94,32 +189,37 @@ class StructureOptimizer(HyperoptPipeline):
     def run(self):
         self._log_train = copy.deepcopy(self._original_log_train)
 
-        # resource_pool, timetable = discover_timetables_and_get_default_arrival_resource_pool(self._settings.log_path)
-        # parameters = {'resource_pool': resource_pool, 'time_table': timetable}
-
-        def pipeline(trial_stg: Union[Configuration, dict]):
+        def pipeline(trial_stage_settings: Union[Settings, dict]):
             print_subsection("Trial")
-            print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
-                          f'validation split: {len(self._log_validation.caseid.unique())}')
+            print_message(f'train split: {len(pd.DataFrame(self._log_train.data)[self._log_ids.case].unique())}, '
+                          f'validation split: {len(self._log_validation[self._log_ids.case].unique())}')
 
-            if isinstance(trial_stg, dict):
-                trial_stg = Configuration(**trial_stg)
+            if isinstance(trial_stage_settings, dict):
+                trial_stage_settings = Settings(**trial_stage_settings)
+            print_message(f'Parameters: {trial_stage_settings}', capitalize=False)
 
             status = STATUS_OK
 
-            status, result = self.step(status, self._update_config_and_export_xes, trial_stg)
-            if status == STATUS_OK:
-                trial_stg = result
+            status, result = self.step(status, self._update_config_and_export_xes, trial_stage_settings.project_name)
+            output_dir, log_path = result
 
-            status, result = self.step(status, self._mine_structure, trial_stg)
+            status, result = self.step(status, self._mine_structure, trial_stage_settings, output_dir, log_path)
+            bpmn_reader, process_graph = result
 
-            status, result = self.step(status, self._extract_parameters_undifferentiated, trial_stg, result)
+            status, result = self.step(
+                status,
+                self._extract_parameters_undifferentiated,
+                trial_stage_settings,
+                bpmn_reader,
+                process_graph)
+            bpmn_path, json_path, simulation_cases = result
 
-            status, result = self.step(status, self._simulate_undifferentiated, result, trial_stg)
-
+            status, result = self.step(
+                status, self._simulate_undifferentiated,
+                trial_stage_settings, bpmn_path, json_path, simulation_cases, output_dir)
             evaluation_measurements = result if status == STATUS_OK else []
 
-            response = self._define_response(trial_stg, status, evaluation_measurements)
+            response = self._define_response(trial_stage_settings, status, evaluation_measurements, output_dir)
 
             # reset the log
             self._log_reader = copy.deepcopy(self._original_log)
@@ -129,11 +229,13 @@ class StructureOptimizer(HyperoptPipeline):
             print(f'StructureOptimizer pipeline response: {response}')
             return response
 
+        search_space = self._define_search_space(self._settings)
+
         # Optimization
         best = fmin(fn=pipeline,
-                    space=self._space,
+                    space=search_space,
                     algo=tpe.suggest,
-                    max_evals=self._settings.max_eval_s,
+                    max_evals=self._settings.max_evaluations,
                     trials=self._bayes_trials,
                     show_progressbar=False)
 
@@ -150,40 +252,41 @@ class StructureOptimizer(HyperoptPipeline):
         remove_asset(self._temp_output)
 
     @staticmethod
-    def _define_search_space(settings: Configuration) -> dict:
-        var_dim = {'gate_management': hp.choice('gate_management', settings.gate_management)}
-        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
-            var_dim['epsilon'] = hp.uniform('epsilon', settings.epsilon[0], settings.epsilon[1])
-            var_dim['eta'] = hp.uniform('eta', settings.eta[0], settings.eta[1])
-            var_dim['and_prior'] = hp.choice('and_prior', AndPriorORemove.to_str(settings.and_prior))
-            var_dim['or_rep'] = hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep))
-        elif settings.structure_mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-            var_dim['concurrency'] = hp.uniform('concurrency', settings.concurrency[0], settings.concurrency[1])
-        new_settings = copy.deepcopy(settings.__dict__)
-        for key in var_dim.keys():
-            new_settings.pop(key, None)
-        space = {**var_dim, **new_settings}
+    def _define_search_space(settings: Settings) -> dict:
+        split_miner_dependent_settings = {
+            'gateway_probabilities': hp.choice('gateway_probabilities', settings.gateway_probabilities),
+            'epsilon': hp.uniform('epsilon', *settings.epsilon), 'eta': hp.uniform('eta', *settings.eta),
+            'and_prior': hp.choice('and_prior', AndPriorORemove.to_str(settings.and_prior)),
+            'or_rep': hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep)),
+            'concurrency': hp.uniform('concurrency', *settings.concurrency)
+        }
+
+        # TODO: better be more specific and specify the keys to add to space
+        other_settings = copy.deepcopy(settings.__dict__)
+        for key in split_miner_dependent_settings:
+            other_settings.pop(key, None)
+
+        space = split_miner_dependent_settings | other_settings
+
         return space
 
-    def _update_config_and_export_xes(self, settings: Configuration) -> Configuration:
+    def _update_config_and_export_xes(self, project_name: str) -> Tuple[Path, Path]:
         output_path = self._temp_output / sup.folder_id()
         sim_data_path = output_path / 'sim_data'
         sim_data_path.mkdir(parents=True, exist_ok=True)
 
         # Create customized event-log for the external tools
-        xes_path = output_path / (settings.project_name + '.xes')
-        write_xes(self._log_train, xes_path)
+        xes_path = output_path / (project_name + '.xes')
+        self._log_train.write_xes(xes_path)
 
-        settings.output = output_path
-        settings.log_path = xes_path
-        return settings
+        return output_path, xes_path
 
     @staticmethod
-    def _mine_structure(settings: Configuration):
-        settings = StructureMinerSettings(
-            xes_path=settings.log_path,
-            mining_algorithm=settings.structure_mining_algorithm,
-            output_model_path=(settings.output / (settings.project_name + '.bpmn')).absolute(),
+    def _mine_structure(settings: Settings, output_dir: Path, log_path: Path) -> Tuple:
+        model_path = (output_dir / (settings.project_name + '.bpmn')).absolute()
+
+        miner_settings = StructureMinerSettings(
+            mining_algorithm=settings.mining_algorithm,
             epsilon=settings.epsilon,
             eta=settings.eta,
             concurrency=settings.concurrency,
@@ -191,21 +294,20 @@ class StructureOptimizer(HyperoptPipeline):
             or_rep=settings.or_rep,
         )
 
-        _ = StructureMiner(settings)
+        _ = StructureMiner(miner_settings, xes_path=log_path, output_model_path=model_path)
 
-        bpmn_reader = BPMNReaderWriter(settings.output_model_path)
+        bpmn_reader = BPMNReaderWriter(model_path)
         process_graph = bpmn_reader.as_graph()
 
-        return [bpmn_reader, process_graph]
+        return bpmn_reader, process_graph
 
-    def _extract_parameters_undifferentiated(self, settings: Configuration, previous_step_result):
-        bpmn_reader, process_graph = previous_step_result
+    def _extract_parameters_undifferentiated(self, settings: Settings, bpmn_reader, process_graph) -> Tuple:
         bpmn_path: Path = bpmn_reader.model_path
         log = self._log_train.get_traces_df(include_start_end_events=True)
         pdf_method = self._settings.pdef_method
 
         simulation_parameters = undifferentiated_resources_parameters(
-            log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader, settings.gate_management)
+            log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader, settings.gateway_probabilities)
 
         json_path = bpmn_path.with_suffix('.json')
         simulation_parameters.to_json_file(json_path)
@@ -214,90 +316,126 @@ class StructureOptimizer(HyperoptPipeline):
 
         return bpmn_path, json_path, simulation_cases
 
-    def _simulate_undifferentiated(self, previous_step_result, settings: Configuration):
+    def _simulate_undifferentiated(
+            self,
+            settings: Settings,
+            bpmn_path: Path,
+            json_path: Path,
+            simulation_cases: int,
+            output_dir: Path):
         self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
         self._log_validation['source'] = 'log'
         self._log_validation['run_num'] = 0
         self._log_validation['role'] = 'SYSTEM'
         self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
 
-        return simulate_undifferentiated(
-            settings=settings,
-            previous_step_result=previous_step_result,
-            validation_log=self._log_validation,
-        )
+        num_simulations = settings.simulation_repetitions
+        cpu_count = multiprocessing.cpu_count()
+        w_count = num_simulations if num_simulations <= cpu_count else cpu_count
+        pool = multiprocessing.Pool(processes=w_count)
 
-    def _simulate(self, trial_stg: Configuration):
-        return simulate(trial_stg, self._log_validation, evaluate_fn=evaluate_logs)
+        # Simulate
+        simulation_arguments = [
+            ProsimosSettings(
+                bpmn_path=bpmn_path,
+                parameters_path=json_path,
+                output_log_path=output_dir / 'sim_data' / f'{settings.project_name}_{rep}.csv',
+                num_simulation_cases=simulation_cases)
+            for rep in range(num_simulations)]
+        p = pool.map_async(simulate_with_prosimos, simulation_arguments)
+        progress_bar_async(p, 'simulating', num_simulations)
 
-    def _define_response(self, settings: Configuration, status, sim_values) -> dict:
-        response = {}  # response contains Configuration and additional hyperopt parameters, e.g., 'status', 'loss'
-        measurements = list()
-        data = {
-            'gate_management': settings.gate_management,
-            'output': settings.output,
-        }
-        # Miner parameters
-        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
-            data['epsilon'] = settings.epsilon
-            data['eta'] = settings.eta
-            data['and_prior'] = settings.and_prior
-            data['or_rep'] = settings.or_rep
-        elif settings.structure_mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-            data['concurrency'] = settings.concurrency
+        # Read simulated logs
+        read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
+                          for index in range(num_simulations)]
+        p = pool.map_async(_read_simulated_log, read_arguments)
+        progress_bar_async(p, 'reading simulated logs', num_simulations)
+
+        # Evaluate
+        evaluation_arguments = [(settings, self._log_validation, log) for log in p.get()]
+        if simulation_cases > 1000:
+            pool.close()
+            results = [evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
+            evaluation_measurements = list(itertools.chain(*results))
         else:
-            raise ValueError(settings.structure_mining_algorithm)
-        response['output'] = settings.output
+            p = pool.map_async(evaluate_logs, evaluation_arguments)
+            progress_bar_async(p, 'evaluating results', num_simulations)
+            pool.close()
+            evaluation_measurements = list(itertools.chain(*p.get()))
 
+        return evaluation_measurements
+
+    def _define_response(self, settings: Settings, status, simulation_results, output_dir: Path) -> dict:
+        response = {
+            'output': str(output_dir.absolute()),
+            'status': status,
+            'loss': None,
+        }
+
+        measurements = []
+
+        # collecting measurements for saving
+
+        optimization_parameters = {
+            'gateway_probabilities': settings.gateway_probabilities,
+            'output': str(output_dir.absolute()),
+        }
+
+        # structure miner parameters
+        if settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                         StructureMiningAlgorithm.SPLIT_MINER_3]:
+            optimization_parameters['epsilon'] = settings.epsilon
+            optimization_parameters['eta'] = settings.eta
+            optimization_parameters['and_prior'] = settings.and_prior
+            optimization_parameters['or_rep'] = settings.or_rep
+        elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+            optimization_parameters['concurrency'] = settings.concurrency
+        else:
+            raise ValueError(settings.mining_algorithm)
+
+        # simulation parameters
         if status == STATUS_OK:
-            similarity = np.mean([x['sim_val'] for x in sim_values])
+            similarity = np.mean([x['sim_val'] for x in simulation_results])
             loss = (1 - similarity)
+
             response['loss'] = loss
             response['status'] = status if loss > 0 else STATUS_FAIL
-            for sim_val in sim_values:
-                measurements.append({
-                    **{'similarity': sim_val['sim_val'],
-                       'sim_metric': sim_val['metric'],
-                       'status': response['status']},
-                    **data})
+
+            for sim_val in simulation_results:
+                values = {
+                    'similarity': sim_val['sim_val'],
+                    'sim_metric': sim_val['metric'],
+                    'status': response['status']
+                }
+                values = values | optimization_parameters
+                measurements.append(values)
         else:
-            response['status'] = status
-            measurements.append({**{'similarity': 0,
-                                    'sim_metric': Metric.DL,
-                                    'status': response['status']},
-                                 **data})
+            values = {
+                'similarity': 0,
+                'sim_metric': Metric.DL,
+                'status': status
+            }
+            values = values | optimization_parameters
+            measurements.append(values)
+
+        # writing measurements to file
         if os.path.getsize(self.measurements_file_name) > 0:
             sup.create_csv_file(measurements, self.measurements_file_name, mode='a')
         else:
             sup.create_csv_file_header(measurements, self.measurements_file_name)
+
         return response
 
-    @staticmethod
-    def _sample_log(train):
-        def sample_size(p_size, c_level, c_interval):
-            """
-            p_size : population size.
-            c_level : confidence level.
-            c_interval : confidence interval.
-            """
-            c_level_constant = {50: .67, 68: .99, 90: 1.64, 95: 1.96, 99: 2.57}
-            Z = 0.0
-            p = 0.5
-            e = c_interval / 100.0
-            N = p_size
-            n_0 = 0.0
-            n = 0.0
-            # DEVIATIONS FOR THAT CONFIDENCE LEVEL
-            Z = c_level_constant[c_level]
-            # CALC SAMPLE SIZE
-            n_0 = ((Z ** 2) * p * (1 - p)) / (e ** 2)
-            # ADJUST SAMPLE SIZE FOR FINITE POPULATION
-            n = n_0 / (1 + ((n_0 - 1) / float(N)))
-            return int(math.ceil(n))  # THE SAMPLE SIZE
 
-        cases = list(train.caseid.unique())
-        if len(cases) > 1000:
-            sample_sz = sample_size(len(cases), 95.0, 3.0)
-            scases = random.sample(cases, sample_sz)
-            train = train[train.caseid.isin(scases)]
-        return train
+def _read_simulated_log(arguments: Tuple):
+    log_path, log_column_mapping, simulation_repetition_index = arguments
+
+    reader = EventLogReader(log_path=log_path, column_names=log_column_mapping)
+
+    reader.df.rename(columns={'user': 'resource'}, inplace=True)
+    reader.df['role'] = reader.df['resource']
+    reader.df['source'] = 'simulation'
+    reader.df['run_num'] = simulation_repetition_index
+    reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
+
+    return reader.df

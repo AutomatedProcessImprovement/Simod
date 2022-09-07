@@ -1,29 +1,25 @@
-import itertools
 import json
-import multiprocessing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import pandas as pd
 from networkx import DiGraph
-from tqdm import tqdm
 
-from .simulation_parameters import gateway_probabilities
-from simod.process_structure.simulation_parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
+from simod.process_structure.simulation_parameters.activity_resources import ActivityResourceDistribution, \
+    ResourceDistribution
 from simod.process_structure.simulation_parameters.calendars import Calendar
 from simod.process_structure.simulation_parameters.distributions import Distribution
 from simod.process_structure.simulation_parameters.gateway_probabilities import GatewayProbabilities
 from simod.process_structure.simulation_parameters.resource_profiles import ResourceProfile
-from ..analyzers.sim_evaluator import evaluate_logs
+from .simulation_parameters import gateway_probabilities
 from ..cli_formatter import print_notice
-from ..configuration import PDFMethod, GateManagement, Configuration, SimulatorKind
+from ..configuration import PDFMethod, GateManagement, Configuration
 from ..discovery import inter_arrival_distribution
 from ..discovery.tasks_evaluator import TaskEvaluator
-from simod.event_log_processing.reader import EventLogReader
 from ..event_log_processing.event_log_ids import EventLogIDs
 from ..process_model.bpmn import BPMNReaderWriter
-from ..support_utils import execute_shell_cmd, progress_bar_async
+from ..support_utils import execute_shell_cmd
 
 PROSIMOS_COLUMN_MAPPING = {  # TODO: replace with EventLogIDs
     'case_id': 'caseid',
@@ -200,7 +196,7 @@ class ProsimosSettings:
         )
 
 
-def _simulate_with_prosimos(settings: ProsimosSettings):
+def simulate_with_prosimos(settings: ProsimosSettings):
     print_notice(f'Prosimos simulator has been chosen')
     print_notice(f'Number of simulation cases: {settings.num_simulation_cases}')
 
@@ -213,60 +209,3 @@ def _simulate_with_prosimos(settings: ProsimosSettings):
     ]
 
     execute_shell_cmd(args)
-
-
-def simulate_undifferentiated(settings: Configuration, previous_step_result: Tuple, validation_log: pd.DataFrame):
-    bpmn_path, json_path, simulation_cases = previous_step_result
-
-    if settings.simulator is not SimulatorKind.CUSTOM:
-        raise ValueError(f'Unknown simulator {settings.simulator}')
-
-    num_simulations = settings.simulation_repetitions
-    cpu_count = multiprocessing.cpu_count()
-    w_count = num_simulations if num_simulations <= cpu_count else cpu_count
-    pool = multiprocessing.Pool(processes=w_count)
-
-    # Simulate
-    simulation_arguments = [
-        ProsimosSettings(
-            bpmn_path=bpmn_path,
-            parameters_path=json_path,
-            output_log_path=settings.output / 'sim_data' / f'{settings.project_name}_{rep}.csv',
-            num_simulation_cases=simulation_cases)
-        for rep in range(num_simulations)]
-    p = pool.map_async(_simulate_with_prosimos, simulation_arguments)
-    progress_bar_async(p, 'simulating', num_simulations)
-
-    # Read simulated logs
-    read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
-                      for index in range(num_simulations)]
-    p = pool.map_async(_read_simulated_log, read_arguments)
-    progress_bar_async(p, 'reading simulated logs', num_simulations)
-
-    # Evaluate
-    evaluation_arguments = [(settings, validation_log, log) for log in p.get()]
-    if simulation_cases > 1000:
-        pool.close()
-        results = [evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
-        evaluation_measurements = list(itertools.chain(*results))
-    else:
-        p = pool.map_async(evaluate_logs, evaluation_arguments)
-        progress_bar_async(p, 'evaluating results', num_simulations)
-        pool.close()
-        evaluation_measurements = list(itertools.chain(*p.get()))
-
-    return evaluation_measurements
-
-
-def _read_simulated_log(arguments: Tuple):
-    log_path, log_column_mapping, simulation_repetition_index = arguments
-
-    reader = EventLogReader(log_path=log_path, column_names=log_column_mapping)
-
-    reader.df.rename(columns={'user': 'resource'}, inplace=True)
-    reader.df['role'] = reader.df['resource']
-    reader.df['source'] = 'simulation'
-    reader.df['run_num'] = simulation_repetition_index
-    reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
-
-    return reader.df

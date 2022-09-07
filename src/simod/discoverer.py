@@ -8,19 +8,19 @@ import xmltodict as xtd
 from lxml import etree
 
 from simod.discovery.tasks_evaluator import TaskEvaluator
+from simod.event_log_processing.reader import DEFAULT_XES_COLUMNS, EventLogReader
 from . import support_utils as sup
 from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics
 from .cli_formatter import print_asset, print_section, print_notice, print_step
 from .configuration import Configuration, StructureMiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
 from .discovery import inter_arrival_distribution, gateway_probabilities
 from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
-from simod.event_log_processing.reader import DEFAULT_XES_COLUMNS, EventLogReader
-from .event_log_processing.utilities import write_xes, reformat_timestamps
+from .event_log_processing.utilities import reformat_timestamps
 from .preprocessor import Preprocessor
 from .process_model.bpmn import BPMNReaderWriter
+from .process_structure.miner import StructureMiner, Settings as StructureMinerSettings
 from .replayer_datatypes import BPMNGraph
 from .simulator import simulate
-from .process_structure.miner import StructureMiner, Settings as StructureMinerSettings
 from .writers import xml_writer as xml
 
 
@@ -68,7 +68,7 @@ class Discoverer:
         # Create customized event-log for the external tools
         output_path = self._settings.output / (self._settings.project_name + '.xes')
         self._settings.log_path = output_path
-        write_xes(self._log_train, output_path)
+        self._log_train.write_xes(output_path)
         reformat_timestamps(output_path, output_path)
 
     def _mine_structure(self):
@@ -82,8 +82,6 @@ class Discoverer:
             model_path = (self._settings.output / (self._settings.project_name + '.bpmn')).absolute()
 
             settings = StructureMinerSettings(
-                xes_path=self._settings.log_path,
-                output_model_path=model_path,
                 mining_algorithm=self._settings.structure_mining_algorithm,
                 epsilon=self._settings.epsilon,
                 eta=self._settings.eta,
@@ -92,7 +90,7 @@ class Discoverer:
                 or_rep=self._settings.or_rep,
             )
 
-            _ = StructureMiner(settings)
+            _ = StructureMiner(settings, xes_path=self._settings.log_path, output_model_path=model_path)
         else:
             # Taking provided structure
             print_step("Copying the model")

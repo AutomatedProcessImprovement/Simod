@@ -20,7 +20,6 @@ class AlphaOracle:
     def __init__(self, log, tasks_alias, one_timestamp, look_for_loops=False):
         self.log = log
         self.tasks_alias = tasks_alias
-        self.one_timestamp = one_timestamp
         self.look_for_loops = look_for_loops
         self.oracle = self._discover_concurrency()
 
@@ -77,10 +76,7 @@ class AlphaOracle:
         temp_df['alias'] = temp_df.apply(lambda x: self.tasks_alias[x['task']], axis=1)
         self.log = temp_df
         log_df = self.log.to_dict('records')
-        if self.one_timestamp:
-            log_df = sorted(log_df, key=lambda x: (x['caseid'], x['end_timestamp']))
-        else:
-            log_df = sorted(log_df, key=lambda x: (x['caseid'], x['start_timestamp']))
+        log_df = sorted(log_df, key=lambda x: (x['caseid'], x['start_timestamp']))
 
         for key, group in itertools.groupby(log_df, key=lambda x: x['caseid']):
             trace = list(group)

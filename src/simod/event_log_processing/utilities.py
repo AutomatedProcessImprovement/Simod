@@ -1,4 +1,6 @@
+import math
 import os
+import random
 from pathlib import Path
 from typing import Union, Optional, Tuple
 from xml.etree import ElementTree as ET
@@ -7,7 +9,6 @@ import pandas as pd
 import pendulum
 
 from simod.cli_formatter import print_step
-from simod.event_log_processing.reader import EventLogReader
 
 
 def remove_outliers(event_log: pd.DataFrame) -> pd.DataFrame:
@@ -37,13 +38,11 @@ def remove_outliers(event_log: pd.DataFrame) -> pd.DataFrame:
     return event_log
 
 
-def write_xes(log: Union[EventLogReader, pd.DataFrame, list], output_path: Path):
+def write_xes(log: Union[pd.DataFrame, list], output_path: Path):
     log_df: pd.DataFrame
 
     if isinstance(log, pd.DataFrame):
         log_df = log
-    elif isinstance(log, EventLogReader):
-        log_df = pd.DataFrame(log.data)
     elif isinstance(log, list):
         log_df = pd.DataFrame(log)
     else:
@@ -152,3 +151,33 @@ def reformat_timestamps(xes_path: Path, output_path: Path):
             except ValueError:
                 continue
     tree.write(output_path)
+
+
+def sample_log(log: pd.DataFrame):
+    def sample_size(population_size, confidence_level, confidence_interval):
+        confidence_level_constant = {50: .67, 68: .99, 90: 1.64, 95: 1.96, 99: 2.57}
+
+        p = 0.5
+        e = confidence_interval / 100.0
+        N = population_size
+
+        # deviations for the confidence level
+        Z = confidence_level_constant[confidence_level]
+
+        # sample size
+        n_0 = ((Z ** 2) * p * (1 - p)) / (e ** 2)
+
+        # adjusting sample size for finite population
+        n = n_0 / (1 + ((n_0 - 1) / float(N)))
+
+        sample_size = int(math.ceil(n))
+
+        return sample_size
+
+    case_ids = list(log.caseid.unique())
+    if len(case_ids) > 1000:
+        sample_size = sample_size(len(case_ids), 95.0, 3.0)
+        sample_case_ids = random.sample(case_ids, sample_size)
+        log = log[log.caseid.isin(sample_case_ids)]
+
+    return log

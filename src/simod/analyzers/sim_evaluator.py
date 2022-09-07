@@ -28,7 +28,6 @@ class SimilarityEvaluator:
         self.log_data = copy.deepcopy(log_data)
         self.simulation_data = copy.deepcopy(simulation_data)
         self.max_cases = max_cases
-        self.one_timestamp = settings.read_options.one_timestamp
         self._preprocess_data(dtype)
 
     def _preprocess_data(self, dtype):
@@ -56,7 +55,7 @@ class SimilarityEvaluator:
         self.simulation_data = data[data.source == 'simulation']
         self.alias = self.create_task_alias(data, 'task')
 
-        self.alpha_concurrency = ao.AlphaOracle(self.log_data, self.alias, self.one_timestamp, True)
+        self.alpha_concurrency = ao.AlphaOracle(self.log_data, self.alias, True)
         # reformat and sampling data
         self.log_data = self.reformat_events(self.log_data.to_dict('records'), 'task')
         self.simulation_data = self.reformat_events(self.simulation_data.to_dict('records'), 'task')
@@ -504,21 +503,15 @@ class SimilarityEvaluator:
         """
         df_modif = data.copy()
         np.seterr(divide='ignore')
-        if self.one_timestamp:
-            summ = data.groupby(['task'])['duration'].max().to_dict()
-            dur_act_norm = (lambda x: x['duration'] / summ[x['task']]
-            if summ[x['task']] > 0 else 0)
-            df_modif['dur_act_norm'] = df_modif.apply(dur_act_norm, axis=1)
-        else:
-            summ = data.groupby(['task'])['processing_time'].max().to_dict()
-            proc_act_norm = (lambda x: x['processing_time'] / summ[x['task']]
-            if summ[x['task']] > 0 else 0)
-            df_modif['proc_act_norm'] = df_modif.apply(proc_act_norm, axis=1)
-            # ---
-            summ = data.groupby(['task'])['waiting_time'].max().to_dict()
-            wait_act_norm = (lambda x: x['waiting_time'] / summ[x['task']]
-            if summ[x['task']] > 0 else 0)
-            df_modif['wait_act_norm'] = df_modif.apply(wait_act_norm, axis=1)
+        summ = data.groupby(['task'])['processing_time'].max().to_dict()
+        proc_act_norm = (lambda x: x['processing_time'] / summ[x['task']]
+        if summ[x['task']] > 0 else 0)
+        df_modif['proc_act_norm'] = df_modif.apply(proc_act_norm, axis=1)
+        # ---
+        summ = data.groupby(['task'])['waiting_time'].max().to_dict()
+        wait_act_norm = (lambda x: x['waiting_time'] / summ[x['task']]
+        if summ[x['task']] > 0 else 0)
+        df_modif['wait_act_norm'] = df_modif.apply(wait_act_norm, axis=1)
         return df_modif
 
     def reformat_events(self, data, features):
@@ -537,12 +530,8 @@ class SimilarityEvaluator:
             [x.update(dict(alias=self.alias[x[features]])) for x in data]
         temp_data = list()
         # define ordering keys and columns
-        if self.one_timestamp:
-            columns = ['alias', 'duration', 'dur_act_norm']
-            sort_key = 'end_timestamp'
-        else:
-            sort_key = 'start_timestamp'
-            columns = ['alias', 'processing_time', 'proc_act_norm', 'waiting_time', 'wait_act_norm']
+        sort_key = 'start_timestamp'
+        columns = ['alias', 'processing_time', 'proc_act_norm', 'waiting_time', 'wait_act_norm']
         data = sorted(data, key=lambda x: (x['caseid'], x[sort_key]))
         for key, group in itertools.groupby(data, key=lambda x: x['caseid']):
             trace = list(group)

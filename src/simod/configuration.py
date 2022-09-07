@@ -66,6 +66,7 @@ class StructureMiningAlgorithm(Enum):
             return 'Split Miner 3'
         return f'Unknown StructureMiningAlgorithm {str(self)}'
 
+
 class AndPriorORemove(Enum):
     TRUE = auto()
     FALSE = auto()
@@ -74,17 +75,28 @@ class AndPriorORemove(Enum):
     def from_str(cls, value: Union[str, List[str]]) -> Union['AndPriorORemove', List['AndPriorORemove']]:
         if isinstance(value, str):
             return AndPriorORemove._from_str(value)
+        if isinstance(value, bool):
+            return AndPriorORemove._from_bool(value)
         elif isinstance(value, list):
             return [AndPriorORemove._from_str(v) for v in value]
+        else:
+            raise ValueError(f'Unknown value {value}')
 
     @classmethod
     def _from_str(cls, value: str) -> 'AndPriorORemove':
-        if value:
+        if value.lower() == 'true':
             return cls.TRUE
-        elif not value:
+        elif value.lower() == 'false':
             return cls.FALSE
         else:
             raise ValueError(f'Unknown value {value}')
+
+    @classmethod
+    def _from_bool(cls, value: bool) -> 'AndPriorORemove':
+        if value:
+            return cls.TRUE
+        else:
+            return cls.FALSE
 
     @classmethod
     def default(cls) -> List['AndPriorORemove']:
@@ -402,9 +414,9 @@ def config_data_with_datastructures(data: dict) -> dict:
     if input:
         data['input'] = Path(input)
 
-    mining_alg = data.get('mining_alg')
-    if mining_alg:
-        data['mining_alg'] = StructureMiningAlgorithm.from_str(mining_alg)
+    structure_mining_algorithm = data.get('structure_mining_algorithm')
+    if structure_mining_algorithm:
+        data['structure_mining_algorithm'] = StructureMiningAlgorithm.from_str(structure_mining_algorithm)
 
     and_prior = data.get('and_prior')
     if and_prior and (isinstance(and_prior, str) or isinstance(and_prior, list)):
