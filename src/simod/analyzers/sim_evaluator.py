@@ -22,8 +22,7 @@ from ..support_utils import progress_bar_async
 class SimilarityEvaluator:
     """Evaluates the similarity of two event-logs."""
 
-    def __init__(self, log_data: pd.DataFrame, simulation_data: pd.DataFrame, settings: Configuration, max_cases=500,
-                 dtype='log'):
+    def __init__(self, log_data: pd.DataFrame, simulation_data: pd.DataFrame, max_cases=500, dtype='log'):
         self.dtype = dtype
         self.log_data = copy.deepcopy(log_data)
         self.simulation_data = copy.deepcopy(simulation_data)
@@ -564,20 +563,6 @@ class SimilarityEvaluator:
         return folds
 
 
-def evaluate_logs(args):
-    """Reads the simulation results stats"""
-    settings: Configuration
-    data: pd.DataFrame
-    sim_log: pd.DataFrame
-    settings, data, sim_log = args
-
-    rep = sim_log.iloc[0].run_num
-    evaluator = SimilarityEvaluator(data, sim_log, settings, max_cases=1000)
-    evaluator.measure_distance(Metric.DL)
-    sim_values = [{'run_num': rep, **evaluator.similarity}]  # TODO: why list for a single dict?
-    return sim_values
-
-
 def evaluate_logs_with_add_metrics(args):
     settings: Configuration
     process_stats: pd.DataFrame
@@ -585,7 +570,7 @@ def evaluate_logs_with_add_metrics(args):
     settings, process_stats, sim_log = args
 
     rep = sim_log.iloc[0].run_num
-    evaluator = SimilarityEvaluator(process_stats, sim_log, settings, max_cases=1000)
+    evaluator = SimilarityEvaluator(process_stats, sim_log, max_cases=1000)
     metrics = [settings.sim_metric]
     if settings.add_metrics:
         metrics = list(set(list(settings.add_metrics) + metrics))

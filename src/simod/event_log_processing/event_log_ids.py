@@ -11,3 +11,12 @@ class EventLogIDs:
     end_time: str = 'end_timestamp'
     enabled_time: str = 'enabled_timestamp'
     role: str = 'role'
+
+
+SIMOD_DEFAULT_COLUMNS = EventLogIDs(
+    case='caseid',
+    activity='task',
+    resource='user',
+    start_time='start_timestamp',
+    end_time='end_timestamp'
+)

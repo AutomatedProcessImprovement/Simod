@@ -31,9 +31,9 @@ class EventLogReader:
     log_path: Path
     # log_path_xes: Path
     df: pd.DataFrame
-    data: list  # TODO: we need to get rid of list and use DataFrame everywhere
+    data: list  # TODO: remove the list and use DataFrame everywhere
     _time_format: str
-    _column_names: dict
+    _column_names: dict  # TODO: use EventLogIDs
     _column_filter: Optional[list] = None
 
     def __init__(self,

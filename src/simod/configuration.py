@@ -190,6 +190,8 @@ class DataType(Enum):
             return DataType._from_str(value)
         elif isinstance(value, list):
             return [DataType._from_str(v) for v in value]
+        else:
+            raise ValueError(f'Unknown value {value}')
 
     @classmethod
     def _from_str(cls, value: str) -> 'DataType':

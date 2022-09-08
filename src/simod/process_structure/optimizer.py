@@ -14,9 +14,10 @@ from hyperopt import tpe
 from tqdm import tqdm
 
 from simod import support_utils as sup
-from simod.analyzers.sim_evaluator import evaluate_logs
+from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_message, print_subsection
-from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove, GateManagement, PDFMethod
+from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove, GateManagement, PDFMethod, \
+    Configuration
 from simod.event_log_processing.reader import EventLogReader
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.support_utils import get_project_dir, remove_asset, progress_bar_async
@@ -355,26 +356,38 @@ class StructureOptimizer(HyperoptPipeline):
         evaluation_arguments = [(settings, self._log_validation, log) for log in p.get()]
         if simulation_cases > 1000:
             pool.close()
-            results = [evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
+            results = [self._evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
             evaluation_measurements = list(itertools.chain(*results))
         else:
-            p = pool.map_async(evaluate_logs, evaluation_arguments)
+            p = pool.map_async(self._evaluate_logs, evaluation_arguments)
             progress_bar_async(p, 'evaluating results', num_simulations)
             pool.close()
             evaluation_measurements = list(itertools.chain(*p.get()))
 
         return evaluation_measurements
 
-    def _define_response(self, settings: Settings, status, simulation_results, output_dir: Path) -> dict:
+    def _evaluate_logs(self, arguments):
+        settings: Configuration
+        data: pd.DataFrame
+        sim_log: pd.DataFrame
+        settings, data, sim_log = arguments
+
+        rep = sim_log.iloc[0].run_num
+        evaluator = SimilarityEvaluator(data, sim_log, max_cases=1000)
+        evaluator.measure_distance(Metric.DL)
+        sim_values = [{'run_num': rep, **evaluator.similarity}]  # TODO: why list for a single dict?
+        return sim_values
+
+    def _define_response(self, settings: Settings, status, evaluation_measurements, output_dir: Path) -> dict:
         response = {
             'output': str(output_dir.absolute()),
             'status': status,
             'loss': None,
         }
 
-        measurements = []
-
         # collecting measurements for saving
+
+        measurements = []
 
         optimization_parameters = {
             'gateway_probabilities': settings.gateway_probabilities,
@@ -395,13 +408,13 @@ class StructureOptimizer(HyperoptPipeline):
 
         # simulation parameters
         if status == STATUS_OK:
-            similarity = np.mean([x['sim_val'] for x in simulation_results])
+            similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
             loss = (1 - similarity)
 
             response['loss'] = loss
             response['status'] = status if loss > 0 else STATUS_FAIL
 
-            for sim_val in simulation_results:
+            for sim_val in evaluation_measurements:
                 values = {
                     'similarity': sim_val['sim_val'],
                     'sim_metric': sim_val['metric'],

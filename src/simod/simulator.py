@@ -5,14 +5,13 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable, Tuple
 
+from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
 from tqdm import tqdm
 
-from bpdfr_simulation_engine.simulation_properties_parser import parse_qbp_simulation_process
-from simod.analyzers.sim_evaluator import evaluate_logs
 from simod.cli_formatter import print_notice
-from simod.support_utils import execute_shell_cmd, progress_bar_async
 from simod.configuration import Configuration, SimulatorKind
 from simod.event_log_processing.reader import EventLogReader
+from simod.support_utils import execute_shell_cmd, progress_bar_async
 
 TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
@@ -47,8 +46,7 @@ def diffresbp_simulator(args: Tuple):  # TODO: deprecated
 def simulate(settings: Configuration, log_data, evaluate_fn: Callable = None):
     """General simulation function that takes in different simulators and evaluators."""
 
-    if evaluate_fn is None:
-        evaluate_fn = evaluate_logs
+    assert evaluate_fn is not None, 'No evaluation function provided'
 
     if isinstance(settings, dict):
         settings = Configuration(**settings)
