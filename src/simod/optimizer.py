@@ -94,7 +94,7 @@ class Optimizer:
         print_section('Final Comparison')
         self._test_model_and_save_simulation_data(times_optimizer.best_output,
                                                   structure_measurements,
-                                                  times_optimizer.measurements_file_name)
+                                                  times_optimizer._measurements_file_name)
         self._export_canonical_model(times_optimizer.best_output)
 
         times_optimizer.cleanup()

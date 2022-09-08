@@ -2,8 +2,6 @@ import copy
 import itertools
 import multiprocessing
 import os
-import xml.etree.ElementTree as ET
-from collections import namedtuple
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -14,19 +12,13 @@ import pandas as pd
 import yaml
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from lxml import etree
-from lxml.builder import ElementMaker
-from networkx import DiGraph
 from tqdm import tqdm
 
 from simod import support_utils as sup
 from simod.analyzers import sim_evaluator as sim
 from simod.cli_formatter import print_subsection, print_message, print_warning
-from simod.configuration import Configuration, StructureMiningAlgorithm, Metric, QBP_NAMESPACE_URI, PDFMethod, DataType, \
+from simod.configuration import Configuration, Metric, PDFMethod, DataType, \
     GateManagement
-from simod.discovery import inter_arrival_distribution
-from simod.discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
-from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log_processing.event_log_ids import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from simod.event_log_processing.reader import EventLogReader
 from simod.hyperopt_pipeline import HyperoptPipeline
@@ -35,10 +27,6 @@ from simod.process_structure.simulation import ProsimosSettings, simulate_with_p
     undifferentiated_resources_parameters
 from simod.simulator import simulate
 from simod.support_utils import get_project_dir, remove_asset, progress_bar_async
-
-Parameters = namedtuple('Parameters',
-                        ['time_table', 'resource_pool', 'resource_table', 'arrival_rate', 'elements_data', 'instances',
-                         'start_time'])
 
 
 @dataclass
@@ -279,10 +267,8 @@ class PipelineSettings(ProjectSettings):
 class CalendarOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: dict
-    measurements_file_name: Path
-    xml_sim_model: etree.ElementTree
+    _measurements_file_name: Path
     _temp_output: Path
-    process_graph: DiGraph
 
     _settings_global: Configuration
     _settings_time: Configuration
@@ -339,13 +325,11 @@ class CalendarOptimizer(HyperoptPipeline):
         self._original_log_train = copy.deepcopy(self._log_train)
         self._original_log_validation = copy.deepcopy(self._log_validation)
 
-        self._load_simulation_model(model_path)
-
         # creating files and folders
         self._temp_output = get_project_dir() / 'outputs' / sup.folder_id()
         self._temp_output.mkdir(parents=True, exist_ok=True)
-        self.measurements_file_name = self._temp_output / sup.file_id(prefix='OP_')
-        with self.measurements_file_name.open('w') as _:
+        self._measurements_file_name = self._temp_output / sup.file_id(prefix='OP_')
+        with self._measurements_file_name.open('w') as _:
             pass
 
     def run(self):
@@ -367,6 +351,8 @@ class CalendarOptimizer(HyperoptPipeline):
             status, result = self.step(status, self._extract_parameters_undifferentiated, trial_stg)
             bpmn_path, json_path, simulation_cases = result
 
+            # TODO: in simulation, the old parameters aren't used: rp_similarity, res_cal_met, arr_cal_met -- how can I integrate them?
+            # TODO: redefine pipeline settings for calendars optimization, Prosimos uses confidence and support
             status, result = self.step(status, self._simulate_undifferentiated, trial_stg, json_path, simulation_cases)
             evaluation_measurements = result if status == STATUS_OK else []
 
@@ -444,17 +430,17 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return settings
 
-    def _extract_parameters(self, settings: PipelineSettings):
-        parameters = self._extract_time_parameters(settings)
-
-        self._xml_print(parameters._asdict(), os.path.join(settings.output_dir, settings.project_name + '.bpmn'))
-        self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
-        self._log_validation['source'] = 'log'
-        self._log_validation['run_num'] = 0
-        self._log_validation = self._log_validation.merge(parameters.resource_table[['resource', 'role']],
-                                                          on='resource', how='left')
-        self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
-        parameters.resource_table.to_pickle(os.path.join(settings.output_dir, 'resource_table.pkl'))
+    # def _extract_parameters(self, settings: PipelineSettings):
+    #     parameters = self._extract_time_parameters(settings)
+    #
+    #     self._xml_print(parameters._asdict(), os.path.join(settings.output_dir, settings.project_name + '.bpmn'))
+    #     self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
+    #     self._log_validation['source'] = 'log'
+    #     self._log_validation['run_num'] = 0
+    #     self._log_validation = self._log_validation.merge(parameters.resource_table[['resource', 'role']],
+    #                                                       on='resource', how='left')
+    #     self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
+    #     parameters.resource_table.to_pickle(os.path.join(settings.output_dir, 'resource_table.pkl'))
 
     def _extract_parameters_undifferentiated(self, settings: PipelineSettings) -> Tuple:
         bpmn_path = settings.model_path
@@ -538,19 +524,6 @@ class CalendarOptimizer(HyperoptPipeline):
             'output': str(settings.output_dir.absolute())
         }
 
-        # TODO: why do we have miner parameters in response if they were not provided during optimization?
-        # Miner parameters
-        # if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-        #                                            StructureMiningAlgorithm.SPLIT_MINER_3]:
-        #     data['epsilon'] = settings.epsilon
-        #     data['eta'] = settings.eta
-        #     data['and_prior'] = settings.and_prior
-        #     data['or_rep'] = settings.or_rep
-        # elif settings.structure_mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-        #     data['concurrency'] = settings.concurrency
-        # else:
-        #     raise ValueError(settings.structure_mining_algorithm)
-
         response = {
             'output': str(settings.output_dir.absolute()),
         }
@@ -582,31 +555,12 @@ class CalendarOptimizer(HyperoptPipeline):
             values = values | data
             measurements.append(values)
 
-        if os.path.getsize(self.measurements_file_name) > 0:
-            sup.create_csv_file(measurements, self.measurements_file_name, mode='a')
+        if os.path.getsize(self._measurements_file_name) > 0:
+            sup.create_csv_file(measurements, self._measurements_file_name, mode='a')
         else:
-            sup.create_csv_file_header(measurements, self.measurements_file_name)
+            sup.create_csv_file_header(measurements, self._measurements_file_name)
 
         return response
-
-    def _extract_time_parameters(self, settings):
-        pdef_method = PDFMethod.AUTOMATIC  # TODO: reassigned configuration, are there any other PDF methods supported?
-        time_table, resource_pool, resource_table = discover_timetables_with_resource_pools(self._log_train, settings)
-        arrival_rate = inter_arrival_distribution.discover(self.process_graph, self._conformant_traces, pdef_method)
-        process_stats = self._process_stats.merge(resource_table, left_on='user', right_on='resource', how='left')
-        elements_data = TaskEvaluator(self.process_graph, process_stats, resource_pool, pdef_method).elements_data
-        num_inst = len(self._log_validation.caseid.unique())
-        start_time = self._log_validation.start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
-
-        return Parameters(
-            time_table=time_table,
-            resource_pool=resource_pool,
-            resource_table=resource_table,
-            arrival_rate=arrival_rate,
-            elements_data=elements_data,
-            instances=num_inst,
-            start_time=start_time
-        )
 
     @staticmethod
     def _evaluate_logs(args) -> Optional[list]:
@@ -624,127 +578,6 @@ class CalendarOptimizer(HyperoptPipeline):
         sim_values.append({**{'run_num': rep}, **evaluator.similarity})
 
         return sim_values
-
-    def _xml_print(self, params, path) -> None:
-        ns = {'qbp': QBP_NAMESPACE_URI}
-
-        def print_xml_resources(parms) -> str:
-            E = ElementMaker(namespace=ns['qbp'], nsmap=ns)
-            PROCESSSIMULATIONINFO = E.processSimulationInfo
-            TIMEUNIT = E.timeUnit
-            RESOURCES = E.resources
-            RESOURCE = E.resource
-            ELEMENTS = E.elements
-            ELEMENT = E.element
-            DURATION = E.durationDistribution
-            RESOURCESIDS = E.resourceIds
-            RESOURCESID = E.resourceId
-            my_doc = PROCESSSIMULATIONINFO(
-                RESOURCES(
-                    *[
-                        RESOURCE(
-                            id=res['id'],
-                            name=res['name'],
-                            totalAmount=res['total_amount'],
-                            costPerHour=res['costxhour'],
-                            timetableId=res['timetable_id']
-                        ) for res in parms['resource_pool']
-                    ]
-                ),
-                ELEMENTS(
-                    *[
-                        ELEMENT(
-                            DURATION(
-                                TIMEUNIT("seconds"),
-                                type=e['type'],
-                                mean=e['mean'],
-                                arg1=e['arg1'],
-                                arg2=e['arg2']
-                            ),
-                            RESOURCESIDS(
-                                RESOURCESID(str(e['resource']))
-                            ),
-                            id=e['id'], elementId=e['elementid']
-                        ) for e in parms['elements_data']
-                    ]
-                )
-            )
-            return my_doc
-
-        def replace_parm(element, tag, xml_sim_model):
-            childs = element.findall('qbp:' + tag, namespaces=ns)
-            # Transform model from Etree to lxml
-            node = xml_sim_model.find('qbp:' + tag + 's', namespaces=ns)
-            # Clear existing elements
-            for table in node.findall('qbp:' + tag, namespaces=ns):
-                table.getparent().remove(table)
-            # Insert new elements
-            for i, child in enumerate(childs):
-                node.insert((i + 1), child)
-            return xml_sim_model
-
-        self.xml_sim_model = replace_parm(params['time_table'], 'timetable', self.xml_sim_model)
-        xml_new_elements = print_xml_resources(params)
-        self.xml_sim_model = replace_parm(
-            xml_new_elements.find('qbp:resources', namespaces=ns),
-            'resource',
-            self.xml_sim_model)
-        self.xml_sim_model = replace_parm(
-            xml_new_elements.find('qbp:elements', namespaces=ns),
-            'element',
-            self.xml_sim_model)
-        arrival = self.xml_sim_model.find('qbp:arrivalRateDistribution',
-                                          namespaces=ns)
-        arrival.attrib['type'] = params['arrival_rate']['dname']
-        arrival.attrib['mean'] = str(params['arrival_rate']['dparams']['mean'])
-        arrival.attrib['arg1'] = str(params['arrival_rate']['dparams']['arg1'])
-        arrival.attrib['arg2'] = str(params['arrival_rate']['dparams']['arg2'])
-
-        self.xml_bpmn.getroot().append(self.xml_sim_model)
-
-        def create_file(output_file, element):
-            with open(output_file, 'wb') as f:
-                f.write(element)
-
-        # Print model
-        create_file(path, etree.tostring(self.xml_bpmn, pretty_print=True))
-
-    def _load_simulation_model(self, model_path) -> None:
-        tree = ET.parse(model_path)
-        root = tree.getroot()
-        ns = {'qbp': QBP_NAMESPACE_URI}
-        parser = etree.XMLParser(remove_blank_text=True, resolve_entities=False, no_network=True)
-        self.xml_bpmn = etree.parse(model_path, parser)
-        process_info = self.xml_bpmn.find('qbp:processSimulationInfo', namespaces=ns)
-        process_info.getparent().remove(process_info)
-
-        ET.register_namespace('qbp', QBP_NAMESPACE_URI)
-        self.xml_sim_model = etree.fromstring(
-            ET.tostring(root.find('qbp:processSimulationInfo', ns)), parser)
-
-        # load bpmn model
-        bpmn = BPMNReaderWriter(model_path)
-        self.process_graph = bpmn.as_graph()
-
-    # @staticmethod
-    # def _filter_parms(settings: PipelineSettings):
-    #     # resources discovery
-    #     method, values = settings.res_cal_met
-    #     if method == OptimizationType.DISCOVERED:
-    #         settings.res_confidence = values['res_confidence']
-    #         settings.res_support = values['res_support']
-    #     else:
-    #         settings.res_dtype = values['res_dtype']
-    #     settings.res_cal_met = method
-    #     # arrivals calendar
-    #     method, values = settings.arr_cal_met
-    #     if method in 'discovered':
-    #         settings.arr_confidence = values['arr_confidence']
-    #         settings.arr_support = values['arr_support']
-    #     else:
-    #         settings.arr_dtype = values['arr_dtype']
-    #     settings.arr_cal_met = method
-    #     return settings
 
     def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         train, validation = self._log.split_timeline(size)

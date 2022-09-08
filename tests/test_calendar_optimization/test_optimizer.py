@@ -62,7 +62,7 @@ time_optimizer:
 
 test_data = [
     {
-        'name': 'sm3',
+        'name': 'A',
         'config_data': config_str
     }
 ]
