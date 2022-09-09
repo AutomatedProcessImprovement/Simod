@@ -10,7 +10,7 @@ from typing import List, Dict, Optional
 import pandas as pd
 from tqdm import tqdm
 
-from simod.event_log_processing.utilities import convert_df_to_xes, reformat_timestamps
+from simod.event_log.utilities import convert_df_to_xes, reformat_timestamps
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'

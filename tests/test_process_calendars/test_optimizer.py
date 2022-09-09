@@ -1,8 +1,10 @@
 import pytest
 
-from simod.calendar_optimization.optimizer import ProjectSettings, Settings as OptimizerSettings, CalendarOptimizer
-from simod.event_log_processing.reader import EventLogReader
-from simod.support_utils import get_project_dir, folder_id
+from simod.configuration import ProjectSettings
+from simod.event_log.reader_writer import LogReaderWriter
+from simod.process_calendars.optimizer import CalendarOptimizer
+from simod.process_calendars.settings import CalendarOptimizationSettings as OptimizerSettings
+from simod.utilities import get_project_dir, folder_id
 
 config_str = """
 log_path: resources/event_logs/PurchasingExample.xes
@@ -81,7 +83,7 @@ def test_optimizer(entry_point, test_data):
     project_settings.log_path = log_path
     project_settings.output_dir = get_project_dir() / 'outputs' / folder_id()
 
-    log = EventLogReader(log_path)
+    log = LogReaderWriter(log_path)
 
     optimizer = CalendarOptimizer(project_settings, calendar_settings, log, model_path)
     optimizer.run()

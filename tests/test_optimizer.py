@@ -2,7 +2,7 @@ import pytest
 import yaml
 
 from simod.configuration import Configuration, config_data_with_datastructures
-from simod.optimizer import Optimizer
+from simod.optimization.optimizer import Optimizer
 
 config_yaml = """
 log_path: assets/PurchasingExample.xes

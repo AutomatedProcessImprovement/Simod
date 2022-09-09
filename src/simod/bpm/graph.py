@@ -1,6 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-from .. import support_utils as sup
+from .. import utilities as sup
 
 
 def from_bpmn_reader(bpmn, drawing=False, verbose=True) -> nx.DiGraph:

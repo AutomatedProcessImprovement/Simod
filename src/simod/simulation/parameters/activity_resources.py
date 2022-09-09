@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from simod.process_structure.simulation_parameters.distributions import Distribution
+from simod.simulation.parameters.distributions import Distribution
 
 
 @dataclass

@@ -1,7 +1,7 @@
 import pytest
 
 from simod.configuration import GateManagement, AndPriorORemove
-from simod.process_structure.optimizer import Settings
+from simod.process_structure.settings import StructureOptimizationSettings
 
 settings_a = """
 structure_optimizer:
@@ -63,7 +63,7 @@ test_cases = [
 
 @pytest.mark.parametrize('test_data', test_cases, ids=list(map(lambda x: x['name'], test_cases)))
 def test_miner_settings(test_data: dict):
-    settings = Settings.from_stream(test_data['config_data'])
+    settings = StructureOptimizationSettings.from_stream(test_data['config_data'])
 
     assert settings.max_evaluations == 2
     assert settings.gateway_probabilities == [GateManagement.EQUIPROBABLE, GateManagement.DISCOVERY]

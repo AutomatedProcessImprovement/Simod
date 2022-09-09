@@ -7,8 +7,8 @@ from typing import Optional, Tuple
 
 import pandas as pd
 
-from simod.event_log_processing.splitter import LogSplitter
-from simod.event_log_processing.utilities import read, convert_timestamps, convert_df_to_xes
+from simod.event_log.splitter import LogSplitter
+from simod.event_log.utilities import read, convert_timestamps, convert_df_to_xes
 
 DEFAULT_XES_COLUMNS = {
     'concept:name': 'task',
@@ -27,7 +27,7 @@ DEFAULT_FILTER = ['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 
 
-class EventLogReader:
+class LogReaderWriter:
     log_path: Path
     # log_path_xes: Path
     df: pd.DataFrame
@@ -98,9 +98,9 @@ class EventLogReader:
         self.df = pd.DataFrame(self.data)  # TODO: can we these log manipulations clearer?
 
     @staticmethod
-    def copy_without_data(log: 'EventLogReader') -> 'EventLogReader':
+    def copy_without_data(log: 'LogReaderWriter') -> 'LogReaderWriter':
         """Copies LogReader without copying underlying data."""
-        reader = EventLogReader(log_path=log.log_path, load=False)
+        reader = LogReaderWriter(log_path=log.log_path, load=False)
         reader._time_format = log._time_format
         reader._column_names = log._column_names
         return reader

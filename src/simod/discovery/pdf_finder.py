@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as st
 
-from simod import support_utils as sup
+from simod import utilities as sup
 
 
 class DistributionFinder:

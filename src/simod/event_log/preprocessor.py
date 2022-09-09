@@ -3,15 +3,15 @@ from typing import Optional
 
 import pandas as pd
 
-from .cli_formatter import print_step, print_section, print_notice
-from .support_utils import remove_asset
-from .configuration import Configuration
-from .event_log_processing.utilities import read
-from .event_log_processing.multitasking import adjust_durations
+from simod.cli_formatter import print_step, print_section, print_notice
+from simod.utilities import remove_asset
+from simod.configuration import Configuration
+from simod.event_log.utilities import read
+from simod.event_log.multitasking import adjust_durations
 
 
 class Preprocessor:
-    """Preprocessor executes any pre-processing required according to the configuration."""
+    """Preprocessor executes any event log pre-processing required according to the configuration."""
     config: Configuration
     log: Optional[pd.DataFrame] = None
 

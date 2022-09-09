@@ -4,7 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from simod.discovery.pdf_finder import DistributionFinder
-from simod import support_utils as sup
+from simod import utilities as sup
 from simod.configuration import PDFMethod
 
 

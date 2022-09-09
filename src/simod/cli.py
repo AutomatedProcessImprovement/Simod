@@ -4,8 +4,8 @@ import click
 
 from simod.configuration import Configuration, config_data_from_file
 from simod.discoverer import Discoverer
-from simod.optimizer import Optimizer
-from simod.support_utils import get_project_dir
+from simod.optimization.optimizer import Optimizer
+from simod.utilities import get_project_dir
 
 
 @click.group()

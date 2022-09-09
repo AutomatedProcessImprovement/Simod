@@ -1,18 +1,16 @@
 import copy
-import datetime
 import random
 import sys
 import xml.etree.ElementTree as ET
 from collections import deque
-from datetime import timedelta
 from enum import Enum
 from pathlib import Path
 from typing import List
 
 import numpy as np
-import pytz
-from .cli_formatter import print_warning
-from .configuration import BPMN_NAMESPACE_URI
+
+from simod.cli_formatter import print_warning
+from simod.configuration import BPMN_NAMESPACE_URI
 
 
 class BPMNNodeType(Enum):
@@ -42,83 +40,6 @@ class ElementInfo:
     def is_gateway(self):
         return self.type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.PARALLEL_GATEWAY,
                              BPMNNodeType.INCLUSIVE_GATEWAY]
-
-
-class ProcessInfo:
-    def __init__(self):
-        self.traces = dict()
-        self.resource_profiles = dict()
-
-
-class TaskEvent:
-    def __init__(self, p_case, task_id, task_name, enabled_at, enabled_by):
-        self.p_case = p_case
-        self.task_id = task_id
-        self.task_name = task_name
-        self.enabled_at = enabled_at
-        self.enabled_by = enabled_by
-        self.started_at = None
-        self.completed_at = None
-        self.idle_time = None
-        self.resource_id = None
-
-    def print_event_info(self):
-        print("Task: %s(%s)" % (self.task_name, str(self.p_case)))
-
-    def start_event(self, started_at, resource_id):
-        self.started_at = started_at
-        self.resource_id = resource_id
-
-    def complete_event(self, ended_at, idle_time):
-        self.completed_at = ended_at
-        self.idle_time = idle_time
-
-    def waiting_time(self):
-        return (self.started_at - self.enabled_at).total_seconds()
-
-    def idle_processing_time(self):
-        return (self.completed_at - self.started_at).total_seconds()
-
-    def processing_time(self):
-        return self.idle_processing_time() - self.idle_time
-
-    def idle_cycle_time(self):
-        return (self.completed_at - self.enabled_at).total_seconds()
-
-    def cycle_time(self):
-        return self.idle_cycle_time() - self.idle_time
-
-
-class Trace:
-    def __init__(self, p_case, started_at=datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, pytz.utc)):
-        self.p_case = p_case
-        self.started_at = started_at
-        self.completed_at = started_at
-        self.event_list = list()
-        self.next_parallel_tasks = list()
-
-        self.cycle_time = None
-        self.idle_cycle_time = None
-        self.processing_time = None
-        self.idle_processing_time = None
-        self.waiting_time = None
-        self.idle_time = None
-
-    def start_event(self, task_id, task_name, started_at, started_by, enabled_at, enabled_by):
-        event_info = TaskEvent(self.p_case, task_id, task_name, enabled_at, enabled_by)
-        event_index = len(self.event_list)
-        self.event_list.append(event_info)
-        self.started_at = min(self.started_at, enabled_at)
-        self.next_parallel_tasks.append(list())
-        if enabled_by is not None:
-            self.next_parallel_tasks[enabled_by].append(event_index)
-        self.event_list[event_index].start_event(started_at, started_by)
-        return event_index
-
-    def complete_event(self, event_index, completed_at, idle_time=0):
-        self.event_list[event_index].complete_event(completed_at, idle_time)
-        self.completed_at = max(self.completed_at, self.event_list[event_index].completed_at)
-        return self.event_list[event_index]
 
 
 class ProcessState:
@@ -356,7 +277,8 @@ class BPMNGraph:
             random.shuffle(enabled_tasks)
         return enabled_tasks
 
-    def replay_trace(self, task_sequence: list, f_arcs_frequency: dict, post_p=True) -> (bool, List[bool], ProcessState):
+    def replay_trace(self, task_sequence: list, f_arcs_frequency: dict, post_p=True) -> (
+    bool, List[bool], ProcessState):
         p_state = ProcessState(self)
         fired_tasks = list()
         fired_or_splits = set()
@@ -412,7 +334,8 @@ class BPMNGraph:
                         j -= 1
                         continue
                     p_info = self.element_info[self.from_name.get(task_sequence[j])]
-                    if p_info.id in self.closest_distance[e_info.id] and self.closest_distance[e_info.id][p_info.id] < fix_from[1]:
+                    if p_info.id in self.closest_distance[e_info.id] and self.closest_distance[e_info.id][p_info.id] < \
+                            fix_from[1]:
                         fix_from = [p_info.id, self.closest_distance[e_info.id][p_info.id]]
                         if fix_from[1] == 1:
                             break
@@ -422,7 +345,6 @@ class BPMNGraph:
                         if flow_id not in f_arcs_frequency:
                             f_arcs_frequency[flow_id] = 0
                         f_arcs_frequency[flow_id] += 1
-
 
     def _sort_by_closest_predecesors(self):
         self.closest_distance = dict()
@@ -450,7 +372,8 @@ class BPMNGraph:
                 if p_id is not e_id and p_id in self.closest_distance[e_id]:
                     p_info = self.element_info[p_id]
                     while p_info.id is not e_id:
-                        if p_info.type in [BPMNNodeType.INCLUSIVE_GATEWAY, BPMNNodeType.EXCLUSIVE_GATEWAY] and p_info.is_split():
+                        if p_info.type in [BPMNNodeType.INCLUSIVE_GATEWAY,
+                                           BPMNNodeType.EXCLUSIVE_GATEWAY] and p_info.is_split():
                             self.decision_flows_sortest_path[e_id][p_id].append(pred_seq[p_info.id])
                         p_info = self._get_successor(pred_seq[p_info.id])
 
@@ -671,7 +594,8 @@ class BPMNGraph:
                     total_frequency += flow_arcs_frequency[flow_id]
                 flow_arc_probability = dict()
                 for flow_id in self.element_info[e_id].outgoing_flows:
-                    flow_arc_probability[flow_id] = flow_arcs_frequency[flow_id] / total_frequency if total_frequency > 0 else 0
+                    flow_arc_probability[flow_id] = flow_arcs_frequency[
+                                                        flow_id] / total_frequency if total_frequency > 0 else 0
                 gateways_branching[e_id] = flow_arc_probability
         return gateways_branching
 
@@ -714,7 +638,8 @@ class BPMNGraph:
                 flow_arcs_probability[flow_id] = probability
         else:  # otherwise, we set min_probability instead of zero and balance probabilities for valid arcs
             valid_probabilities = arcs_probabilities[arcs_probabilities > valid_probability_threshold].sum()
-            average_probability_to_balance = (1 - valid_probabilities - number_of_invalid_arcs * min_probability) / number_of_valid_arcs
+            average_probability_to_balance = (
+                                                         1 - valid_probabilities - number_of_invalid_arcs * min_probability) / number_of_valid_arcs
             for flow_id in flow_arcs_probability:
                 if flow_arcs_probability[flow_id] <= valid_probability_threshold:
                     # enforcing the minimum possible probability
@@ -756,253 +681,3 @@ class BPMNGraph:
                 enabled_tasks.append(next_e)
             else:
                 to_execute.append(next_e)
-
-
-# Calendar
-
-str_week_days = {"MONDAY": 0, "TUESDAY": 1, "WEDNESDAY": 2, "THURSDAY": 3, "FRIDAY": 4, "SATURDAY": 5, "SUNDAY": 6}
-int_week_days = {0: "MONDAY", 1: "TUESDAY", 2: "WEDNESDAY", 3: "THURSDAY", 4: "FRIDAY", 5: "SATURDAY", 6: "SUNDAY"}
-convertion_table = {'WEEKS': 604800, 'DAYS': 86400, 'HOURS': 3600, 'MINUTES': 60, 'SECONDS': 1}
-
-
-class Interval:
-    def __init__(self, start, end):
-        self.start = start
-        self.end = end
-        self.duration = (end - start).total_seconds()
-
-    def merge_interval(self, n_interval):
-        self.start = min(n_interval.start, self.start)
-        self.end = max(n_interval.end, self.end)
-        self.duration = (self.end - self.start).total_seconds()
-
-    def is_before(self, c_date):
-        return self.end <= c_date
-
-    def contains(self, c_date):
-        return self.start < c_date < self.end
-
-    def is_after(self, c_date):
-        return c_date <= self.start
-
-
-class RCalendar:
-    def __init__(self, calendar_id):
-        self.calendar_id = calendar_id
-        self.default_date = None
-        self.new_day = None
-        self.work_intervals = dict()
-        self.cumulative_work_durations = dict()
-        self.work_rest_count = dict()
-        self.total_weekly_work = 0
-        self.total_weekly_rest = self._to_seconds(1, 'WEEKS')
-        for i in range(0, 7):
-            self.work_intervals[i] = list()
-            self.cumulative_work_durations[i] = list()
-            self.work_rest_count[i] = [0, self._to_seconds(1, 'DAYS')]
-
-    @staticmethod
-    def _to_seconds(value, from_unit):
-        u_from = from_unit.upper()
-        return value * convertion_table[u_from] if u_from in convertion_table else value
-
-    @staticmethod
-    def _parse_datetime(time, has_date):
-        time_formats = ['%H:%M:%S.%f', '%H:%M', '%I:%M%p', '%H:%M:%S', '%I:%M:%S%p'] if not has_date \
-            else ['%Y-%m-%dT%H:%M:%S.%f%z', '%b %d %Y %I:%M%p', '%b %d %Y at %I:%M%p', '%B %d, %Y, %H:%M:%S',
-                  '%a,%d/%m/%y,%I:%M%p', '%a, %d %B, %Y', '%Y-%m-%dT%H:%M:%SZ']
-        for time_format in time_formats:
-            try:
-                return datetime.datetime.strptime(time, time_format)
-            except ValueError:
-                pass
-        raise ValueError
-
-    def print_calendar_info(self):
-        print('Calendar ID: %s' % self.calendar_id)
-        print('Total Weekly Work: %.2f Hours' % (self.total_weekly_work / 3600))
-        for i in range(0, 7):
-            if len(self.work_intervals[i]) > 0:
-                print(int_week_days[i])
-                for interval in self.work_intervals[i]:
-                    print('    from %02d:%02d - to %02d:%02d' % (interval.start.hour, interval.start.minute,
-                                                                 interval.end.hour, interval.end.minute))
-        print('-----------------------------------------------------------')
-
-    def to_json(self):
-        items = []
-        for i in range(0, 7):
-            if len(self.work_intervals[i]) > 0:
-                for interval in self.work_intervals[i]:
-                    items.append({
-                        'from': int_week_days[i],
-                        'to': int_week_days[i],
-                        "beginTime": str(interval.start.time()),
-                        "endTime": str(interval.end.time())
-                    })
-        return items
-
-    def add_calendar_item(self, from_day, to_day, begin_time, end_time):
-        if from_day.upper() in str_week_days and to_day.upper() in str_week_days:
-            try:
-                t_interval = Interval(self._parse_datetime(begin_time, False), self._parse_datetime(end_time, False))
-                if self.default_date is None:
-                    self.default_date = t_interval.start.date()
-                    self.new_day = datetime.datetime.combine(self.default_date, datetime.time())
-                d_s = str_week_days[from_day]
-                d_e = str_week_days[to_day]
-                while True:
-                    self._add_interval(d_s % 7, t_interval)
-                    if d_s % 7 == d_e:
-                        break
-                    d_s += 1
-            except ValueError:
-                return
-
-    def compute_cumulative_durations(self):
-        for w_day in self.work_intervals:
-            cumulative = 0
-            for interval in self.work_intervals[w_day]:
-                cumulative += interval.duration
-                self.cumulative_work_durations[w_day].append(cumulative)
-
-    def _add_interval(self, w_day, interval):
-        i = 0
-        for to_check in self.work_intervals[w_day]:
-            if to_check.end < interval.start:
-                i += 1
-                continue
-            if interval.end < to_check.start:
-                break
-            prev_dur = to_check.duration
-            to_check.merge_interval(interval)
-            if to_check.duration > prev_dur:
-                self._update_calendar_durations(w_day, to_check.duration - prev_dur)
-            return
-        self.work_intervals[w_day].insert(i, interval)
-        self._update_calendar_durations(w_day, interval.duration)
-
-    def _update_calendar_durations(self, w_day, duration):
-        self.work_rest_count[w_day][0] += duration
-        self.work_rest_count[w_day][1] -= duration
-        self.total_weekly_work += duration
-        self.total_weekly_rest -= duration
-
-    def find_idle_time(self, requested_date, duration):
-        real_duration = 0
-        pending_duration = duration
-        if duration > self.total_weekly_work:
-            real_duration += self._to_seconds(int(duration / self.total_weekly_work), 'WEEKS')
-            pending_duration %= self.total_weekly_work
-        # Addressing the first day as an special case
-        c_day = requested_date.date().weekday()
-        c_date = datetime.datetime.combine(self.default_date, requested_date.time())
-
-        worked_time, total_time = self._find_time_starting(pending_duration, c_day, c_date)
-        pending_duration -= worked_time
-        real_duration += total_time
-        c_date = self.new_day
-        while pending_duration > 0:
-            c_day += 1
-            r_d = c_day % 7
-            if pending_duration > self.work_rest_count[r_d][0]:
-                pending_duration -= self.work_rest_count[r_d][0]
-                real_duration += 86400
-            else:
-                real_duration += self._find_time_completion(pending_duration, self.work_rest_count[r_d][0], r_d, c_date)
-                break
-        return real_duration
-
-    def next_available_time(self, requested_date):
-        c_day = requested_date.date().weekday()
-        c_date = datetime.datetime.combine(self.default_date, requested_date.time())
-
-        for interval in self.work_intervals[c_day]:
-            if interval.end == c_day:
-                continue
-            if interval.is_after(c_date):
-                return (interval.start - c_date).total_seconds()
-            if interval.contains(c_date):
-                return 0
-        duration = 86400 - (c_date - self.new_day).total_seconds()
-        for i in range(c_day + 1, c_day + 8):
-            r_day = i % 7
-            if self.work_rest_count[r_day][0] > 0:
-                return duration + (self.work_intervals[r_day][0].start - self.new_day).total_seconds()
-            duration += 86400
-        return duration
-
-    def find_working_time(self, start_date, end_date):
-        # print("%s -- %s" % (str(start_date), str(end_date)))
-        pending_duration = (end_date - start_date).total_seconds()
-        worked_hours = 0
-
-        c_day = start_date.date().weekday()
-        c_date = datetime.datetime.combine(self.default_date, start_date.time())
-
-        to_complete_day = 86400 - (c_date - self.new_day).total_seconds()
-        available_work = self._calculate_available_duration(c_day, c_date)
-
-        previous_date = c_date
-        while pending_duration > to_complete_day:
-            pending_duration -= to_complete_day
-            worked_hours += available_work
-            c_day = (c_day + 1) % 7
-            available_work = self.work_rest_count[c_day][0]
-            to_complete_day = 86400
-            previous_date = self.new_day
-
-        for interval in self.work_intervals[c_day]:
-            if interval.is_before(previous_date):
-                continue
-            interval_duration = interval.duration
-            if interval.contains(previous_date):
-                interval_duration -= (previous_date - interval.start).total_seconds()
-            else:
-                pending_duration -= (interval.start - previous_date).total_seconds()
-            if pending_duration >= interval_duration:
-                worked_hours += interval_duration
-            elif pending_duration > 0:
-                worked_hours += pending_duration
-            pending_duration -= interval_duration
-            if pending_duration <= 0:
-                break
-            previous_date = interval.end
-        # print("Worked-hours: %s" % worked_hours)
-        # print('-----------------------------------------------------')
-        return worked_hours
-
-    def _find_time_starting(self, pending_duration, c_day, from_date):
-        available_duration = self._calculate_available_duration(c_day, from_date)
-        if available_duration <= pending_duration:
-            return available_duration, 86400 - (from_date - self.new_day).total_seconds()
-        else:
-            return pending_duration, self._find_time_completion(pending_duration, available_duration, c_day, from_date)
-
-    def _calculate_available_duration(self, c_day, from_date):
-        i = -1
-        passed_duration = 0
-        for t_interval in self.work_intervals[c_day]:
-            i += 1
-            if t_interval.is_before(from_date):
-                passed_duration += t_interval.duration
-                continue
-            if t_interval.is_after(from_date):
-                break
-            if t_interval.contains(from_date):
-                passed_duration += (from_date - self.work_intervals[c_day][i].start).total_seconds()
-                break
-
-        return self.work_rest_count[c_day][0] - passed_duration
-
-    def _find_time_completion(self, pending_duration, total_duration, c_day, from_datetime):
-        i = len(self.work_intervals[c_day]) - 1
-        while total_duration > pending_duration:
-            total_duration -= self.work_intervals[c_day][i].duration
-            i -= 1
-        if total_duration < pending_duration:
-            to_datetime = self.work_intervals[c_day][i + 1].start + timedelta(
-                seconds=(pending_duration - total_duration))
-            return (to_datetime - from_datetime).total_seconds()
-        else:
-            return (self.work_intervals[c_day][i].end - from_datetime).total_seconds()

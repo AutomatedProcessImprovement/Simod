@@ -2,266 +2,45 @@ import copy
 import itertools
 import multiprocessing
 import os
-from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
-from typing import Optional, Tuple, Union, List
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-import yaml
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
-from simod import support_utils as sup
+from simod import utilities as sup
 from simod.analyzers import sim_evaluator as sim
+from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_subsection, print_message, print_warning
-from simod.configuration import Configuration, Metric, PDFMethod, DataType, \
-    GateManagement
-from simod.event_log_processing.event_log_ids import EventLogIDs, SIMOD_DEFAULT_COLUMNS
-from simod.event_log_processing.reader import EventLogReader
+from simod.configuration import Configuration, Metric, ProjectSettings
+from simod.event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
+from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.process_model.bpmn import BPMNReaderWriter
-from simod.process_structure.simulation import ProsimosSettings, simulate_with_prosimos, PROSIMOS_COLUMN_MAPPING, \
-    undifferentiated_resources_parameters
-from simod.simulator import simulate
-from simod.support_utils import get_project_dir, remove_asset, progress_bar_async
+from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
+from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
+from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
+from simod.utilities import get_project_dir, remove_asset, progress_bar_async
 
 
-@dataclass
-class ProjectSettings:
-    project_name: str
-    output_dir: Optional[Path]
-    log_path: Path
-    log_ids: Optional[EventLogIDs]
-    model_path: Optional[Path]
+# Calendar optimization with:
+# - predefined calendars:
+#   - 24/7
+#   - 9-5
+# - discovered
+#   - undifferentiated, one calendar for all resources
+#   - pools
+#   - differentiated
 
-    @staticmethod
-    def from_dict(data: dict) -> 'ProjectSettings':
-        project_name = data.get('project_name', None)
-        assert project_name is not None, 'Project name is not specified'
+# Prosimos accepts the following parameters:
+# - confidence
+# - support
+# - granularity
+# - resource participation
 
-        output_dir = data.get('output_dir', None)
-
-        log_path = data.get('log_path', None)
-        assert log_path is not None, 'Log path is not specified'
-
-        log_ids = data.get('log_ids', None)
-
-        model_path = data.get('model_path', None)
-
-        return ProjectSettings(
-            project_name=project_name,
-            log_path=log_path,
-            log_ids=log_ids,
-            model_path=model_path,
-            output_dir=output_dir)
-
-    @staticmethod
-    def from_stream(stream: Union[str, bytes]) -> 'ProjectSettings':
-        settings = yaml.load(stream, Loader=yaml.FullLoader)
-
-        log_path = settings.get('log_path', None)
-        assert log_path is not None, 'Log path is not specified'
-        log_path = Path(log_path)
-
-        project_name = os.path.splitext(os.path.basename(log_path))[0]
-
-        output_dir = settings.get('output_dir', None)
-
-        # TODO: log_ids
-        log_ids = settings.get('log_ids', None)
-
-        model_path = settings.get('model_path', None)
-
-        return ProjectSettings(
-            project_name=project_name,
-            log_path=log_path,
-            model_path=model_path,
-            log_ids=log_ids,
-            output_dir=output_dir)
-
-
-@dataclass
-class Settings:
-    """Settings for resources' and arrival calendars optimizer."""
-    max_evaluations: int = 1
-    simulation_repetitions: int = 1
-    pdef_method: Optional[PDFMethod] = PDFMethod.AUTOMATIC
-    gateway_probabilities: Optional[Union[GateManagement, List[GateManagement]]] = GateManagement.DISCOVERY
-
-    rp_similarity: Union[float, list[float], None] = None
-    res_sup_dis: Optional[list[float]] = None
-    res_con_dis: Optional[list[float]] = None
-    res_dtype: Union[DataType, list[DataType], None] = None
-    arr_support: Union[float, list[float], None] = None
-    arr_confidence: Union[float, list[float], None] = None
-    arr_dtype: Union[DataType, list[DataType], None] = None
-
-    @staticmethod
-    def from_stream(stream: Union[str, bytes]) -> 'Settings':
-        settings = yaml.load(stream, Loader=yaml.FullLoader)
-
-        v = settings.get('time_optimizer', None)
-        if v is not None:
-            settings = v
-
-        max_evaluations = settings.get('max_evaluations', None)
-        if max_evaluations is None:
-            max_evaluations = settings.get('max_eval_t', 1)  # legacy support
-
-        simulation_repetitions = settings.get('simulation_repetitions', 1)
-
-        pdef_method = settings.get('pdef_method', PDFMethod.AUTOMATIC)
-
-        gateway_probabilities = settings.get('gateway_probabilities', None)
-        if gateway_probabilities is None:
-            gateway_probabilities = settings.get('gate_management', None)  # legacy key support
-        if gateway_probabilities is not None:
-            if isinstance(gateway_probabilities, list):
-                gateway_probabilities = [GateManagement.from_str(g) for g in gateway_probabilities]
-            elif isinstance(gateway_probabilities, str):
-                gateway_probabilities = GateManagement.from_str(gateway_probabilities)
-            else:
-                raise ValueError('Gateway probabilities must be a list or a string.')
-
-        rp_similarity = settings.get('rp_similarity', None)
-        res_sup_dis = settings.get('res_sup_dis', None)
-        res_con_dis = settings.get('res_con_dis', None)
-        res_dtype = settings.get('res_dtype', None)
-        if res_dtype is not None:
-            res_dtype = DataType.from_str(res_dtype)  # TODO: this should change with new calendars
-        arr_support = settings.get('arr_support', None)
-        arr_confidence = settings.get('arr_confidence', None)
-        arr_dtype = settings.get('arr_dtype', None)  # TODO: this should change with new calendars
-        if arr_dtype is not None:
-            arr_dtype = DataType.from_str(arr_dtype)
-
-        return Settings(
-            max_evaluations=max_evaluations,
-            simulation_repetitions=simulation_repetitions,
-            pdef_method=pdef_method,
-            gateway_probabilities=gateway_probabilities,
-            rp_similarity=rp_similarity,
-            res_sup_dis=res_sup_dis,
-            res_con_dis=res_con_dis,
-            res_dtype=res_dtype,
-            arr_support=arr_support,
-            arr_confidence=arr_confidence,
-            arr_dtype=arr_dtype)
-
-
-@dataclass
-class ResourceSettings:
-    # in case of "discovered"
-    res_confidence: Optional[float] = None
-    res_support: Optional[float] = None
-
-    # in case of "default"
-    res_dtype: Optional[DataType] = None
-
-    def __post_init__(self):
-        assert (self.res_confidence is not None and self.res_support is not None) or (self.res_dtype is not None), \
-            'Either resource confidence and support or calendar type should be specified'
-
-
-@dataclass
-class ArrivalSettings:
-    # in case of "discovered"
-    arr_confidence: Optional[float] = None
-    arr_support: Optional[float] = None
-
-    # in case of "default"
-    arr_dtype: Optional[DataType] = None
-
-    def __post_init__(self):
-        assert (self.arr_confidence is not None and self.arr_support is not None) or (self.arr_dtype is not None), \
-            'Either arrival confidence and support or calendar type should be specified'
-
-
-class OptimizationType(Enum):
-    """Type of optimization."""
-    DISCOVERED = 1
-    DEFAULT = 2
-
-    @staticmethod
-    def from_str(s: str) -> 'OptimizationType':
-        if s.lower() == 'discovered':
-            return OptimizationType.DISCOVERED
-        elif s.lower() == 'default':
-            return OptimizationType.DEFAULT
-        else:
-            raise ValueError(f'Unknown optimization type: {s}')
-
-    def __str__(self):
-        return self.name.lower()
-
-
-@dataclass
-class PipelineSettings(ProjectSettings):
-    """Settings for the calendars optimizer pipeline."""
-    gateway_probabilities: Optional[GateManagement]
-    rp_similarity: float
-    res_cal_met: Tuple[OptimizationType, ResourceSettings]
-    arr_cal_met: Tuple[OptimizationType, ArrivalSettings]
-
-    @staticmethod
-    def from_dict(data: dict) -> 'PipelineSettings':
-        project_settings = ProjectSettings.from_dict(data)
-
-        rp_similarity = data.get('rp_similarity', None)
-        assert rp_similarity is not None, 'rp_similarity is not specified'
-
-        res_cal_met = data.get('res_cal_met', None)
-        assert res_cal_met is not None, 'res_cal_met is not specified'
-
-        arr_cal_met = data.get('arr_cal_met', None)
-        assert arr_cal_met is not None, 'arr_cal_met is not specified'
-
-        resource_optimization_type = OptimizationType.from_str(res_cal_met[0])
-        if resource_optimization_type == OptimizationType.DISCOVERED:
-            res_confidence = res_cal_met[1].get('res_confidence', None)
-            assert res_confidence is not None, 'res_confidence is not specified'
-
-            res_support = res_cal_met[1].get('res_support', None)
-            assert res_support is not None, 'res_support is not specified'
-
-            resource_settings = ResourceSettings(res_confidence, res_support)
-        elif resource_optimization_type == OptimizationType.DEFAULT:
-            res_dtype = res_cal_met[1].get('res_dtype', None)
-            assert res_dtype is not None, 'res_dtype is not specified'
-
-            resource_settings = ResourceSettings(res_dtype=res_dtype)
-        else:
-            raise ValueError(f'Unknown optimization type: {resource_optimization_type}')
-
-        arrival_optimization_type = OptimizationType.from_str(arr_cal_met[0])
-        if arrival_optimization_type == OptimizationType.DISCOVERED:
-            arr_confidence = arr_cal_met[1].get('arr_confidence', None)
-            assert arr_confidence is not None, 'arr_confidence is not specified'
-
-            arr_support = arr_cal_met[1].get('arr_support', None)
-            assert arr_support is not None, 'arr_support is not specified'
-
-            arrival_settings = ArrivalSettings(arr_confidence, arr_support)
-        elif arrival_optimization_type == OptimizationType.DEFAULT:
-            arr_dtype = arr_cal_met[1].get('arr_dtype', None)
-            assert arr_dtype is not None, 'arr_dtype is not specified'
-
-            arrival_settings = ArrivalSettings(arr_dtype=arr_dtype)
-        else:
-            raise ValueError(f'Unknown optimization type: {arrival_optimization_type}')
-
-        gateway_probabilities = data.get('gateway_probabilities', None)
-
-        return PipelineSettings(
-            **project_settings.__dict__,
-            gateway_probabilities=gateway_probabilities,
-            rp_similarity=rp_similarity,
-            res_cal_met=(resource_optimization_type, resource_settings),
-            arr_cal_met=(arrival_optimization_type, arrival_settings)
-        )
+# Does Prosimos discover arrival calendars?
 
 
 class CalendarOptimizer(HyperoptPipeline):
@@ -273,24 +52,24 @@ class CalendarOptimizer(HyperoptPipeline):
     _settings_global: Configuration
     _settings_time: Configuration
 
-    _log: EventLogReader
+    _log: LogReaderWriter
     _log_ids: EventLogIDs
-    _log_train: EventLogReader
+    _log_train: LogReaderWriter
     _log_validation: pd.DataFrame
-    _original_log: EventLogReader
-    _original_log_train: EventLogReader
+    _original_log: LogReaderWriter
+    _original_log_train: LogReaderWriter
     _original_log_validation: pd.DataFrame
 
     _project_settings: ProjectSettings
-    _calendar_optimizer_settings: Settings
+    _calendar_optimizer_settings: CalendarOptimizationSettings
 
     _bayes_trials: Trials = Trials()
 
     def __init__(
             self,
             project_settings: ProjectSettings,
-            calendar_optimizer_settings: Settings,
-            log: EventLogReader,
+            calendar_optimizer_settings: CalendarOptimizationSettings,
+            log: LogReaderWriter,
             model_path: Path,
             log_ids: Optional[EventLogIDs] = None):
         self._project_settings = project_settings
@@ -308,7 +87,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
         # setting train and validation log data
         train, validation = self._split_timeline(0.8)
-        self._log_train = EventLogReader.copy_without_data(self._log)
+        self._log_train = LogReaderWriter.copy_without_data(self._log)
         self._log_train.set_data(train
                                  .sort_values(self._log_ids.start_time, ascending=True)
                                  .reset_index(drop=True)
@@ -385,7 +164,7 @@ class CalendarOptimizer(HyperoptPipeline):
         remove_asset(self._temp_output)
 
     @staticmethod
-    def _define_search_space(project_settings: ProjectSettings, optimizer_settings: Settings):
+    def _define_search_space(project_settings: ProjectSettings, optimizer_settings: CalendarOptimizationSettings):
         assert len(optimizer_settings.rp_similarity) == 2, 'rp_similarity must have 2 values: low and high'
         assert len(optimizer_settings.res_sup_dis) == 2, 'res_sup_dis must have 2 values: low and high'
         assert len(optimizer_settings.res_con_dis) == 2, 'res_con_dis must have 2 values: low and high'
@@ -450,7 +229,7 @@ class CalendarOptimizer(HyperoptPipeline):
         log = self._log_train.get_traces_df(include_start_end_events=True)
         pdf_method = self._calendar_optimizer_settings.pdef_method
 
-        simulation_parameters = undifferentiated_resources_parameters(
+        simulation_parameters = mine_simulation_parameters_default_24_7(
             log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader, settings.gateway_probabilities)
 
         json_path = bpmn_path.with_suffix('.json')
@@ -464,7 +243,7 @@ class CalendarOptimizer(HyperoptPipeline):
     def _read_simulated_log(arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments
 
-        reader = EventLogReader(log_path=log_path, column_names=log_column_mapping)
+        reader = LogReaderWriter(log_path=log_path, column_names=log_column_mapping)
 
         reader.df.rename(columns={'user': 'resource'}, inplace=True)
         reader.df['role'] = reader.df['resource']
@@ -513,9 +292,6 @@ class CalendarOptimizer(HyperoptPipeline):
             evaluation_measurements = list(itertools.chain(*p.get()))
 
         return evaluation_measurements
-
-    def _simulate(self, trial_stg: Configuration):
-        return simulate(trial_stg, self._log_validation, evaluate_fn=self._evaluate_logs)
 
     def _define_response(self, settings: PipelineSettings, status: str, evaluation_measurements: list) -> dict:
         data = {

@@ -1,6 +1,6 @@
 from simod.cli_formatter import print_step, print_notice
 from simod.configuration import GateManagement
-from simod.replayer_datatypes import BPMNGraph
+from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 
 def __compute_sequence_flow_frequencies(log_traces: list, bpmn_graph: BPMNGraph):

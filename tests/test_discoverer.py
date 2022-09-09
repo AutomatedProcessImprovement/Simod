@@ -6,7 +6,7 @@ import yaml
 
 from simod.configuration import Configuration, config_data_from_yaml, config_data_from_file
 from simod.discoverer import Discoverer
-from simod.support_utils import get_project_dir
+from simod.utilities import get_project_dir
 
 base_config = '''
 log_path: resources/event_logs/PurchasingExample.xes

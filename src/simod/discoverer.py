@@ -8,28 +8,25 @@ import xmltodict as xtd
 from lxml import etree
 
 from simod.discovery.tasks_evaluator import TaskEvaluator
-from simod.event_log_processing.reader import DEFAULT_XES_COLUMNS, EventLogReader
-from . import support_utils as sup
-from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics
+from simod.event_log.preprocessor import Preprocessor
+from simod.event_log.reader_writer import DEFAULT_XES_COLUMNS, LogReaderWriter
+from simod.simulation.prosimos_bpm_graph import BPMNGraph
+from . import utilities as sup, xml_writer as xml
+from .bpm.reader_writer import BPMNReaderWriter
 from .cli_formatter import print_asset, print_section, print_notice, print_step
 from .configuration import Configuration, StructureMiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
 from .discovery import inter_arrival_distribution, gateway_probabilities
 from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
-from .event_log_processing.utilities import reformat_timestamps
-from .preprocessor import Preprocessor
-from .process_model.bpmn import BPMNReaderWriter
+from .event_log.utilities import reformat_timestamps
 from .process_structure.miner import StructureMiner, Settings as StructureMinerSettings
-from .replayer_datatypes import BPMNGraph
-from .simulator import simulate
-from .writers import xml_writer as xml
 
 
 class Discoverer:
     _settings: Configuration
     _output_file: str
-    _log: EventLogReader
-    _log_train: EventLogReader
-    _log_test: EventLogReader
+    _log: LogReaderWriter
+    _log_train: LogReaderWriter
+    _log_test: LogReaderWriter
     _sim_values: list = []
 
     def __init__(self, settings: Configuration):
@@ -55,7 +52,7 @@ class Discoverer:
     def _read_inputs(self):
         print_section("Log Parsing")
         # Event log reading
-        self._log = EventLogReader(self._settings.log_path, column_names=DEFAULT_XES_COLUMNS)
+        self._log = LogReaderWriter(self._settings.log_path, column_names=DEFAULT_XES_COLUMNS)
         # Time splitting 80-20
         self._split_timeline(0.8)
 
@@ -138,7 +135,9 @@ class Discoverer:
 
     def _simulate(self):
         print_section("Simulation")
-        self._sim_values = simulate(self._settings, self.process_stats, evaluate_fn=evaluate_logs_with_add_metrics)
+        # TODO: change this to the new simulation function
+        # self._sim_values = simulate(self._settings, self.process_stats, evaluate_fn=evaluate_logs_with_add_metrics)
+        raise NotImplementedError
 
     def _manage_results(self):
         self._sim_values = pd.DataFrame.from_records(self._sim_values)

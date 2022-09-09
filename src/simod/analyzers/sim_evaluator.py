@@ -16,7 +16,7 @@ from scipy.stats import wasserstein_distance
 from simod.configuration import Configuration, Metric
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
-from ..support_utils import progress_bar_async
+from ..utilities import progress_bar_async
 
 
 class SimilarityEvaluator:

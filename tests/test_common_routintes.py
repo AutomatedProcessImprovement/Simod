@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from simod.support_utils import file_contains
+from simod.utilities import file_contains
 from simod.configuration import Configuration
-from simod.event_log_processing.reader import EventLogReader
-from simod.event_log_processing.utilities import remove_outliers
+from simod.event_log.reader_writer import LogReaderWriter
+from simod.event_log.utilities import remove_outliers
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_remove_outliers(args):
     for arg in args:
         settings = Configuration()
         log_path = arg['log_path']
-        log = EventLogReader(log_path)
+        log = LogReaderWriter(log_path)
         print(f'Running test for {log_path}')
         result = remove_outliers(log.df)
         assert result is not None

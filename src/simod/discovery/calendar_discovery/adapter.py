@@ -11,13 +11,13 @@ import pendulum
 from lxml import etree
 
 from simod.configuration import CalendarType, Configuration
-from simod.event_log_processing.reader import EventLogReader
-from ...event_log_processing.utilities import read
+from simod.event_log.reader_writer import LogReaderWriter
+from ...event_log.utilities import read
 from .case_arrival import discover as discover_arrival_calendar, CASE_ID_KEY
 from .resource import UNDIFFERENTIATED_RESOURCE_POOL_KEY, ACTIVITY_KEY, RESOURCE_KEY, END_TIMESTAMP_KEY
 from .resource import discover as discover_resource_calendar
 from ..resource_pool_discoverer import ResourcePoolDiscoverer
-from ... import support_utils
+from ... import utilities
 from ...cli_formatter import print_step
 
 
@@ -85,12 +85,12 @@ class TimeTableMiner:
     """
     timetable_names: dict  # timetable names
     timetable: etree.ElementTree  # arrival and resource timetables in XML
-    log: Optional[EventLogReader]
+    log: Optional[LogReaderWriter]
     log_path: Optional[Path]
     arrival_timetable: dict
     resource_timetable: dict
 
-    def __init__(self, log_path: Optional[Path] = None, log: Optional[EventLogReader] = None):
+    def __init__(self, log_path: Optional[Path] = None, log: Optional[LogReaderWriter] = None):
         self.log_path = log_path
         self.log = log
         self.__run()
@@ -149,7 +149,7 @@ def discover_timetables_and_get_default_arrival_resource_pool(log_path: Path) ->
     return arrival_default_resource_pool, timetables_miner.timetable
 
 
-def discover_timetables_with_resource_pools(log: EventLogReader, settings: Configuration):
+def discover_timetables_with_resource_pools(log: LogReaderWriter, settings: Configuration):
     print_step('Resource Miner')
 
     def create_resource_pool(resource_table, table_name) -> list:

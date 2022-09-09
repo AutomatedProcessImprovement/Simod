@@ -8,7 +8,7 @@ from typing import Optional, Union, List
 import yaml
 
 from simod.cli_formatter import print_warning
-from simod.configuration import StructureMiningAlgorithm, GateManagement, AndPriorORemove, PROJECT_DIR
+from simod.configuration import StructureMiningAlgorithm, AndPriorORemove, PROJECT_DIR
 
 
 @dataclass

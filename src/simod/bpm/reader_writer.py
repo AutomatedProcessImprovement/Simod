@@ -6,7 +6,7 @@ import networkx as nx
 import xmltodict as xtd
 
 from simod.configuration import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
-from simod.process_model import bpm_graph
+from simod.bpm import graph
 
 
 class BPMNReaderWriter:
@@ -24,7 +24,7 @@ class BPMNReaderWriter:
         self._ns = {'xmlns': BPMN_NAMESPACE_URI}
 
     def as_graph(self) -> nx.DiGraph:
-        return bpm_graph.from_bpmn_reader(self)
+        return graph.from_bpmn_reader(self)
 
     def read_activities(self):
         """Activities information from the model."""

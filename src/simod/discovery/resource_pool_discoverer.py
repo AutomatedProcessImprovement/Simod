@@ -6,7 +6,7 @@ import pandas as pd
 import scipy
 from scipy.stats import pearsonr
 
-from simod.event_log_processing.reader import EventLogReader
+from simod.event_log.reader_writer import LogReaderWriter
 
 
 class ResourcePoolDiscoverer:
@@ -22,7 +22,7 @@ class ResourcePoolDiscoverer:
     _resource_key = 'user'
 
     def __init__(self,
-                 log: Union[EventLogReader, pd.DataFrame],
+                 log: Union[LogReaderWriter, pd.DataFrame],
                  drawing=False,
                  sim_threshold=0.7,
                  activity_key='task',
@@ -36,8 +36,8 @@ class ResourcePoolDiscoverer:
         self.users = {val: i for i, val in enumerate(self._data[self._resource_key].unique())}
         self.roles, self.resource_table = self.__discover_roles()
 
-    def __read_resource_pool(self, log: Union[EventLogReader, pd.DataFrame]):
-        if isinstance(log, EventLogReader):
+    def __read_resource_pool(self, log: Union[LogReaderWriter, pd.DataFrame]):
+        if isinstance(log, LogReaderWriter):
             filtered_list = pd.DataFrame(log.data)[[self._activity_key, self._resource_key]]
         elif isinstance(log, pd.DataFrame):
             filtered_list = log[[self._activity_key, self._resource_key]]

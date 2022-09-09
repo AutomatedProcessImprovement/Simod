@@ -2,47 +2,36 @@ import os
 import shutil
 from collections import namedtuple
 from copy import deepcopy
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 from xml.dom import minidom
 
 import pandas as pd
 
+from simod import utilities as sup, xml_writer
+from simod.analyzers.sim_evaluator import SimilarityEvaluator
+from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
+from simod.configuration import Configuration, StructureMiningAlgorithm
+from simod.discovery import inter_arrival_distribution
+from simod.discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
+from simod.discovery.gateway_probabilities import discover_with_gateway_management
 from simod.discovery.tasks_evaluator import TaskEvaluator
-from . import support_utils as sup
-from .analyzers.sim_evaluator import evaluate_logs_with_add_metrics, SimilarityEvaluator
-from .cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
-from .configuration import Configuration, StructureMiningAlgorithm
-from .discovery import inter_arrival_distribution
-from .discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
-from .discovery.gateway_probabilities import discover_with_gateway_management
-from simod.event_log_processing.reader import EventLogReader
-from .preprocessor import Preprocessor
-from .process_model.bpmn import BPMNReaderWriter
-from .process_structure.optimizer import StructureOptimizer
-from .event_log_processing.utilities import remove_outliers
-from .replayer_datatypes import BPMNGraph
-from .simulator import simulate
-from simod.calendar_optimization.optimizer import CalendarOptimizer
-from .writers import xml_writer
+from simod.event_log.preprocessor import Preprocessor
+from simod.event_log.reader_writer import LogReaderWriter
+from simod.event_log.utilities import remove_outliers
+from simod.process_calendars.optimizer import CalendarOptimizer
+from simod.process_structure.optimizer import StructureOptimizer
+from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 Parameters = namedtuple('Parameters',
                         ['time_table', 'resource_pool', 'arrival_rate', 'sequences', 'elements_data',
                          'instances', 'start_time', 'process_stats'])
 
 
-@dataclass
-class ProjectSettings:
-    output_dir: Path
-    log_path: Path
-    model_path: Optional[Path]
-    project_name: str
-
-
 class Optimizer:
-    _log_reader: EventLogReader
-    _log_train: EventLogReader
+    _log_reader: LogReaderWriter
+    _log_train: LogReaderWriter
     _log_test: pd.DataFrame
     _settings: Configuration
     _settings_global: Configuration
@@ -64,7 +53,7 @@ class Optimizer:
         self._settings_global = self._preprocessor.run()
 
         print_notice(f'Log path: {self._settings_global.log_path}')
-        self._log_reader = EventLogReader(self._settings_global.log_path, log=self._preprocessor.log)
+        self._log_reader = LogReaderWriter(self._settings_global.log_path, log=self._preprocessor.log)
         self.split_and_set_log_buckets(0.8)
 
     def run(self, discover_model: bool = True) -> None:
@@ -205,7 +194,10 @@ class Optimizer:
         sim_data_path = os.path.join(self._settings_global.output, 'sim_data')
         if not os.path.exists(sim_data_path):
             os.makedirs(sim_data_path)
-        _ = simulate(self._settings_global, parameters.process_stats)
+
+        # TODO: why do we simulate here?
+        # _ = simulate(self._settings_global, parameters.process_stats)
+
         return model_path
 
     def _test_model_and_save_simulation_data(
@@ -219,8 +211,12 @@ class Optimizer:
         self._modify_simulation_model(best_output / (self._settings_global.project_name + '.bpmn'))
         self._load_model_and_measures()
         print_subsection("Simulation")
-        self.sim_values = simulate(self._settings_global, self.process_stats,
-                                   evaluate_fn=evaluate_logs_with_add_metrics)
+
+        # TODO: change to the new simulation function
+        # self.sim_values = simulate(self._settings_global, self.process_stats,
+        #                            evaluate_fn=evaluate_logs_with_add_metrics)
+        raise NotImplementedError
+
         self.sim_values = pd.DataFrame.from_records(self.sim_values)
         self.sim_values['output'] = output_path
         self.sim_values.to_csv(output_path / output_file, index=False)

@@ -6,9 +6,10 @@ from typing import List, Dict, Optional, Union
 
 import yaml
 
-from . import support_utils as sup
+from . import utilities as sup
 from .cli_formatter import print_warning
-from .support_utils import get_project_dir
+from .event_log.column_mapping import EventLogIDs
+from .utilities import get_project_dir
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
 BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
@@ -465,3 +466,57 @@ def config_data_with_datastructures(data: dict) -> dict:
         data['simulator'] = SimulatorKind.from_str(simulator)
 
     return data
+
+
+@dataclass
+class ProjectSettings:
+    project_name: str
+    output_dir: Optional[Path]
+    log_path: Path
+    log_ids: Optional[EventLogIDs]
+    model_path: Optional[Path]
+
+    @staticmethod
+    def from_dict(data: dict) -> 'ProjectSettings':
+        project_name = data.get('project_name', None)
+        assert project_name is not None, 'Project name is not specified'
+
+        output_dir = data.get('output_dir', None)
+
+        log_path = data.get('log_path', None)
+        assert log_path is not None, 'Log path is not specified'
+
+        log_ids = data.get('log_ids', None)
+
+        model_path = data.get('model_path', None)
+
+        return ProjectSettings(
+            project_name=project_name,
+            log_path=log_path,
+            log_ids=log_ids,
+            model_path=model_path,
+            output_dir=output_dir)
+
+    @staticmethod
+    def from_stream(stream: Union[str, bytes]) -> 'ProjectSettings':
+        settings = yaml.load(stream, Loader=yaml.FullLoader)
+
+        log_path = settings.get('log_path', None)
+        assert log_path is not None, 'Log path is not specified'
+        log_path = Path(log_path)
+
+        project_name = os.path.splitext(os.path.basename(log_path))[0]
+
+        output_dir = settings.get('output_dir', None)
+
+        # TODO: log_ids
+        log_ids = settings.get('log_ids', None)
+
+        model_path = settings.get('model_path', None)
+
+        return ProjectSettings(
+            project_name=project_name,
+            log_path=log_path,
+            model_path=model_path,
+            log_ids=log_ids,
+            output_dir=output_dir)

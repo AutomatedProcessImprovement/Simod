@@ -8,7 +8,7 @@ import pandas as pd
 
 from simod.cli_formatter import print_notice, print_step
 from simod.configuration import GateManagement
-from simod.replayer_datatypes import BPMNGraph
+from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 
 @dataclass
@@ -32,7 +32,7 @@ class GatewayProbabilities:
         return {'gateway_id': self.gateway_id, 'probabilities': [p.to_dict() for p in self.outgoing_paths]}
 
 
-def discover(
+def mine_gateway_probabilities(
         log: pd.DataFrame,
         bpmn_path: Path,
         gateways_probability_type: GateManagement) -> List[GatewayProbabilities]:
