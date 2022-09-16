@@ -3,7 +3,7 @@ import platform as pl
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 import yaml
 
@@ -24,8 +24,8 @@ class Settings:
     concurrency: Optional[float] = 0.0
 
     # Split Miner 3
-    and_prior: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
-    or_rep: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
+    and_prior: Optional[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
+    or_rep: Optional[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
 
     # Private
     _sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer/splitminer.jar'
@@ -156,15 +156,9 @@ class StructureMiner:
         if not pl.system().lower() == 'windows':
             args.extend(['-Xmx2G', '-Xms1024M'])
 
-        if isinstance(settings.and_prior, list):
-            and_prior_setting = str([str(value) for value in settings.and_prior])
-        else:
-            and_prior_setting = str(settings.and_prior)
+        and_prior_setting = str(settings.and_prior)
 
-        if isinstance(settings.or_rep, list):
-            or_rep_setting = str([str(value) for value in settings.or_rep])
-        else:
-            or_rep_setting = str(settings.or_rep)
+        or_rep_setting = str(settings.or_rep)
 
         args.extend(['-cp',
                      (settings._sm3_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm3_path), 'lib',

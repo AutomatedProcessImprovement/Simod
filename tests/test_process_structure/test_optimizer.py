@@ -4,7 +4,7 @@ import pytest
 
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_structure.optimizer import StructureOptimizer
-from simod.process_structure.settings import StructureOptimizationSettings
+from simod.process_structure.settings import StructureOptimizationSettings, PipelineSettings
 
 structure_config_sm3 = """
 mining_algorithm: sm3
@@ -48,6 +48,14 @@ def test_structure_optimizer(entry_point, test_data):
     log_reader = LogReaderWriter(log_path)
 
     optimizer = StructureOptimizer(settings, log_reader)
-    optimizer.run()
+    result = optimizer.run()
 
-    assert optimizer.best_parameters is not None
+    assert type(result) is PipelineSettings
+    assert result.output_dir is not None
+    assert result.output_dir.exists()
+    # for sm3
+    assert result.and_prior is not None
+    assert result.or_rep is not None
+    assert result.eta is not None
+    assert result.epsilon is not None
+    assert result.concurrency is None

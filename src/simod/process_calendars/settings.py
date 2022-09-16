@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Optional, Union, List, Tuple
 
 import yaml
@@ -22,6 +23,12 @@ class CalendarOptimizationSettings:
     arr_support: Union[float, list[float], None] = None
     arr_confidence: Union[float, list[float], None] = None
     arr_dtype: Union[DataType, list[DataType], None] = None
+
+    @staticmethod
+    def from_dict(settings: dict) -> 'CalendarOptimizationSettings':
+        max_evaluations = settings.get('max_evaluations', None)
+        if max_evaluations is None:
+            max_evaluations = settings.get('max_eval_s', 1)
 
     @staticmethod
     def from_stream(stream: Union[str, bytes]) -> 'CalendarOptimizationSettings':
@@ -123,17 +130,87 @@ class CalendarOptimizationType(Enum):
 
 
 @dataclass
-class PipelineSettings(ProjectSettings):
+class PipelineSettings:
     """Settings for the calendars optimizer pipeline."""
+    # General settings
+    output_dir: Path  # each pipeline run creates its own directory
+    model_path: Path  # in calendars optimizer, this path doesn't change and just inherits from the project settings
+    project_name: str  # this doesn't change and just inherits from the project settings, used for file naming
+
+    # Optimization settings
     gateway_probabilities: Optional[GateManagement]
     rp_similarity: float
     res_cal_met: Tuple[CalendarOptimizationType, ResourceOptimizationSettings]
     arr_cal_met: Tuple[CalendarOptimizationType, ArrivalOptimizationSettings]
 
     @staticmethod
-    def from_dict(data: dict) -> 'PipelineSettings':
-        project_settings = ProjectSettings.from_dict(data)
+    def from_hyperopt_response(
+            data: dict,
+            initial_settings: CalendarOptimizationSettings,
+            output_dir: Path,
+            model_path: Path,
+            project_name: str,
+    ) -> 'PipelineSettings':
+        gateway_probabilities = data.get('gateway_probabilities', None)
+        assert gateway_probabilities is not None, 'Gateway probabilities must be specified'
+        gateway_probabilities = initial_settings.gateway_probabilities[gateway_probabilities]
 
+        rp_similarity = data.get('rp_similarity', None)
+
+        resource_calendar_discovery_type = data.get('res_cal_met', None)
+        assert resource_calendar_discovery_type is not None, 'Resource calendar optimization method is not specified'
+        if resource_calendar_discovery_type == 0:  # 0 is an index of the tuple that was provided to hyperopt in search space
+            resource_calendar_discovery_type = CalendarOptimizationType.DISCOVERED
+        elif resource_calendar_discovery_type == 1:
+            resource_calendar_discovery_type = CalendarOptimizationType.DEFAULT
+        else:
+            raise ValueError(f'Unknown resource calendar optimization method: {resource_calendar_discovery_type}')
+
+        if resource_calendar_discovery_type == CalendarOptimizationType.DISCOVERED:
+            confidence = data.get('res_confidence', None)
+            support = data.get('res_support', None)
+            resource_settings = ResourceOptimizationSettings(res_confidence=confidence, res_support=support)
+        elif resource_calendar_discovery_type == CalendarOptimizationType.DEFAULT:
+            dtype = initial_settings.res_dtype[data.get('res_dtype', None)]
+            resource_settings = ResourceOptimizationSettings(res_dtype=dtype)
+        else:
+            raise ValueError(f'Unknown resource calendar optimization method: {resource_calendar_discovery_type}')
+
+        res_cal_met = (resource_calendar_discovery_type, resource_settings)
+
+        arrival_calendar_discovery_type = data.get('arr_cal_met', None)
+        assert arrival_calendar_discovery_type is not None, 'Arrival calendar optimization method is not specified'
+        if arrival_calendar_discovery_type == 0:  # 0 is an index of the tuple that was provided to hyperopt in search space
+            arrival_calendar_discovery_type = CalendarOptimizationType.DISCOVERED
+        elif arrival_calendar_discovery_type == 1:
+            arrival_calendar_discovery_type = CalendarOptimizationType.DEFAULT
+        else:
+            raise ValueError(f'Unknown arrival calendar optimization method: {arrival_calendar_discovery_type}')
+
+        if arrival_calendar_discovery_type == CalendarOptimizationType.DISCOVERED:
+            confidence = data.get('arr_confidence', None)
+            support = data.get('arr_support', None)
+            arrival_settings = ArrivalOptimizationSettings(arr_confidence=confidence, arr_support=support)
+        elif arrival_calendar_discovery_type == CalendarOptimizationType.DEFAULT:
+            dtype = initial_settings.arr_dtype[data.get('arr_dtype', None)]
+            arrival_settings = ArrivalOptimizationSettings(arr_dtype=dtype)
+        else:
+            raise ValueError(f'Unknown arrival calendar optimization method: {arrival_calendar_discovery_type}')
+
+        arr_cal_met = (arrival_calendar_discovery_type, arrival_settings)
+
+        return PipelineSettings(
+            gateway_probabilities=gateway_probabilities,
+            rp_similarity=rp_similarity,
+            res_cal_met=res_cal_met,
+            arr_cal_met=arr_cal_met,
+            output_dir=output_dir,
+            model_path=model_path,
+            project_name=project_name,
+        )
+
+    @staticmethod
+    def from_dict(data: dict) -> 'PipelineSettings':
         rp_similarity = data.get('rp_similarity', None)
         assert rp_similarity is not None, 'rp_similarity is not specified'
 
@@ -178,11 +255,17 @@ class PipelineSettings(ProjectSettings):
             raise ValueError(f'Unknown optimization type: {arrival_optimization_type}')
 
         gateway_probabilities = data.get('gateway_probabilities', None)
+        assert gateway_probabilities is not None, 'gateway_probabilities is not specified'
+
+        # using ProjectSettings as a convenience class to parse the provided dict
+        project_settings = ProjectSettings.from_dict(data)
 
         return PipelineSettings(
-            **project_settings.__dict__,
             gateway_probabilities=gateway_probabilities,
             rp_similarity=rp_similarity,
             res_cal_met=(resource_optimization_type, resource_settings),
-            arr_cal_met=(arrival_optimization_type, arrival_settings)
+            arr_cal_met=(arrival_optimization_type, arrival_settings),
+            output_dir=project_settings.output_dir,
+            model_path=project_settings.model_path,
+            project_name=project_settings.project_name,
         )

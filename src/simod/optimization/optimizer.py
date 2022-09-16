@@ -69,7 +69,7 @@ class Optimizer:
             structure_optimizer = StructureOptimizer(self._settings_structure, deepcopy(self._log_train))
             structure_optimizer.run()
             self._redefine_best_params_after_structure_optimization(structure_optimizer)
-            structure_measurements = structure_optimizer.measurements_file_name
+            structure_measurements = structure_optimizer.measurements_file_path
             model_path = os.path.join(structure_optimizer.best_output, self._settings_global.project_name + '.bpmn')
         else:
             print_section('Parameters Extraction without model discovery')

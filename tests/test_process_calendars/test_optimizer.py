@@ -1,9 +1,10 @@
 import pytest
 
-from simod.configuration import ProjectSettings
+from simod.configuration import ProjectSettings, GateManagement
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_calendars.optimizer import CalendarOptimizer
-from simod.process_calendars.settings import CalendarOptimizationSettings as OptimizerSettings
+from simod.process_calendars.settings import CalendarOptimizationSettings as OptimizerSettings, PipelineSettings, \
+    ArrivalOptimizationSettings, ResourceOptimizationSettings
 from simod.utilities import get_project_dir, folder_id
 
 config_str = """
@@ -86,4 +87,9 @@ def test_optimizer(entry_point, test_data):
     log = LogReaderWriter(log_path)
 
     optimizer = CalendarOptimizer(project_settings, calendar_settings, log, model_path)
-    optimizer.run()
+    result = optimizer.run()
+
+    assert type(result) is PipelineSettings
+    assert type(result.arr_cal_met[1]) is ArrivalOptimizationSettings
+    assert type(result.gateway_probabilities) is GateManagement
+    assert type(result.res_cal_met[1]) is ResourceOptimizationSettings

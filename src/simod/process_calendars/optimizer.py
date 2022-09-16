@@ -16,7 +16,7 @@ from simod.analyzers import sim_evaluator as sim
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_subsection, print_message, print_warning
 from simod.configuration import Configuration, Metric, ProjectSettings
-from simod.event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
+from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
@@ -45,7 +45,7 @@ from simod.utilities import get_project_dir, remove_asset, progress_bar_async
 
 class CalendarOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
-    best_parameters: dict
+    best_parameters: PipelineSettings
     _measurements_file_name: Path
     _temp_output: Path
 
@@ -53,7 +53,6 @@ class CalendarOptimizer(HyperoptPipeline):
     _settings_time: Configuration
 
     _log: LogReaderWriter
-    _log_ids: EventLogIDs
     _log_train: LogReaderWriter
     _log_validation: pd.DataFrame
     _original_log: LogReaderWriter
@@ -80,7 +79,6 @@ class CalendarOptimizer(HyperoptPipeline):
 
         self._calendar_optimizer_settings = calendar_optimizer_settings
         self._log = log
-        self._log_ids = log_ids if log_ids is not None else SIMOD_DEFAULT_COLUMNS
 
         # hyperopt search space
         self._space = self._define_search_space(project_settings, calendar_optimizer_settings)
@@ -89,7 +87,7 @@ class CalendarOptimizer(HyperoptPipeline):
         train, validation = self._split_timeline(0.8)
         self._log_train = LogReaderWriter.copy_without_data(self._log)
         self._log_train.set_data(train
-                                 .sort_values(self._log_ids.start_time, ascending=True)
+                                 .sort_values(self._project_settings.log_ids.start_time, ascending=True)
                                  .reset_index(drop=True)
                                  .to_dict('records'))
         self._log_validation = validation
@@ -111,11 +109,11 @@ class CalendarOptimizer(HyperoptPipeline):
         with self._measurements_file_name.open('w') as _:
             pass
 
-    def run(self):
+    def run(self) -> PipelineSettings:
         def pipeline(trial_stg: Union[dict, PipelineSettings]):
             print_subsection('Trial')
             print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
-                          f'valdn split: {len(pd.DataFrame(self._log_validation).caseid.unique())}')
+                          f'validation split: {len(pd.DataFrame(self._log_validation).caseid.unique())}')
 
             if isinstance(trial_stg, dict):
                 trial_stg = PipelineSettings.from_dict(trial_stg)
@@ -151,14 +149,26 @@ class CalendarOptimizer(HyperoptPipeline):
                     max_evals=self._calendar_optimizer_settings.max_evaluations,
                     trials=self._bayes_trials,
                     show_progressbar=False)
+
         # Save results
-        self.best_parameters = best
+
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
         results_ok = results[results.status == STATUS_OK]
         try:
             self.best_output = results_ok.iloc[0].output
         except Exception as e:
             raise e
+
+        best_settings = PipelineSettings.from_hyperopt_response(
+            data=best,
+            initial_settings=self._calendar_optimizer_settings,
+            output_dir=self.best_output,
+            model_path=self._project_settings.model_path,
+            project_name=self._project_settings.project_name)
+
+        self.best_parameters = best_settings
+
+        return best_settings
 
     def cleanup(self):
         remove_asset(self._temp_output)
@@ -201,6 +211,51 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return space
 
+    def _define_response(self, settings: PipelineSettings, status: str, evaluation_measurements: list) -> dict:
+        data = {
+            'rp_similarity': settings.rp_similarity,
+            'gate_management': settings.gateway_probabilities,
+            'output': str(settings.output_dir.absolute())
+        }
+
+        response = {
+            'output': str(settings.output_dir.absolute()),
+        }
+
+        measurements = []
+
+        if status == STATUS_OK:
+            similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
+            loss = (1 - similarity)  # TODO: should it be just 'similarity'?
+
+            response['loss'] = loss
+            response['status'] = status if loss > 0 else STATUS_FAIL
+
+            for sim_val in evaluation_measurements:
+                values = {
+                    'similarity': sim_val['sim_val'],
+                    'sim_metric': sim_val['metric'],
+                    'status': response['status'],
+                }
+                values = values | data
+                measurements.append(values)
+        else:
+            response['status'] = status
+            values = {
+                'similarity': 0,
+                'sim_metric': Metric.DAY_HOUR_EMD,
+                'status': response['status'], **data
+            }
+            values = values | data
+            measurements.append(values)
+
+        if os.path.getsize(self._measurements_file_name) > 0:
+            sup.create_csv_file(measurements, self._measurements_file_name, mode='a')
+        else:
+            sup.create_csv_file_header(measurements, self._measurements_file_name)
+
+        return response
+
     def _create_folder(self, settings: PipelineSettings) -> PipelineSettings:
         settings.output_dir = self._temp_output / sup.folder_id()
 
@@ -230,12 +285,13 @@ class CalendarOptimizer(HyperoptPipeline):
         pdf_method = self._calendar_optimizer_settings.pdef_method
 
         simulation_parameters = mine_simulation_parameters_default_24_7(
-            log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader, settings.gateway_probabilities)
+            log, self._project_settings.log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader,
+            settings.gateway_probabilities)
 
         json_path = bpmn_path.with_suffix('.json')
         simulation_parameters.to_json_file(json_path)
 
-        simulation_cases = log[self._log_ids.case].nunique()
+        simulation_cases = log[self._project_settings.log_ids.case].nunique()
 
         return bpmn_path, json_path, simulation_cases
 
@@ -293,51 +349,6 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return evaluation_measurements
 
-    def _define_response(self, settings: PipelineSettings, status: str, evaluation_measurements: list) -> dict:
-        data = {
-            'rp_similarity': settings.rp_similarity,
-            'gate_management': settings.gateway_probabilities,
-            'output': str(settings.output_dir.absolute())
-        }
-
-        response = {
-            'output': str(settings.output_dir.absolute()),
-        }
-
-        measurements = []
-
-        if status == STATUS_OK:
-            similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
-            loss = (1 - similarity)  # TODO: should it be just 'similarity'?
-
-            response['loss'] = loss
-            response['status'] = status if loss > 0 else STATUS_FAIL
-
-            for sim_val in evaluation_measurements:
-                values = {
-                    'similarity': sim_val['sim_val'],
-                    'sim_metric': sim_val['metric'],
-                    'status': response['status'],
-                }
-                values = values | data
-                measurements.append(values)
-        else:
-            response['status'] = status
-            values = {
-                'similarity': 0,
-                'sim_metric': Metric.DAY_HOUR_EMD,
-                'status': response['status'], **data
-            }
-            values = values | data
-            measurements.append(values)
-
-        if os.path.getsize(self._measurements_file_name) > 0:
-            sup.create_csv_file(measurements, self._measurements_file_name, mode='a')
-        else:
-            sup.create_csv_file_header(measurements, self._measurements_file_name)
-
-        return response
-
     @staticmethod
     def _evaluate_logs(args) -> Optional[list]:
         settings: PipelineSettings = args[0]
@@ -357,7 +368,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
     def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         train, validation = self._log.split_timeline(size)
-        key = self._log_ids.start_time
+        key = self._project_settings.log_ids.start_time
         validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
         train = train.sort_values(key, ascending=True).reset_index(drop=True)
         return train, validation

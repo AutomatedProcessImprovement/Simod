@@ -8,7 +8,7 @@ import yaml
 
 from . import utilities as sup
 from .cli_formatter import print_warning
-from .event_log.column_mapping import EventLogIDs
+from .event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from .utilities import get_project_dir
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
@@ -182,8 +182,8 @@ class CalendarType(Enum):
 
 
 class DataType(Enum):
-    DT247 = auto()
-    LV917 = auto()
+    DT247 = 1
+    LV917 = 2
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[DataType, List[DataType]]':
@@ -511,6 +511,8 @@ class ProjectSettings:
 
         # TODO: log_ids
         log_ids = settings.get('log_ids', None)
+        if log_ids is None:
+            log_ids = SIMOD_DEFAULT_COLUMNS
 
         model_path = settings.get('model_path', None)
 

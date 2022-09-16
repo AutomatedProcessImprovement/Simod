@@ -14,13 +14,13 @@ from tqdm import tqdm
 from simod import utilities as sup
 from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_message, print_subsection
-from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove, Configuration
+from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
 from simod.utilities import get_project_dir, remove_asset, progress_bar_async
 from .miner import StructureMiner, Settings as StructureMinerSettings
-from .settings import StructureOptimizationSettings
+from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..event_log.column_mapping import EventLogIDs
 from ..event_log.utilities import sample_log
@@ -29,8 +29,8 @@ from ..simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, sim
 
 class StructureOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
-    best_parameters: dict
-    measurements_file_name: Path
+    best_parameters: PipelineSettings
+    measurements_file_path: Path
 
     _bayes_trials: Trials
     _settings: StructureOptimizationSettings
@@ -43,8 +43,12 @@ class StructureOptimizer(HyperoptPipeline):
     _temp_output: Path
     _log_ids: EventLogIDs
 
-    def __init__(self, settings: StructureOptimizationSettings, log: LogReaderWriter,
-                 log_ids: Optional[EventLogIDs] = None):
+    def __init__(
+            self,
+            settings: StructureOptimizationSettings,
+            log: LogReaderWriter,
+            log_ids: Optional[EventLogIDs] = None,
+    ):
         self._log_ids = EventLogIDs(
             case='caseid',
             activity='task',
@@ -73,33 +77,39 @@ class StructureOptimizer(HyperoptPipeline):
         self._temp_output.mkdir(parents=True, exist_ok=True)
 
         # Measurements file
-        self.measurements_file_name = self._temp_output / sup.file_id(prefix='OP_')
-        with self.measurements_file_name.open('w') as _:
+        self.measurements_file_path = self._temp_output / sup.file_id(prefix='OP_')
+        with self.measurements_file_path.open('w') as _:
             pass
 
         # Trials object to track progress
         self._bayes_trials = Trials()
-        self.best_output = None
-        self.best_parameters = dict()
 
-    def run(self):
+    def run(self) -> PipelineSettings:
         self._log_train = copy.deepcopy(self._original_log_train)
 
-        def pipeline(trial_stage_settings: Union[StructureOptimizationSettings, dict]):
+        def pipeline(trial_stage_settings: Union[PipelineSettings, dict]):
             print_subsection("Trial")
             print_message(f'train split: {len(pd.DataFrame(self._log_train.data)[self._log_ids.case].unique())}, '
                           f'validation split: {len(self._log_validation[self._log_ids.case].unique())}')
 
             if isinstance(trial_stage_settings, dict):
-                trial_stage_settings = StructureOptimizationSettings(**trial_stage_settings)
+                trial_stage_settings = PipelineSettings(
+                    model_path=None,
+                    output_dir=None,
+                    measurements_file_path=self.measurements_file_path,
+                    project_name=self._settings.project_name,
+                    **trial_stage_settings)
             print_message(f'Parameters: {trial_stage_settings}', capitalize=False)
 
             status = STATUS_OK
 
             status, result = self.step(status, self._update_config_and_export_xes, trial_stage_settings.project_name)
             output_dir, log_path = result
+            trial_stage_settings.output_dir = output_dir
+            trial_stage_settings.model_path = (output_dir / (trial_stage_settings.project_name + '.bpmn')).absolute()
 
-            status, result = self.step(status, self._mine_structure, trial_stage_settings, output_dir, log_path)
+            status, result = self.step(status, self._mine_structure,
+                                       trial_stage_settings, log_path, self._settings.mining_algorithm)
             bpmn_reader, process_graph = result
 
             status, result = self.step(
@@ -108,14 +118,17 @@ class StructureOptimizer(HyperoptPipeline):
                 trial_stage_settings,
                 bpmn_reader,
                 process_graph)
-            bpmn_path, json_path, simulation_cases = result
+            json_path, simulation_cases = result
 
-            status, result = self.step(
-                status, self._simulate_undifferentiated,
-                trial_stage_settings, bpmn_path, json_path, simulation_cases, output_dir)
+            status, result = self.step(status, self._simulate_undifferentiated,
+                                       trial_stage_settings,
+                                       self._settings.simulation_repetitions,
+                                       json_path,
+                                       simulation_cases)
             evaluation_measurements = result if status == STATUS_OK else []
 
-            response = self._define_response(trial_stage_settings, status, evaluation_measurements, output_dir)
+            response = self._define_response(
+                trial_stage_settings, self._settings.mining_algorithm, status, evaluation_measurements)
 
             # reset the log
             self._log_reader = copy.deepcopy(self._original_log)
@@ -136,7 +149,7 @@ class StructureOptimizer(HyperoptPipeline):
                     show_progressbar=False)
 
         # Saving results
-        self.best_parameters = best
+
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
         results_ok = results[results.status == STATUS_OK]
         try:
@@ -144,140 +157,58 @@ class StructureOptimizer(HyperoptPipeline):
         except Exception as e:
             raise e
 
+        # TODO: ensure that's the path
+        best_model_path = Path(results_ok.iloc[0].output) / (self._settings.project_name + '.bpmn')
+
+        best_settings = PipelineSettings.from_hyperopt_dict(
+            data=best,
+            initial_settings=self._settings,
+            model_path=best_model_path,
+            project_name=self._settings.project_name,
+            measurements_file_path=self.measurements_file_path,
+        )
+
+        self.best_parameters = best_settings
+
+        return best_settings
+
     def cleanup(self):
         remove_asset(self._temp_output)
 
     @staticmethod
     def _define_search_space(settings: StructureOptimizationSettings) -> dict:
-        split_miner_dependent_settings = {
+        space = {
             'gateway_probabilities': hp.choice('gateway_probabilities', settings.gateway_probabilities),
-            'epsilon': hp.uniform('epsilon', *settings.epsilon), 'eta': hp.uniform('eta', *settings.eta),
-            'and_prior': hp.choice('and_prior', AndPriorORemove.to_str(settings.and_prior)),
-            'or_rep': hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep)),
-            'concurrency': hp.uniform('concurrency', *settings.concurrency)
         }
 
-        # TODO: better be more specific and specify the keys to add to space
-        other_settings = copy.deepcopy(settings.__dict__)
-        for key in split_miner_dependent_settings:
-            other_settings.pop(key, None)
+        if settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                         StructureMiningAlgorithm.SPLIT_MINER_3]:
+            space |= {
+                'epsilon': hp.uniform('epsilon', *settings.epsilon),
+                'eta': hp.uniform('eta', *settings.eta),
+            }
 
-        space = split_miner_dependent_settings | other_settings
+            if settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
+                space |= {
+                    'and_prior': hp.choice('and_prior', AndPriorORemove.to_str(settings.and_prior)),
+                    'or_rep': hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep)),
+                }
+        elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+            space |= {
+                'concurrency': hp.uniform('concurrency', *settings.concurrency)
+            }
 
         return space
 
-    def _update_config_and_export_xes(self, project_name: str) -> Tuple[Path, Path]:
-        output_path = self._temp_output / sup.folder_id()
-        sim_data_path = output_path / 'sim_data'
-        sim_data_path.mkdir(parents=True, exist_ok=True)
-
-        # Create customized event-log for the external tools
-        xes_path = output_path / (project_name + '.xes')
-        self._log_train.write_xes(xes_path)
-
-        return output_path, xes_path
-
-    @staticmethod
-    def _mine_structure(settings: StructureOptimizationSettings, output_dir: Path, log_path: Path) -> Tuple:
-        model_path = (output_dir / (settings.project_name + '.bpmn')).absolute()
-
-        miner_settings = StructureMinerSettings(
-            mining_algorithm=settings.mining_algorithm,
-            epsilon=settings.epsilon,
-            eta=settings.eta,
-            concurrency=settings.concurrency,
-            and_prior=settings.and_prior,
-            or_rep=settings.or_rep,
-        )
-
-        _ = StructureMiner(miner_settings, xes_path=log_path, output_model_path=model_path)
-
-        bpmn_reader = BPMNReaderWriter(model_path)
-        process_graph = bpmn_reader.as_graph()
-
-        return bpmn_reader, process_graph
-
-    def _extract_parameters_undifferentiated(self, settings: StructureOptimizationSettings, bpmn_reader,
-                                             process_graph) -> Tuple:
-        bpmn_path: Path = bpmn_reader.model_path
-        log = self._log_train.get_traces_df(include_start_end_events=True)
-        pdf_method = self._settings.pdef_method
-
-        simulation_parameters = mine_simulation_parameters_default_24_7(
-            log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader, settings.gateway_probabilities)
-
-        json_path = bpmn_path.with_suffix('.json')
-        simulation_parameters.to_json_file(json_path)
-
-        simulation_cases = log[self._log_ids.case].nunique()
-
-        return bpmn_path, json_path, simulation_cases
-
-    def _simulate_undifferentiated(
+    def _define_response(
             self,
-            settings: StructureOptimizationSettings,
-            bpmn_path: Path,
-            json_path: Path,
-            simulation_cases: int,
-            output_dir: Path):
-        self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
-        self._log_validation['source'] = 'log'
-        self._log_validation['run_num'] = 0
-        self._log_validation['role'] = 'SYSTEM'
-        self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
-
-        num_simulations = settings.simulation_repetitions
-        cpu_count = multiprocessing.cpu_count()
-        w_count = num_simulations if num_simulations <= cpu_count else cpu_count
-        pool = multiprocessing.Pool(processes=w_count)
-
-        # Simulate
-        simulation_arguments = [
-            ProsimosSettings(
-                bpmn_path=bpmn_path,
-                parameters_path=json_path,
-                output_log_path=output_dir / 'sim_data' / f'{settings.project_name}_{rep}.csv',
-                num_simulation_cases=simulation_cases)
-            for rep in range(num_simulations)]
-        p = pool.map_async(simulate_with_prosimos, simulation_arguments)
-        progress_bar_async(p, 'simulating', num_simulations)
-
-        # Read simulated logs
-        read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
-                          for index in range(num_simulations)]
-        p = pool.map_async(_read_simulated_log, read_arguments)
-        progress_bar_async(p, 'reading simulated logs', num_simulations)
-
-        # Evaluate
-        evaluation_arguments = [(settings, self._log_validation, log) for log in p.get()]
-        if simulation_cases > 1000:
-            pool.close()
-            results = [self._evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
-            evaluation_measurements = list(itertools.chain(*results))
-        else:
-            p = pool.map_async(self._evaluate_logs, evaluation_arguments)
-            progress_bar_async(p, 'evaluating results', num_simulations)
-            pool.close()
-            evaluation_measurements = list(itertools.chain(*p.get()))
-
-        return evaluation_measurements
-
-    def _evaluate_logs(self, arguments):
-        settings: Configuration
-        data: pd.DataFrame
-        sim_log: pd.DataFrame
-        settings, data, sim_log = arguments
-
-        rep = sim_log.iloc[0].run_num
-        evaluator = SimilarityEvaluator(data, sim_log, max_cases=1000)
-        evaluator.measure_distance(Metric.DL)
-        sim_values = [{'run_num': rep, **evaluator.similarity}]  # TODO: why list for a single dict?
-        return sim_values
-
-    def _define_response(self, settings: StructureOptimizationSettings, status, evaluation_measurements,
-                         output_dir: Path) -> dict:
+            settings: PipelineSettings,
+            mining_algorithm: StructureMiningAlgorithm,
+            status,
+            evaluation_measurements) -> dict:
         response = {
-            'output': str(output_dir.absolute()),
+            'output': settings.output_dir.absolute(),
+            'model_path': settings.model_path.absolute(),
             'status': status,
             'loss': None,
         }
@@ -288,20 +219,20 @@ class StructureOptimizer(HyperoptPipeline):
 
         optimization_parameters = {
             'gateway_probabilities': settings.gateway_probabilities,
-            'output': str(output_dir.absolute()),
+            'output': str(settings.output_dir.absolute()),
         }
 
         # structure miner parameters
-        if settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-                                         StructureMiningAlgorithm.SPLIT_MINER_3]:
+        if mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                StructureMiningAlgorithm.SPLIT_MINER_3]:
             optimization_parameters['epsilon'] = settings.epsilon
             optimization_parameters['eta'] = settings.eta
             optimization_parameters['and_prior'] = settings.and_prior
             optimization_parameters['or_rep'] = settings.or_rep
-        elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+        elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             optimization_parameters['concurrency'] = settings.concurrency
         else:
-            raise ValueError(settings.mining_algorithm)
+            raise ValueError(mining_algorithm)
 
         # simulation parameters
         if status == STATUS_OK:
@@ -329,12 +260,125 @@ class StructureOptimizer(HyperoptPipeline):
             measurements.append(values)
 
         # writing measurements to file
-        if os.path.getsize(self.measurements_file_name) > 0:
-            sup.create_csv_file(measurements, self.measurements_file_name, mode='a')
+        if os.path.getsize(self.measurements_file_path) > 0:
+            sup.create_csv_file(measurements, self.measurements_file_path, mode='a')
         else:
-            sup.create_csv_file_header(measurements, self.measurements_file_name)
+            sup.create_csv_file_header(measurements, self.measurements_file_path)
 
         return response
+
+    def _update_config_and_export_xes(self, project_name: str) -> Tuple[Path, Path]:
+        output_path = self._temp_output / sup.folder_id()
+        sim_data_path = output_path / 'sim_data'
+        sim_data_path.mkdir(parents=True, exist_ok=True)
+
+        # Create customized event-log for the external tools
+        xes_path = output_path / (project_name + '.xes')
+        self._log_train.write_xes(xes_path)
+
+        return output_path, xes_path
+
+    @staticmethod
+    def _mine_structure(
+            settings: PipelineSettings,
+            log_path: Path,
+            mining_algorithm: StructureMiningAlgorithm) -> Tuple:
+
+        miner_settings = StructureMinerSettings(
+            mining_algorithm=mining_algorithm,
+            epsilon=settings.epsilon,
+            eta=settings.eta,
+            concurrency=settings.concurrency,
+            and_prior=settings.and_prior,
+            or_rep=settings.or_rep,
+        )
+
+        _ = StructureMiner(miner_settings, xes_path=log_path, output_model_path=settings.model_path)
+
+        bpmn_reader = BPMNReaderWriter(settings.model_path)
+        process_graph = bpmn_reader.as_graph()
+
+        return bpmn_reader, process_graph
+
+    def _extract_parameters_undifferentiated(self, settings: PipelineSettings, bpmn_reader, process_graph) -> Tuple:
+        log = self._log_train.get_traces_df(include_start_end_events=True)
+        pdf_method = self._settings.pdef_method
+
+        simulation_parameters = mine_simulation_parameters_default_24_7(
+            log,
+            self._log_ids,
+            settings.model_path,
+            process_graph,
+            pdf_method,
+            bpmn_reader,
+            settings.gateway_probabilities)
+
+        json_path = settings.model_path.with_suffix('.json')
+        simulation_parameters.to_json_file(json_path)
+
+        simulation_cases = log[self._log_ids.case].nunique()
+
+        return json_path, simulation_cases
+
+    def _simulate_undifferentiated(
+            self,
+            settings: PipelineSettings,
+            simulation_repetitions: int,
+            json_path: Path,
+            simulation_cases: int):
+        self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
+        self._log_validation['source'] = 'log'
+        self._log_validation['run_num'] = 0
+        self._log_validation['role'] = 'SYSTEM'
+        self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
+
+        num_simulations = simulation_repetitions
+        cpu_count = multiprocessing.cpu_count()
+        w_count = num_simulations if num_simulations <= cpu_count else cpu_count
+        pool = multiprocessing.Pool(processes=w_count)
+
+        # Simulate
+        simulation_arguments = [
+            ProsimosSettings(
+                bpmn_path=settings.model_path,
+                parameters_path=json_path,
+                output_log_path=settings.output_dir / 'sim_data' / f'{settings.project_name}_{rep}.csv',
+                num_simulation_cases=simulation_cases)
+            for rep in range(num_simulations)]
+        p = pool.map_async(simulate_with_prosimos, simulation_arguments)
+        progress_bar_async(p, 'simulating', num_simulations)
+
+        # Read simulated logs
+        read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
+                          for index in range(num_simulations)]
+        p = pool.map_async(_read_simulated_log, read_arguments)
+        progress_bar_async(p, 'reading simulated logs', num_simulations)
+
+        # Evaluate
+        evaluation_arguments = [(settings, self._log_validation, log) for log in p.get()]
+        if simulation_cases > 1000:
+            pool.close()
+            results = [self._evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
+            evaluation_measurements = list(itertools.chain(*results))
+        else:
+            p = pool.map_async(self._evaluate_logs, evaluation_arguments)
+            progress_bar_async(p, 'evaluating results', num_simulations)
+            pool.close()
+            evaluation_measurements = list(itertools.chain(*p.get()))
+
+        return evaluation_measurements
+
+    @staticmethod
+    def _evaluate_logs(arguments):
+        data: pd.DataFrame
+        sim_log: pd.DataFrame
+        settings, data, sim_log = arguments
+
+        rep = sim_log.iloc[0].run_num
+        evaluator = SimilarityEvaluator(data, sim_log, max_cases=1000)
+        evaluator.measure_distance(Metric.DL)
+        sim_values = [{'run_num': rep, **evaluator.similarity}]  # TODO: why list for a single dict?
+        return sim_values
 
 
 def _read_simulated_log(arguments: Tuple):

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional, Union, List
 
 import yaml
@@ -9,7 +10,7 @@ from simod.configuration import GateManagement, PDFMethod, StructureMiningAlgori
 @dataclass
 class StructureOptimizationSettings:
     """Settings for the structure optimizer."""
-    project_name: Optional[str]
+    project_name: Optional[str]  # TODO: extract Pipeline settings from this class
 
     gateway_probabilities: Optional[Union[GateManagement, List[GateManagement]]] = GateManagement.DISCOVERY
     max_evaluations: int = 1
@@ -75,7 +76,7 @@ class StructureOptimizationSettings:
         if mining_algorithm is None:
             mining_algorithm = settings.get('mining_alg', None)  # legacy key support
         if mining_algorithm is not None:
-            mining_algorithm = StructureMiningAlgorithm.from_str(mining_algorithm)
+            mining_algorithm = StructureMiningAlgorithm.SPLIT_MINER_3
 
         and_prior = settings.get('and_prior', None)
         if and_prior is not None:
@@ -107,4 +108,80 @@ class StructureOptimizationSettings:
             mining_algorithm=mining_algorithm,
             and_prior=and_prior,
             or_rep=or_rep
+        )
+
+
+@dataclass
+class PipelineSettings:
+    """Settings for the structure optimization pipeline."""
+    # General settings
+    output_dir: Optional[Path]  # each pipeline run creates its own directory
+    model_path: Optional[Path]  # in structure optimizer, this path is assigned after the model is mined
+    project_name: str  # this doesn't change and just inherits from the project settings, used for file naming
+    measurements_file_path: Optional[Path]  # path to the evaluation measurements file
+
+    # Optimization settings
+    gateway_probabilities: GateManagement
+    # for Split Miner 1 and 3
+    epsilon: Optional[float] = None
+    eta: Optional[float] = None
+    # for Split Miner 2
+    concurrency: Optional[float] = 0.0
+    # for Split Miner 3
+    and_prior: Optional[AndPriorORemove] = None
+    or_rep: Optional[AndPriorORemove] = None
+
+    @staticmethod
+    def from_hyperopt_dict(
+            data: dict,
+            initial_settings: StructureOptimizationSettings,
+            model_path: Path,
+            project_name: str,
+            measurements_file_path: Optional[Path] = None,
+    ) -> 'PipelineSettings':
+        """
+        Create a settings object from a hyperopt's dictionary that returned as a result of the optimization.
+        Initial settings are required, because for some settings, hyperopt returns an index of the settings' list.
+        """
+        gateway_probabilities_index = data.get('gateway_probabilities')
+        assert gateway_probabilities_index is not None
+        gateway_probabilities = initial_settings.gateway_probabilities[gateway_probabilities_index]
+
+        epsilon = data.get('epsilon')
+        eta = data.get('eta')
+        concurrency = data.get('concurrency')
+        and_prior_index = data.get('and_prior')
+        and_prior = None
+        or_rep_index = data.get('or_rep')
+        or_rep = None
+
+        if initial_settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                                 StructureMiningAlgorithm.SPLIT_MINER_3]:
+            assert epsilon is not None
+            assert eta is not None
+
+            if initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
+                assert and_prior_index is not None
+                assert or_rep_index is not None
+
+                and_prior = initial_settings.and_prior[and_prior_index]
+                or_rep = initial_settings.or_rep[or_rep_index]
+        elif initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+            assert concurrency is not None
+        else:
+            raise ValueError(f'Unknown mining algorithm: {initial_settings.mining_algorithm}')
+
+        output_dir = model_path.parent
+
+        return PipelineSettings(
+            output_dir=output_dir,
+            model_path=model_path,
+            project_name=project_name,
+            measurements_file_path=measurements_file_path,
+            gateway_probabilities=gateway_probabilities,
+            epsilon=epsilon,
+            eta=eta,
+            concurrency=concurrency,
+            and_prior=and_prior,
+            or_rep=or_rep,
         )
