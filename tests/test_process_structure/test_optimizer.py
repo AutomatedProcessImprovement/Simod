@@ -5,6 +5,7 @@ import pytest
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import StructureOptimizationSettings, PipelineSettings
+from simod.utilities import get_project_dir
 
 structure_config_sm3 = """
 mining_algorithm: sm3
@@ -41,7 +42,8 @@ structure_optimizer_test_data = [
                          ids=[test_data['name'] for test_data in structure_optimizer_test_data])
 def test_structure_optimizer(entry_point, test_data):
     """Smoke test to check that the structure optimizer can be instantiated and run successfully."""
-    settings = StructureOptimizationSettings.from_stream(test_data['config_data'])
+    base_dir = get_project_dir() / 'outputs'
+    settings = StructureOptimizationSettings.from_stream(test_data['config_data'], base_dir=base_dir)
     log_path = entry_point / 'PurchasingExample.xes'
     settings.project_name = os.path.splitext(os.path.basename(log_path))[0]
 

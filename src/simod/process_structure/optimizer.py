@@ -11,18 +11,18 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
-from simod import utilities as sup
 from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_message, print_subsection
 from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
-from simod.utilities import get_project_dir, remove_asset, progress_bar_async
+from simod.utilities import remove_asset, progress_bar_async, file_id, create_csv_file, \
+    create_csv_file_header, folder_id
 from .miner import StructureMiner, Settings as StructureMinerSettings
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
-from ..event_log.column_mapping import EventLogIDs
+from ..event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from ..event_log.utilities import sample_log
 from ..simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
 
@@ -40,8 +40,8 @@ class StructureOptimizer(HyperoptPipeline):
     _original_log: LogReaderWriter
     _original_log_train: LogReaderWriter
     _original_log_validation: pd.DataFrame
-    _temp_output: Path
     _log_ids: EventLogIDs
+    _output_dir: Path
 
     def __init__(
             self,
@@ -49,14 +49,7 @@ class StructureOptimizer(HyperoptPipeline):
             log: LogReaderWriter,
             log_ids: Optional[EventLogIDs] = None,
     ):
-        self._log_ids = EventLogIDs(
-            case='caseid',
-            activity='task',
-            resource='user',
-            end_time='end_timestamp',
-            start_time='start_timestamp',
-            enabled_time='enabled_timestamp',
-        ) if log_ids is None else log_ids
+        self._log_ids = SIMOD_DEFAULT_COLUMNS if log_ids is None else log_ids
 
         self._settings = settings
         self._log_reader = log
@@ -69,15 +62,16 @@ class StructureOptimizer(HyperoptPipeline):
         self._log_train.set_data(
             train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
 
+        # TODO: ensure we need to copy all the logs, it's an expensive operation
         self._original_log = copy.deepcopy(log)
         self._original_log_train = copy.deepcopy(self._log_train)
         self._original_log_validation = copy.deepcopy(self._log_validation)
 
-        self._temp_output = get_project_dir() / 'outputs' / sup.folder_id()
-        self._temp_output.mkdir(parents=True, exist_ok=True)
+        self._output_dir = self._settings.base_dir / folder_id(prefix='structure_')
+        self._output_dir.mkdir(parents=True, exist_ok=True)
 
         # Measurements file
-        self.measurements_file_path = self._temp_output / sup.file_id(prefix='OP_')
+        self.measurements_file_path = self._output_dir / file_id(prefix='evaluation_')
         with self.measurements_file_path.open('w') as _:
             pass
 
@@ -101,10 +95,20 @@ class StructureOptimizer(HyperoptPipeline):
                     **trial_stage_settings)
             print_message(f'Parameters: {trial_stage_settings}', capitalize=False)
 
-            status = STATUS_OK
+            status = STATUS_OK  # initialize status
 
-            status, result = self.step(status, self._update_config_and_export_xes, trial_stage_settings.project_name)
-            output_dir, log_path = result
+            # current trial folder
+            output_dir = self._output_dir / folder_id(prefix='structure_trial_')
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # save customized event-log for the external tools
+            log_path = output_dir / (trial_stage_settings.project_name + '.xes')
+            self._log_train.write_xes(log_path)
+
+            # TODO: why to create it here if it's unused
+            simulation_output_dir = output_dir / 'simulation'
+            simulation_output_dir.mkdir(parents=True, exist_ok=True)
+
             trial_stage_settings.output_dir = output_dir
             trial_stage_settings.model_path = (output_dir / (trial_stage_settings.project_name + '.bpmn')).absolute()
 
@@ -173,7 +177,7 @@ class StructureOptimizer(HyperoptPipeline):
         return best_settings
 
     def cleanup(self):
-        remove_asset(self._temp_output)
+        remove_asset(self._output_dir)
 
     @staticmethod
     def _define_search_space(settings: StructureOptimizationSettings) -> dict:
@@ -259,24 +263,14 @@ class StructureOptimizer(HyperoptPipeline):
             values = values | optimization_parameters
             measurements.append(values)
 
+        # TODO: this doesn't belong to 'define_response'
         # writing measurements to file
         if os.path.getsize(self.measurements_file_path) > 0:
-            sup.create_csv_file(measurements, self.measurements_file_path, mode='a')
+            create_csv_file(measurements, self.measurements_file_path, mode='a')
         else:
-            sup.create_csv_file_header(measurements, self.measurements_file_path)
+            create_csv_file_header(measurements, self.measurements_file_path)
 
         return response
-
-    def _update_config_and_export_xes(self, project_name: str) -> Tuple[Path, Path]:
-        output_path = self._temp_output / sup.folder_id()
-        sim_data_path = output_path / 'sim_data'
-        sim_data_path.mkdir(parents=True, exist_ok=True)
-
-        # Create customized event-log for the external tools
-        xes_path = output_path / (project_name + '.xes')
-        self._log_train.write_xes(xes_path)
-
-        return output_path, xes_path
 
     @staticmethod
     def _mine_structure(
@@ -342,7 +336,7 @@ class StructureOptimizer(HyperoptPipeline):
             ProsimosSettings(
                 bpmn_path=settings.model_path,
                 parameters_path=json_path,
-                output_log_path=settings.output_dir / 'sim_data' / f'{settings.project_name}_{rep}.csv',
+                output_log_path=settings.output_dir / 'simulation' / f'{settings.project_name}_{rep}.csv',
                 num_simulation_cases=simulation_cases)
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)
@@ -351,7 +345,7 @@ class StructureOptimizer(HyperoptPipeline):
         # Read simulated logs
         read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
                           for index in range(num_simulations)]
-        p = pool.map_async(_read_simulated_log, read_arguments)
+        p = pool.map_async(self._read_simulated_log, read_arguments)
         progress_bar_async(p, 'reading simulated logs', num_simulations)
 
         # Evaluate
@@ -380,16 +374,16 @@ class StructureOptimizer(HyperoptPipeline):
         sim_values = [{'run_num': rep, **evaluator.similarity}]  # TODO: why list for a single dict?
         return sim_values
 
+    @staticmethod
+    def _read_simulated_log(arguments: Tuple):
+        log_path, log_column_mapping, simulation_repetition_index = arguments
 
-def _read_simulated_log(arguments: Tuple):
-    log_path, log_column_mapping, simulation_repetition_index = arguments
+        reader = LogReaderWriter(log_path=log_path, column_names=log_column_mapping)
 
-    reader = LogReaderWriter(log_path=log_path, column_names=log_column_mapping)
+        reader.df.rename(columns={'user': 'resource'}, inplace=True)
+        reader.df['role'] = reader.df['resource']
+        reader.df['source'] = 'simulation'
+        reader.df['run_num'] = simulation_repetition_index
+        reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
 
-    reader.df.rename(columns={'user': 'resource'}, inplace=True)
-    reader.df['role'] = reader.df['resource']
-    reader.df['source'] = 'simulation'
-    reader.df['run_num'] = simulation_repetition_index
-    reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
-
-    return reader.df
+        return reader.df

@@ -476,18 +476,16 @@ class ProjectSettings:
     log_ids: Optional[EventLogIDs]
     model_path: Optional[Path]
 
+    def validate(self):
+        assert self.project_name is not None, 'Project name is not specified'
+        assert self.log_path is not None, 'Log path is not specified'
+
     @staticmethod
     def from_dict(data: dict) -> 'ProjectSettings':
         project_name = data.get('project_name', None)
-        assert project_name is not None, 'Project name is not specified'
-
         output_dir = data.get('output_dir', None)
-
         log_path = data.get('log_path', None)
-        assert log_path is not None, 'Log path is not specified'
-
         log_ids = data.get('log_ids', None)
-
         model_path = data.get('model_path', None)
 
         return ProjectSettings(

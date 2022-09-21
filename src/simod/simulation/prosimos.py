@@ -70,7 +70,7 @@ class ProsimosSettings:
             simulation_repetition_index: str,
             num_simulation_cases: Optional[int] = None) -> 'ProsimosSettings':
         bpmn_path = settings.output / (settings.project_name + '.bpmn')
-        output_log_path = settings.output / 'sim_data' / f'{settings.project_name}_{simulation_repetition_index}.csv'
+        output_log_path = settings.output / 'simulation' / f'{settings.project_name}_{simulation_repetition_index}.csv'
         parameters_path = bpmn_path.with_suffix('.json')
         if num_simulation_cases is None:
             num_simulation_cases = settings.simulation_cases

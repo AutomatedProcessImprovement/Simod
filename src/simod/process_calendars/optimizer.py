@@ -11,7 +11,6 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
-from simod import utilities as sup
 from simod.analyzers import sim_evaluator as sim
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_subsection, print_message, print_warning
@@ -22,7 +21,8 @@ from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
 from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
-from simod.utilities import get_project_dir, remove_asset, progress_bar_async
+from simod.utilities import remove_asset, progress_bar_async, folder_id, create_csv_file_header, \
+    create_csv_file, file_id
 
 
 # Calendar optimization with:
@@ -47,7 +47,7 @@ class CalendarOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: PipelineSettings
     _measurements_file_name: Path
-    _temp_output: Path
+    _output_dir: Path
 
     _settings_global: Configuration
     _settings_time: Configuration
@@ -103,9 +103,10 @@ class CalendarOptimizer(HyperoptPipeline):
         self._original_log_validation = copy.deepcopy(self._log_validation)
 
         # creating files and folders
-        self._temp_output = get_project_dir() / 'outputs' / sup.folder_id()
-        self._temp_output.mkdir(parents=True, exist_ok=True)
-        self._measurements_file_name = self._temp_output / sup.file_id(prefix='OP_')
+        self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')
+        self._output_dir.mkdir(parents=True, exist_ok=True)
+
+        self._measurements_file_name = self._output_dir / file_id(prefix='OP_')
         with self._measurements_file_name.open('w') as _:
             pass
 
@@ -116,14 +117,20 @@ class CalendarOptimizer(HyperoptPipeline):
                           f'validation split: {len(pd.DataFrame(self._log_validation).caseid.unique())}')
 
             if isinstance(trial_stg, dict):
-                trial_stg = PipelineSettings.from_dict(trial_stg)
+                trial_stg = PipelineSettings.from_dict(
+                    trial_stg,
+                    # TODO: output_dir is rewritten below anyway, but it's needed for the constructor
+                    output_dir=self._output_dir,
+                    model_path=self._project_settings.model_path,
+                    project_name=self._project_settings.project_name,
+                )
 
             status = STATUS_OK
 
-            status, result = self.step(status, self._create_folder, trial_stg)
-            if status == STATUS_OK:
-                trial_stg = result
-            # TODO: should we continue if status is not OK without folders?
+            # creating and defining folders and paths
+            output_dir = self._output_dir / folder_id(prefix='calendars_trial_')
+            output_dir.mkdir(parents=True, exist_ok=True)
+            trial_stg.output_dir = output_dir
 
             status, result = self.step(status, self._extract_parameters_undifferentiated, trial_stg)
             bpmn_path, json_path, simulation_cases = result
@@ -162,7 +169,7 @@ class CalendarOptimizer(HyperoptPipeline):
         best_settings = PipelineSettings.from_hyperopt_response(
             data=best,
             initial_settings=self._calendar_optimizer_settings,
-            output_dir=self.best_output,
+            output_dir=Path(self.best_output),
             model_path=self._project_settings.model_path,
             project_name=self._project_settings.project_name)
 
@@ -171,7 +178,7 @@ class CalendarOptimizer(HyperoptPipeline):
         return best_settings
 
     def cleanup(self):
-        remove_asset(self._temp_output)
+        remove_asset(self._output_dir)
 
     @staticmethod
     def _define_search_space(project_settings: ProjectSettings, optimizer_settings: CalendarOptimizationSettings):
@@ -207,7 +214,7 @@ class CalendarOptimizer(HyperoptPipeline):
             'gateway_probabilities': hp.choice('gateway_probabilities', optimizer_settings.gateway_probabilities)
         }
 
-        space = project_settings.__dict__ | rp_similarity | resource_calendars | arrival_calendar | gateway_probabilities
+        space = rp_similarity | resource_calendars | arrival_calendar | gateway_probabilities
 
         return space
 
@@ -215,11 +222,11 @@ class CalendarOptimizer(HyperoptPipeline):
         data = {
             'rp_similarity': settings.rp_similarity,
             'gate_management': settings.gateway_probabilities,
-            'output': str(settings.output_dir.absolute())
+            'output': settings.output_dir
         }
 
         response = {
-            'output': str(settings.output_dir.absolute()),
+            'output': settings.output_dir,
         }
 
         measurements = []
@@ -250,19 +257,11 @@ class CalendarOptimizer(HyperoptPipeline):
             measurements.append(values)
 
         if os.path.getsize(self._measurements_file_name) > 0:
-            sup.create_csv_file(measurements, self._measurements_file_name, mode='a')
+            create_csv_file(measurements, self._measurements_file_name, mode='a')
         else:
-            sup.create_csv_file_header(measurements, self._measurements_file_name)
+            create_csv_file_header(measurements, self._measurements_file_name)
 
         return response
-
-    def _create_folder(self, settings: PipelineSettings) -> PipelineSettings:
-        settings.output_dir = self._temp_output / sup.folder_id()
-
-        simulation_data_path = settings.output_dir / 'sim_data'
-        simulation_data_path.mkdir(parents=True, exist_ok=True)
-
-        return settings
 
     # def _extract_parameters(self, settings: PipelineSettings):
     #     parameters = self._extract_time_parameters(settings)
@@ -277,7 +276,7 @@ class CalendarOptimizer(HyperoptPipeline):
     #     parameters.resource_table.to_pickle(os.path.join(settings.output_dir, 'resource_table.pkl'))
 
     def _extract_parameters_undifferentiated(self, settings: PipelineSettings) -> Tuple:
-        bpmn_path = settings.model_path
+        bpmn_path = self._project_settings.model_path
         bpmn_reader = BPMNReaderWriter(bpmn_path)
         process_graph = bpmn_reader.as_graph()
 
@@ -288,7 +287,7 @@ class CalendarOptimizer(HyperoptPipeline):
             log, self._project_settings.log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader,
             settings.gateway_probabilities)
 
-        json_path = bpmn_path.with_suffix('.json')
+        json_path = settings.output_dir / 'simulation_parameters.json'
         simulation_parameters.to_json_file(json_path)
 
         simulation_cases = log[self._project_settings.log_ids.case].nunique()
@@ -312,8 +311,6 @@ class CalendarOptimizer(HyperoptPipeline):
     def _simulate_undifferentiated(self, settings: PipelineSettings, json_path: Path, simulation_cases: int):
         num_simulations = self._calendar_optimizer_settings.simulation_repetitions
         bpmn_path = self._project_settings.model_path
-        output_dir = settings.output_dir
-
         cpu_count = multiprocessing.cpu_count()
         w_count = num_simulations if num_simulations <= cpu_count else cpu_count
         pool = multiprocessing.Pool(processes=w_count)
@@ -323,7 +320,7 @@ class CalendarOptimizer(HyperoptPipeline):
             ProsimosSettings(
                 bpmn_path=bpmn_path,
                 parameters_path=json_path,
-                output_log_path=output_dir / 'sim_data' / f'{settings.project_name}_{rep}.csv',
+                output_log_path=settings.output_dir / f'{self._project_settings.project_name}_{rep}.csv',
                 num_simulation_cases=simulation_cases)
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)

@@ -5,7 +5,7 @@ from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import CalendarOptimizationSettings as OptimizerSettings, PipelineSettings, \
     ArrivalOptimizationSettings, ResourceOptimizationSettings
-from simod.utilities import get_project_dir, folder_id
+from simod.utilities import get_project_dir
 
 config_str = """
 log_path: resources/event_logs/PurchasingExample.xes
@@ -75,14 +75,16 @@ test_data = [
 def test_optimizer(entry_point, test_data):
     """Smoke test to check that the optimizer can be instantiated and run successfully."""
 
+    base_dir = get_project_dir() / 'outputs'
+
     project_settings = ProjectSettings.from_stream(test_data['config_data'])
-    calendar_settings = OptimizerSettings.from_stream(test_data['config_data'])
+    calendar_settings = OptimizerSettings.from_stream(test_data['config_data'], base_dir=base_dir)
 
     log_path = entry_point / 'PurchasingExample.xes'
     model_path = entry_point / 'PurchasingExampleQBP.bpmn'
 
     project_settings.log_path = log_path
-    project_settings.output_dir = get_project_dir() / 'outputs' / folder_id()
+    project_settings.output_dir = base_dir
 
     log = LogReaderWriter(log_path)
 

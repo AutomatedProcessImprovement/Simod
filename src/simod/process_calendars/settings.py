@@ -5,12 +5,14 @@ from typing import Optional, Union, List, Tuple
 
 import yaml
 
-from simod.configuration import PDFMethod, GateManagement, DataType, ProjectSettings
+from simod.configuration import PDFMethod, GateManagement, DataType
 
 
 @dataclass
 class CalendarOptimizationSettings:
     """Settings for resources' and arrival calendars optimizer."""
+    base_dir: Optional[Path]
+
     max_evaluations: int = 1
     simulation_repetitions: int = 1
     pdef_method: Optional[PDFMethod] = PDFMethod.AUTOMATIC
@@ -25,13 +27,7 @@ class CalendarOptimizationSettings:
     arr_dtype: Union[DataType, list[DataType], None] = None
 
     @staticmethod
-    def from_dict(settings: dict) -> 'CalendarOptimizationSettings':
-        max_evaluations = settings.get('max_evaluations', None)
-        if max_evaluations is None:
-            max_evaluations = settings.get('max_eval_s', 1)
-
-    @staticmethod
-    def from_stream(stream: Union[str, bytes]) -> 'CalendarOptimizationSettings':
+    def from_stream(stream: Union[str, bytes], base_dir: Path) -> 'CalendarOptimizationSettings':
         settings = yaml.load(stream, Loader=yaml.FullLoader)
 
         v = settings.get('time_optimizer', None)
@@ -70,6 +66,7 @@ class CalendarOptimizationSettings:
             arr_dtype = DataType.from_str(arr_dtype)
 
         return CalendarOptimizationSettings(
+            base_dir=base_dir,
             max_evaluations=max_evaluations,
             simulation_repetitions=simulation_repetitions,
             pdef_method=pdef_method,
@@ -210,7 +207,7 @@ class PipelineSettings:
         )
 
     @staticmethod
-    def from_dict(data: dict) -> 'PipelineSettings':
+    def from_dict(data: dict, output_dir: Path, model_path: Path, project_name: str) -> 'PipelineSettings':
         rp_similarity = data.get('rp_similarity', None)
         assert rp_similarity is not None, 'rp_similarity is not specified'
 
@@ -257,15 +254,12 @@ class PipelineSettings:
         gateway_probabilities = data.get('gateway_probabilities', None)
         assert gateway_probabilities is not None, 'gateway_probabilities is not specified'
 
-        # using ProjectSettings as a convenience class to parse the provided dict
-        project_settings = ProjectSettings.from_dict(data)
-
         return PipelineSettings(
             gateway_probabilities=gateway_probabilities,
             rp_similarity=rp_similarity,
             res_cal_met=(resource_optimization_type, resource_settings),
             arr_cal_met=(arrival_optimization_type, arrival_settings),
-            output_dir=project_settings.output_dir,
-            model_path=project_settings.model_path,
-            project_name=project_settings.project_name,
+            output_dir=output_dir,
+            model_path=model_path,
+            project_name=project_name,
         )

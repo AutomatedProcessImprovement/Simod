@@ -11,6 +11,7 @@ from simod.configuration import GateManagement, PDFMethod, StructureMiningAlgori
 class StructureOptimizationSettings:
     """Settings for the structure optimizer."""
     project_name: Optional[str]  # TODO: extract Pipeline settings from this class
+    base_dir: Optional[Path]
 
     gateway_probabilities: Optional[Union[GateManagement, List[GateManagement]]] = GateManagement.DISCOVERY
     max_evaluations: int = 1
@@ -35,7 +36,7 @@ class StructureOptimizationSettings:
     or_rep: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
 
     @staticmethod
-    def from_stream(stream: Union[str, bytes]) -> 'StructureOptimizationSettings':
+    def from_stream(stream: Union[str, bytes], base_dir: Path) -> 'StructureOptimizationSettings':
         settings = yaml.load(stream, Loader=yaml.FullLoader)
 
         project_name = settings.get('project_name', None)
@@ -98,6 +99,7 @@ class StructureOptimizationSettings:
 
         return StructureOptimizationSettings(
             project_name=project_name,
+            base_dir=base_dir,
             gateway_probabilities=gateway_probabilities,
             max_evaluations=max_evaluations,
             simulation_repetitions=simulation_repetitions,

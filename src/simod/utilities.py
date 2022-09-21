@@ -16,8 +16,8 @@ from tqdm import tqdm
 from simod.cli_formatter import print_step
 
 
-def folder_id():
-    return datetime.datetime.today().strftime('%Y%m%d_') + str(uuid.uuid4()).upper().replace('-', '_')
+def folder_id(prefix=''):
+    return prefix + datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + str(uuid.uuid4()).upper().replace('-', '_')
 
 
 def file_id(prefix='', extension='.csv'):
@@ -69,7 +69,6 @@ def reduce_list(input, dtype='int'):
 
 
 def create_csv_file(index, output_file, mode='w'):
-    # print debuging csv file
     with open(output_file, mode) as f:
         for element in index:
             w = csv.DictWriter(f, element.keys())

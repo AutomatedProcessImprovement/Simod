@@ -11,6 +11,7 @@ class OptimizationSettings:
     project_settings: ProjectSettings
     structure_settings: StructureOptimizationSettings
     calendar_settings: CalendarOptimizationSettings
+    remove_intermediate_files: bool = False
 
     num_simulations: int = 2
     adjust_for_multitasking: bool = False

@@ -62,12 +62,16 @@ time_optimizer:
   res_cal_met: pool
 """
 
+output_dir_A = get_project_dir() / 'outputs' / folder_id()
+
 test_cases = [
     {
         'name': 'A',
+        'output_dir': output_dir_A,
         'project_settings': ProjectSettings.from_stream(config_yaml_A),
-        'structure_settings': StructureOptimizationSettings.from_stream(config_yaml_A),
-        'calendar_settings': CalendarOptimizationSettings.from_stream(config_yaml_A)
+        'structure_settings': StructureOptimizationSettings.from_stream(
+            config_yaml_A, base_dir=output_dir_A),
+        'calendar_settings': CalendarOptimizationSettings.from_stream(config_yaml_A, base_dir=output_dir_A)
     }
 ]
 
@@ -80,7 +84,7 @@ def test_optimizer(test_data, entry_point):
         calendar_settings=test_data['calendar_settings'])
 
     settings.project_settings.log_path = entry_point / 'PurchasingExample.xes'
-    settings.project_settings.output_dir = get_project_dir() / 'outputs' / folder_id()
+    settings.project_settings.output_dir = test_data['output_dir']
     settings.project_settings.project_name = 'PurchasingExample'
 
     optimizer = Optimizer(settings)

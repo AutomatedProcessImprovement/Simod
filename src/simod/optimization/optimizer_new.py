@@ -21,7 +21,7 @@ from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import PipelineSettings as StructurePipelineSettings
 from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
 from simod.simulation.prosimos import ProsimosSettings, simulate_with_prosimos, PROSIMOS_COLUMN_MAPPING
-from simod.utilities import folder_id, file_id, progress_bar_async
+from simod.utilities import file_id, progress_bar_async
 
 
 def prepare_project(project_settings: ProjectSettings) -> None:
@@ -35,6 +35,9 @@ class Optimizer:
     _preprocessor: Optional[Preprocessor] = None
     _log_train: LogReaderWriter
     _log_test: pd.DataFrame
+
+    _structure_optimizer: Optional[StructureOptimizer] = None
+    _calendar_optimizer: Optional[CalendarOptimizer] = None
 
     def __init__(self, settings: OptimizationSettings):
         self._settings = settings
@@ -66,6 +69,7 @@ class Optimizer:
 
     def _mine_and_optimize_structure(self) -> Tuple[StructurePipelineSettings, PDFMethod]:
         optimizer = StructureOptimizer(self._settings.structure_settings, self._log_train)
+        self._structure_optimizer = optimizer
         return optimizer.run(), optimizer._settings.pdef_method
 
     def _optimize_calendars(self, model_path: Path) -> CalendarPipelineSettings:
@@ -75,6 +79,7 @@ class Optimizer:
             self._log_train,
             model_path)
         result = optimizer.run()
+        self._calendar_optimizer = optimizer
         return result
 
     @staticmethod
@@ -133,7 +138,7 @@ class Optimizer:
                 output_log_path=output_dir / f'{settings.project_settings.project_name}_{rep}.csv',
                 num_simulation_cases=simulation_cases)
             for rep in range(num_simulations)]
-        p = pool.map_async(simulate_with_prosimos, simulation_arguments)  # TODO: check that JSON exists
+        p = pool.map_async(simulate_with_prosimos, simulation_arguments)
         progress_bar_async(p, 'simulating', num_simulations)
 
         # Read simulated logs
@@ -182,7 +187,7 @@ class Optimizer:
             test_data: pd.DataFrame,
             gateway_probabilities_type: GateManagement,
             pdf_method: PDFMethod,
-            output_dir: Path):
+            simulation_dir: Path):
         parameters_path, simulation_cases = self._extract_parameters_undifferentiated(
             model_path, test_data, gateway_probabilities_type, pdf_method)
 
@@ -191,24 +196,30 @@ class Optimizer:
             bpmn_path=model_path,
             json_path=parameters_path,
             simulation_cases=simulation_cases,
-            output_dir=output_dir)
+            output_dir=simulation_dir)
 
-        measurements_path = output_dir / file_id(prefix='SE_')
+        measurements_path = simulation_dir.parent / file_id(prefix='evaluation_')
         measurements_df = pd.DataFrame.from_records(measurements)
-        measurements_df['output'] = output_dir.parent
         measurements_df.to_csv(measurements_path, index=False)
 
-    @staticmethod
     def _save_results(
+            self,
             output_dir: Path,
             calendar_settings: CalendarPipelineSettings,
             structure_settings: Optional[StructurePipelineSettings] = None):
 
-        print_message(f'Moving calendar results from {calendar_settings.output_dir} to {output_dir}')
-        shutil.move(calendar_settings.output_dir, output_dir)
+        print_message(f'Copying calendar results from {calendar_settings.output_dir} to {output_dir}')
+
+        copy_fn = shutil.move if self._settings.remove_intermediate_files else shutil.copytree
+
+        copy_fn(calendar_settings.output_dir, output_dir / calendar_settings.output_dir.name)
         if structure_settings is not None:
-            print_message(f'Moving structure results from {structure_settings.output_dir} to {output_dir}')
-            shutil.move(structure_settings.output_dir, output_dir)
+            print_message(f'Copying structure results from {structure_settings.output_dir} to {output_dir}')
+            copy_fn(structure_settings.output_dir, output_dir / structure_settings.output_dir.name)
+
+        if self._settings.remove_intermediate_files:
+            self._structure_optimizer.cleanup()
+            self._calendar_optimizer.cleanup()
 
     def run(self):
         self._remove_outliers_from_train_data()
@@ -230,16 +241,15 @@ class Optimizer:
         calendars_settings = self._optimize_calendars(model_path)
 
         print_section('Evaluation')
-        output_dir = self._settings.project_settings.output_dir / folder_id() / 'sim_data'
-        output_dir.mkdir(parents=True)
+        best_result_dir = self._settings.project_settings.output_dir / 'best_result'
+        simulation_dir = best_result_dir / 'simulation'
+        simulation_dir.mkdir(parents=True)
 
         gateway_probabilities_type = structure_settings.gateway_probabilities
-        self._evaluate_model(model_path, self._log_test, gateway_probabilities_type, pdf_method, output_dir)
+        self._evaluate_model(model_path, self._log_test, gateway_probabilities_type, pdf_method, simulation_dir)
 
         print_section('Saving results')
-        self._save_results(output_dir, calendars_settings, structure_settings)
+        self._save_results(best_result_dir, calendars_settings, structure_settings)
 
         # TODO: export model
         # export_canonical_model ?
-
-        # TODO: cleanup
