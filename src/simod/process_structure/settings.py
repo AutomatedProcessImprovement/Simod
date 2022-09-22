@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Dict, Any
 
 import yaml
 
@@ -132,6 +132,26 @@ class PipelineSettings:
     # for Split Miner 3
     and_prior: Optional[AndPriorORemove] = None
     or_rep: Optional[AndPriorORemove] = None
+
+    def optimization_parameters_as_dict(self, mining_algorithm: StructureMiningAlgorithm) -> Dict[str, Any]:
+        """Returns a dictionary of parameters relevant for the optimizer."""
+        optimization_parameters = {
+            'gateway_probabilities': self.gateway_probabilities,
+            'output_dir': self.output_dir,
+        }
+
+        if mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                StructureMiningAlgorithm.SPLIT_MINER_3]:
+            optimization_parameters['epsilon'] = self.epsilon
+            optimization_parameters['eta'] = self.eta
+            optimization_parameters['and_prior'] = self.and_prior
+            optimization_parameters['or_rep'] = self.or_rep
+        elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+            optimization_parameters['concurrency'] = self.concurrency
+        else:
+            raise ValueError(mining_algorithm)
+
+        return optimization_parameters
 
     @staticmethod
     def from_hyperopt_dict(

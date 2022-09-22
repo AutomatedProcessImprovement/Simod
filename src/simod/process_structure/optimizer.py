@@ -1,7 +1,6 @@
 import copy
 import itertools
 import multiprocessing
-import os
 from pathlib import Path
 from typing import Union, Optional, Tuple
 
@@ -17,8 +16,7 @@ from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemov
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
-from simod.utilities import remove_asset, progress_bar_async, file_id, create_csv_file, \
-    create_csv_file_header, folder_id
+from simod.utilities import remove_asset, progress_bar_async, file_id, folder_id
 from .miner import StructureMiner, Settings as StructureMinerSettings
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
@@ -31,8 +29,9 @@ class StructureOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: PipelineSettings
     measurements_file_path: Path
+    evaluation_measurements: pd.DataFrame
 
-    _bayes_trials: Trials
+    _bayes_trials: Trials = Trials()
     _settings: StructureOptimizationSettings
     _log_reader: LogReaderWriter
     _log_train: LogReaderWriter
@@ -70,13 +69,11 @@ class StructureOptimizer(HyperoptPipeline):
         self._output_dir = self._settings.base_dir / folder_id(prefix='structure_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Measurements file
         self.measurements_file_path = self._output_dir / file_id(prefix='evaluation_')
-        with self.measurements_file_path.open('w') as _:
-            pass
 
-        # Trials object to track progress
-        self._bayes_trials = Trials()
+        self.evaluation_measurements = pd.DataFrame(
+            columns=['similarity', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta', 'and_prior', 'or_rep',
+                     'output_dir'])
 
     def run(self) -> PipelineSettings:
         self._log_train = copy.deepcopy(self._original_log_train)
@@ -86,6 +83,7 @@ class StructureOptimizer(HyperoptPipeline):
             print_message(f'train split: {len(pd.DataFrame(self._log_train.data)[self._log_ids.case].unique())}, '
                           f'validation split: {len(self._log_validation[self._log_ids.case].unique())}')
 
+            # casting a dictionary provided by hyperopt to PipelineSettings for convinience
             if isinstance(trial_stage_settings, dict):
                 trial_stage_settings = PipelineSettings(
                     model_path=None,
@@ -95,27 +93,31 @@ class StructureOptimizer(HyperoptPipeline):
                     **trial_stage_settings)
             print_message(f'Parameters: {trial_stage_settings}', capitalize=False)
 
-            status = STATUS_OK  # initialize status
+            # initializing status
+            status = STATUS_OK
 
             # current trial folder
             output_dir = self._output_dir / folder_id(prefix='structure_trial_')
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            # save customized event-log for the external tools
+            # saving customized event-log for the external tools
             log_path = output_dir / (trial_stage_settings.project_name + '.xes')
             self._log_train.write_xes(log_path)
 
-            # TODO: why to create it here if it's unused
-            simulation_output_dir = output_dir / 'simulation'
-            simulation_output_dir.mkdir(parents=True, exist_ok=True)
-
+            # redefining pipeline settings
             trial_stage_settings.output_dir = output_dir
-            trial_stage_settings.model_path = (output_dir / (trial_stage_settings.project_name + '.bpmn')).absolute()
+            trial_stage_settings.model_path = output_dir / (trial_stage_settings.project_name + '.bpmn')
 
-            status, result = self.step(status, self._mine_structure,
-                                       trial_stage_settings, log_path, self._settings.mining_algorithm)
+            # structure mining
+            status, result = self.step(
+                status,
+                self._mine_structure,
+                trial_stage_settings,
+                log_path,
+                self._settings.mining_algorithm)
             bpmn_reader, process_graph = result
 
+            # simulation parameters mining
             status, result = self.step(
                 status,
                 self._extract_parameters_undifferentiated,
@@ -124,6 +126,7 @@ class StructureOptimizer(HyperoptPipeline):
                 process_graph)
             json_path, simulation_cases = result
 
+            # simulation
             status, result = self.step(status, self._simulate_undifferentiated,
                                        trial_stage_settings,
                                        self._settings.simulation_repetitions,
@@ -131,15 +134,15 @@ class StructureOptimizer(HyperoptPipeline):
                                        simulation_cases)
             evaluation_measurements = result if status == STATUS_OK else []
 
-            response = self._define_response(
-                trial_stage_settings, self._settings.mining_algorithm, status, evaluation_measurements)
-
-            # reset the log
-            self._log_reader = copy.deepcopy(self._original_log)
-            self._log_train = copy.deepcopy(self._original_log_train)
-            self._log_validation = copy.deepcopy(self._original_log_validation)
-
+            # loss
+            response, status = self._define_response(status, evaluation_measurements, trial_stage_settings)
             print(f'StructureOptimizer pipeline response: {response}')
+
+            # saving results
+            self._process_measurements(trial_stage_settings, status, evaluation_measurements)
+
+            self._reset_log_buckets()
+
             return response
 
         search_space = self._define_search_space(self._settings)
@@ -152,18 +155,14 @@ class StructureOptimizer(HyperoptPipeline):
                     trials=self._bayes_trials,
                     show_progressbar=False)
 
-        # Saving results
+        # Best results
 
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
         results_ok = results[results.status == STATUS_OK]
-        try:
-            self.best_output = results_ok.iloc[0].output
-        except Exception as e:
-            raise e
+        self.best_output = results_ok.iloc[0].output_dir
 
-        # TODO: ensure that's the path
-        best_model_path = Path(results_ok.iloc[0].output) / (self._settings.project_name + '.bpmn')
-
+        best_model_path = results_ok.iloc[0].model_path
+        assert best_model_path.exists(), f'Best model path {best_model_path} does not exist'
         best_settings = PipelineSettings.from_hyperopt_dict(
             data=best,
             initial_settings=self._settings,
@@ -171,8 +170,11 @@ class StructureOptimizer(HyperoptPipeline):
             project_name=self._settings.project_name,
             measurements_file_path=self.measurements_file_path,
         )
-
         self.best_parameters = best_settings
+
+        # Save evaluation measurements
+        self.evaluation_measurements.sort_values('similarity', ascending=False, inplace=True)
+        self.evaluation_measurements.to_csv(self.measurements_file_path, index=False)
 
         return best_settings
 
@@ -204,73 +206,48 @@ class StructureOptimizer(HyperoptPipeline):
 
         return space
 
+    @staticmethod
     def _define_response(
+            status: str,
+            evaluation_measurements: list,
+            pipeline_settings: PipelineSettings) -> Tuple[dict, str]:
+        similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
+        loss = 1 - similarity
+        status = status if loss > 0 else STATUS_FAIL
+
+        response = {
+            'loss': loss,
+            'status': status,
+            'output_dir': pipeline_settings.output_dir,
+            'model_path': pipeline_settings.model_path,
+        }
+
+        return response, status
+
+    def _process_measurements(
             self,
             settings: PipelineSettings,
-            mining_algorithm: StructureMiningAlgorithm,
             status,
-            evaluation_measurements) -> dict:
-        response = {
-            'output': settings.output_dir.absolute(),
-            'model_path': settings.model_path.absolute(),
-            'status': status,
-            'loss': None,
-        }
+            evaluation_measurements):
+        optimization_parameters = settings.optimization_parameters_as_dict(self._settings.mining_algorithm)
 
-        # collecting measurements for saving
-
-        measurements = []
-
-        optimization_parameters = {
-            'gateway_probabilities': settings.gateway_probabilities,
-            'output': str(settings.output_dir.absolute()),
-        }
-
-        # structure miner parameters
-        if mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-                                StructureMiningAlgorithm.SPLIT_MINER_3]:
-            optimization_parameters['epsilon'] = settings.epsilon
-            optimization_parameters['eta'] = settings.eta
-            optimization_parameters['and_prior'] = settings.and_prior
-            optimization_parameters['or_rep'] = settings.or_rep
-        elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-            optimization_parameters['concurrency'] = settings.concurrency
-        else:
-            raise ValueError(mining_algorithm)
-
-        # simulation parameters
         if status == STATUS_OK:
-            similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
-            loss = (1 - similarity)
-
-            response['loss'] = loss
-            response['status'] = status if loss > 0 else STATUS_FAIL
-
             for sim_val in evaluation_measurements:
                 values = {
                     'similarity': sim_val['sim_val'],
-                    'sim_metric': sim_val['metric'],
-                    'status': response['status']
+                    'metric': sim_val['metric'],
+                    'status': status
                 }
                 values = values | optimization_parameters
-                measurements.append(values)
+                self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
             values = {
                 'similarity': 0,
-                'sim_metric': Metric.DL,
+                'metric': Metric.DL,
                 'status': status
             }
             values = values | optimization_parameters
-            measurements.append(values)
-
-        # TODO: this doesn't belong to 'define_response'
-        # writing measurements to file
-        if os.path.getsize(self.measurements_file_path) > 0:
-            create_csv_file(measurements, self.measurements_file_path, mode='a')
-        else:
-            create_csv_file_header(measurements, self.measurements_file_path)
-
-        return response
+            self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
 
     @staticmethod
     def _mine_structure(
@@ -336,7 +313,7 @@ class StructureOptimizer(HyperoptPipeline):
             ProsimosSettings(
                 bpmn_path=settings.model_path,
                 parameters_path=json_path,
-                output_log_path=settings.output_dir / 'simulation' / f'{settings.project_name}_{rep}.csv',
+                output_log_path=settings.output_dir / f'{settings.project_name}_{rep}.csv',
                 num_simulation_cases=simulation_cases)
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)
@@ -387,3 +364,8 @@ class StructureOptimizer(HyperoptPipeline):
         reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
 
         return reader.df
+
+    def _reset_log_buckets(self):
+        self._log_reader = copy.deepcopy(self._original_log)
+        self._log_train = copy.deepcopy(self._original_log_train)
+        self._log_validation = copy.deepcopy(self._original_log_validation)
