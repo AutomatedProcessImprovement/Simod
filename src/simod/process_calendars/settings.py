@@ -132,7 +132,6 @@ class PipelineSettings:
     # General settings
     output_dir: Path  # each pipeline run creates its own directory
     model_path: Path  # in calendars optimizer, this path doesn't change and just inherits from the project settings
-    project_name: str  # this doesn't change and just inherits from the project settings, used for file naming
 
     # Optimization settings
     gateway_probabilities: Optional[GateManagement]
@@ -146,7 +145,6 @@ class PipelineSettings:
             initial_settings: CalendarOptimizationSettings,
             output_dir: Path,
             model_path: Path,
-            project_name: str,
     ) -> 'PipelineSettings':
         gateway_probabilities = data.get('gateway_probabilities', None)
         assert gateway_probabilities is not None, 'Gateway probabilities must be specified'
@@ -203,11 +201,10 @@ class PipelineSettings:
             arr_cal_met=arr_cal_met,
             output_dir=output_dir,
             model_path=model_path,
-            project_name=project_name,
         )
 
     @staticmethod
-    def from_dict(data: dict, output_dir: Path, model_path: Path, project_name: str) -> 'PipelineSettings':
+    def from_dict(data: dict, output_dir: Path, model_path: Path) -> 'PipelineSettings':
         rp_similarity = data.get('rp_similarity', None)
         assert rp_similarity is not None, 'rp_similarity is not specified'
 
@@ -261,5 +258,4 @@ class PipelineSettings:
             arr_cal_met=(arrival_optimization_type, arrival_settings),
             output_dir=output_dir,
             model_path=model_path,
-            project_name=project_name,
         )

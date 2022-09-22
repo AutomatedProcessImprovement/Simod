@@ -11,9 +11,9 @@ from tqdm import tqdm
 
 from simod.analyzers import sim_evaluator as sim
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.cli_formatter import print_subsection, print_message, print_warning
-from simod.configuration import Configuration, Metric, ProjectSettings
-from simod.event_log.column_mapping import EventLogIDs
+from simod.cli_formatter import print_subsection, print_message
+from simod.configuration import Configuration, Metric
+from simod.event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
@@ -45,37 +45,34 @@ class CalendarOptimizer(HyperoptPipeline):
     best_parameters: PipelineSettings
     evaluation_measurements: pd.DataFrame
     _output_dir: Path
+    _model_path: Path
 
     _settings_global: Configuration
     _settings_time: Configuration
 
     _log: LogReaderWriter
+    _log_ids: EventLogIDs
     _log_train: LogReaderWriter
     _log_validation: pd.DataFrame
     _original_log: LogReaderWriter
     _original_log_train: LogReaderWriter
     _original_log_validation: pd.DataFrame
 
-    _project_settings: ProjectSettings
     _calendar_optimizer_settings: CalendarOptimizationSettings
 
     _bayes_trials: Trials = Trials()
 
     def __init__(
             self,
-            project_settings: ProjectSettings,
             calendar_optimizer_settings: CalendarOptimizationSettings,
             log: LogReaderWriter,
             model_path: Path,
             log_ids: Optional[EventLogIDs] = None):
-        self._project_settings = project_settings
-
-        if model_path is not None and project_settings.model_path != model_path:
-            print_warning(f'Overriding model path from {project_settings.model_path} to {model_path}')
-            self._project_settings.model_path = model_path
+        self._model_path = model_path
 
         self._calendar_optimizer_settings = calendar_optimizer_settings
         self._log = log
+        self._log_ids = log_ids if log_ids is not None else SIMOD_DEFAULT_COLUMNS
 
         # hyperopt search space
         self._space = self._define_search_space(calendar_optimizer_settings)
@@ -84,7 +81,7 @@ class CalendarOptimizer(HyperoptPipeline):
         train, validation = self._split_timeline(0.8)
         self._log_train = LogReaderWriter.copy_without_data(self._log)
         self._log_train.set_data(train
-                                 .sort_values(self._project_settings.log_ids.start_time, ascending=True)
+                                 .sort_values(self._log_ids.start_time, ascending=True)
                                  .reset_index(drop=True)
                                  .to_dict('records'))
         self._log_validation = validation
@@ -118,8 +115,7 @@ class CalendarOptimizer(HyperoptPipeline):
                     trial_stg,
                     # TODO: output_dir is rewritten below anyway, but it's needed for the constructor
                     output_dir=self._output_dir,
-                    model_path=self._project_settings.model_path,
-                    project_name=self._project_settings.project_name,
+                    model_path=self._model_path,
                 )
 
             # initializing status
@@ -164,8 +160,7 @@ class CalendarOptimizer(HyperoptPipeline):
             data=best,
             initial_settings=self._calendar_optimizer_settings,
             output_dir=Path(self.best_output),
-            model_path=self._project_settings.model_path,
-            project_name=self._project_settings.project_name)
+            model_path=self._model_path)
         self.best_parameters = best_settings
 
         # Save evaluation measurements
@@ -273,7 +268,7 @@ class CalendarOptimizer(HyperoptPipeline):
     #     parameters.resource_table.to_pickle(os.path.join(settings.output_dir, 'resource_table.pkl'))
 
     def _extract_parameters_undifferentiated(self, settings: PipelineSettings) -> Tuple:
-        bpmn_path = self._project_settings.model_path
+        bpmn_path = self._model_path
         bpmn_reader = BPMNReaderWriter(bpmn_path)
         process_graph = bpmn_reader.as_graph()
 
@@ -281,13 +276,13 @@ class CalendarOptimizer(HyperoptPipeline):
         pdf_method = self._calendar_optimizer_settings.pdef_method
 
         simulation_parameters = mine_simulation_parameters_default_24_7(
-            log, self._project_settings.log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader,
+            log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader,
             settings.gateway_probabilities)
 
         json_path = settings.output_dir / 'simulation_parameters.json'
         simulation_parameters.to_json_file(json_path)
 
-        simulation_cases = log[self._project_settings.log_ids.case].nunique()
+        simulation_cases = log[self._log_ids.case].nunique()
 
         return bpmn_path, json_path, simulation_cases
 
@@ -307,7 +302,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
     def _simulate_undifferentiated(self, settings: PipelineSettings, json_path: Path, simulation_cases: int):
         num_simulations = self._calendar_optimizer_settings.simulation_repetitions
-        bpmn_path = self._project_settings.model_path
+        bpmn_path = self._model_path
         cpu_count = multiprocessing.cpu_count()
         w_count = num_simulations if num_simulations <= cpu_count else cpu_count
         pool = multiprocessing.Pool(processes=w_count)
@@ -317,7 +312,7 @@ class CalendarOptimizer(HyperoptPipeline):
             ProsimosSettings(
                 bpmn_path=bpmn_path,
                 parameters_path=json_path,
-                output_log_path=settings.output_dir / f'{self._project_settings.project_name}_{rep}.csv',
+                output_log_path=settings.output_dir / f'simulation_log_{rep}.csv',
                 num_simulation_cases=simulation_cases)
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)
@@ -359,7 +354,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
     def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         train, validation = self._log.split_timeline(size)
-        key = self._project_settings.log_ids.start_time
+        key = self._log_ids.start_time
         validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
         train = train.sort_values(key, ascending=True).reset_index(drop=True)
         return train, validation

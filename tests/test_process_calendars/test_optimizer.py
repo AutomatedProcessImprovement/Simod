@@ -1,6 +1,6 @@
 import pytest
 
-from simod.configuration import ProjectSettings, GateManagement
+from simod.configuration import GateManagement
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import CalendarOptimizationSettings as OptimizerSettings, PipelineSettings, \
@@ -36,9 +36,9 @@ structure_optimizer:
     - true
     - false
 time_optimizer:
-  max_eval_t: 2
+  max_evaluations: 2
   simulation_repetitions: 1
-  gate_management:
+  gateway_probabilities:
     - equiprobable
     - discovery
   rp_similarity:
@@ -76,19 +76,12 @@ def test_optimizer(entry_point, test_data):
     """Smoke test to check that the optimizer can be instantiated and run successfully."""
 
     base_dir = get_project_dir() / 'outputs'
-
-    project_settings = ProjectSettings.from_stream(test_data['config_data'])
     calendar_settings = OptimizerSettings.from_stream(test_data['config_data'], base_dir=base_dir)
-
     log_path = entry_point / 'PurchasingExample.xes'
     model_path = entry_point / 'PurchasingExampleQBP.bpmn'
-
-    project_settings.log_path = log_path
-    project_settings.output_dir = base_dir
-
     log = LogReaderWriter(log_path)
 
-    optimizer = CalendarOptimizer(project_settings, calendar_settings, log, model_path)
+    optimizer = CalendarOptimizer(calendar_settings, log, model_path)
     result = optimizer.run()
 
     assert type(result) is PipelineSettings
