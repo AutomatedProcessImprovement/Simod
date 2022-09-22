@@ -120,7 +120,6 @@ class PipelineSettings:
     output_dir: Optional[Path]  # each pipeline run creates its own directory
     model_path: Optional[Path]  # in structure optimizer, this path is assigned after the model is mined
     project_name: str  # this doesn't change and just inherits from the project settings, used for file naming
-    measurements_file_path: Optional[Path]  # path to the evaluation measurements file
 
     # Optimization settings
     gateway_probabilities: GateManagement
@@ -159,7 +158,6 @@ class PipelineSettings:
             initial_settings: StructureOptimizationSettings,
             model_path: Path,
             project_name: str,
-            measurements_file_path: Optional[Path] = None,
     ) -> 'PipelineSettings':
         """
         Create a settings object from a hyperopt's dictionary that returned as a result of the optimization.
@@ -199,7 +197,6 @@ class PipelineSettings:
             output_dir=output_dir,
             model_path=model_path,
             project_name=project_name,
-            measurements_file_path=measurements_file_path,
             gateway_probabilities=gateway_probabilities,
             epsilon=epsilon,
             eta=eta,

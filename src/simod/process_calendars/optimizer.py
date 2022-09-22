@@ -1,7 +1,5 @@
 import copy
-import itertools
 import multiprocessing
-import os
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -21,8 +19,7 @@ from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
 from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
-from simod.utilities import remove_asset, progress_bar_async, folder_id, create_csv_file_header, \
-    create_csv_file, file_id
+from simod.utilities import remove_asset, progress_bar_async, folder_id, file_id
 
 
 # Calendar optimization with:
@@ -46,7 +43,7 @@ from simod.utilities import remove_asset, progress_bar_async, folder_id, create_
 class CalendarOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: PipelineSettings
-    _measurements_file_name: Path
+    evaluation_measurements: pd.DataFrame
     _output_dir: Path
 
     _settings_global: Configuration
@@ -81,7 +78,7 @@ class CalendarOptimizer(HyperoptPipeline):
         self._log = log
 
         # hyperopt search space
-        self._space = self._define_search_space(project_settings, calendar_optimizer_settings)
+        self._space = self._define_search_space(calendar_optimizer_settings)
 
         # setting train and validation log data
         train, validation = self._split_timeline(0.8)
@@ -106,9 +103,8 @@ class CalendarOptimizer(HyperoptPipeline):
         self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
-        self._measurements_file_name = self._output_dir / file_id(prefix='OP_')
-        with self._measurements_file_name.open('w') as _:
-            pass
+        self.evaluation_measurements = pd.DataFrame(
+            columns=['similarity', 'metric', 'rp_similarity', 'gateway_probabilities', 'status', 'output_dir'])
 
     def run(self) -> PipelineSettings:
         def pipeline(trial_stg: Union[dict, PipelineSettings]):
@@ -116,6 +112,7 @@ class CalendarOptimizer(HyperoptPipeline):
             print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
                           f'validation split: {len(pd.DataFrame(self._log_validation).caseid.unique())}')
 
+            # casting a dictionary provided by hyperopt to PipelineSettings for convenience
             if isinstance(trial_stg, dict):
                 trial_stg = PipelineSettings.from_dict(
                     trial_stg,
@@ -125,6 +122,7 @@ class CalendarOptimizer(HyperoptPipeline):
                     project_name=self._project_settings.project_name,
                 )
 
+            # initializing status
             status = STATUS_OK
 
             # creating and defining folders and paths
@@ -140,16 +138,15 @@ class CalendarOptimizer(HyperoptPipeline):
             status, result = self.step(status, self._simulate_undifferentiated, trial_stg, json_path, simulation_cases)
             evaluation_measurements = result if status == STATUS_OK else []
 
-            response = self._define_response(trial_stg, status, evaluation_measurements)
+            response, status = self._define_response(trial_stg, status, evaluation_measurements)
 
-            # reinstate log
-            self._log = self._original_log  # TODO: no need
-            self._log_train = copy.deepcopy(self._original_log_train)
-            self._log_validation = copy.deepcopy(self._original_log_validation)
+            self._process_measurements(trial_stg, status, evaluation_measurements)
+
+            self._reset_log_buckets()
 
             return response
 
-        # Optimize
+        # Optimization
         best = fmin(fn=pipeline,
                     space=self._space,
                     algo=tpe.suggest,
@@ -157,14 +154,11 @@ class CalendarOptimizer(HyperoptPipeline):
                     trials=self._bayes_trials,
                     show_progressbar=False)
 
-        # Save results
+        # Best results
 
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
         results_ok = results[results.status == STATUS_OK]
-        try:
-            self.best_output = results_ok.iloc[0].output
-        except Exception as e:
-            raise e
+        self.best_output = results_ok.iloc[0].output_dir
 
         best_settings = PipelineSettings.from_hyperopt_response(
             data=best,
@@ -172,8 +166,11 @@ class CalendarOptimizer(HyperoptPipeline):
             output_dir=Path(self.best_output),
             model_path=self._project_settings.model_path,
             project_name=self._project_settings.project_name)
-
         self.best_parameters = best_settings
+
+        # Save evaluation measurements
+        self.evaluation_measurements.sort_values('similarity', ascending=False, inplace=True)
+        self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
 
         return best_settings
 
@@ -181,7 +178,7 @@ class CalendarOptimizer(HyperoptPipeline):
         remove_asset(self._output_dir)
 
     @staticmethod
-    def _define_search_space(project_settings: ProjectSettings, optimizer_settings: CalendarOptimizationSettings):
+    def _define_search_space(optimizer_settings: CalendarOptimizationSettings):
         assert len(optimizer_settings.rp_similarity) == 2, 'rp_similarity must have 2 values: low and high'
         assert len(optimizer_settings.res_sup_dis) == 2, 'res_sup_dis must have 2 values: low and high'
         assert len(optimizer_settings.res_con_dis) == 2, 'res_con_dis must have 2 values: low and high'
@@ -218,50 +215,50 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return space
 
-    def _define_response(self, settings: PipelineSettings, status: str, evaluation_measurements: list) -> dict:
+    def _process_measurements(self, settings: PipelineSettings, status: str, evaluation_measurements: list):
         data = {
             'rp_similarity': settings.rp_similarity,
-            'gate_management': settings.gateway_probabilities,
-            'output': settings.output_dir
+            'gateway_probabilities': settings.gateway_probabilities,
+            'output_dir': settings.output_dir,
+            'status': status,
         }
-
-        response = {
-            'output': settings.output_dir,
-        }
-
-        measurements = []
 
         if status == STATUS_OK:
-            similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
-            loss = (1 - similarity)  # TODO: should it be just 'similarity'?
-
-            response['loss'] = loss
-            response['status'] = status if loss > 0 else STATUS_FAIL
-
             for sim_val in evaluation_measurements:
                 values = {
                     'similarity': sim_val['sim_val'],
-                    'sim_metric': sim_val['metric'],
-                    'status': response['status'],
+                    'metric': sim_val['metric'],
                 }
                 values = values | data
-                measurements.append(values)
+                self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
-            response['status'] = status
             values = {
                 'similarity': 0,
-                'sim_metric': Metric.DAY_HOUR_EMD,
-                'status': response['status'], **data
+                'metric': Metric.DAY_HOUR_EMD,
             }
             values = values | data
-            measurements.append(values)
+            self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
 
-        if os.path.getsize(self._measurements_file_name) > 0:
-            create_csv_file(measurements, self._measurements_file_name, mode='a')
-        else:
-            create_csv_file_header(measurements, self._measurements_file_name)
+    @staticmethod
+    def _define_response(
+            settings: PipelineSettings,
+            status: str,
+            evaluation_measurements: list) -> Tuple[dict, str]:
+        response = {
+            'output_dir': settings.output_dir,
+            'status': status,
+            'loss': None,
+        }
 
-        return response
+        if status == STATUS_OK:
+            similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
+            loss = 1 - similarity  # TODO: should it be just 'similarity'?
+            response['loss'] = loss
+
+            status = status if loss > 0 else STATUS_FAIL
+            response['status'] = status if loss > 0 else STATUS_FAIL
+
+        return response, status
 
     # def _extract_parameters(self, settings: PipelineSettings):
     #     parameters = self._extract_time_parameters(settings)
@@ -333,35 +330,32 @@ class CalendarOptimizer(HyperoptPipeline):
         progress_bar_async(p, 'reading simulated logs', num_simulations)
 
         # Evaluate
-        evaluation_arguments = [(settings, self._log_validation, log) for log in p.get()]
+        evaluation_arguments = [(self._log_validation, log) for log in p.get()]
         if simulation_cases > 1000:
             pool.close()
-            results = [self._evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
-            evaluation_measurements = list(itertools.chain(*results))
+            evaluation_measurements = [self._evaluate_logs(args)
+                                       for args in tqdm(evaluation_arguments, 'evaluating results')]
         else:
             p = pool.map_async(self._evaluate_logs, evaluation_arguments)
             progress_bar_async(p, 'evaluating results', num_simulations)
             pool.close()
-            evaluation_measurements = list(itertools.chain(*p.get()))
+            evaluation_measurements = p.get()
 
         return evaluation_measurements
 
     @staticmethod
-    def _evaluate_logs(args) -> Optional[list]:
-        settings: PipelineSettings = args[0]
-        data: pd.DataFrame = args[1]
-        sim_log = args[2]
+    def _evaluate_logs(args) -> dict:
+        validation_log, log = args
 
-        if sim_log is None:
-            return None
-
-        rep = sim_log.iloc[0].run_num
-        sim_values = []
-        evaluator = sim.SimilarityEvaluator(data, sim_log, max_cases=1000)
+        evaluator = sim.SimilarityEvaluator(validation_log, log, max_cases=1000)
         evaluator.measure_distance(Metric.DAY_HOUR_EMD)
-        sim_values.append({**{'run_num': rep}, **evaluator.similarity})
 
-        return sim_values
+        result = {
+            'run_num': log.iloc[0].run_num,
+            **evaluator.similarity
+        }
+
+        return result
 
     def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         train, validation = self._log.split_timeline(size)
@@ -369,3 +363,8 @@ class CalendarOptimizer(HyperoptPipeline):
         validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
         train = train.sort_values(key, ascending=True).reset_index(drop=True)
         return train, validation
+
+    def _reset_log_buckets(self):
+        self._log = self._original_log  # TODO: no need
+        self._log_train = copy.deepcopy(self._original_log_train)
+        self._log_validation = copy.deepcopy(self._original_log_validation)

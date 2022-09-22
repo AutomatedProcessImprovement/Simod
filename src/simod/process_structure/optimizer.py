@@ -1,5 +1,4 @@
 import copy
-import itertools
 import multiprocessing
 from pathlib import Path
 from typing import Union, Optional, Tuple
@@ -28,7 +27,6 @@ from ..simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, sim
 class StructureOptimizer(HyperoptPipeline):
     best_output: Optional[Path]
     best_parameters: PipelineSettings
-    measurements_file_path: Path
     evaluation_measurements: pd.DataFrame
 
     _bayes_trials: Trials = Trials()
@@ -69,8 +67,6 @@ class StructureOptimizer(HyperoptPipeline):
         self._output_dir = self._settings.base_dir / folder_id(prefix='structure_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.measurements_file_path = self._output_dir / file_id(prefix='evaluation_')
-
         self.evaluation_measurements = pd.DataFrame(
             columns=['similarity', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta', 'and_prior', 'or_rep',
                      'output_dir'])
@@ -83,12 +79,11 @@ class StructureOptimizer(HyperoptPipeline):
             print_message(f'train split: {len(pd.DataFrame(self._log_train.data)[self._log_ids.case].unique())}, '
                           f'validation split: {len(self._log_validation[self._log_ids.case].unique())}')
 
-            # casting a dictionary provided by hyperopt to PipelineSettings for convinience
+            # casting a dictionary provided by hyperopt to PipelineSettings for convenience
             if isinstance(trial_stage_settings, dict):
                 trial_stage_settings = PipelineSettings(
                     model_path=None,
                     output_dir=None,
-                    measurements_file_path=self.measurements_file_path,
                     project_name=self._settings.project_name,
                     **trial_stage_settings)
             print_message(f'Parameters: {trial_stage_settings}', capitalize=False)
@@ -168,13 +163,12 @@ class StructureOptimizer(HyperoptPipeline):
             initial_settings=self._settings,
             model_path=best_model_path,
             project_name=self._settings.project_name,
-            measurements_file_path=self.measurements_file_path,
         )
         self.best_parameters = best_settings
 
         # Save evaluation measurements
         self.evaluation_measurements.sort_values('similarity', ascending=False, inplace=True)
-        self.evaluation_measurements.to_csv(self.measurements_file_path, index=False)
+        self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
 
         return best_settings
 
@@ -230,13 +224,13 @@ class StructureOptimizer(HyperoptPipeline):
             status,
             evaluation_measurements):
         optimization_parameters = settings.optimization_parameters_as_dict(self._settings.mining_algorithm)
+        optimization_parameters['status'] = status
 
         if status == STATUS_OK:
             for sim_val in evaluation_measurements:
                 values = {
                     'similarity': sim_val['sim_val'],
                     'metric': sim_val['metric'],
-                    'status': status
                 }
                 values = values | optimization_parameters
                 self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
@@ -244,7 +238,6 @@ class StructureOptimizer(HyperoptPipeline):
             values = {
                 'similarity': 0,
                 'metric': Metric.DL,
-                'status': status
             }
             values = values | optimization_parameters
             self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
@@ -313,7 +306,7 @@ class StructureOptimizer(HyperoptPipeline):
             ProsimosSettings(
                 bpmn_path=settings.model_path,
                 parameters_path=json_path,
-                output_log_path=settings.output_dir / f'{settings.project_name}_{rep}.csv',
+                output_log_path=settings.output_dir / f'simulated_log_{rep}.csv',
                 num_simulation_cases=simulation_cases)
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)
@@ -326,30 +319,34 @@ class StructureOptimizer(HyperoptPipeline):
         progress_bar_async(p, 'reading simulated logs', num_simulations)
 
         # Evaluate
-        evaluation_arguments = [(settings, self._log_validation, log) for log in p.get()]
+        evaluation_arguments = [(self._log_validation, log) for log in p.get()]
         if simulation_cases > 1000:
             pool.close()
-            results = [self._evaluate_logs(arg) for arg in tqdm(evaluation_arguments, 'evaluating results')]
-            evaluation_measurements = list(itertools.chain(*results))
+            evaluation_measurements = [self._evaluate_logs(args)
+                                       for args in tqdm(evaluation_arguments, 'evaluating results')]
         else:
             p = pool.map_async(self._evaluate_logs, evaluation_arguments)
             progress_bar_async(p, 'evaluating results', num_simulations)
             pool.close()
-            evaluation_measurements = list(itertools.chain(*p.get()))
+            evaluation_measurements = p.get()
 
         return evaluation_measurements
 
     @staticmethod
-    def _evaluate_logs(arguments):
+    def _evaluate_logs(arguments) -> dict:
         data: pd.DataFrame
         sim_log: pd.DataFrame
-        settings, data, sim_log = arguments
+        data, sim_log = arguments
 
-        rep = sim_log.iloc[0].run_num
         evaluator = SimilarityEvaluator(data, sim_log, max_cases=1000)
         evaluator.measure_distance(Metric.DL)
-        sim_values = [{'run_num': rep, **evaluator.similarity}]  # TODO: why list for a single dict?
-        return sim_values
+
+        result = {
+            'run_num': sim_log.iloc[0].run_num,
+            **evaluator.similarity
+        }
+
+        return result
 
     @staticmethod
     def _read_simulated_log(arguments: Tuple):
