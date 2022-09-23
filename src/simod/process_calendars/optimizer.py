@@ -216,7 +216,7 @@ class CalendarOptimizer(HyperoptPipeline):
             'gateway_probabilities': settings.gateway_probabilities,
             'output_dir': settings.output_dir,
             'status': status,
-        }
+        }  # TODO: arr_support, arr_confidence, res_support, res_confidence and other metrics can be exposed too
 
         if status == STATUS_OK:
             for sim_val in evaluation_measurements:

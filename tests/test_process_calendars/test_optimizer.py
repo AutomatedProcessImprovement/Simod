@@ -73,8 +73,6 @@ test_data = [
 
 @pytest.mark.parametrize('test_data', test_data, ids=[test_data['name'] for test_data in test_data])
 def test_optimizer(entry_point, test_data):
-    """Smoke test to check that the optimizer can be instantiated and run successfully."""
-
     base_dir = get_project_dir() / 'outputs'
     calendar_settings = OptimizerSettings.from_stream(test_data['config_data'], base_dir=base_dir)
     log_path = entry_point / 'PurchasingExample.xes'
@@ -88,3 +86,7 @@ def test_optimizer(entry_point, test_data):
     assert type(result.arr_cal_met[1]) is ArrivalOptimizationSettings
     assert type(result.gateway_probabilities) is GateManagement
     assert type(result.res_cal_met[1]) is ResourceOptimizationSettings
+
+    # Testing that the returned result actually has the biggest similarity
+    assert result.gateway_probabilities == optimizer.evaluation_measurements['gateway_probabilities'].to_list()[0]
+    assert result.rp_similarity == optimizer.evaluation_measurements['rp_similarity'].to_list()[0]
