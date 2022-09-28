@@ -17,7 +17,7 @@ from simod.event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
-from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
+from simod.simulation.parameters.miner import mine_default_24_7
 from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
 from simod.utilities import remove_asset, progress_bar_async, folder_id, file_id
 
@@ -275,7 +275,7 @@ class CalendarOptimizer(HyperoptPipeline):
         log = self._log_train.get_traces_df(include_start_end_events=True)
         pdf_method = self._calendar_optimizer_settings.pdef_method
 
-        simulation_parameters = mine_simulation_parameters_default_24_7(
+        simulation_parameters = mine_default_24_7(
             log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader,
             settings.gateway_probabilities)
 

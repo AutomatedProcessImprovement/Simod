@@ -14,7 +14,7 @@ from simod.cli_formatter import print_message, print_subsection
 from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
+from simod.simulation.parameters.miner import mine_default_24_7
 from simod.utilities import remove_asset, progress_bar_async, file_id, folder_id
 from .miner import StructureMiner, Settings as StructureMinerSettings
 from .settings import StructureOptimizationSettings, PipelineSettings
@@ -268,7 +268,7 @@ class StructureOptimizer(HyperoptPipeline):
         log = self._log_train.get_traces_df(include_start_end_events=True)
         pdf_method = self._settings.pdef_method
 
-        simulation_parameters = mine_simulation_parameters_default_24_7(
+        simulation_parameters = mine_default_24_7(
             log,
             self._log_ids,
             settings.model_path,

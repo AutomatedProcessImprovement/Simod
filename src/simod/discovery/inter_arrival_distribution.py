@@ -5,16 +5,18 @@ import pandas as pd
 from networkx import DiGraph
 from tqdm import tqdm
 
-from simod.discovery.pdf_finder import DistributionFinder
 from simod.configuration import PDFMethod
+from simod.discovery.pdf_finder import DistributionFinder
+from simod.event_log.column_mapping import EventLogIDs
 
 
 def discover(
         process_graph: DiGraph,
         log: pd.DataFrame,
+        log_ids: EventLogIDs,
         pdef_method: PDFMethod = PDFMethod.AUTOMATIC) -> dict:
     tasks = __analyze_first_tasks(process_graph)
-    inter_arrival_times = __mine_interarrival_time(log, tasks)
+    inter_arrival_times = __mine_interarrival_time(log, log_ids, tasks)
     return __define_interarrival_distribution(inter_arrival_times, pdef_method)
 
 
@@ -44,7 +46,7 @@ def __analyze_first_tasks(process_graph: DiGraph) -> list:
     return in_tasks
 
 
-def __mine_interarrival_time(log: pd.DataFrame, tasks: list) -> list:
+def __mine_interarrival_time(log: pd.DataFrame, log_ids: EventLogIDs, tasks: list) -> list:
     """
     Extracts the interarrival distribution from data
 
@@ -53,11 +55,11 @@ def __mine_interarrival_time(log: pd.DataFrame, tasks: list) -> list:
     inter_arrival_times : list
     """
     # Analysis of start tasks
-    ordering_field = 'start_timestamp'
+    ordering_field = log_ids.start_time
     # Find the initial activity
-    log = log[log.task.isin(tasks)]
+    log = log[log[log_ids.activity].isin(tasks)]
     arrival_timestamps = (pd.DataFrame(
-        log.groupby('caseid')[ordering_field].min())
+        log.groupby(log_ids.case)[ordering_field].min())
                           .reset_index()
                           .rename(columns={ordering_field: 'times'}))
     # group by day and calculate inter-arrival

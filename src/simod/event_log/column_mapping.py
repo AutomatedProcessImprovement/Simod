@@ -11,6 +11,7 @@ class EventLogIDs:
     end_time: str = 'end_timestamp'
     enabled_time: str = 'enabled_timestamp'
     role: str = 'role'
+    processing_time: str = 'processing_time'
 
 
 SIMOD_DEFAULT_COLUMNS = EventLogIDs(

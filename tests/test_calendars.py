@@ -2,12 +2,13 @@ import uuid
 
 import pandas as pd
 import pytest
-
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
+
 from pm4py_wrapper.wrapper import convert_xes_to_csv
-from simod.discovery.calendar_discovery import case_arrival, resource as resource_calendar
-from simod.event_log.utilities import read
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
+from simod.event_log.column_mapping import EventLogIDs
+from simod.event_log.utilities import read
+from simod.simulation.calendar_discovery import case_arrival
 
 
 def test_calendar_module(entry_point):
@@ -40,31 +41,31 @@ def test_calendar_module(entry_point):
     assert 'Kim Passa' in calendar
 
 
-@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
-def test_calendar_discover_undifferentiated(entry_point, log_name):
-    log_path = entry_point / log_name
-    log, log_path_csv = read(log_path)
-    result = resource_calendar.discover_undifferentiated(log)
-    assert result
-    log_path_csv.unlink()
-
-
-@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
-def test_calendar_discover_per_resource_pool(entry_point, log_name):
-    log_path = entry_point / log_name
-    log, log_path_csv = read(log_path)
-    result = resource_calendar.discover_per_resource_pool(log)
-    assert result
-    log_path_csv.unlink()
-
-
-@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
-def test_calendar_discover_per_resource(entry_point, log_name):
-    log_path = entry_point / log_name
-    log, log_path_csv = read(log_path)
-    result = resource_calendar.discover_per_resource(log)
-    assert result
-    log_path_csv.unlink()
+# @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+# def test_calendar_discover_undifferentiated(entry_point, log_name):
+#     log_path = entry_point / log_name
+#     log, log_path_csv = read(log_path)
+#     result = resource_calendar.discover_undifferentiated(log)
+#     assert result
+#     log_path_csv.unlink()
+#
+#
+# @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+# def test_calendar_discover_per_resource_pool(entry_point, log_name):
+#     log_path = entry_point / log_name
+#     log, log_path_csv = read(log_path)
+#     result = resource_calendar.discover_per_resource_pool(log)
+#     assert result
+#     log_path_csv.unlink()
+#
+#
+# @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+# def test_calendar_discover_per_resource(entry_point, log_name):
+#     log_path = entry_point / log_name
+#     log, log_path_csv = read(log_path)
+#     result = resource_calendar.discover_per_resource(log)
+#     assert result
+#     log_path_csv.unlink()
 
 
 def test_resource_pool_analyzer(entry_point):
@@ -80,6 +81,13 @@ def test_resource_pool_analyzer(entry_point):
 def test_calendar_case_arrival_discover(entry_point, log_name):
     log_path = entry_point / log_name
     log, log_path_csv = read(log_path)
-    result = case_arrival.discover(log)
+    log_ids = EventLogIDs(
+        case='case:concept:name',
+        activity='concept:name',
+        resource='org:resource',
+        start_time='start_timestamp',
+        end_time='time:timestamp'
+    )
+    result = case_arrival._discover_undifferentiated(log, log_ids)
     assert result
     log_path_csv.unlink()

@@ -4,8 +4,10 @@ from typing import List, Optional
 
 import pandas as pd
 
-from simod.event_log.column_mapping import EventLogIDs
 from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.event_log.column_mapping import EventLogIDs
+from simod.simulation.calendar_discovery.resource import PoolMapping
+from simod.simulation.parameters.calendars import Calendar
 
 
 @dataclass
@@ -129,3 +131,116 @@ class ResourceProfile:
         profile = ResourceProfile(id=profile_name, name=profile_name, resources=list(resources))
 
         return profile
+
+    @staticmethod
+    def differentiated_by_pool(
+            log: pd.DataFrame,
+            log_ids: EventLogIDs,
+            bpmn_path: Path,
+            calendars: List[Calendar],
+            pool_mapping: PoolMapping,
+            resource_amount: Optional[int] = 1,
+            total_number_of_resources: Optional[int] = None,
+            cost_per_hour: float = 20) -> List['ResourceProfile']:
+
+        # Resource names per pool
+        pool_names = list(set([pool_mapping[resource_name] for resource_name in pool_mapping]))
+        pool_resources_names = {pool_name: set() for pool_name in pool_names}
+        for resource_name in pool_mapping:
+            pool_resources_names[pool_mapping[resource_name]].add(resource_name)
+
+        # Activity names by resource name
+        resource_names = log[log_ids.resource].unique()
+        resource_activities = {resource_name: set() for resource_name in resource_names}
+        for (resource_name, data) in log.groupby([log_ids.resource]):
+            activities = data[log_ids.activity].unique()
+            resource_activities[resource_name] = set(activities)
+
+        # Activities IDs mapping
+        bpmn_reader = BPMNReaderWriter(bpmn_path)
+        activity_ids_and_names = bpmn_reader.read_activities()
+
+        # Collecting profiles
+        profiles = []
+        for pool_name in pool_names:
+            resource_names = pool_resources_names[pool_name]
+
+            calendar = next(filter(lambda c: c.name == pool_name, calendars))
+
+            assigned_activities_ids = []
+            for name in resource_names:
+                for activity_name in resource_activities[name]:
+                    activity_id = next(filter(lambda a: a['task_name'] == activity_name,
+                                              activity_ids_and_names))['task_id']
+                    assigned_activities_ids.append(activity_id)
+
+            pool_resources = [
+                Resource(id=name,
+                         name=name,
+                         amount=resource_amount,
+                         cost_per_hour=cost_per_hour,
+                         calendar_id=calendar.id,
+                         assigned_tasks=assigned_activities_ids)
+                for name in resource_names
+            ]
+
+            profiles.append(ResourceProfile(
+                id=pool_name,
+                name=pool_name,
+                resources=pool_resources
+            ))
+
+        # TODO: how should we handle Start and End?
+
+        return profiles
+
+    @staticmethod
+    def differentiated_by_resource(
+            log: pd.DataFrame,
+            log_ids: EventLogIDs,
+            bpmn_path: Path,
+            calendars: List[Calendar],
+            resource_amount: Optional[int] = 1,
+            total_number_of_resources: Optional[int] = None,
+            cost_per_hour: float = 20) -> List['ResourceProfile']:
+
+        # Activity names by resource name
+        resource_names = log[log_ids.resource].unique()
+        resource_activities = {resource_name: set() for resource_name in resource_names}
+        for (resource_name, data) in log.groupby([log_ids.resource]):
+            activities = data[log_ids.activity].unique()
+            resource_activities[resource_name] = set(activities)
+
+        # Activities IDs mapping
+        bpmn_reader = BPMNReaderWriter(bpmn_path)
+        activity_ids_and_names = bpmn_reader.read_activities()
+
+        # Collecting profiles
+        profiles = []
+        for resource_name in resource_names:
+            calendar = next(filter(lambda c: c.name == resource_name, calendars))
+
+            assigned_activities_ids = []
+            for activity_name in resource_activities[resource_name]:
+                activity_id = next(filter(lambda a: a['task_name'] == activity_name,
+                                          activity_ids_and_names))['task_id']
+                assigned_activities_ids.append(activity_id)
+
+            resources = [
+                Resource(id=resource_name,
+                         name=resource_name,
+                         amount=resource_amount,
+                         cost_per_hour=cost_per_hour,
+                         calendar_id=calendar.id,
+                         assigned_tasks=assigned_activities_ids)
+            ]
+
+            profiles.append(ResourceProfile(
+                id=resource_name,
+                name=resource_name,
+                resources=resources
+            ))
+
+        # TODO: how should we handle Start and End?
+
+        return profiles

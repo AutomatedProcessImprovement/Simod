@@ -19,7 +19,7 @@ from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import PipelineSettings as StructurePipelineSettings
-from simod.simulation.parameters.miner import mine_simulation_parameters_default_24_7
+from simod.simulation.parameters.miner import mine_default_24_7
 from simod.simulation.prosimos import ProsimosSettings, simulate_with_prosimos, PROSIMOS_COLUMN_MAPPING
 from simod.utilities import file_id, progress_bar_async
 
@@ -170,7 +170,7 @@ class Optimizer:
         bpmn_reader = BPMNReaderWriter(model_path)
         process_graph = bpmn_reader.as_graph()
 
-        simulation_parameters = mine_simulation_parameters_default_24_7(
+        simulation_parameters = mine_default_24_7(
             log, self._settings.project_settings.log_ids, model_path, process_graph, pdf_method, bpmn_reader,
             gateway_probabilities)
 
@@ -239,6 +239,12 @@ class Optimizer:
 
         print_section('Calendars optimization')
         calendars_settings = self._optimize_calendars(model_path)
+
+        # TODO: ensure calendar simulation actually optimizes calendars
+
+        # TODO: ensure structure optimization actually optimizes structure
+
+        # TODO: calendar simulation parameters have to be used for the evaluation
 
         print_section('Evaluation')
         best_result_dir = self._settings.project_settings.output_dir / 'best_result'

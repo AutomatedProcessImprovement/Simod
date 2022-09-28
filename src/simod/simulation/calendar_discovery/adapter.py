@@ -10,15 +10,14 @@ import pandas as pd
 import pendulum
 from lxml import etree
 
+from simod.cli_formatter import print_step
 from simod.configuration import CalendarType, Configuration
+from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.event_log.reader_writer import LogReaderWriter
-from ...event_log.utilities import read
-from .case_arrival import discover as discover_arrival_calendar, CASE_ID_KEY
+from simod.event_log.utilities import read
+from .case_arrival import _discover_undifferentiated as discover_arrival_calendar, CASE_ID_KEY
 from .resource import UNDIFFERENTIATED_RESOURCE_POOL_KEY, ACTIVITY_KEY, RESOURCE_KEY, END_TIMESTAMP_KEY
 from .resource import discover as discover_resource_calendar
-from ..resource_pool_discoverer import ResourcePoolDiscoverer
-from ... import utilities
-from ...cli_formatter import print_step
 
 
 def _prosimos_calendar_to_time_table(resource_calendar: dict, arrival_calendar: dict) -> etree.ElementTree:

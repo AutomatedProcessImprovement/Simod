@@ -14,7 +14,6 @@ from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_asset, print_subsection, print_notice, print_step
 from simod.configuration import Configuration, StructureMiningAlgorithm
 from simod.discovery import inter_arrival_distribution
-from simod.discovery.calendar_discovery.adapter import discover_timetables_and_get_default_arrival_resource_pool
 from simod.discovery.gateway_probabilities import discover_with_gateway_management
 from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log.preprocessor import Preprocessor
@@ -22,6 +21,7 @@ from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_structure.optimizer import StructureOptimizer
+from simod.simulation.calendar_discovery import discover_timetables_and_get_default_arrival_resource_pool
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 Parameters = namedtuple('Parameters',

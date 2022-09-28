@@ -10,13 +10,13 @@ from lxml import etree
 from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.reader_writer import DEFAULT_XES_COLUMNS, LogReaderWriter
+from simod.simulation.calendar_discovery.adapter import discover_timetables_with_resource_pools
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 from . import utilities as sup, xml_writer as xml
 from .bpm.reader_writer import BPMNReaderWriter
 from .cli_formatter import print_asset, print_section, print_notice, print_step
 from .configuration import Configuration, StructureMiningAlgorithm, CalendarType, QBP_NAMESPACE_URI
 from .discovery import inter_arrival_distribution, gateway_probabilities
-from .discovery.calendar_discovery.adapter import discover_timetables_with_resource_pools
 from .event_log.utilities import reformat_timestamps
 from .process_structure.miner import StructureMiner, Settings as StructureMinerSettings
 
@@ -150,7 +150,8 @@ class Discoverer:
         time_table = xtd.parse(time_table, process_namespaces=True, namespaces=ns)
         self.parameters['time_table'] = time_table
         self.parameters['discovery_parameters'] = self._filter_dic_params(self._settings)
-        sup.create_json(self.parameters, os.path.join(self._settings.output, self._settings.project_name + '_canon.json'))
+        sup.create_json(self.parameters,
+                        os.path.join(self._settings.output, self._settings.project_name + '_canon.json'))
 
     @staticmethod
     def _filter_dic_params(settings: Configuration) -> dict:
@@ -158,7 +159,8 @@ class Discoverer:
         best_params['gate_management'] = str(settings.gate_management)
         best_params['rp_similarity'] = str(settings.rp_similarity)
         # best structure mining parameters
-        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1, StructureMiningAlgorithm.SPLIT_MINER_3]:
+        if settings.structure_mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                                   StructureMiningAlgorithm.SPLIT_MINER_3]:
             best_params['epsilon'] = str(settings.epsilon)
             best_params['eta'] = str(settings.eta)
         elif settings.structure_mining_algorithm == StructureMiningAlgorithm.SPLIT_MINER_2:

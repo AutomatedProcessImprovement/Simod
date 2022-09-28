@@ -8,6 +8,7 @@ import pandas as pd
 
 from simod.cli_formatter import print_notice, print_step
 from simod.configuration import GateManagement
+from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 
@@ -34,17 +35,18 @@ class GatewayProbabilities:
 
 def mine_gateway_probabilities(
         log: pd.DataFrame,
+        log_ids: EventLogIDs,
         bpmn_path: Path,
         gateways_probability_type: GateManagement) -> List[GatewayProbabilities]:
     bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
 
     # downstream functions work on list of traces instead of dataframe
     log_records = log.to_dict('records')
-    cases = list(set([x['caseid'] for x in log_records]))
+    cases = list(set([x[log_ids.case] for x in log_records]))
     traces = []
     for case in cases:
-        order_key = 'start_timestamp'
-        trace = sorted(list(filter(lambda x: (x['caseid'] == case), log_records)), key=itemgetter(order_key))
+        order_key = log_ids.start_time
+        trace = sorted(list(filter(lambda x: (x[log_ids.case] == case), log_records)), key=itemgetter(order_key))
         traces.append(trace)
 
     sequences = __discover_with_gateway_management(traces, bpmn_graph, gateways_probability_type)
