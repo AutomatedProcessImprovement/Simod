@@ -37,6 +37,27 @@ class Timetable:
             'endTime': self.end_time
         }
 
+    @staticmethod
+    def from_dict(d: dict) -> 'Timetable':
+        return Timetable(
+            from_day=WeekDay(d['from']),
+            to_day=WeekDay(d['to']),
+            begin_time=d['beginTime'],
+            end_time=d['endTime']
+        )
+
+    @staticmethod
+    def from_list_of_dicts(timetables: List[dict]) -> List['Timetable']:
+        return [
+            Timetable(
+                from_day=WeekDay(d['from']),
+                to_day=WeekDay(d['to']),
+                begin_time=d['beginTime'],
+                end_time=d['endTime']
+            )
+            for d in timetables
+        ]
+
 
 @dataclass
 class Calendar:

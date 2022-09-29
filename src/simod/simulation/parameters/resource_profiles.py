@@ -215,10 +215,16 @@ class ResourceProfile:
         bpmn_reader = BPMNReaderWriter(bpmn_path)
         activity_ids_and_names = bpmn_reader.read_activities()
 
+        # Calendars by resource name
+        resource_calendars = {
+            name: next(filter(lambda c: c.name == name, calendars))
+            for name in resource_names
+        }
+
         # Collecting profiles
         profiles = []
         for resource_name in resource_names:
-            calendar = next(filter(lambda c: c.name == resource_name, calendars))
+            calendar = resource_calendars[resource_name]
 
             assigned_activities_ids = []
             for activity_name in resource_activities[resource_name]:

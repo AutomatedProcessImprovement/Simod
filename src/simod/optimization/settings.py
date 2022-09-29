@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from simod.configuration import ProjectSettings, Metric
+from simod.configuration import ProjectSettings, Metric, ResourceProfilesType
 from simod.process_calendars.settings import CalendarOptimizationSettings
 from simod.process_structure.settings import StructureOptimizationSettings
 
@@ -11,6 +11,7 @@ class OptimizationSettings:
     project_settings: ProjectSettings
     structure_settings: StructureOptimizationSettings
     calendar_settings: CalendarOptimizationSettings
+    resource_profiles_type: ResourceProfilesType
     remove_intermediate_files: bool = False
 
     num_simulations: int = 2

@@ -6,7 +6,7 @@ from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from simod.configuration import CalendarType
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.event_log.column_mapping import EventLogIDs
-from simod.simulation.parameters.calendars import Calendar
+from simod.simulation.parameters.calendars import Calendar, Timetable
 
 UNDIFFERENTIATED_RESOURCE_POOL_KEY = "undifferentiated_resource_pool"
 RESOURCE_KEY = "org:resource"
@@ -68,6 +68,7 @@ def _discover_timetables(event_log: pd.DataFrame,
     :return: the calendar dictionary with the resource names as keys and the working time intervals as values.
     """
     calendar_factory = CalendarFactory(granularity)
+
     for (index, event) in event_log.iterrows():
         if differentiated:
             if pool_mapping:
@@ -76,18 +77,30 @@ def _discover_timetables(event_log: pd.DataFrame,
                 resource = event[log_ids.resource]
         else:
             resource = UNDIFFERENTIATED_RESOURCE_POOL_KEY
-
         activity = event[log_ids.activity]
         start_time = event[START_TIMESTAMP_KEY]
         end_time = event[log_ids.end_time]
+
         calendar_factory.check_date_time(resource, activity, start_time)
         calendar_factory.check_date_time(resource, activity, end_time)
+
     calendar_candidates = calendar_factory.build_weekly_calendars(min_confidence, desired_support, min_participation)
-    calendar = {}
+
+    timetables_per_resource_id = {}
     for resource_id in calendar_candidates:
         if calendar_candidates[resource_id] is not None:
-            calendar[resource_id] = calendar_candidates[resource_id].to_json()
-    return calendar
+            timetable_dict = calendar_candidates[resource_id].to_json()
+            timetables_per_resource_id[resource_id] = Timetable.from_list_of_dicts(timetable_dict)
+
+    # NOTE: Prosimos calendar discovery may return None for some resources, so we need either to change hyperparameters
+    # or put some default calendars for those resources.
+    # TODO: Introduce optimization step for calendar discovery hyperparameters instead of 24/7 default calendar
+    resource_names = event_log[log_ids.resource].unique()
+    for name in resource_names:
+        if name not in timetables_per_resource_id:
+            timetables_per_resource_id[name] = [Timetable.all_day_long()]
+
+    return timetables_per_resource_id
 
 
 def discover_undifferentiated(
@@ -123,6 +136,13 @@ def discover_per_resource_pool(
         resource_key=log_ids.resource)
 
     pool_mapping = __resource_pool_analyser_result_to_pool_mapping(analyzer.resource_table)
+
+    # NOTE: ResourcePoolDiscoverer skips 'Start' and 'End' activities, so we need to add them manually to a system pool
+    resource_names = event_log[log_ids.resource].unique()
+    system_pool_name = 'System'
+    for name in resource_names:
+        if name not in pool_mapping:
+            pool_mapping[name] = system_pool_name
 
     timetables_per_pool = _discover_timetables(
         event_log, log_ids, granularity, min_confidence, desired_support, min_participation, True, pool_mapping)

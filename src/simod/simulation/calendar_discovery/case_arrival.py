@@ -2,7 +2,7 @@ import pandas as pd
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 
 from simod.event_log.column_mapping import EventLogIDs
-from simod.simulation.parameters.calendars import Calendar
+from simod.simulation.parameters.calendars import Calendar, Timetable
 
 CASE_ID_KEY = 'case:concept:name'
 START_TIMESTAMP_KEY = "start_timestamp"
@@ -29,7 +29,7 @@ def _discover_undifferentiated(
     calendar = {}
     for resource_id in calendar_candidates:
         if calendar_candidates[resource_id] is not None:
-            calendar[resource_id] = calendar_candidates[resource_id].to_json()
+            calendar[resource_id] = Timetable.from_list_of_dicts(calendar_candidates[resource_id].to_json())
     return calendar
 
 

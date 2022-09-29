@@ -520,3 +520,26 @@ class ProjectSettings:
             model_path=model_path,
             log_ids=log_ids,
             output_dir=output_dir)
+
+
+class ResourceProfilesType(Enum):
+    AROUND_THE_CLOCK = '24-7'
+    WORKING_HOURS = '9-5'
+    UNDIFFERENTIATED = 'undifferentiated'
+    DIFFERENTIATED = 'differentiated'
+    POOLED = 'pooled'
+
+    @staticmethod
+    def from_str(s: str) -> 'ResourceProfilesType':
+        if s == '24-7':
+            return ResourceProfilesType.AROUND_THE_CLOCK
+        elif s == '9-5':
+            return ResourceProfilesType.WORKING_HOURS
+        elif s == 'undifferentiated':
+            return ResourceProfilesType.UNDIFFERENTIATED
+        elif s == 'differentiated':
+            return ResourceProfilesType.DIFFERENTIATED
+        elif s == 'pooled':
+            return ResourceProfilesType.POOLED
+        else:
+            raise ValueError(f'Unknown resource profiles type: {s}')

@@ -22,8 +22,8 @@ class StructureOptimizationSettings:
     # Structure Miner accepts only singular values for the following settings:
     #
     # for Split Miner 1 and 3
-    epsilon: Optional[Union[float, List[float]]] = None
-    eta: Optional[Union[float, List[float]]] = None
+    epsilon: Optional[Union[float, List[float]]] = None  # percentile for frequency threshold
+    eta: Optional[Union[float, List[float]]] = None  # parallelism threshold
     # for Split Miner 2
     concurrency: Optional[Union[float, List[float]]] = 0.0
     #

@@ -10,7 +10,7 @@ from tqdm import tqdm
 from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
-from simod.configuration import ProjectSettings, GateManagement, PDFMethod
+from simod.configuration import ProjectSettings, GateManagement, PDFMethod, ResourceProfilesType
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers
@@ -19,7 +19,7 @@ from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import PipelineSettings as StructurePipelineSettings
-from simod.simulation.parameters.miner import mine_default_24_7
+from simod.simulation.parameters import miner as parameters_miner
 from simod.simulation.prosimos import ProsimosSettings, simulate_with_prosimos, PROSIMOS_COLUMN_MAPPING
 from simod.utilities import file_id, progress_bar_async
 
@@ -74,7 +74,6 @@ class Optimizer:
 
     def _optimize_calendars(self, model_path: Path) -> CalendarPipelineSettings:
         optimizer = CalendarOptimizer(
-            self._settings.project_settings,
             self._settings.calendar_settings,
             self._log_train,
             model_path)
@@ -92,20 +91,20 @@ class Optimizer:
         reader.df['role'] = reader.df['resource']
         reader.df['source'] = 'simulation'
         reader.df['run_num'] = simulation_repetition_index
-        reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
+        reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]  # TODO: should we use EventLogIDs here?
 
         return reader.df
 
     @staticmethod
     def _evaluate_logs(arguments):
         settings: OptimizationSettings
-        data: pd.DataFrame
-        sim_log: pd.DataFrame
-        settings, data, sim_log = arguments
+        test_log: pd.DataFrame
+        simulated_log: pd.DataFrame
+        settings, test_log, simulated_log = arguments
 
-        rep = sim_log.iloc[0].run_num
+        rep = simulated_log.iloc[0].run_num
 
-        evaluator = SimilarityEvaluator(data, sim_log, max_cases=1000)
+        evaluator = SimilarityEvaluator(test_log, simulated_log, max_cases=1000)
 
         measurements = []
         for metric in settings.evaluation_metrics:
@@ -114,7 +113,7 @@ class Optimizer:
 
         return measurements
 
-    def _simulate_undifferentiated(
+    def _simulate(
             self,
             settings: OptimizationSettings,
             bpmn_path: Path,
@@ -135,7 +134,7 @@ class Optimizer:
             ProsimosSettings(
                 bpmn_path=bpmn_path,
                 parameters_path=json_path,
-                output_log_path=output_dir / f'{settings.project_settings.project_name}_{rep}.csv',
+                output_log_path=output_dir / f'simulated_log_{rep}.csv',
                 num_simulation_cases=simulation_cases)
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)
@@ -161,37 +160,52 @@ class Optimizer:
 
         return evaluation_measurements
 
-    def _extract_parameters_undifferentiated(
-            self,
-            model_path: Path,
-            log: pd.DataFrame,
-            gateway_probabilities: GateManagement,
-            pdf_method: PDFMethod) -> Tuple:
+    def _mine_simulation_parameters(self,
+                                    output_dir: Path,
+                                    model_path: Path,
+                                    pdf_method: PDFMethod,
+                                    gateway_probabilities: GateManagement) -> Path:
         bpmn_reader = BPMNReaderWriter(model_path)
         process_graph = bpmn_reader.as_graph()
 
-        simulation_parameters = mine_default_24_7(
-            log, self._settings.project_settings.log_ids, model_path, process_graph, pdf_method, bpmn_reader,
-            gateway_probabilities)
+        log = self._log_test
+        log_ids = self._settings.project_settings.log_ids
+        profile_type = self._settings.resource_profiles_type
 
-        json_path = model_path.with_suffix('.json')
+        if profile_type == ResourceProfilesType.UNDIFFERENTIATED:
+            simulation_parameters = parameters_miner.mine_for_undifferentiated_resources(
+                log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, gateway_probabilities)
+        elif profile_type == ResourceProfilesType.POOLED:
+            simulation_parameters = parameters_miner.mine_for_pooled_resources(
+                log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, gateway_probabilities)
+        elif profile_type == ResourceProfilesType.DIFFERENTIATED:
+            simulation_parameters = parameters_miner.mine_for_differentiated_resources(
+                log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, gateway_probabilities)
+        elif profile_type == ResourceProfilesType.AROUND_THE_CLOCK:
+            simulation_parameters = parameters_miner.mine_default_24_7(
+                log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, gateway_probabilities)
+        elif profile_type == ResourceProfilesType.WORKING_HOURS:
+            raise NotImplementedError('Working hours resource profiles are not implemented yet.')
+        else:
+            raise ValueError(f'Unknown resource profiles type {profile_type}')
+
+        json_path = output_dir / f'simulation_parameters_{profile_type.value}.json'
         simulation_parameters.to_json_file(json_path)
 
-        simulation_cases = log[self._settings.project_settings.log_ids.case].nunique()
-
-        return json_path, simulation_cases
+        return json_path
 
     def _evaluate_model(
             self,
             model_path: Path,
-            test_data: pd.DataFrame,
-            gateway_probabilities_type: GateManagement,
+            simulation_dir: Path,
             pdf_method: PDFMethod,
-            simulation_dir: Path):
-        parameters_path, simulation_cases = self._extract_parameters_undifferentiated(
-            model_path, test_data, gateway_probabilities_type, pdf_method)
+            gateway_probabilities_type: GateManagement):
+        simulation_cases = self._log_test[self._settings.project_settings.log_ids.case].nunique()
 
-        measurements = self._simulate_undifferentiated(
+        parameters_path = self._mine_simulation_parameters(
+            simulation_dir, model_path, pdf_method, gateway_probabilities_type)
+
+        measurements = self._simulate(
             settings=self._settings,
             bpmn_path=model_path,
             json_path=parameters_path,
@@ -230,6 +244,8 @@ class Optimizer:
         if self._settings.discover_structure:
             print_section('Structure optimization')
             structure_settings, pdf_method = self._mine_and_optimize_structure()
+
+            # Taking the best model from the structure optimization
             model_path = structure_settings.model_path
         else:
             print_section('No structure discovery needed, using the provided model')
@@ -240,22 +256,18 @@ class Optimizer:
         print_section('Calendars optimization')
         calendars_settings = self._optimize_calendars(model_path)
 
-        # TODO: ensure calendar simulation actually optimizes calendars
-
-        # TODO: ensure structure optimization actually optimizes structure
-
-        # TODO: calendar simulation parameters have to be used for the evaluation
-
         print_section('Evaluation')
         best_result_dir = self._settings.project_settings.output_dir / 'best_result'
         simulation_dir = best_result_dir / 'simulation'
         simulation_dir.mkdir(parents=True)
 
         gateway_probabilities_type = structure_settings.gateway_probabilities
-        self._evaluate_model(model_path, self._log_test, gateway_probabilities_type, pdf_method, simulation_dir)
+        self._evaluate_model(model_path, simulation_dir, pdf_method, gateway_probabilities_type)
 
         print_section('Saving results')
         self._save_results(best_result_dir, calendars_settings, structure_settings)
 
         # TODO: export model
         # export_canonical_model ?
+
+        # TODO: track all evaluation metrics across all optimization steps and unite into one table, don't discard intermediate results
