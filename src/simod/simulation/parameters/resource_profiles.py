@@ -140,7 +140,6 @@ class ResourceProfile:
             calendars: List[Calendar],
             pool_mapping: PoolMapping,
             resource_amount: Optional[int] = 1,
-            total_number_of_resources: Optional[int] = None,
             cost_per_hour: float = 20) -> List['ResourceProfile']:
 
         # Resource names per pool
@@ -160,37 +159,47 @@ class ResourceProfile:
         bpmn_reader = BPMNReaderWriter(bpmn_path)
         activity_ids_and_names = bpmn_reader.read_activities()
 
+        # Calendars by resource name
+        resource_calendars = {
+            name: next(filter(lambda c: c.name == name, calendars))
+            for name in pool_names
+        }
+
         # Collecting profiles
         profiles = []
         for pool_name in pool_names:
+            calendar = resource_calendars[pool_name]
+
             resource_names = pool_resources_names[pool_name]
-
-            calendar = next(filter(lambda c: c.name == pool_name, calendars))
-
-            assigned_activities_ids = []
+            resources = []
             for name in resource_names:
+                assigned_activities_ids = []
                 for activity_name in resource_activities[name]:
                     activity_id = next(filter(lambda a: a['task_name'] == activity_name,
                                               activity_ids_and_names))['task_id']
                     assigned_activities_ids.append(activity_id)
 
-            pool_resources = [
-                Resource(id=name,
-                         name=name,
-                         amount=resource_amount,
-                         cost_per_hour=cost_per_hour,
-                         calendar_id=calendar.id,
-                         assigned_tasks=assigned_activities_ids)
-                for name in resource_names
-            ]
+                # NOTE: intervention to reduce cost for SYSTEM pool
+                cost = 0 if pool_name.lower() == 'system' else cost_per_hour
+                # TODO: make sense to introduce Cost Structure Per Resource or Pool,
+                #  so we have amount of resources and cost each resource
+
+                resources.append(
+                    Resource(
+                        id=name,
+                        name=name,
+                        amount=resource_amount,
+                        cost_per_hour=cost,
+                        calendar_id=calendar.id,
+                        assigned_tasks=assigned_activities_ids
+                    )
+                )
 
             profiles.append(ResourceProfile(
                 id=pool_name,
                 name=pool_name,
-                resources=pool_resources
+                resources=resources
             ))
-
-        # TODO: how should we handle Start and End?
 
         return profiles
 
@@ -201,7 +210,6 @@ class ResourceProfile:
             bpmn_path: Path,
             calendars: List[Calendar],
             resource_amount: Optional[int] = 1,
-            total_number_of_resources: Optional[int] = None,
             cost_per_hour: float = 20) -> List['ResourceProfile']:
 
         # Activity names by resource name
@@ -232,11 +240,17 @@ class ResourceProfile:
                                           activity_ids_and_names))['task_id']
                 assigned_activities_ids.append(activity_id)
 
+            # NOTE: intervention to reduce cost for SYSTEM pool
+            is_system_resource = resource_name.lower() == 'start' or resource_name.lower() == 'end'
+            cost = 0 if is_system_resource else cost_per_hour
+            # TODO: make sense to introduce Cost Structure Per Resource or Pool,
+            #  so we have amount of resources and cost each resource
+
             resources = [
                 Resource(id=resource_name,
                          name=resource_name,
                          amount=resource_amount,
-                         cost_per_hour=cost_per_hour,
+                         cost_per_hour=cost,
                          calendar_id=calendar.id,
                          assigned_tasks=assigned_activities_ids)
             ]
@@ -246,7 +260,5 @@ class ResourceProfile:
                 name=resource_name,
                 resources=resources
             ))
-
-        # TODO: how should we handle Start and End?
 
         return profiles

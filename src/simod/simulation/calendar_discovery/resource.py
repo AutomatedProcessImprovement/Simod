@@ -94,11 +94,18 @@ def _discover_timetables(event_log: pd.DataFrame,
 
     # NOTE: Prosimos calendar discovery may return None for some resources, so we need either to change hyperparameters
     # or put some default calendars for those resources.
-    # TODO: Introduce optimization step for calendar discovery hyperparameters instead of 24/7 default calendar
-    resource_names = event_log[log_ids.resource].unique()
-    for name in resource_names:
-        if name not in timetables_per_resource_id:
-            timetables_per_resource_id[name] = [Timetable.all_day_long()]
+    # TODO: Introduce optimization step for calendar discovery hyperparameters instead of 24/7 default calendar]
+    if differentiated:
+        # defining resource or pool names
+        if pool_mapping is None:
+            resource_names = event_log[log_ids.resource].unique()
+        else:
+            resource_names = set(pool_mapping.values())
+
+        # adding default calendars
+        for name in resource_names:
+            if name not in timetables_per_resource_id:
+                timetables_per_resource_id[name] = [Timetable.all_day_long()]
 
     return timetables_per_resource_id
 

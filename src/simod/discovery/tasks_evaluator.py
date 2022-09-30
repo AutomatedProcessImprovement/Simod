@@ -169,19 +169,3 @@ class TaskEvaluator:
         model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
         model_data = model_data[model_data.type.isin(['task', 'start', 'end'])].rename(columns={'id': 'elementid'})
         return model_data
-
-
-# TODO: decide if we need the new distribution finder
-class ActivityResourceDistributionFinder:
-    _log: pd.DataFrame
-    _log_ids: EventLogIDs
-
-    def __init__(self, log: pd.DataFrame, log_ids: EventLogIDs):
-        self._log = log
-        self._log_ids = log_ids
-
-    def find(self):
-        """Performs the mining of activities durations from data."""
-
-        self._log[self._log_ids.processing_time] = self._log[self._log_ids.end_time] - self._log[
-            self._log_ids.start_time]
