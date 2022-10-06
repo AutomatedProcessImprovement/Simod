@@ -2,7 +2,7 @@ import pytest
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.configuration import PDFMethod
-from simod.discovery.tasks_evaluator import ActivityResourceDistributionFinder, TaskEvaluator
+from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.utilities import read
 
@@ -44,28 +44,3 @@ def test_task_evaluator_undifferentiated_resources(entry_point, test_case):
     activities_distributions = evaluator.elements_data
 
     assert activities_distributions is not None
-
-
-@pytest.mark.parametrize('test_case', [
-    {
-        'log_name': 'PurchasingExample.xes',
-        'model_name': 'PurchasingExample.bpmn',
-    },
-    # 'Production.xes'
-])
-def test_activity_resource_distribution_finder(entry_point, test_case):
-    log_path = entry_point / test_case['log_name']
-    log, log_path_csv = read(log_path)
-    log_ids = EventLogIDs(
-        case='case:concept:name',
-        activity='concept:name',
-        resource='org:resource',
-        start_time='start_timestamp',
-        end_time='time:timestamp'
-    )
-
-    model_path = entry_point / test_case['model_name']
-
-    result = ActivityResourceDistributionFinder(log, log_ids)
-
-    assert result is not None

@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_message, print_subsection
-from simod.configuration import StructureMiningAlgorithm, Metric, AndPriorORemove
+from ..configuration import StructureMiningAlgorithm, Metric
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_default_24_7
@@ -140,11 +140,11 @@ class StructureOptimizer(HyperoptPipeline):
 
             return response
 
-        search_space = self._define_search_space(self._settings)
+        space = self._define_search_space(self._settings)
 
         # Optimization
         best = fmin(fn=pipeline,
-                    space=search_space,
+                    space=space,
                     algo=tpe.suggest,
                     max_evals=self._settings.max_evaluations,
                     trials=self._bayes_trials,
@@ -190,8 +190,8 @@ class StructureOptimizer(HyperoptPipeline):
 
             if settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
                 space |= {
-                    'and_prior': hp.choice('and_prior', AndPriorORemove.to_str(settings.and_prior)),
-                    'or_rep': hp.choice('or_rep', AndPriorORemove.to_str(settings.or_rep)),
+                    'and_prior': hp.choice('and_prior', list(map(lambda v: str(v).lower(), settings.and_prior))),
+                    'or_rep': hp.choice('or_rep', list(map(lambda v: str(v).lower(), settings.or_rep))),
                 }
         elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             space |= {
@@ -205,7 +205,7 @@ class StructureOptimizer(HyperoptPipeline):
             status: str,
             evaluation_measurements: list,
             pipeline_settings: PipelineSettings) -> Tuple[dict, str]:
-        similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
+        similarity = np.mean([x['similarity'] for x in evaluation_measurements])
         loss = 1 - similarity
         status = status if loss > 0 else STATUS_FAIL
 
@@ -229,7 +229,7 @@ class StructureOptimizer(HyperoptPipeline):
         if status == STATUS_OK:
             for sim_val in evaluation_measurements:
                 values = {
-                    'similarity': sim_val['sim_val'],
+                    'similarity': sim_val['similarity'],
                     'metric': sim_val['metric'],
                 }
                 values = values | optimization_parameters

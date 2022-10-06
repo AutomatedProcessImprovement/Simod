@@ -2,7 +2,6 @@ import os.path
 
 import pytest
 
-from simod.configuration import AndPriorORemove
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import StructureOptimizationSettings, PipelineSettings
@@ -64,7 +63,5 @@ def test_structure_optimizer(entry_point, test_data):
 
     # Testing that the returned result actually has the biggest similarity
     assert result.gateway_probabilities == optimizer.evaluation_measurements['gateway_probabilities'].to_list()[0]
-    assert result.and_prior == AndPriorORemove.from_str(optimizer.evaluation_measurements['and_prior'].to_list()[0])
-    assert result.or_rep == AndPriorORemove.from_str(optimizer.evaluation_measurements['or_rep'].to_list()[0])
     assert result.eta == optimizer.evaluation_measurements['eta'].to_list()[0]
     assert result.epsilon == optimizer.evaluation_measurements['epsilon'].to_list()[0]

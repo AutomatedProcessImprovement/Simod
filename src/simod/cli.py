@@ -2,8 +2,7 @@ from pathlib import Path
 
 import click
 
-from simod.configuration import Configuration, config_data_from_file
-from simod.discoverer import Discoverer
+from simod.configuration import Configuration
 from simod.optimization.optimizer import Optimizer
 from simod.utilities import get_project_dir
 
@@ -14,19 +13,19 @@ def main():
     pass
 
 
-@main.command()
-@click.option('--config_path', default=None, required=True, type=Path)
-@click.pass_context
-def discover(ctx, config_path):
-    repository_dir = get_project_dir()
-    ctx.params['config_path'] = repository_dir.joinpath(config_path)
-
-    config_data = config_data_from_file(config_path)
-    config_data.update(ctx.params)
-    config = Configuration(**config_data)
-
-    discoverer = Discoverer(config)
-    discoverer.run()
+# @main.command()
+# @click.option('--config_path', default=None, required=True, type=Path)
+# @click.pass_context
+# def discover(ctx, config_path):
+#     repository_dir = get_project_dir()
+#     ctx.params['config_path'] = repository_dir.joinpath(config_path)
+#
+#     config_data = config_data_from_file(config_path)
+#     config_data.update(ctx.params)
+#     config = Configuration(**config_data)
+#
+#     discoverer = Discoverer(config)
+#     discoverer.run()
 
 
 @main.command()
@@ -34,25 +33,9 @@ def discover(ctx, config_path):
 @click.pass_context
 def optimize(ctx, config_path):
     repository_dir = get_project_dir()
-    ctx.params['config_path'] = repository_dir.joinpath(config_path)
-
-    config_data = config_data_from_file(config_path)
-    config_data.update(ctx.params)
-
-    strc_data = config_data.pop('strc')
-    tm_data = config_data.pop('tm')
-    global_data = config_data
-
-    global_config = Configuration(**global_data)
-
-    strc_data.update(global_data)
-    structure_optimizer_config = Configuration(**strc_data)
-
-    tm_data.update(global_data)
-    time_optimizer_config = Configuration(**tm_data)
-
-    optimizer = Optimizer({'gl': global_config, 'strc': structure_optimizer_config, 'tm': time_optimizer_config})
-    optimizer.run(discover_model=global_config.model_path is None)
+    config_path = repository_dir / config_path
+    settings = Configuration.from_stream(config_path)
+    Optimizer(settings).run()
 
 
 if __name__ == "__main__":

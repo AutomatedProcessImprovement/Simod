@@ -1,22 +1,29 @@
 import pytest
 
-from simod.configuration import GateManagement
+from simod.configuration import Configuration
+from simod.event_log.column_mapping import SIMOD_DEFAULT_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_calendars.optimizer import CalendarOptimizer
-from simod.process_calendars.settings import CalendarOptimizationSettings as OptimizerSettings, PipelineSettings, \
-    ArrivalOptimizationSettings, ResourceOptimizationSettings
+from simod.process_calendars.settings import PipelineSettings, CalendarOptimizationSettings
 from simod.utilities import get_project_dir
 
-config_str = """
-log_path: resources/event_logs/PurchasingExample.xes
-mining_alg: sm3
-exec_mode: optimizer
-repetitions: 1
-simulation: true
-sim_metric: dl
-multitasking: false
-structure_optimizer:
-  max_eval_s: 2
+config_str_A = """
+version: 2
+common:
+  log_path: assets/Production.xes
+  exec_mode: optimizer
+  repetitions: 1
+  simulation: true
+  evaluation_metrics: 
+    - dl
+    - day_hour_emd
+    - log_mae
+    - mae
+preprocessing:
+  multitasking: false
+structure:
+  max_evaluations: 2
+  mining_algorithm: sm3
   concurrency:
     - 0.0
     - 1.0
@@ -26,7 +33,7 @@ structure_optimizer:
   eta:
     - 0.0
     - 1.0
-  gate_management:
+  gateway_probabilities:
     - equiprobable
     - discovery
   or_rep:
@@ -35,58 +42,251 @@ structure_optimizer:
   and_prior:
     - true
     - false
-time_optimizer:
+calendars:
   max_evaluations: 2
-  simulation_repetitions: 1
+  case_arrival:
+    discovery_type: undifferentiated
+    granularity: 60
+    confidence:
+      - 0.01
+      - 0.1
+    support:
+      - 0.01
+      - 0.1
+    participation: 0.4
+  resource_profiles:
+    discovery_type: pool
+    granularity: 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01 
+      - 0.3
+    participation: 0.4
+"""
+
+config_str_B = """
+version: 2
+common:
+  log_path: assets/Production.xes
+  exec_mode: optimizer
+  repetitions: 1
+  simulation: true
+  evaluation_metrics: 
+    - dl
+    - day_hour_emd
+    - log_mae
+    - mae
+preprocessing:
+  multitasking: false
+structure:
+  max_evaluations: 2
+  mining_algorithm: sm3
+  concurrency:
+    - 0.0
+    - 1.0
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
   gateway_probabilities:
     - equiprobable
     - discovery
-  rp_similarity:
-    - 0.5
-    - 0.9
-  res_dtype:
-    - dt247
-  arr_dtype:
-    - dt247
-  res_sup_dis:
-    - 0.01
-    - 0.3
-  res_con_dis:
-    - 50
-    - 85
-  arr_support:
-    - 0.01
-    - 0.1
-  arr_confidence:
-    - 1
-    - 10
-  res_cal_met: pool
+  or_rep:
+    - true
+    - false
+  and_prior:
+    - true
+    - false
+calendars:
+  max_evaluations: 2
+  case_arrival:
+    discovery_type: 24_7
+    granularity: 60
+    confidence:
+      - 0.01
+      - 0.1
+    support:
+      - 0.01
+      - 0.1
+    participation: 0.4
+  resource_profiles:
+    discovery_type: pool
+    granularity: 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01 
+      - 0.3
+    participation: 0.4
 """
 
-test_data = [
+config_str_C = """
+version: 2
+common:
+  log_path: assets/Production.xes
+  exec_mode: optimizer
+  repetitions: 1
+  simulation: true
+  evaluation_metrics: 
+    - dl
+    - day_hour_emd
+    - log_mae
+    - mae
+preprocessing:
+  multitasking: false
+structure:
+  max_evaluations: 2
+  mining_algorithm: sm3
+  concurrency:
+    - 0.0
+    - 1.0
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
+  gateway_probabilities:
+    - equiprobable
+    - discovery
+  or_rep:
+    - true
+    - false
+  and_prior:
+    - true
+    - false
+calendars:
+  max_evaluations: 2
+  case_arrival:
+    discovery_type: 24_7
+    granularity: 60
+    confidence:
+      - 0.01
+      - 0.1
+    support:
+      - 0.01
+      - 0.1
+    participation: 0.4
+  resource_profiles:
+    discovery_type: 
+      - pool
+      - undifferentiated
+    granularity: 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01 
+      - 0.3
+    participation: 0.4
+"""
+
+config_str_D = """
+version: 2
+common:
+  log_path: assets/Production.xes
+  exec_mode: optimizer
+  repetitions: 1
+  simulation: true
+  evaluation_metrics: 
+    - dl
+    - day_hour_emd
+    - log_mae
+    - mae
+preprocessing:
+  multitasking: false
+structure:
+  max_evaluations: 2
+  mining_algorithm: sm3
+  concurrency:
+    - 0.0
+    - 1.0
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
+  gateway_probabilities:
+    - equiprobable
+    - discovery
+  or_rep:
+    - true
+    - false
+  and_prior:
+    - true
+    - false
+calendars:
+  max_evaluations: 2
+  case_arrival:
+    discovery_type: 24_7
+    granularity:
+      - 15 
+      - 60
+    confidence:
+      - 0.01
+      - 0.1
+    support:
+      - 0.01
+      - 0.1
+    participation:
+      - 0.1 
+      - 0.4
+  resource_profiles:
+    discovery_type: 
+      - pool
+      - undifferentiated
+    granularity: 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01 
+      - 0.3
+    participation:
+      - 0.1 
+      - 0.4
+"""
+
+test_cases = [
     {
         'name': 'A',
-        'config_data': config_str
+        'config_data': config_str_A
+    },
+    {
+        'name': 'B',
+        'config_data': config_str_B
+    },
+    {
+        'name': 'C',
+        'config_data': config_str_C
+    },
+    {
+        'name': 'D',
+        'config_data': config_str_D
     }
 ]
 
+base_dir = get_project_dir() / 'outputs'
 
-@pytest.mark.parametrize('test_data', test_data, ids=[test_data['name'] for test_data in test_data])
-def test_optimizer(entry_point, test_data):
-    base_dir = get_project_dir() / 'outputs'
-    calendar_settings = OptimizerSettings.from_stream(test_data['config_data'], base_dir=base_dir)
+
+@pytest.mark.parametrize('test_case', test_cases, ids=[case['name'] for case in test_cases])
+def test_optimizer(entry_point, test_case):
+    settings = Configuration.from_stream(test_case['config_data'])
+    calendar_settings = CalendarOptimizationSettings.from_configuration_v2(settings, base_dir)
+
     log_path = entry_point / 'PurchasingExample.xes'
     model_path = entry_point / 'PurchasingExampleQBP.bpmn'
     log = LogReaderWriter(log_path)
 
-    optimizer = CalendarOptimizer(calendar_settings, log, model_path)
+    optimizer = CalendarOptimizer(calendar_settings, log, model_path, log_ids=SIMOD_DEFAULT_COLUMNS)
     result = optimizer.run()
 
-    assert type(result) is PipelineSettings
-    assert type(result.arr_cal_met[1]) is ArrivalOptimizationSettings
-    assert type(result.gateway_probabilities) is GateManagement
-    assert type(result.res_cal_met[1]) is ResourceOptimizationSettings
+    # TODO: why multiple test runs lead to only 1 directory with results and others are empty?
 
-    # Testing that the returned result actually has the biggest similarity
-    assert result.gateway_probabilities == optimizer.evaluation_measurements['gateway_probabilities'].to_list()[0]
-    assert result.rp_similarity == optimizer.evaluation_measurements['rp_similarity'].to_list()[0]
+    assert type(result) is PipelineSettings

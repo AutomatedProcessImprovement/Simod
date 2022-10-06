@@ -1,14 +1,14 @@
 import os
 import platform as pl
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
 import yaml
 
 from simod.cli_formatter import print_warning
-from simod.configuration import StructureMiningAlgorithm, AndPriorORemove, PROJECT_DIR
+from simod.configuration import PROJECT_DIR, StructureMiningAlgorithm
 
 
 @dataclass
@@ -24,8 +24,8 @@ class Settings:
     concurrency: Optional[float] = 0.0
 
     # Split Miner 3
-    and_prior: Optional[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
-    or_rep: Optional[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
+    and_prior: Optional[bool] = False
+    or_rep: Optional[bool] = False
 
     # Private
     _sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer/splitminer.jar'
@@ -59,19 +59,15 @@ class Settings:
 
         and_prior = settings.get('and_prior', None)
         if and_prior is not None:
-            if isinstance(and_prior, list):
-                and_prior = [AndPriorORemove.from_str(a) for a in and_prior]
-            elif isinstance(and_prior, str):
-                and_prior = [AndPriorORemove.from_str(and_prior)]
+            if isinstance(and_prior, str):
+                and_prior = [and_prior.lower() == 'true']
             else:
                 raise ValueError('and_prior must be a list or a string.')
 
         or_rep = settings.get('or_rep', None)
         if or_rep is not None:
-            if isinstance(or_rep, list):
-                or_rep = [AndPriorORemove.from_str(o) for o in or_rep]
-            elif isinstance(or_rep, str):
-                or_rep = [AndPriorORemove.from_str(or_rep)]
+            if isinstance(or_rep, str):
+                or_rep = [or_rep.lower() == 'true']
             else:
                 raise ValueError('or_rep must be a list or a string.')
 

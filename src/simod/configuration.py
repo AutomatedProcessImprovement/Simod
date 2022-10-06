@@ -1,13 +1,10 @@
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import Union, List, Optional, Tuple
 
-import yaml
+from hyperopt import hp
 
-from . import utilities as sup
-from .cli_formatter import print_warning
 from .event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from .utilities import get_project_dir
 
@@ -16,31 +13,7 @@ BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
 PROJECT_DIR = get_project_dir()
 
 
-class TraceAlignmentAlgorithm(Enum):
-    REPLACEMENT = auto()
-    REPAIR = auto()
-    REMOVAL = auto()
-
-    @classmethod
-    def from_str(cls, value: str) -> 'TraceAlignmentAlgorithm':
-        if value.lower() == 'replacement':
-            return cls.REPLACEMENT
-        elif value.lower() == 'repair':
-            return cls.REPAIR
-        elif value.lower() == 'removal':
-            return cls.REMOVAL
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-    def __str__(self):
-        if self == TraceAlignmentAlgorithm.REPLACEMENT:
-            return 'replacement'
-        elif self == TraceAlignmentAlgorithm.REPAIR:
-            return 'repair'
-        elif self == TraceAlignmentAlgorithm.REMOVAL:
-            return 'removal'
-        return f'Unknown TraceAlignmentAlgorithm {str(self)}'
-
+# Helper classes
 
 class StructureMiningAlgorithm(Enum):
     SPLIT_MINER_1 = auto()
@@ -68,72 +41,21 @@ class StructureMiningAlgorithm(Enum):
         return f'Unknown StructureMiningAlgorithm {str(self)}'
 
 
-class AndPriorORemove(Enum):
-    TRUE = auto()
-    FALSE = auto()
-
-    @classmethod
-    def from_str(cls, value: Union[str, List[str]]) -> Union['AndPriorORemove', List['AndPriorORemove']]:
-        if isinstance(value, str):
-            return AndPriorORemove._from_str(value)
-        if isinstance(value, bool):
-            return AndPriorORemove._from_bool(value)
-        elif isinstance(value, list):
-            return [AndPriorORemove._from_str(v) for v in value]
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-    @classmethod
-    def _from_str(cls, value: str) -> 'AndPriorORemove':
-        if value.lower() == 'true':
-            return cls.TRUE
-        elif value.lower() == 'false':
-            return cls.FALSE
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-    @classmethod
-    def _from_bool(cls, value: bool) -> 'AndPriorORemove':
-        if value:
-            return cls.TRUE
-        else:
-            return cls.FALSE
-
-    @classmethod
-    def default(cls) -> List['AndPriorORemove']:
-        return [AndPriorORemove.FALSE]
-
-    @staticmethod
-    def to_str(value: Union['AndPriorORemove', List['AndPriorORemove']]) -> Union[str, List[str]]:
-        if isinstance(value, AndPriorORemove):
-            return str(value)
-        elif isinstance(value, list):
-            return [str(item) for item in value]
-        else:
-            raise ValueError(f'Unknown value type {type(value)}')
-
-    def __str__(self):
-        if self == AndPriorORemove.TRUE:
-            return 'true'
-        elif self == AndPriorORemove.FALSE:
-            return 'false'
-        return f'Unknown AndPriorORemove {str(self)}'
-
-
-class GateManagement(Enum):
+class GatewayProbabilitiesDiscoveryMethod(Enum):
     DISCOVERY = auto()
     EQUIPROBABLE = auto()
     RANDOM = auto()
 
     @classmethod
-    def from_str(cls, value: Union[str, List[str]]) -> 'Union[GateManagement, List[GateManagement]]':
+    def from_str(cls, value: Union[str, List[str]]) -> 'Union[GatewayProbabilitiesDiscoveryMethod, ' \
+                                                       'List[GatewayProbabilitiesDiscoveryMethod]]':
         if isinstance(value, str):
-            return GateManagement._from_str(value)
+            return GatewayProbabilitiesDiscoveryMethod._from_str(value)
         elif isinstance(value, list):
-            return [GateManagement._from_str(v) for v in value]
+            return [GatewayProbabilitiesDiscoveryMethod._from_str(v) for v in value]
 
     @classmethod
-    def _from_str(cls, value: str) -> 'GateManagement':
+    def _from_str(cls, value: str) -> 'GatewayProbabilitiesDiscoveryMethod':
         if value.lower() == 'discovery':
             return cls.DISCOVERY
         elif value.lower() == 'equiprobable':
@@ -144,99 +66,60 @@ class GateManagement(Enum):
             raise ValueError(f'Unknown value {value}')
 
     def __str__(self):
-        if self == GateManagement.DISCOVERY:
+        if self == GatewayProbabilitiesDiscoveryMethod.DISCOVERY:
             return 'discovery'
-        elif self == GateManagement.EQUIPROBABLE:
+        elif self == GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE:
             return 'equiprobable'
-        elif self == GateManagement.RANDOM:
+        elif self == GatewayProbabilitiesDiscoveryMethod.RANDOM:
             return 'random'
         return f'Unknown GateManagement {str(self)}'
 
 
 class CalendarType(Enum):
-    DEFAULT = auto()  # TODO: deprecated
-    DISCOVERED = auto()  # TODO: deprecated
-    POOL = auto()  # TODO: deprecated
+    DEFAULT_24_7 = auto()  # 24/7 work day
+    DEFAULT_9_5 = auto()  # 9 to 5 work day
     UNDIFFERENTIATED = auto()
     DIFFERENTIATED_BY_POOL = auto()
     DIFFERENTIATED_BY_RESOURCE = auto()
 
-    # TODO: update configuration and adopt dependencies to the new calendar_discovery package
+    @classmethod
+    def from_str(cls, value: Union[str, List[str]]) -> 'Union[CalendarType, List[CalendarType]]':
+        if isinstance(value, str):
+            return CalendarType._from_str(value)
+        elif isinstance(value, int):
+            return CalendarType._from_str(str(value))
+        elif isinstance(value, list):
+            return [CalendarType._from_str(v) for v in value]
+        else:
+            raise ValueError(f'Unknown value {value}')
 
     @classmethod
-    def from_str(cls, value: str) -> 'CalendarType':
-        if value.lower() == 'default':
-            return cls.DEFAULT
-        elif value.lower() == 'discovered':
-            return cls.DISCOVERED
-        elif value.lower() == 'pool':
-            return cls.POOL
+    def _from_str(cls, value: str) -> 'CalendarType':
+        if value.lower() in ('default_24_7', 'dt247', '24_7', '247'):
+            return cls.DEFAULT_24_7
+        elif value.lower() in ('default_9_5', 'dt95', '9_5', '95'):
+            return cls.DEFAULT_9_5
         elif value.lower() == 'undifferentiated':
             return cls.UNDIFFERENTIATED
-        elif value.lower() == 'differentiated_by_pool':
+        elif value.lower() in ('differentiated_by_pool', 'pool', 'pooled'):
             return cls.DIFFERENTIATED_BY_POOL
-        elif value.lower() == 'differentiated_by_resource':
+        elif value.lower() in ('differentiated_by_resource', 'differentiated'):
             return cls.DIFFERENTIATED_BY_RESOURCE
         else:
             raise ValueError(f'Unknown value {value}')
 
-
-class DataType(Enum):
-    DT247 = 1
-    LV917 = 2
-
-    @classmethod
-    def from_str(cls, value: Union[str, List[str]]) -> 'Union[DataType, List[DataType]]':
-        if isinstance(value, str):
-            return DataType._from_str(value)
-        elif isinstance(value, list):
-            return [DataType._from_str(v) for v in value]
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-    @classmethod
-    def _from_str(cls, value: str) -> 'DataType':
-        if value == '247' or value.lower() == 'dt247':
-            return cls.DT247
-        elif value == '917' or value.lower() == 'lv917':
-            return cls.LV917
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-
-class PDFMethod(Enum):
-    AUTOMATIC = auto()
-    SEMIAUTOMATIC = auto()
-    MANUAL = auto()
-    DEFAULT = auto()
-
-    @classmethod
-    def from_str(cls, value: str) -> 'PDFMethod':
-        if value.lower() == 'automatic':
-            return cls.AUTOMATIC
-        elif value.lower() == 'semiautomatic':
-            return cls.SEMIAUTOMATIC
-        elif value.lower() == 'manual':
-            return cls.MANUAL
-        elif value.lower() == 'default':
-            return cls.DEFAULT
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-
-class SimulatorKind(Enum):
-    BIMP = auto()
-    CUSTOM = auto()
-
-    @classmethod
-    def from_str(cls, value: str) -> 'SimulatorKind':
-        value = value.lower()
-        if value in ('bimp', 'qbp'):
-            raise NotImplementedError('QBP/BIMP is not supported')
-        elif value == 'custom':
-            return cls.CUSTOM
-        else:
-            raise ValueError(f'Unknown value {value}')
+    def __str__(self):
+        if self == CalendarType.DEFAULT_24_7:
+            return 'default_24_7'
+        elif self == CalendarType.DEFAULT_9_5:
+            return 'default_9_5'
+        elif self == CalendarType.UNDIFFERENTIATED:
+            return 'undifferentiated'
+        elif self == CalendarType.DIFFERENTIATED_BY_POOL:
+            return 'differentiated_by_pool'
+        elif self == CalendarType.DIFFERENTIATED_BY_RESOURCE:
+            return 'differentiated_by_resource'
+        return f'Unknown CalendarType {str(self)}'
 
 
 class Metric(Enum):
@@ -280,6 +163,47 @@ class Metric(Enum):
         else:
             raise ValueError(f'Unknown value {value}')
 
+    def __str__(self):
+        if self == Metric.TSD:
+            return 'TSD'
+        elif self == Metric.DAY_HOUR_EMD:
+            return 'DAY_HOUR_EMD'
+        elif self == Metric.LOG_MAE:
+            return 'LOG_MAE'
+        elif self == Metric.DL:
+            return 'DL'
+        elif self == Metric.MAE:
+            return 'MAE'
+        elif self == Metric.DAY_EMD:
+            return 'DAY_EMD'
+        elif self == Metric.CAL_EMD:
+            return 'CAL_EMD'
+        elif self == Metric.DL_MAE:
+            return 'DL_MAE'
+        elif self == Metric.HOUR_EMD:
+            return 'HOUR_EMD'
+        return f'Unknown Metric {str(self)}'
+
+
+class PDFMethod(Enum):
+    AUTOMATIC = auto()
+    SEMIAUTOMATIC = auto()
+    MANUAL = auto()
+    DEFAULT = auto()
+
+    @classmethod
+    def from_str(cls, value: str) -> 'PDFMethod':
+        if value.lower() == 'automatic':
+            return cls.AUTOMATIC
+        elif value.lower() == 'semiautomatic':
+            return cls.SEMIAUTOMATIC
+        elif value.lower() == 'manual':
+            return cls.MANUAL
+        elif value.lower() == 'default':
+            return cls.DEFAULT
+        else:
+            raise ValueError(f'Unknown value {value}')
+
 
 class ExecutionMode(Enum):
     SINGLE = auto()
@@ -295,251 +219,229 @@ class ExecutionMode(Enum):
             raise ValueError(f'Unknown value {value}')
 
 
-@dataclass
-class ReadOptions:
-    column_names: Dict[str, str]
-    timeformat: str = '%Y-%m-%dT%H:%M:%S.%f'
-    one_timestamp: bool = False  # TODO: must be an obsolete attribute because Simod doesn't work with one_timestamp logs
-    filter_d_attrib: bool = True
-
-    @staticmethod
-    def column_names_default() -> Dict[str, str]:
-        return {'Case ID': 'caseid', 'Activity': 'task', 'lifecycle:transition': 'event_type', 'Resource': 'user'}
-
-
-# TODO: split class into UserConfiguration (StructureOptimizationConfiguration, TimesOptimization), SystemConfiguration
-@dataclass
-class Configuration:
-    # General
-    project_name: Optional[str] = None
-    log_path: Optional[Path] = None
-    model_path: Optional[Path] = None
-    config_path: Optional[Path] = None
-    output: Path = (PROJECT_DIR / 'outputs' / sup.folder_id()).absolute()
-    sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer/splitminer.jar'
-    sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
-    sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
-    aligninfo: Path = output / 'CaseTypeAlignmentResults.csv'
-    aligntype: Path = output / 'AlignmentStatistics.csv'
-    read_options: ReadOptions = ReadOptions(column_names=ReadOptions.column_names_default())
-    structure_mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
-    simulation_repetitions: int = 1
-    simulator: SimulatorKind = SimulatorKind.CUSTOM
-    simulation_cases: int = 0
-    simulation: bool = True  # TODO: is this condition checked anywhere?
-    sim_metric: Metric = Metric.TSD
-    add_metrics: List[Metric] = field(
-        default_factory=lambda: [Metric.DAY_HOUR_EMD, Metric.LOG_MAE, Metric.DL, Metric.MAE])
-    concurrency: Union[float, List[float]] = 0.0  # array
-    arr_cal_met: CalendarType = CalendarType.UNDIFFERENTIATED  # TODO: this can be only undifferentiated
-    arr_confidence: Optional[Union[float, List[float]]] = None
-    arr_support: Optional[Union[float, List[float]]] = None
-    epsilon: Optional[Union[float, List[float]]] = None
-    eta: Optional[Union[float, List[float]]] = None
-    and_prior: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
-    or_rep: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
-    gate_management: Optional[Union[GateManagement, List[GateManagement]]] = None
-    res_confidence: Optional[float] = None
-    res_support: Optional[float] = None
-    res_cal_met: Optional[CalendarType] = CalendarType.UNDIFFERENTIATED
-    res_dtype: Optional[Union[DataType, List[DataType]]] = None
-    arr_dtype: Optional[Union[DataType, List[DataType]]] = None
-    rp_similarity: Optional[Union[float, List[float]]] = None
-    pdef_method: Optional[PDFMethod] = None
-    multitasking: Optional[bool] = False
-
-    # Optimizer specific
-    exec_mode: ExecutionMode = ExecutionMode.SINGLE
-    max_eval_s: Optional[int] = None
-    max_eval_t: Optional[int] = None
-    res_sup_dis: Optional[List[float]] = None
-    res_con_dis: Optional[List[float]] = None
-
-    def __post_init__(self):
-        if self.log_path:
-            self.project_name, _ = os.path.splitext(os.path.basename(self.log_path))
-
-        if not self.pdef_method:
-            self.pdef_method = PDFMethod.DEFAULT
-            print_warning(f'PDFMethod is missing, setting it to the default: {self.pdef_method}')
-
-    @staticmethod
-    def from_yaml_str(yaml_str: str) -> 'Configuration':
-        return Configuration(**config_data_with_datastructures(yaml.safe_load(yaml_str)))
-
-
-def config_data_from_file(config_path: Path) -> dict:
-    with config_path.open('r') as f:
-        config_data = yaml.load(f, Loader=yaml.FullLoader)
-    if config_data is None:
-        raise Exception('Config is empty')
-    config_data = config_data_from_yaml(config_data)
-    return config_data
-
-
-def config_data_from_yaml(config_data: dict) -> dict:
-    config_data = config_data_with_datastructures(config_data)
-
-    structure_optimizer = config_data.get('structure_optimizer')
-    if structure_optimizer:
-        structure_optimizer = config_data_with_datastructures(structure_optimizer)
-        # the rest of the software uses 'strc' key
-        config_data.pop('structure_optimizer')
-        config_data['strc'] = structure_optimizer
-
-    time_optimizer = config_data.get('time_optimizer')
-    if time_optimizer:
-        time_optimizer = config_data_with_datastructures(time_optimizer)
-        # the rest of the software uses 'tm' key
-        config_data.pop('time_optimizer')
-        config_data['tm'] = time_optimizer
-
-    return config_data
-
-
-def config_data_with_datastructures(data: dict) -> dict:
-    global PROJECT_DIR
-    data = data.copy()
-
-    model_path = data.get('model_path')
-    if model_path:
-        model_path = Path(model_path)
-        if model_path.is_absolute():
-            data['model_path'] = model_path.absolute()
-        else:
-            data['model_path'] = (PROJECT_DIR / model_path).absolute()
-
-    log_path = data.get('log_path')
-    if log_path:
-        data['log_path'] = Path(log_path)
-
-    input = data.get('input')
-    if input:
-        data['input'] = Path(input)
-
-    structure_mining_algorithm = data.get('structure_mining_algorithm')
-    if structure_mining_algorithm:
-        data['structure_mining_algorithm'] = StructureMiningAlgorithm.from_str(structure_mining_algorithm)
-
-    and_prior = data.get('and_prior')
-    if and_prior and (isinstance(and_prior, str) or isinstance(and_prior, list)):
-        data['and_prior'] = AndPriorORemove.from_str(and_prior)
-
-    or_rep = data.get('or_rep')
-    if or_rep:
-        data['or_rep'] = AndPriorORemove.from_str(or_rep)
-
-    gate_management = data.get('gate_management')
-    if gate_management and (isinstance(gate_management, str) or isinstance(gate_management, list)):
-        data['gate_management'] = GateManagement.from_str(gate_management)
-
-    res_cal_met = data.get('res_cal_met')
-    if res_cal_met:
-        data['res_cal_met'] = CalendarType.from_str(res_cal_met)
-
-    res_dtype = data.get('res_dtype')
-    if res_dtype:
-        data['res_dtype'] = DataType.from_str(res_dtype)
-
-    arr_dtype = data.get('arr_dtype')
-    if arr_dtype and (isinstance(arr_dtype, str) or isinstance(arr_dtype, list)):
-        data['arr_dtype'] = DataType.from_str(arr_dtype)
-
-    pdef_method = data.get('pdef_method')
-    if pdef_method:
-        data['pdef_method'] = PDFMethod.from_str(pdef_method)
-
-    exec_mode = data.get('exec_mode')
-    if exec_mode:
-        data['exec_mode'] = ExecutionMode.from_str(exec_mode)
-
-    sim_metric = data.get('sim_metric')
-    if sim_metric:
-        data['sim_metric'] = Metric.from_str(sim_metric)
-
-    add_metrics = data.get('add_metrics')
-    if add_metrics:
-        data['add_metrics'] = Metric.from_str(add_metrics)
-
-    simulator = data.get('simulator')
-    if simulator:
-        data['simulator'] = SimulatorKind.from_str(simulator)
-
-    return data
-
+# Settings classes
 
 @dataclass
-class ProjectSettings:
-    project_name: str
-    output_dir: Optional[Path]
+class CommonSettings:
     log_path: Path
     log_ids: Optional[EventLogIDs]
     model_path: Optional[Path]
-
-    def validate(self):
-        assert self.project_name is not None, 'Project name is not specified'
-        assert self.log_path is not None, 'Log path is not specified'
-
-    @staticmethod
-    def from_dict(data: dict) -> 'ProjectSettings':
-        project_name = data.get('project_name', None)
-        output_dir = data.get('output_dir', None)
-        log_path = data.get('log_path', None)
-        log_ids = data.get('log_ids', None)
-        model_path = data.get('model_path', None)
-
-        return ProjectSettings(
-            project_name=project_name,
-            log_path=log_path,
-            log_ids=log_ids,
-            model_path=model_path,
-            output_dir=output_dir)
+    exec_mode: ExecutionMode
+    repetitions: int
+    simulation: bool
+    evaluation_metrics: Union[Metric, List[Metric]]
+    clean_intermediate_files: bool
 
     @staticmethod
-    def from_stream(stream: Union[str, bytes]) -> 'ProjectSettings':
-        settings = yaml.load(stream, Loader=yaml.FullLoader)
+    def from_dict(config: dict) -> 'CommonSettings':
+        log_path = Path(config['log_path'])
+        if not log_path.is_absolute():
+            log_path = PROJECT_DIR / log_path
 
-        log_path = settings.get('log_path', None)
-        assert log_path is not None, 'Log path is not specified'
-        log_path = Path(log_path)
+        exec_mode = ExecutionMode.from_str(config['exec_mode'])
 
-        project_name = os.path.splitext(os.path.basename(log_path))[0]
+        metrics = [Metric.from_str(metric) for metric in config['evaluation_metrics']]
 
-        output_dir = settings.get('output_dir', None)
-
-        # TODO: log_ids
-        log_ids = settings.get('log_ids', None)
-        if log_ids is None:
+        mapping = config.get('log_ids', None)
+        if mapping is not None:
+            log_ids = EventLogIDs.from_dict(mapping)
+        else:
             log_ids = SIMOD_DEFAULT_COLUMNS
 
-        model_path = settings.get('model_path', None)
+        clean_up = config.get('clean_intermediate_files', False)
 
-        return ProjectSettings(
-            project_name=project_name,
+        model_path = config.get('model_path', None)
+
+        return CommonSettings(
             log_path=log_path,
-            model_path=model_path,
             log_ids=log_ids,
-            output_dir=output_dir)
+            model_path=model_path,
+            exec_mode=exec_mode,
+            repetitions=config['repetitions'],
+            simulation=config['simulation'],
+            evaluation_metrics=metrics,
+            clean_intermediate_files=clean_up
+        )
 
 
-class ResourceProfilesType(Enum):
-    AROUND_THE_CLOCK = '24-7'
-    WORKING_HOURS = '9-5'
-    UNDIFFERENTIATED = 'undifferentiated'
-    DIFFERENTIATED = 'differentiated'
-    POOLED = 'pooled'
+@dataclass
+class PreprocessingSettings:
+    multitasking: bool
 
     @staticmethod
-    def from_str(s: str) -> 'ResourceProfilesType':
-        if s == '24-7':
-            return ResourceProfilesType.AROUND_THE_CLOCK
-        elif s == '9-5':
-            return ResourceProfilesType.WORKING_HOURS
-        elif s == 'undifferentiated':
-            return ResourceProfilesType.UNDIFFERENTIATED
-        elif s == 'differentiated':
-            return ResourceProfilesType.DIFFERENTIATED
-        elif s == 'pooled':
-            return ResourceProfilesType.POOLED
+    def from_dict(config: dict) -> 'PreprocessingSettings':
+        return PreprocessingSettings(
+            multitasking=config['multitasking'],
+        )
+
+
+@dataclass
+class StructureSettings:
+    # Flag to turn off structure discovery, the model must be provided in CommonSettings then
+    disable_discovery: bool
+
+    # Structure discovery settings
+
+    max_evaluations: Optional[int] = None
+    mining_algorithm: Optional[StructureMiningAlgorithm] = None
+    concurrency: Optional[Union[float, List[float]]] = None
+    epsilon: Optional[Union[float, List[float]]] = None
+    eta: Optional[Union[float, List[float]]] = None
+    gateway_probabilities: Optional[
+        Union[GatewayProbabilitiesDiscoveryMethod, List[GatewayProbabilitiesDiscoveryMethod]]] = None
+    or_rep: Optional[Union[bool, List[bool]]] = None
+    and_prior: Optional[Union[bool, List[bool]]] = None
+    distribution_discovery_type: Optional[PDFMethod] = None
+
+    @staticmethod
+    def from_dict(config: dict) -> 'StructureSettings':
+        disable_discovery = config.get('disable_discovery', False)
+        if disable_discovery:
+            return StructureSettings(disable_discovery=True)
+
+        mining_algorithm = StructureMiningAlgorithm.from_str(config['mining_algorithm'])
+
+        gateway_probabilities = [GatewayProbabilitiesDiscoveryMethod.from_str(g) for g in
+                                 config['gateway_probabilities']]
+
+        dst = config.get('distribution_discovery_type')
+        if dst is not None:
+            distribution_discovery_type = PDFMethod.from_str(dst)
         else:
-            raise ValueError(f'Unknown resource profiles type: {s}')
+            distribution_discovery_type = PDFMethod.DEFAULT
+
+        return StructureSettings(
+            disable_discovery=disable_discovery,
+            max_evaluations=config['max_evaluations'],
+            mining_algorithm=mining_algorithm,
+            concurrency=config['concurrency'],
+            epsilon=config['epsilon'],
+            eta=config['eta'],
+            gateway_probabilities=gateway_probabilities,
+            or_rep=config['or_rep'],
+            and_prior=config['and_prior'],
+            distribution_discovery_type=distribution_discovery_type
+        )
+
+
+@dataclass
+class CalendarSettings:
+    discovery_type: Union[CalendarType, List[CalendarType]]
+    granularity: Optional[Union[int, List[int]]] = None  # minutes per granule
+    confidence: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
+    support: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
+    participation: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
+
+    @staticmethod
+    def from_dict(config: dict) -> 'CalendarSettings':
+        discovery_type = CalendarType.from_str(config['discovery_type'])
+
+        return CalendarSettings(
+            discovery_type=discovery_type,
+            granularity=config['granularity'],
+            confidence=config['confidence'],
+            support=config['support'],
+            participation=config['participation'],
+        )
+
+    def to_hyperopt_options(self, prefix: str = '') -> List[tuple]:
+        options = []
+
+        discovery_types = self.discovery_type if isinstance(self.discovery_type, list) else [self.discovery_type]
+
+        for dt in discovery_types:
+            if dt in (CalendarType.UNDIFFERENTIATED, CalendarType.DIFFERENTIATED_BY_POOL,
+                      CalendarType.DIFFERENTIATED_BY_RESOURCE):
+                granularity = hp.uniform(f'{prefix}-{dt.name}-granularity', *self.granularity) \
+                    if isinstance(self.granularity, list) \
+                    else self.granularity
+                confidence = hp.uniform(f'{prefix}-{dt.name}-confidence', *self.confidence) \
+                    if isinstance(self.confidence, list) \
+                    else self.confidence
+                support = hp.uniform(f'{prefix}-{dt.name}-support', *self.support) \
+                    if isinstance(self.support, list) \
+                    else self.support
+                participation = hp.uniform(f'{prefix}-{dt.name}-participation', *self.participation) \
+                    if isinstance(self.participation, list) \
+                    else self.participation
+                options.append((dt.name,
+                                {'granularity': granularity,
+                                 'confidence': confidence,
+                                 'support': support,
+                                 'participation': participation}))
+            else:
+                # The rest options need only names because these are default calendars
+                options.append((dt.name, {'calendar_type': dt.name}))
+
+        return options
+
+    @staticmethod
+    def from_hyperopt_option(option: Tuple) -> 'CalendarSettings':
+        calendar_type, calendar_parameters = option
+        calendar_type = CalendarType.from_str(calendar_type)
+        if calendar_type in (CalendarType.DEFAULT_9_5, CalendarType.DEFAULT_24_7):
+            return CalendarSettings(discovery_type=calendar_type)
+        else:
+            return CalendarSettings(discovery_type=calendar_type, **calendar_parameters)
+
+    def to_dict(self) -> dict:
+        if isinstance(self.discovery_type, list):
+            discovery_type = [dt.name for dt in self.discovery_type]
+        else:
+            discovery_type = self.discovery_type.name
+
+        return {
+            'discovery_type': discovery_type,
+            'granularity': self.granularity,
+            'confidence': self.confidence,
+            'support': self.support,
+            'participation': self.participation,
+        }
+
+
+@dataclass
+class CalendarsSettings:
+    max_evaluations: int
+    case_arrival: CalendarSettings
+    resource_profiles: CalendarSettings
+
+    @staticmethod
+    def from_dict(config: dict) -> 'CalendarsSettings':
+        case_arrival = CalendarSettings.from_dict(config['case_arrival'])
+        resource_profiles = CalendarSettings.from_dict(config['resource_profiles'])
+
+        return CalendarsSettings(
+            max_evaluations=config['max_evaluations'],
+            case_arrival=case_arrival,
+            resource_profiles=resource_profiles,
+        )
+
+
+@dataclass
+class Configuration:
+    common: CommonSettings
+    preprocessing: PreprocessingSettings
+    structure: StructureSettings
+    calendars: CalendarsSettings
+
+    @staticmethod
+    def from_yaml(config: dict) -> 'Configuration':
+        assert config['version'] == 2, 'Configuration version must be 2'
+
+        common_settings = CommonSettings.from_dict(config['common'])
+        preprocessing_settings = PreprocessingSettings.from_dict(config['preprocessing'])
+        structure_settings = StructureSettings.from_dict(config['structure'])
+        calendars_settings = CalendarsSettings.from_dict(config['calendars'])
+
+        return Configuration(
+            common=common_settings,
+            preprocessing=preprocessing_settings,
+            structure=structure_settings,
+            calendars=calendars_settings,
+        )
+
+    @staticmethod
+    def from_stream(stream) -> 'Configuration':
+        import yaml
+        config = yaml.safe_load(stream)
+        return Configuration.from_yaml(config)

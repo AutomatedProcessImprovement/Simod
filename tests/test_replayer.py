@@ -7,8 +7,6 @@ from typing import Tuple
 import pandas as pd
 import pytest
 
-from simod.configuration import Configuration, GateManagement
-from simod.discovery import gateway_probabilities
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.splitter import LogSplitter
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
@@ -24,12 +22,10 @@ def args(entry_point):
 
 
 def setup_data(model_path: Path, log_path: Path):
-    settings = Configuration(model_path=Path(model_path), log_path=Path(log_path))
-
     log = LogReaderWriter(log_path)
     graph = BPMNGraph.from_bpmn_path(model_path)
 
-    return graph, log, settings
+    return graph, log
 
 
 def split_log_buckets(log: LogReaderWriter, size: float, one_ts: bool) -> Tuple[pd.DataFrame, LogReaderWriter]:
@@ -59,7 +55,7 @@ def test_replay_trace(args):
         log_path = arg['log_path']
         print(f'Testing {log_path.name}')
 
-        graph, log, _ = setup_data(model_path, log_path)
+        graph, log = setup_data(model_path, log_path)
         traces = log.get_traces()
 
         try:
@@ -71,42 +67,3 @@ def test_replay_trace(args):
             exc_type, exc_value, _ = sys.exc_info()
             logging.exception(e)
             pytest.fail(f'Should not fail, failed with: {e}')
-
-
-def test_compute_sequence_flow_frequencies(args):
-    for arg in args:
-        model_path = arg['model_path']
-        log_path = arg['log_path']
-        print(f'Testing {log_path.name}')
-
-        graph, log, _ = setup_data(model_path, log_path)
-        traces = log.get_traces()
-
-        try:
-            flow_arcs_frequency = gateway_probabilities.__compute_sequence_flow_frequencies(traces, graph)
-        except Exception as e:
-            pytest.fail(f'Should not fail, failed with: {e}')
-
-        assert flow_arcs_frequency is not None
-        assert len(flow_arcs_frequency) > 0
-        for node_id in flow_arcs_frequency:
-            assert flow_arcs_frequency[node_id] != 0
-
-
-def test_mine_gateway_probabilities_alternative_with_gateway_management(args):
-    for arg in args:
-        model_path = arg['model_path']
-        log_path = arg['log_path']
-        print(f'\nTesting {log_path.name}')
-
-        graph, log, _ = setup_data(model_path, log_path)
-        traces = log.get_traces()
-
-        for gateway_management in [GateManagement.DISCOVERY, GateManagement.EQUIPROBABLE]:
-            try:
-                sequences = gateway_probabilities.discover_with_gateway_management(traces, graph, gateway_management)
-            except Exception as e:
-                logging.exception(e)
-                pytest.fail(f'Should not fail, failed with: {e}')
-            print(sequences)
-            assert len(sequences) != 0

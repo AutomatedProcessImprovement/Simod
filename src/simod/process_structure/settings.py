@@ -4,7 +4,7 @@ from typing import Optional, Union, List, Dict, Any
 
 import yaml
 
-from simod.configuration import GateManagement, PDFMethod, StructureMiningAlgorithm, AndPriorORemove
+from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod, PDFMethod, Configuration
 
 
 @dataclass
@@ -13,7 +13,8 @@ class StructureOptimizationSettings:
     project_name: Optional[str]  # TODO: extract Pipeline settings from this class
     base_dir: Optional[Path]
 
-    gateway_probabilities: Optional[Union[GateManagement, List[GateManagement]]] = GateManagement.DISCOVERY
+    gateway_probabilities: Optional[Union[GatewayProbabilitiesDiscoveryMethod, List[
+        GatewayProbabilitiesDiscoveryMethod]]] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
     max_evaluations: int = 1
     simulation_repetitions: int = 1
     pdef_method: Optional[PDFMethod] = None  # TODO: rename to distribution_discovery_method
@@ -32,8 +33,8 @@ class StructureOptimizationSettings:
     mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
     #
     # Split Miner 3
-    and_prior: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
-    or_rep: List[AndPriorORemove] = field(default_factory=lambda: [AndPriorORemove.FALSE])
+    and_prior: List[bool] = field(default_factory=lambda: [False])
+    or_rep: List[bool] = field(default_factory=lambda: [False])
 
     @staticmethod
     def from_stream(stream: Union[str, bytes], base_dir: Path) -> 'StructureOptimizationSettings':
@@ -49,9 +50,9 @@ class StructureOptimizationSettings:
             gateway_probabilities = settings.get('gate_management', None)  # legacy key support
         if gateway_probabilities is not None:
             if isinstance(gateway_probabilities, list):
-                gateway_probabilities = [GateManagement.from_str(g) for g in gateway_probabilities]
+                gateway_probabilities = [GatewayProbabilitiesDiscoveryMethod.from_str(g) for g in gateway_probabilities]
             elif isinstance(gateway_probabilities, str):
-                gateway_probabilities = GateManagement.from_str(gateway_probabilities)
+                gateway_probabilities = GatewayProbabilitiesDiscoveryMethod.from_str(gateway_probabilities)
             else:
                 raise ValueError('Gateway probabilities must be a list or a string.')
 
@@ -81,21 +82,13 @@ class StructureOptimizationSettings:
 
         and_prior = settings.get('and_prior', None)
         if and_prior is not None:
-            if isinstance(and_prior, list):
-                and_prior = [AndPriorORemove.from_str(a) for a in and_prior]
-            elif isinstance(and_prior, str):
-                and_prior = [AndPriorORemove.from_str(and_prior)]
-            else:
-                raise ValueError('and_prior must be a list or a string.')
+            if isinstance(and_prior, str):
+                and_prior = [and_prior.lower() == 'true']
 
         or_rep = settings.get('or_rep', None)
         if or_rep is not None:
-            if isinstance(or_rep, list):
-                or_rep = [AndPriorORemove.from_str(o) for o in or_rep]
-            elif isinstance(or_rep, str):
-                or_rep = [AndPriorORemove.from_str(or_rep)]
-            else:
-                raise ValueError('or_rep must be a list or a string.')
+            if isinstance(or_rep, str):
+                or_rep = [or_rep.lower() == 'true']
 
         return StructureOptimizationSettings(
             project_name=project_name,
@@ -112,6 +105,25 @@ class StructureOptimizationSettings:
             or_rep=or_rep
         )
 
+    @staticmethod
+    def from_configuration_v2(config: Configuration, base_dir: Path) -> 'StructureOptimizationSettings':
+        project_name = config.common.log_path.stem
+
+        return StructureOptimizationSettings(
+            project_name=project_name,
+            base_dir=base_dir,
+            gateway_probabilities=config.structure.gateway_probabilities,
+            max_evaluations=config.structure.max_evaluations,
+            simulation_repetitions=config.common.repetitions,
+            pdef_method=config.structure.distribution_discovery_type,
+            epsilon=config.structure.epsilon,
+            eta=config.structure.eta,
+            concurrency=config.structure.concurrency,
+            mining_algorithm=config.structure.mining_algorithm,
+            and_prior=config.structure.and_prior,
+            or_rep=config.structure.or_rep
+        )
+
 
 @dataclass
 class PipelineSettings:
@@ -122,15 +134,15 @@ class PipelineSettings:
     project_name: str  # this doesn't change and just inherits from the project settings, used for file naming
 
     # Optimization settings
-    gateway_probabilities: GateManagement
+    gateway_probabilities: GatewayProbabilitiesDiscoveryMethod
     # for Split Miner 1 and 3
     epsilon: Optional[float] = None
     eta: Optional[float] = None
     # for Split Miner 2
     concurrency: Optional[float] = 0.0
     # for Split Miner 3
-    and_prior: Optional[AndPriorORemove] = None
-    or_rep: Optional[AndPriorORemove] = None
+    and_prior: Optional[bool] = None
+    or_rep: Optional[bool] = None
 
     def optimization_parameters_as_dict(self, mining_algorithm: StructureMiningAlgorithm) -> Dict[str, Any]:
         """Returns a dictionary of parameters relevant for the optimizer."""
@@ -204,3 +216,17 @@ class PipelineSettings:
             and_prior=and_prior,
             or_rep=or_rep,
         )
+
+    def to_dict(self) -> dict:
+        """Converts the settings to a dictionary."""
+        return {
+            'output_dir': str(self.output_dir),
+            'model_path': str(self.model_path),
+            'project_name': self.project_name,
+            'gateway_probabilities': str(self.gateway_probabilities),
+            'epsilon': self.epsilon,
+            'eta': self.eta,
+            'concurrency': self.concurrency,
+            'and_prior': str(self.and_prior),
+            'or_rep': str(self.or_rep),
+        }

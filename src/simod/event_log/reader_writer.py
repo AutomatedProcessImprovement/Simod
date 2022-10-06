@@ -38,7 +38,7 @@ class LogReaderWriter:
 
     def __init__(self,
                  log_path: Path,
-                 column_names: dict = DEFAULT_XES_COLUMNS,
+                 column_names: dict = DEFAULT_XES_COLUMNS,  # TODO: replace with EventLogIDs
                  column_filter: Optional[list] = DEFAULT_FILTER,
                  time_format: str = TIME_FORMAT,
                  load: bool = True,

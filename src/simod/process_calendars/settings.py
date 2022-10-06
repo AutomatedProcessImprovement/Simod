@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List
 
-import yaml
-
-from simod.configuration import PDFMethod, GateManagement, DataType
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings, \
+    Configuration
 
 
 @dataclass
@@ -13,71 +12,25 @@ class CalendarOptimizationSettings:
     """Settings for resources' and arrival calendars optimizer."""
     base_dir: Optional[Path]
 
-    max_evaluations: int = 1
+    max_evaluations: int
+    case_arrival: CalendarSettings
+    resource_profiles: CalendarSettings
+
     simulation_repetitions: int = 1
     pdef_method: Optional[PDFMethod] = PDFMethod.AUTOMATIC
-    gateway_probabilities: Optional[Union[GateManagement, List[GateManagement]]] = GateManagement.DISCOVERY
-
-    rp_similarity: Union[float, list[float], None] = None
-    res_sup_dis: Optional[list[float]] = None
-    res_con_dis: Optional[list[float]] = None
-    res_dtype: Union[DataType, list[DataType], None] = None
-    arr_support: Union[float, list[float], None] = None
-    arr_confidence: Union[float, list[float], None] = None
-    arr_dtype: Union[DataType, list[DataType], None] = None
+    gateway_probabilities: Optional[Union[GatewayProbabilitiesDiscoveryMethod, List[
+        GatewayProbabilitiesDiscoveryMethod]]] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
 
     @staticmethod
-    def from_stream(stream: Union[str, bytes], base_dir: Path) -> 'CalendarOptimizationSettings':
-        settings = yaml.load(stream, Loader=yaml.FullLoader)
-
-        v = settings.get('time_optimizer', None)
-        if v is not None:
-            settings = v
-
-        max_evaluations = settings.get('max_evaluations', None)
-        if max_evaluations is None:
-            max_evaluations = settings.get('max_eval_t', 1)  # legacy support
-
-        simulation_repetitions = settings.get('simulation_repetitions', 1)
-
-        pdef_method = settings.get('pdef_method', PDFMethod.AUTOMATIC)
-
-        gateway_probabilities = settings.get('gateway_probabilities', None)
-        if gateway_probabilities is None:
-            gateway_probabilities = settings.get('gate_management', None)  # legacy key support
-        if gateway_probabilities is not None:
-            if isinstance(gateway_probabilities, list):
-                gateway_probabilities = [GateManagement.from_str(g) for g in gateway_probabilities]
-            elif isinstance(gateway_probabilities, str):
-                gateway_probabilities = GateManagement.from_str(gateway_probabilities)
-            else:
-                raise ValueError('Gateway probabilities must be a list or a string.')
-
-        rp_similarity = settings.get('rp_similarity', None)
-        res_sup_dis = settings.get('res_sup_dis', None)
-        res_con_dis = settings.get('res_con_dis', None)
-        res_dtype = settings.get('res_dtype', None)
-        if res_dtype is not None:
-            res_dtype = DataType.from_str(res_dtype)  # TODO: this should change with new calendars
-        arr_support = settings.get('arr_support', None)
-        arr_confidence = settings.get('arr_confidence', None)
-        arr_dtype = settings.get('arr_dtype', None)  # TODO: this should change with new calendars
-        if arr_dtype is not None:
-            arr_dtype = DataType.from_str(arr_dtype)
-
+    def from_configuration_v2(config: Configuration, base_dir: Path) -> 'CalendarOptimizationSettings':
         return CalendarOptimizationSettings(
             base_dir=base_dir,
-            max_evaluations=max_evaluations,
-            simulation_repetitions=simulation_repetitions,
-            pdef_method=pdef_method,
-            gateway_probabilities=gateway_probabilities,
-            rp_similarity=rp_similarity,
-            res_sup_dis=res_sup_dis,
-            res_con_dis=res_con_dis,
-            res_dtype=res_dtype,
-            arr_support=arr_support,
-            arr_confidence=arr_confidence,
-            arr_dtype=arr_dtype)
+            simulation_repetitions=config.common.repetitions,
+            pdef_method=config.structure.distribution_discovery_type,
+            gateway_probabilities=config.structure.gateway_probabilities,
+            max_evaluations=config.calendars.max_evaluations,
+            case_arrival=config.calendars.case_arrival,
+            resource_profiles=config.calendars.resource_profiles)
 
 
 @dataclass
@@ -87,11 +40,18 @@ class ResourceOptimizationSettings:
     res_support: Optional[float] = None
 
     # in case of "default"
-    res_dtype: Optional[DataType] = None
+    res_dtype: Optional[CalendarType] = None
 
     def __post_init__(self):
         assert (self.res_confidence is not None and self.res_support is not None) or (self.res_dtype is not None), \
             'Either resource confidence and support or calendar type should be specified'
+
+    def to_dict(self) -> dict:
+        return {
+            'res_confidence': self.res_confidence if self.res_confidence is not None else None,
+            'res_support': self.res_support if self.res_support is not None else None,
+            'res_dtype': self.res_dtype.name if self.res_dtype is not None else None
+        }
 
 
 @dataclass
@@ -101,11 +61,18 @@ class ArrivalOptimizationSettings:
     arr_support: Optional[float] = None
 
     # in case of "default"
-    arr_dtype: Optional[DataType] = None
+    arr_dtype: Optional[CalendarType] = None
 
     def __post_init__(self):
         assert (self.arr_confidence is not None and self.arr_support is not None) or (self.arr_dtype is not None), \
             'Either arrival confidence and support or calendar type should be specified'
+
+    def to_dict(self) -> dict:
+        return {
+            'arr_confidence': self.arr_confidence if self.arr_confidence is not None else None,
+            'arr_support': self.arr_support if self.arr_support is not None else None,
+            'arr_dtype': self.arr_dtype.name if self.arr_dtype is not None else None
+        }
 
 
 class CalendarOptimizationType(Enum):
@@ -134,10 +101,13 @@ class PipelineSettings:
     model_path: Path  # in calendars optimizer, this path doesn't change and just inherits from the project settings
 
     # Optimization settings
-    gateway_probabilities: Optional[GateManagement]
-    rp_similarity: float
-    res_cal_met: Tuple[CalendarOptimizationType, ResourceOptimizationSettings]
-    arr_cal_met: Tuple[CalendarOptimizationType, ArrivalOptimizationSettings]
+
+    # This one is taken from the structure settings, because it's not relevant to calendars
+    # but is required for parameters extraction
+    gateway_probabilities: Optional[GatewayProbabilitiesDiscoveryMethod]
+
+    case_arrival: CalendarSettings
+    resource_profiles: CalendarSettings
 
     @staticmethod
     def from_hyperopt_response(
@@ -146,116 +116,108 @@ class PipelineSettings:
             output_dir: Path,
             model_path: Path,
     ) -> 'PipelineSettings':
-        gateway_probabilities = data.get('gateway_probabilities', None)
-        assert gateway_probabilities is not None, 'Gateway probabilities must be specified'
-        gateway_probabilities = initial_settings.gateway_probabilities[gateway_probabilities]
-
-        rp_similarity = data.get('rp_similarity', None)
-
-        resource_calendar_discovery_type = data.get('res_cal_met', None)
-        assert resource_calendar_discovery_type is not None, 'Resource calendar optimization method is not specified'
-        if resource_calendar_discovery_type == 0:  # 0 is an index of the tuple that was provided to hyperopt in search space
-            resource_calendar_discovery_type = CalendarOptimizationType.DISCOVERED
-        elif resource_calendar_discovery_type == 1:
-            resource_calendar_discovery_type = CalendarOptimizationType.DEFAULT
+        gp_index = data['gateway_probabilities']
+        if isinstance(initial_settings.gateway_probabilities, list):
+            gateway_probabilities = initial_settings.gateway_probabilities[gp_index]
         else:
-            raise ValueError(f'Unknown resource calendar optimization method: {resource_calendar_discovery_type}')
+            gateway_probabilities = initial_settings.gateway_probabilities
 
-        if resource_calendar_discovery_type == CalendarOptimizationType.DISCOVERED:
-            confidence = data.get('res_confidence', None)
-            support = data.get('res_support', None)
-            resource_settings = ResourceOptimizationSettings(res_confidence=confidence, res_support=support)
-        elif resource_calendar_discovery_type == CalendarOptimizationType.DEFAULT:
-            dtype = initial_settings.res_dtype[data.get('res_dtype', None)]
-            resource_settings = ResourceOptimizationSettings(res_dtype=dtype)
+        # Case arrival
+
+        case_arrival_index = data['case_arrival']
+        if isinstance(initial_settings.case_arrival.discovery_type, list):
+            # if there's more than one type, use the index
+            case_arrival_discovery_type = initial_settings.case_arrival.discovery_type[case_arrival_index]
         else:
-            raise ValueError(f'Unknown resource calendar optimization method: {resource_calendar_discovery_type}')
+            # otherwise, just take whatever is there
+            case_arrival_discovery_type = initial_settings.case_arrival.discovery_type
 
-        res_cal_met = (resource_calendar_discovery_type, resource_settings)
+        granularity = initial_settings.case_arrival.granularity
+        confidence = initial_settings.case_arrival.confidence
+        support = initial_settings.case_arrival.support
+        participation = initial_settings.case_arrival.participation
 
-        arrival_calendar_discovery_type = data.get('arr_cal_met', None)
-        assert arrival_calendar_discovery_type is not None, 'Arrival calendar optimization method is not specified'
-        if arrival_calendar_discovery_type == 0:  # 0 is an index of the tuple that was provided to hyperopt in search space
-            arrival_calendar_discovery_type = CalendarOptimizationType.DISCOVERED
-        elif arrival_calendar_discovery_type == 1:
-            arrival_calendar_discovery_type = CalendarOptimizationType.DEFAULT
+        for (k, v) in data.items():
+            # NOTE: 'case_arrival' is a prefix that has been passed to CalendarSettings.to_hyperopt_options
+            # when hyperopt options were constructed
+            if 'case_arrival' in k:
+                if 'granularity' in k:
+                    granularity = v
+                if 'confidence' in k:
+                    confidence = v
+                if 'support' in k:
+                    support = v
+                if 'participation' in k:
+                    participation = v
+
+        case_arrival_settings = CalendarSettings(
+            discovery_type=case_arrival_discovery_type,
+            granularity=granularity,
+            confidence=confidence,
+            support=support,
+            participation=participation,
+        )
+
+        # Resource profiles
+
+        resource_profiles_index = data['resource_profiles']
+        if isinstance(initial_settings.resource_profiles.discovery_type, list):
+            resource_profiles_discovery_type = initial_settings.resource_profiles.discovery_type[
+                resource_profiles_index]
         else:
-            raise ValueError(f'Unknown arrival calendar optimization method: {arrival_calendar_discovery_type}')
+            resource_profiles_discovery_type = initial_settings.resource_profiles.discovery_type
 
-        if arrival_calendar_discovery_type == CalendarOptimizationType.DISCOVERED:
-            confidence = data.get('arr_confidence', None)
-            support = data.get('arr_support', None)
-            arrival_settings = ArrivalOptimizationSettings(arr_confidence=confidence, arr_support=support)
-        elif arrival_calendar_discovery_type == CalendarOptimizationType.DEFAULT:
-            dtype = initial_settings.arr_dtype[data.get('arr_dtype', None)]
-            arrival_settings = ArrivalOptimizationSettings(arr_dtype=dtype)
-        else:
-            raise ValueError(f'Unknown arrival calendar optimization method: {arrival_calendar_discovery_type}')
+        granularity = initial_settings.resource_profiles.granularity
+        confidence = initial_settings.resource_profiles.confidence
+        support = initial_settings.resource_profiles.support
+        participation = initial_settings.resource_profiles.participation
 
-        arr_cal_met = (arrival_calendar_discovery_type, arrival_settings)
+        for (k, v) in data.items():
+            if 'resource_profile' in k:
+                if 'granularity' in k:
+                    granularity = v
+                if 'confidence' in k:
+                    confidence = v
+                if 'support' in k:
+                    support = v
+                if 'participation' in k:
+                    participation = v
+
+        resource_profiles_settings = CalendarSettings(
+            discovery_type=resource_profiles_discovery_type,
+            granularity=granularity,
+            confidence=confidence,
+            support=support,
+            participation=participation,
+        )
 
         return PipelineSettings(
-            gateway_probabilities=gateway_probabilities,
-            rp_similarity=rp_similarity,
-            res_cal_met=res_cal_met,
-            arr_cal_met=arr_cal_met,
             output_dir=output_dir,
             model_path=model_path,
+            gateway_probabilities=gateway_probabilities,
+            case_arrival=case_arrival_settings,
+            resource_profiles=resource_profiles_settings,
         )
 
     @staticmethod
-    def from_dict(data: dict, output_dir: Path, model_path: Path) -> 'PipelineSettings':
-        rp_similarity = data.get('rp_similarity', None)
-        assert rp_similarity is not None, 'rp_similarity is not specified'
+    def from_hyperopt_option_dict(data: dict, output_dir: Path, model_path: Path) -> 'PipelineSettings':
+        case_arrival_settings = CalendarSettings.from_hyperopt_option(data['case_arrival'])
 
-        res_cal_met = data.get('res_cal_met', None)
-        assert res_cal_met is not None, 'res_cal_met is not specified'
-
-        arr_cal_met = data.get('arr_cal_met', None)
-        assert arr_cal_met is not None, 'arr_cal_met is not specified'
-
-        resource_optimization_type = CalendarOptimizationType.from_str(res_cal_met[0])
-        if resource_optimization_type == CalendarOptimizationType.DISCOVERED:
-            res_confidence = res_cal_met[1].get('res_confidence', None)
-            assert res_confidence is not None, 'res_confidence is not specified'
-
-            res_support = res_cal_met[1].get('res_support', None)
-            assert res_support is not None, 'res_support is not specified'
-
-            resource_settings = ResourceOptimizationSettings(res_confidence, res_support)
-        elif resource_optimization_type == CalendarOptimizationType.DEFAULT:
-            res_dtype = res_cal_met[1].get('res_dtype', None)
-            assert res_dtype is not None, 'res_dtype is not specified'
-
-            resource_settings = ResourceOptimizationSettings(res_dtype=res_dtype)
-        else:
-            raise ValueError(f'Unknown optimization type: {resource_optimization_type}')
-
-        arrival_optimization_type = CalendarOptimizationType.from_str(arr_cal_met[0])
-        if arrival_optimization_type == CalendarOptimizationType.DISCOVERED:
-            arr_confidence = arr_cal_met[1].get('arr_confidence', None)
-            assert arr_confidence is not None, 'arr_confidence is not specified'
-
-            arr_support = arr_cal_met[1].get('arr_support', None)
-            assert arr_support is not None, 'arr_support is not specified'
-
-            arrival_settings = ArrivalOptimizationSettings(arr_confidence, arr_support)
-        elif arrival_optimization_type == CalendarOptimizationType.DEFAULT:
-            arr_dtype = arr_cal_met[1].get('arr_dtype', None)
-            assert arr_dtype is not None, 'arr_dtype is not specified'
-
-            arrival_settings = ArrivalOptimizationSettings(arr_dtype=arr_dtype)
-        else:
-            raise ValueError(f'Unknown optimization type: {arrival_optimization_type}')
-
-        gateway_probabilities = data.get('gateway_probabilities', None)
-        assert gateway_probabilities is not None, 'gateway_probabilities is not specified'
+        resource_profiles_settings = CalendarSettings.from_hyperopt_option(data['resource_profiles'])
 
         return PipelineSettings(
-            gateway_probabilities=gateway_probabilities,
-            rp_similarity=rp_similarity,
-            res_cal_met=(resource_optimization_type, resource_settings),
-            arr_cal_met=(arrival_optimization_type, arrival_settings),
             output_dir=output_dir,
             model_path=model_path,
+            gateway_probabilities=data['gateway_probabilities'],
+            case_arrival=case_arrival_settings,
+            resource_profiles=resource_profiles_settings,
         )
+
+    def to_dict(self) -> dict:
+        return {
+            'output_dir': str(self.output_dir),
+            'model_path': str(self.model_path),
+            'gateway_probabilities': self.gateway_probabilities.name,
+            'case_arrival': self.case_arrival.to_dict(),
+            'resource_profiles': self.resource_profiles.to_dict(),
+        }

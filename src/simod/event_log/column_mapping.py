@@ -13,6 +13,10 @@ class EventLogIDs:
     role: str = 'role'
     processing_time: str = 'processing_time'
 
+    @staticmethod
+    def from_dict(config: dict) -> 'EventLogIDs':
+        return EventLogIDs(**config)
+
 
 SIMOD_DEFAULT_COLUMNS = EventLogIDs(
     case='caseid',

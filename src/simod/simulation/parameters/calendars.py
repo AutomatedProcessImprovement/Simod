@@ -28,6 +28,14 @@ class Timetable:
             begin_time='00:00:00.000',
             end_time='23:59:59.999')
 
+    @staticmethod
+    def work_hours() -> 'Timetable':
+        return Timetable(
+            from_day=WeekDay.MONDAY,
+            to_day=WeekDay.SUNDAY,
+            begin_time='09:00:00.000',
+            end_time='17:00:00.000')
+
     def to_dict(self) -> dict:
         """Dictionary with the structure compatible with Prosimos:"""
         return {
@@ -71,6 +79,13 @@ class Calendar:
             id='24_7_CALENDAR',
             name='24_7_CALENDAR',
             timetables=[Timetable.all_day_long()])
+
+    @staticmethod
+    def work_day() -> 'Calendar':
+        return Calendar(
+            id='9_5_CALENDAR',
+            name='9_5_CALENDAR',
+            timetables=[Timetable.work_hours()])
 
     def to_dict(self) -> dict:
         """Dictionary with the structure compatible with Prosimos:"""

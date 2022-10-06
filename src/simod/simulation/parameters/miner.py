@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 from networkx import DiGraph
 
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.configuration import PDFMethod, GateManagement
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings
 from simod.discovery import inter_arrival_distribution
 from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log.column_mapping import EventLogIDs
@@ -18,6 +18,78 @@ from simod.simulation.parameters.resource_profiles import ResourceProfile
 from simod.simulation.prosimos import SimulationParameters
 
 
+def mine_parameters(
+        case_arrival_settings: CalendarSettings,
+        resource_profiles_settings: CalendarSettings,
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        model_path: Path,
+        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod
+) -> SimulationParameters:
+    """Mine simulation parameters given the settings for resources and case arrival."""
+
+    gateway_probabilities = mine_gateway_probabilities(log, log_ids, model_path, gateways_probability_type)
+
+    # Case arrival parameters
+
+    case_arrival_discovery_type = case_arrival_settings.discovery_type
+    if case_arrival_discovery_type == CalendarType.DEFAULT_24_7:
+        arrival_calendar = Calendar.all_day_long()
+    elif case_arrival_discovery_type == CalendarType.DEFAULT_9_5:
+        arrival_calendar = Calendar.work_day()
+    # NOTE: discarding other types of discovery for case arrival
+    elif case_arrival_discovery_type in (CalendarType.UNDIFFERENTIATED,
+                                         CalendarType.DIFFERENTIATED_BY_POOL,
+                                         CalendarType.DIFFERENTIATED_BY_RESOURCE):
+        arrival_calendar = case_arrival.discover_undifferentiated(
+            log,
+            log_ids,
+            granularity=case_arrival_settings.granularity,
+            min_confidence=case_arrival_settings.confidence,
+            desired_support=case_arrival_settings.support,
+            min_participation=case_arrival_settings.participation,
+        )
+    else:
+        raise ValueError(f'Unknown calendar discovery type: {case_arrival_discovery_type}')
+
+    bpmn_reader = BPMNReaderWriter(model_path)
+    process_graph = bpmn_reader.as_graph()
+
+    pdf_method = PDFMethod.AUTOMATIC
+    arrival_rate = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
+    arrival_distribution = Distribution.from_simod_dict(arrival_rate)
+
+    # Resource parameters
+
+    resource_discovery_type = resource_profiles_settings.discovery_type
+    if resource_discovery_type == CalendarType.DEFAULT_24_7:
+        resource_profiles, resource_calendars, task_resource_distributions = mine_default_for_resources(
+            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, Calendar.all_day_long())
+    elif resource_discovery_type == CalendarType.DEFAULT_9_5:
+        resource_profiles, resource_calendars, task_resource_distributions = mine_default_for_resources(
+            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, Calendar.work_day())
+    elif resource_discovery_type == CalendarType.UNDIFFERENTIATED:
+        resource_profiles, resource_calendars, task_resource_distributions = mine_for_undifferentiated_resources(
+            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader)
+    elif resource_discovery_type == CalendarType.DIFFERENTIATED_BY_POOL:
+        resource_profiles, resource_calendars, task_resource_distributions = mine_for_pooled_resources(
+            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader)
+    elif resource_discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE:
+        resource_profiles, resource_calendars, task_resource_distributions = mine_for_differentiated_resources(
+            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader)
+    else:
+        raise ValueError(f'Unknown calendar discovery type: {resource_discovery_type}')
+
+    return SimulationParameters(
+        gateway_branching_probabilities=gateway_probabilities,
+        arrival_calendar=arrival_calendar,
+        arrival_distribution=arrival_distribution,
+        resource_profiles=resource_profiles,
+        resource_calendars=resource_calendars,
+        task_resource_distributions=task_resource_distributions,
+    )
+
+
 def mine_default_24_7(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
@@ -25,7 +97,7 @@ def mine_default_24_7(
         process_graph: DiGraph,
         pdf_method: PDFMethod,
         bpmn_reader: BPMNReaderWriter,
-        gateways_probability_type: GateManagement) -> SimulationParameters:
+        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod) -> SimulationParameters:
     """Simulation parameters with default calendar 24/7."""
 
     calendar_24_7 = Calendar.all_day_long()
@@ -55,9 +127,25 @@ def mine_default_24_7(
     )
 
 
-def mine_default_9_5() -> SimulationParameters:
-    """Simulation parameters with default calendar 9-5."""
-    raise NotImplementedError()
+def mine_default_for_resources(
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        bpmn_path: Path,
+        process_graph: DiGraph,
+        pdf_method: PDFMethod,
+        bpmn_reader: BPMNReaderWriter,
+        calendar: Calendar) -> Tuple:
+    """Simulation parameters with default calendar 24/7."""
+
+    undifferentiated_resource_profile = ResourceProfile.undifferentiated(log, log_ids, bpmn_path, calendar.id)
+    resource_profiles = [undifferentiated_resource_profile]
+
+    resource_calendars = [calendar]
+
+    task_resource_distributions = _task_resource_distribution_undifferentiated(
+        log, log_ids, process_graph, pdf_method, bpmn_reader, undifferentiated_resource_profile)
+
+    return resource_profiles, resource_calendars, task_resource_distributions
 
 
 def mine_for_undifferentiated_resources(
@@ -66,16 +154,8 @@ def mine_for_undifferentiated_resources(
         bpmn_path: Path,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
-        gateways_probability_type: GateManagement) -> SimulationParameters:
+        bpmn_reader: BPMNReaderWriter) -> Tuple:
     """Simulation parameters with undifferentiated resources."""
-
-    # Arrival distribution
-    arrival_rate = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
-    arrival_distribution = Distribution.from_simod_dict(arrival_rate)
-
-    # Arrival calendar
-    arrival_calendar = case_arrival.discover_undifferentiated(log, log_ids)
 
     # Resource calendars
     resource_calendars = [resource.discover_undifferentiated(log, log_ids)]
@@ -86,21 +166,11 @@ def mine_for_undifferentiated_resources(
         log, log_ids, bpmn_path, resource_calendars[0].id)
     resource_profiles = [undifferentiated_resource_profile]
 
-    # Gateway probabilities
-    gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probability_type)
-
     # Task resource distributions
     task_resource_distributions = _task_resource_distribution_undifferentiated(
         log, log_ids, process_graph, pdf_method, bpmn_reader, undifferentiated_resource_profile)
 
-    return SimulationParameters(
-        arrival_distribution=arrival_distribution,
-        arrival_calendar=arrival_calendar,
-        resource_calendars=resource_calendars,
-        resource_profiles=resource_profiles,
-        gateway_branching_probabilities=gateway_probabilities_,
-        task_resource_distributions=task_resource_distributions,
-    )
+    return resource_profiles, resource_calendars, task_resource_distributions
 
 
 def mine_for_pooled_resources(
@@ -109,16 +179,8 @@ def mine_for_pooled_resources(
         bpmn_path: Path,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
-        gateways_probability_type: GateManagement) -> SimulationParameters:
+        bpmn_reader: BPMNReaderWriter) -> Tuple:
     """Simulation parameters for resource pools."""
-
-    # Arrival distribution
-    arrival_rate = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
-    arrival_distribution = Distribution.from_simod_dict(arrival_rate)
-
-    # Arrival calendar
-    arrival_calendar = case_arrival.discover_undifferentiated(log, log_ids)
 
     # Resource calendars
     resource_calendars, pool_mapping = resource.discover_per_resource_pool(log, log_ids)
@@ -128,21 +190,11 @@ def mine_for_pooled_resources(
     pool_profiles = ResourceProfile.differentiated_by_pool(
         log, log_ids, bpmn_path, resource_calendars, pool_mapping)
 
-    # Gateway probabilities
-    gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probability_type)
-
     # Task resource distributions
     task_resource_distributions = _task_resource_distribution_pools(  # TODO: finish
         log, log_ids, process_graph, pdf_method, bpmn_reader, pool_profiles)
 
-    return SimulationParameters(
-        arrival_distribution=arrival_distribution,
-        arrival_calendar=arrival_calendar,
-        resource_calendars=resource_calendars,
-        resource_profiles=pool_profiles,
-        gateway_branching_probabilities=gateway_probabilities_,
-        task_resource_distributions=task_resource_distributions,
-    )
+    return pool_profiles, resource_calendars, task_resource_distributions
 
 
 def mine_for_differentiated_resources(
@@ -151,56 +203,22 @@ def mine_for_differentiated_resources(
         bpmn_path: Path,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
-        gateways_probability_type: GateManagement) -> SimulationParameters:
+        bpmn_reader: BPMNReaderWriter) -> Tuple:
     """Simulation parameters for fully differentiated resources."""
-
-    # Arrival distribution
-    arrival_rate = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
-    arrival_distribution = Distribution.from_simod_dict(arrival_rate)
-
-    # Arrival calendar
-    arrival_calendar = case_arrival.discover_undifferentiated(log, log_ids)
 
     # Resource calendars
     resource_calendars = resource.discover_per_resource(log, log_ids)
     assert len(resource_calendars) > 0, "At least one resource calendar is required."
 
     # Resource profiles
-    pool_profiles = ResourceProfile.differentiated_by_resource(
+    resource_profiles = ResourceProfile.differentiated_by_resource(
         log, log_ids, bpmn_path, resource_calendars)
-
-    # Gateway probabilities
-    gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probability_type)
 
     # Task resource distributions
     task_resource_distributions = _task_resource_distribution_pools(  # TODO: finish
-        log, log_ids, process_graph, pdf_method, bpmn_reader, pool_profiles)
+        log, log_ids, process_graph, pdf_method, bpmn_reader, resource_profiles)
 
-    return SimulationParameters(
-        arrival_distribution=arrival_distribution,
-        arrival_calendar=arrival_calendar,
-        resource_calendars=resource_calendars,
-        resource_profiles=pool_profiles,
-        gateway_branching_probabilities=gateway_probabilities_,
-        task_resource_distributions=task_resource_distributions,
-    )
-
-
-def _activity_resource_distribution_for_pools(
-        log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
-        resource_profiles: List[ResourceProfile]):
-    distributions = []
-
-    # TODO: refactor TaskEvaluator?
-    # TODO: how should I present task_resource_distribution in simulation parameters for pools?
-    # TODO: is task_resource_distribution is about activities' durations or assignments of resources to activities?
-
-    return distributions
+    return resource_profiles, resource_calendars, task_resource_distributions
 
 
 def _task_resource_distribution_pools(

@@ -1,6 +1,6 @@
 import pytest
 
-from simod.configuration import GateManagement, AndPriorORemove
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.process_structure.settings import StructureOptimizationSettings
 from simod.utilities import get_project_dir
 
@@ -71,10 +71,11 @@ def test_miner_settings(test_data: dict):
         test_data['config_data'], base_dir=test_data['structure_output_dir'])
 
     assert settings.max_evaluations == 2
-    assert settings.gateway_probabilities == [GateManagement.EQUIPROBABLE, GateManagement.DISCOVERY]
+    assert settings.gateway_probabilities == [GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE,
+                                              GatewayProbabilitiesDiscoveryMethod.DISCOVERY]
     if test_data['expected_miner_settings']:
         assert settings.epsilon == [0.0, 1.0]
         assert settings.concurrency == [0.0, 1.0]
         assert settings.eta == [0.0, 1.0]
-        assert settings.or_rep == [AndPriorORemove.TRUE, AndPriorORemove.FALSE]
-        assert settings.and_prior == [AndPriorORemove.TRUE, AndPriorORemove.FALSE]
+        assert settings.or_rep == [True, False]
+        assert settings.and_prior == [True, False]

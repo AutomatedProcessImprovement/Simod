@@ -13,7 +13,7 @@ import pandas as pd
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import wasserstein_distance
 
-from simod.configuration import Configuration, Metric
+from ..configuration import Metric
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
 from ..utilities import progress_bar_async
@@ -85,7 +85,7 @@ class SimilarityEvaluator:
             distance = evaluator(self.log_data, self.simulation_data, criteria=metric)
         else:
             distance = evaluator(self.log_data, self.simulation_data, metric)
-        self.similarity = {'metric': metric, 'sim_val': np.mean([x['sim_score'] for x in distance])}
+        self.similarity = {'metric': metric, 'similarity': np.mean([x['sim_score'] for x in distance])}
 
     def _get_evaluator(self, metric: Metric):
         if self.dtype == 'log':
@@ -561,21 +561,3 @@ class SimilarityEvaluator:
             else:
                 folds.append({'min': sidx, 'max': eidx})
         return folds
-
-
-def evaluate_logs_with_add_metrics(args):
-    settings: Configuration
-    process_stats: pd.DataFrame
-    sim_log: pd.DataFrame
-    settings, process_stats, sim_log = args
-
-    rep = sim_log.iloc[0].run_num
-    evaluator = SimilarityEvaluator(process_stats, sim_log, max_cases=1000)
-    metrics = [settings.sim_metric]
-    if settings.add_metrics:
-        metrics = list(set(list(settings.add_metrics) + metrics))
-    sim_values = []
-    for metric in metrics:
-        evaluator.measure_distance(metric)
-        sim_values.append({'run_num': rep, **evaluator.similarity})
-    return sim_values

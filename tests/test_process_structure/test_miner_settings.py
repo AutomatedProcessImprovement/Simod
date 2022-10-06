@@ -1,6 +1,6 @@
 import pytest
 
-from simod.configuration import StructureMiningAlgorithm, AndPriorORemove
+from simod.configuration import StructureMiningAlgorithm
 from simod.process_structure.miner import Settings
 
 settings_a = """
@@ -72,5 +72,3 @@ def test_miner_settings(test_data: dict):
     assert settings.concurrency == 1.0
     assert settings.epsilon == 1.0
     assert settings.eta == 1.0
-    assert settings.or_rep == [AndPriorORemove.TRUE, AndPriorORemove.FALSE]
-    assert settings.and_prior == [AndPriorORemove.TRUE, AndPriorORemove.FALSE]

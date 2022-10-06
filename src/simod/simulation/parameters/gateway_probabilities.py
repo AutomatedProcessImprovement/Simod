@@ -7,7 +7,7 @@ from typing import List
 import pandas as pd
 
 from simod.cli_formatter import print_notice, print_step
-from simod.configuration import GateManagement
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
@@ -37,7 +37,7 @@ def mine_gateway_probabilities(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         bpmn_path: Path,
-        gateways_probability_type: GateManagement) -> List[GatewayProbabilities]:
+        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod) -> List[GatewayProbabilities]:
     bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
 
     # downstream functions work on list of traces instead of dataframe
@@ -57,16 +57,16 @@ def mine_gateway_probabilities(
 def __discover_with_gateway_management(
         log_traces: list,
         bpmn_graph: BPMNGraph,
-        gate_management: GateManagement) -> list:
+        gate_management: GatewayProbabilitiesDiscoveryMethod) -> list:
     if isinstance(gate_management, list) and len(gate_management) >= 1:
         print_notice(
             f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
         gate_management = gate_management[0]
 
     print_step(f'Mining gateway probabilities with {gate_management}')
-    if gate_management is GateManagement.EQUIPROBABLE:
+    if gate_management is GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE:
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_equiprobable()
-    elif gate_management is GateManagement.DISCOVERY:
+    elif gate_management is GatewayProbabilitiesDiscoveryMethod.DISCOVERY:
         arcs_frequencies = __compute_sequence_flow_frequencies(log_traces, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:

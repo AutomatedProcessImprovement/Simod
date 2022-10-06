@@ -10,34 +10,15 @@ from hyperopt import tpe
 from tqdm import tqdm
 
 from simod.analyzers import sim_evaluator as sim
-from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_subsection, print_message
-from simod.configuration import Configuration, Metric
+from simod.configuration import Metric
 from simod.event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
-from simod.simulation.parameters.miner import mine_default_24_7
+from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
 from simod.utilities import remove_asset, progress_bar_async, folder_id, file_id
-
-
-# Calendar optimization with:
-# - predefined calendars:
-#   - 24/7
-#   - 9-5
-# - discovered
-#   - undifferentiated, one calendar for all resources
-#   - pools
-#   - differentiated
-
-# Prosimos accepts the following parameters:
-# - confidence
-# - support
-# - granularity
-# - resource participation
-
-# Does Prosimos discover arrival calendars?
 
 
 class CalendarOptimizer(HyperoptPipeline):
@@ -46,9 +27,6 @@ class CalendarOptimizer(HyperoptPipeline):
     evaluation_measurements: pd.DataFrame
     _output_dir: Path
     _model_path: Path
-
-    _settings_global: Configuration
-    _settings_time: Configuration
 
     _log: LogReaderWriter
     _log_ids: EventLogIDs
@@ -74,9 +52,6 @@ class CalendarOptimizer(HyperoptPipeline):
         self._log = log
         self._log_ids = log_ids if log_ids is not None else SIMOD_DEFAULT_COLUMNS
 
-        # hyperopt search space
-        self._space = self._define_search_space(calendar_optimizer_settings)
-
         # setting train and validation log data
         train, validation = self._split_timeline(0.8)
         self._log_train = LogReaderWriter.copy_without_data(self._log)
@@ -101,7 +76,7 @@ class CalendarOptimizer(HyperoptPipeline):
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluation_measurements = pd.DataFrame(
-            columns=['similarity', 'metric', 'rp_similarity', 'gateway_probabilities', 'status', 'output_dir'])
+            columns=['similarity', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
 
     def run(self) -> PipelineSettings:
         def pipeline(trial_stg: Union[dict, PipelineSettings]):
@@ -111,7 +86,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
             # casting a dictionary provided by hyperopt to PipelineSettings for convenience
             if isinstance(trial_stg, dict):
-                trial_stg = PipelineSettings.from_dict(
+                trial_stg = PipelineSettings.from_hyperopt_option_dict(
                     trial_stg,
                     # TODO: output_dir is rewritten below anyway, but it's needed for the constructor
                     output_dir=self._output_dir,
@@ -125,13 +100,13 @@ class CalendarOptimizer(HyperoptPipeline):
             output_dir = self._output_dir / folder_id(prefix='calendars_trial_')
             output_dir.mkdir(parents=True, exist_ok=True)
             trial_stg.output_dir = output_dir
+            assert trial_stg.output_dir.exists(), 'Output directory does not exist'
 
-            status, result = self.step(status, self._extract_parameters_undifferentiated, trial_stg)
-            bpmn_path, json_path, simulation_cases = result
+            status, result = self.step(status, self._extract_parameters, trial_stg)
+            json_path, simulation_cases = result
+            assert json_path.exists(), 'Simulation parameters file does not exist'
 
-            # TODO: in simulation, the old parameters aren't used: rp_similarity, res_cal_met, arr_cal_met -- how can I integrate them?
-            # TODO: redefine pipeline settings for calendars optimization, Prosimos uses confidence and support
-            status, result = self.step(status, self._simulate_undifferentiated, trial_stg, json_path, simulation_cases)
+            status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path, simulation_cases)
             evaluation_measurements = result if status == STATUS_OK else []
 
             response, status = self._define_response(trial_stg, status, evaluation_measurements)
@@ -143,8 +118,9 @@ class CalendarOptimizer(HyperoptPipeline):
             return response
 
         # Optimization
+        space = self._define_search_space(self._calendar_optimizer_settings)
         best = fmin(fn=pipeline,
-                    space=self._space,
+                    space=space,
                     algo=tpe.suggest,
                     max_evals=self._calendar_optimizer_settings.max_evaluations,
                     trials=self._bayes_trials,
@@ -164,6 +140,7 @@ class CalendarOptimizer(HyperoptPipeline):
         self.best_parameters = best_settings
 
         # Save evaluation measurements
+        assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
         self.evaluation_measurements.sort_values('similarity', ascending=False, inplace=True)
         self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
 
@@ -174,54 +151,50 @@ class CalendarOptimizer(HyperoptPipeline):
 
     @staticmethod
     def _define_search_space(optimizer_settings: CalendarOptimizationSettings):
-        assert len(optimizer_settings.rp_similarity) == 2, 'rp_similarity must have 2 values: low and high'
-        assert len(optimizer_settings.res_sup_dis) == 2, 'res_sup_dis must have 2 values: low and high'
-        assert len(optimizer_settings.res_con_dis) == 2, 'res_con_dis must have 2 values: low and high'
-        assert len(optimizer_settings.arr_support) == 2, 'arr_support must have 2 values: low and high'
-        assert len(optimizer_settings.arr_confidence) == 2, 'arr_confidence must have 2 values: low and high'
+        resource_calendars = {
+            'resource_profiles': hp.choice(
+                'resource_profiles',
+                # NOTE: 'prefix' is used later in PipelineSettings.from_hyperopt_response
+                optimizer_settings.resource_profiles.to_hyperopt_options(prefix='resource_profile')
+            )
+        }
 
-        # TODO: decrypt the names
-
-        rp_similarity = {'rp_similarity': hp.uniform('rp_similarity', *optimizer_settings.rp_similarity)}
-
-        resource_calendars = {'res_cal_met': hp.choice(
-            'res_cal_met',
-            [
-                ('discovered', {'res_support': hp.uniform('res_support', *optimizer_settings.res_sup_dis),
-                                'res_confidence': hp.uniform('res_confidence', *optimizer_settings.res_con_dis)}),
-                ('default', {'res_dtype': hp.choice('res_dtype', optimizer_settings.res_dtype)})
-            ]
-        )}
-
-        arrival_calendar = {'arr_cal_met': hp.choice(
-            'arr_cal_met',
-            [
-                ('discovered', {'arr_support': hp.uniform('arr_support', *optimizer_settings.arr_support),
-                                'arr_confidence': hp.uniform('arr_confidence', *optimizer_settings.arr_confidence)}),
-                ('default', {'arr_dtype': hp.choice('arr_dtype', optimizer_settings.arr_dtype)})
-            ]
-        )}
+        arrival_calendar = {
+            'case_arrival': hp.choice(
+                'case_arrival',
+                # NOTE: 'prefix' is used later in PipelineSettings.from_hyperopt_response
+                optimizer_settings.case_arrival.to_hyperopt_options(prefix='case_arrival')
+            )}
 
         gateway_probabilities = {
             'gateway_probabilities': hp.choice('gateway_probabilities', optimizer_settings.gateway_probabilities)
         }
 
-        space = rp_similarity | resource_calendars | arrival_calendar | gateway_probabilities
+        space = resource_calendars | arrival_calendar | gateway_probabilities
 
         return space
 
     def _process_measurements(self, settings: PipelineSettings, status: str, evaluation_measurements: list):
         data = {
-            'rp_similarity': settings.rp_similarity,
             'gateway_probabilities': settings.gateway_probabilities,
+            'case_arrival_granularity': settings.case_arrival.granularity,
+            'case_arrival_confidence': settings.case_arrival.confidence,
+            'case_arrival_participation': settings.case_arrival.participation,
+            'case_arrival_support': settings.case_arrival.support,
+            'case_arrival_discovery_type': settings.case_arrival.discovery_type.name,
+            'resource_profile_granularity': settings.resource_profiles.granularity,
+            'resource_profile_confidence': settings.resource_profiles.confidence,
+            'resource_profile_participation': settings.resource_profiles.participation,
+            'resource_profile_support': settings.resource_profiles.support,
+            'resource_profile_discovery_type': settings.resource_profiles.discovery_type.name,
             'output_dir': settings.output_dir,
             'status': status,
-        }  # TODO: arr_support, arr_confidence, res_support, res_confidence and other metrics can be exposed too
+        }
 
         if status == STATUS_OK:
             for sim_val in evaluation_measurements:
                 values = {
-                    'similarity': sim_val['sim_val'],
+                    'similarity': sim_val['similarity'],
                     'metric': sim_val['metric'],
                 }
                 values = values | data
@@ -246,7 +219,7 @@ class CalendarOptimizer(HyperoptPipeline):
         }
 
         if status == STATUS_OK:
-            similarity = np.mean([x['sim_val'] for x in evaluation_measurements])
+            similarity = np.mean([x['similarity'] for x in evaluation_measurements])
             loss = 1 - similarity  # TODO: should it be just 'similarity'?
             response['loss'] = loss
 
@@ -267,28 +240,25 @@ class CalendarOptimizer(HyperoptPipeline):
     #     self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
     #     parameters.resource_table.to_pickle(os.path.join(settings.output_dir, 'resource_table.pkl'))
 
-    def _extract_parameters_undifferentiated(self, settings: PipelineSettings) -> Tuple:
-        bpmn_path = self._model_path
-        bpmn_reader = BPMNReaderWriter(bpmn_path)
-        process_graph = bpmn_reader.as_graph()
-
+    def _extract_parameters(self, settings: PipelineSettings) -> Tuple:
         log = self._log_train.get_traces_df(include_start_end_events=True)
-        pdf_method = self._calendar_optimizer_settings.pdef_method
 
-        simulation_parameters = mine_default_24_7(
-            log, self._log_ids, bpmn_path, process_graph, pdf_method, bpmn_reader,
+        parameters = mine_parameters(
+            settings.case_arrival, settings.resource_profiles, log, self._log_ids, self._model_path,
             settings.gateway_probabilities)
 
         json_path = settings.output_dir / 'simulation_parameters.json'
-        simulation_parameters.to_json_file(json_path)
+
+        parameters.to_json_file(json_path)
 
         simulation_cases = log[self._log_ids.case].nunique()
 
-        return bpmn_path, json_path, simulation_cases
+        return json_path, simulation_cases
 
     @staticmethod
     def _read_simulated_log(arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments
+        assert log_path.exists(), f'Simulated log file {log_path} does not exist'
 
         reader = LogReaderWriter(log_path=log_path, column_names=log_column_mapping)
 
@@ -300,7 +270,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return reader.df
 
-    def _simulate_undifferentiated(self, settings: PipelineSettings, json_path: Path, simulation_cases: int):
+    def _simulate_with_prosimos(self, settings: PipelineSettings, json_path: Path, simulation_cases: int):
         num_simulations = self._calendar_optimizer_settings.simulation_repetitions
         bpmn_path = self._model_path
         cpu_count = multiprocessing.cpu_count()
