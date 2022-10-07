@@ -238,19 +238,11 @@ calendars:
       - 0.1 
       - 0.4
   resource_profiles:
-    discovery_type: 
-      - pool
-      - undifferentiated
+    discovery_type: differentiated
     granularity: 60
-    confidence:
-      - 0.5
-      - 0.85
-    support:
-      - 0.01 
-      - 0.3
-    participation:
-      - 0.1 
-      - 0.4
+    confidence: 0.1
+    support: 0.7
+    participation: 0.4
 """
 
 test_cases = [

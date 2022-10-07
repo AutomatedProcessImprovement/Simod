@@ -61,6 +61,8 @@ class Settings:
         if and_prior is not None:
             if isinstance(and_prior, str):
                 and_prior = [and_prior.lower() == 'true']
+            elif isinstance(and_prior, list):
+                and_prior = and_prior
             else:
                 raise ValueError('and_prior must be a list or a string.')
 
@@ -68,6 +70,8 @@ class Settings:
         if or_rep is not None:
             if isinstance(or_rep, str):
                 or_rep = [or_rep.lower() == 'true']
+            elif isinstance(or_rep, list):
+                or_rep = or_rep
             else:
                 raise ValueError('or_rep must be a list or a string.')
 
