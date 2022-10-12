@@ -62,6 +62,7 @@ def test_structure_optimizer(entry_point, test_data):
     assert result.concurrency is None
 
     # Testing that the returned result actually has the biggest similarity
+    assert len(optimizer.evaluation_measurements) > 0
     assert result.gateway_probabilities == optimizer.evaluation_measurements['gateway_probabilities'].to_list()[0]
     assert result.eta == optimizer.evaluation_measurements['eta'].to_list()[0]
     assert result.epsilon == optimizer.evaluation_measurements['epsilon'].to_list()[0]

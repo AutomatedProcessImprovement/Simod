@@ -60,7 +60,7 @@ def test_resource_discover_per_resource_pool(entry_point, log_name):
 
     assert result
     assert len(result) > 0
-    assert len(result[0].timetables) > 0
+    assert len(result[0]) > 0
 
     log_path_csv.unlink()
 

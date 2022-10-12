@@ -1,6 +1,6 @@
 version: 2
 common:
-  log_path: resources/event_logs/PurchasingExample.xes
+  log_path: tests/assets/Production.xes
   exec_mode: optimizer
   repetitions: 1
   simulation: true

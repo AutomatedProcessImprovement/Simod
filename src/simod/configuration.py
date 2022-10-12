@@ -445,3 +445,8 @@ class Configuration:
         import yaml
         config = yaml.safe_load(stream)
         return Configuration.from_yaml(config)
+
+    @staticmethod
+    def from_path(file_path: Path) -> 'Configuration':
+        with file_path.open() as f:
+            return Configuration.from_stream(f)

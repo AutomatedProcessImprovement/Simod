@@ -86,6 +86,8 @@ def _discover_timetables(event_log: pd.DataFrame,
         if calendar_candidates[resource_id] is not None:
             timetable_dict = calendar_candidates[resource_id].to_json()
             timetables_per_resource_id[resource_id] = Timetable.from_list_of_dicts(timetable_dict)
+        else:
+            timetables_per_resource_id[resource_id] = None
 
     return timetables_per_resource_id
 
@@ -152,7 +154,7 @@ def discover_per_resource_pool(
 
     pools_without_timetables = set()
     for pool_name in pool_mapping.values():
-        if pool_name not in timetables_per_pool:
+        if pool_name not in timetables_per_pool or timetables_per_pool[pool_name] is None:
             pools_without_timetables.add(pool_name)
 
     if len(pools_without_timetables) > 0:
@@ -182,7 +184,7 @@ def discover_per_resource_pool(
 
     pools_without_timetables = set()
     for pool_name in pool_mapping.values():
-        if pool_name not in timetables_per_pool:
+        if pool_name not in timetables_per_pool or timetables_per_pool[pool_name] is None:
             pools_without_timetables.add(pool_name)
 
     if len(pools_without_timetables) > 0:
@@ -203,7 +205,7 @@ def discover_per_resource_pool(
 
     pools_without_timetables = set()
     for pool_name in pool_mapping.values():
-        if pool_name not in timetables_per_pool:
+        if pool_name not in timetables_per_pool or timetables_per_pool[pool_name] is None:
             pools_without_timetables.add(pool_name)
 
     if len(pools_without_timetables) > 0:

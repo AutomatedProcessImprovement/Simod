@@ -246,22 +246,22 @@ calendars:
 """
 
 test_cases = [
-    {
-        'name': 'A',
-        'config_data': config_str_A
-    },
-    {
-        'name': 'B',
-        'config_data': config_str_B
-    },
+    # {
+    #     'name': 'A',
+    #     'config_data': config_str_A
+    # },
+    # {
+    #     'name': 'B',
+    #     'config_data': config_str_B
+    # },
     {
         'name': 'C',
         'config_data': config_str_C
     },
-    {
-        'name': 'D',
-        'config_data': config_str_D
-    }
+    # {
+    #     'name': 'D',
+    #     'config_data': config_str_D
+    # }
 ]
 
 base_dir = get_project_dir() / 'outputs'

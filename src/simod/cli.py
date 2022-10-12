@@ -34,7 +34,7 @@ def main():
 def optimize(ctx, config_path):
     repository_dir = get_project_dir()
     config_path = repository_dir / config_path
-    settings = Configuration.from_stream(config_path)
+    settings = Configuration.from_path(config_path)
     Optimizer(settings).run()
 
 

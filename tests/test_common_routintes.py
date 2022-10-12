@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from simod.event_log.column_mapping import SIMOD_DEFAULT_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers
 from simod.utilities import file_contains
@@ -22,7 +23,7 @@ def test_remove_outliers(args):
         log_path = arg['log_path']
         log = LogReaderWriter(log_path)
         print(f'Running test for {log_path}')
-        result = remove_outliers(log.df)
+        result = remove_outliers(log.df, log_ids=SIMOD_DEFAULT_COLUMNS)
         assert result is not None
         assert 'caseid' in result.keys()
         assert 'duration_seconds' not in result.keys()
