@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_message, print_subsection
-from ..configuration import StructureMiningAlgorithm, Metric
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_default_24_7
@@ -19,27 +18,13 @@ from simod.utilities import remove_asset, progress_bar_async, file_id, folder_id
 from .miner import StructureMiner, Settings as StructureMinerSettings
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
+from ..configuration import StructureMiningAlgorithm, Metric
 from ..event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
 from ..event_log.utilities import sample_log
 from ..simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
 
 
 class StructureOptimizer(HyperoptPipeline):
-    best_output: Optional[Path]
-    best_parameters: PipelineSettings
-    evaluation_measurements: pd.DataFrame
-
-    _bayes_trials: Trials = Trials()
-    _settings: StructureOptimizationSettings
-    _log_reader: LogReaderWriter
-    _log_train: LogReaderWriter
-    _log_validation: pd.DataFrame
-    _original_log: LogReaderWriter
-    _original_log_train: LogReaderWriter
-    _original_log_validation: pd.DataFrame
-    _log_ids: EventLogIDs
-    _output_dir: Path
-
     def __init__(
             self,
             settings: StructureOptimizationSettings,
@@ -70,6 +55,8 @@ class StructureOptimizer(HyperoptPipeline):
         self.evaluation_measurements = pd.DataFrame(
             columns=['similarity', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta', 'and_prior', 'or_rep',
                      'output_dir'])
+
+        self._bayes_trials = Trials()
 
     def run(self) -> PipelineSettings:
         self._log_train = copy.deepcopy(self._original_log_train)

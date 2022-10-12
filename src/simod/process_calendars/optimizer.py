@@ -22,24 +22,6 @@ from simod.utilities import remove_asset, progress_bar_async, folder_id, file_id
 
 
 class CalendarOptimizer(HyperoptPipeline):
-    best_output: Optional[Path]
-    best_parameters: PipelineSettings
-    evaluation_measurements: pd.DataFrame
-    _output_dir: Path
-    _model_path: Path
-
-    _log: LogReaderWriter
-    _log_ids: EventLogIDs
-    _log_train: LogReaderWriter
-    _log_validation: pd.DataFrame
-    _original_log: LogReaderWriter
-    _original_log_train: LogReaderWriter
-    _original_log_validation: pd.DataFrame
-
-    _calendar_optimizer_settings: CalendarOptimizationSettings
-
-    _bayes_trials: Trials = Trials()
-
     def __init__(
             self,
             calendar_optimizer_settings: CalendarOptimizationSettings,
@@ -77,6 +59,8 @@ class CalendarOptimizer(HyperoptPipeline):
 
         self.evaluation_measurements = pd.DataFrame(
             columns=['similarity', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
+
+        self._bayes_trials = Trials()
 
     def run(self) -> PipelineSettings:
         def pipeline(trial_stg: Union[dict, PipelineSettings]):

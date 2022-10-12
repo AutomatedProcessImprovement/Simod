@@ -128,7 +128,7 @@ calendars:
 config_str_C = """
 version: 2
 common:
-  log_path: assets/Production.xes
+  log_path: assets/PurchasingExample.xes
   exec_mode: optimizer
   repetitions: 1
   simulation: true
@@ -189,7 +189,7 @@ calendars:
 config_str_D = """
 version: 2
 common:
-  log_path: assets/Production.xes
+  log_path: assets/PurchasingExample.xes
   exec_mode: optimizer
   repetitions: 1
   simulation: true
@@ -246,22 +246,22 @@ calendars:
 """
 
 test_cases = [
-    # {
-    #     'name': 'A',
-    #     'config_data': config_str_A
-    # },
-    # {
-    #     'name': 'B',
-    #     'config_data': config_str_B
-    # },
+    {
+        'name': 'A',
+        'config_data': config_str_A
+    },
+    {
+        'name': 'B',
+        'config_data': config_str_B
+    },
     {
         'name': 'C',
         'config_data': config_str_C
     },
-    # {
-    #     'name': 'D',
-    #     'config_data': config_str_D
-    # }
+    {
+        'name': 'D',
+        'config_data': config_str_D
+    }
 ]
 
 base_dir = get_project_dir() / 'outputs'
@@ -270,7 +270,7 @@ base_dir = get_project_dir() / 'outputs'
 @pytest.mark.parametrize('test_case', test_cases, ids=[case['name'] for case in test_cases])
 def test_optimizer(entry_point, test_case):
     settings = Configuration.from_stream(test_case['config_data'])
-    calendar_settings = CalendarOptimizationSettings.from_configuration_v2(settings, base_dir)
+    calendar_settings = CalendarOptimizationSettings.from_configuration(settings, base_dir)
 
     log_path = entry_point / 'PurchasingExample.xes'
     model_path = entry_point / 'PurchasingExampleQBP.bpmn'
@@ -278,7 +278,5 @@ def test_optimizer(entry_point, test_case):
 
     optimizer = CalendarOptimizer(calendar_settings, log, model_path, log_ids=SIMOD_DEFAULT_COLUMNS)
     result = optimizer.run()
-
-    # TODO: why multiple test runs lead to only 1 directory with results and others are empty?
 
     assert type(result) is PipelineSettings

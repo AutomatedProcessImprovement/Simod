@@ -75,7 +75,7 @@ class Optimizer:
         return optimizer.run(), optimizer._settings.pdef_method
 
     def _optimize_calendars(self, model_path: Path) -> CalendarPipelineSettings:
-        calendar_settings = CalendarOptimizationSettings.from_configuration_v2(self._settings, self._output_dir)
+        calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)
         optimizer = CalendarOptimizer(calendar_settings, self._log_train, model_path)
         result = optimizer.run()
         self._calendar_optimizer = optimizer

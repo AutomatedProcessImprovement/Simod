@@ -251,6 +251,10 @@ class CommonSettings:
         clean_up = config.get('clean_intermediate_files', False)
 
         model_path = config.get('model_path', None)
+        if model_path is not None:
+            model_path = Path(model_path)
+            if not model_path.is_absolute():
+                model_path = PROJECT_DIR / model_path
 
         return CommonSettings(
             log_path=log_path,

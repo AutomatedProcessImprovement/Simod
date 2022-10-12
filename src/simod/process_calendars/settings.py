@@ -22,7 +22,7 @@ class CalendarOptimizationSettings:
         GatewayProbabilitiesDiscoveryMethod]]] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
 
     @staticmethod
-    def from_configuration_v2(config: Configuration, base_dir: Path) -> 'CalendarOptimizationSettings':
+    def from_configuration(config: Configuration, base_dir: Path) -> 'CalendarOptimizationSettings':
         return CalendarOptimizationSettings(
             base_dir=base_dir,
             simulation_repetitions=config.common.repetitions,
