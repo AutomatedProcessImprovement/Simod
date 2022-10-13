@@ -1,6 +1,3 @@
-[submodule "external_tools/pm4py-wrapper"]
-	path = external_tools/pm4py-wrapper
-	url = https://github.com/AutomatedProcessImprovement/pm4py-wrapper.git
 [submodule "external_tools/Prosimos"]
 	path = external_tools/Prosimos
 	url = https://github.com/AutomatedProcessImprovement/Prosimos.git

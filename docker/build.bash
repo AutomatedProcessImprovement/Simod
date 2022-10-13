@@ -24,10 +24,7 @@ cd ${PROJECT_DIR}/external_tools/Prosimos
 git pull && git checkout aug_2022
 pip3.10 install -e .
 cd $PROJECT_DIR
-#cd ${PROJECT_DIR}/external_tools/pm4py-wrapper
-#pip3.10 install -e .
 pip3.10 install pm4py-wrapper
 
 # Installing Simod
-#cd $PROJECT_DIR
 pip3.10 install -e .
