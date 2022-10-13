@@ -57,10 +57,10 @@ and_prior:
 """
 
 structure_optimizer_test_data = [
-    {
-        'name': 'Split Miner 1',
-        'config_data': structure_config_sm1
-    },
+    # {
+    #     'name': 'Split Miner 1',
+    #     'config_data': structure_config_sm1
+    # },
     {
         'name': 'Split Miner 2',
         'config_data': structure_config_sm2

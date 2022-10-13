@@ -109,7 +109,7 @@ class StructureMiner:
 
     def _get_miner(self, miner: StructureMiningAlgorithm):
         if miner is StructureMiningAlgorithm.SPLIT_MINER_1:
-            return self._sm1_miner
+            raise NotImplementedError('Split Miner 1 is not supported anymore.')
         elif miner is StructureMiningAlgorithm.SPLIT_MINER_2:
             return self._sm2_miner
         elif miner is StructureMiningAlgorithm.SPLIT_MINER_3:
