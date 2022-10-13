@@ -21,6 +21,7 @@ pip install --upgrade pip
 
 # Installing dependencies
 cd ${PROJECT_DIR}/external_tools/Prosimos
+git pull && git checkout aug_2022
 pip install -e .
 cd $PROJECT_DIR
 #cd ${PROJECT_DIR}/external_tools/pm4py-wrapper
