@@ -22,9 +22,11 @@ pip install --upgrade pip
 # Installing dependencies
 cd ${PROJECT_DIR}/external_tools/Prosimos
 pip install -e .
-cd ${PROJECT_DIR}/external_tools/pm4py-wrapper
-pip install -e .
+cd $PROJECT_DIR
+#cd ${PROJECT_DIR}/external_tools/pm4py-wrapper
+#pip install -e .
+pip install pm4py-wrapper
 
 # Installing Simod
-cd $PROJECT_DIR
+#cd $PROJECT_DIR
 pip install -e .
