@@ -1,4 +1,4 @@
-FROM nokal/simod-base:v1.1.6
+FROM nokal/simod-base:v2.0.0
 
 WORKDIR /usr/src/
 ADD build.bash .
