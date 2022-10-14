@@ -13,19 +13,28 @@ import pandas as pd
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import wasserstein_distance
 
-from ..configuration import Metric
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
+from ..configuration import Metric
+from ..event_log.column_mapping import EventLogIDs
 from ..utilities import progress_bar_async
 
 
-class SimilarityEvaluator:
+class SimilarityEvaluator:  # TODO: test if it works correctly
     """Evaluates the similarity of two event-logs."""
 
-    def __init__(self, log_data: pd.DataFrame, simulation_data: pd.DataFrame, max_cases=500, dtype='log'):
+    def __init__(self,
+                 log_data: pd.DataFrame,
+                 log_ids: EventLogIDs,
+                 simulation_data: pd.DataFrame,
+                 simulation_log_ids: EventLogIDs,
+                 max_cases=500,
+                 dtype='log'):
         self.dtype = dtype
         self.log_data = copy.deepcopy(log_data)
+        self.log_ids = log_ids
         self.simulation_data = copy.deepcopy(simulation_data)
+        self.simulation_log_ids = simulation_log_ids
         self.max_cases = max_cases
         self._preprocess_data(dtype)
 
@@ -45,19 +54,27 @@ class SimilarityEvaluator:
         self.ramp_io_perc = 0.2
         self.log_data['source'] = 'log'
         self.simulation_data['source'] = 'simulation'
-        data = pd.concat([self.log_data, self.simulation_data], axis=0, ignore_index=True)
-        if (('processing_time' not in data.columns) or ('waiting_time' not in data.columns)):
+
+        # renaming simulation log columns
+        renaming_dict = self.simulation_log_ids.renaming_dict(self.log_ids)
+        simulation_log_renamed = self.simulation_data.rename(columns=renaming_dict)
+
+        data = pd.concat([self.log_data, simulation_log_renamed], axis=0, ignore_index=True)
+        if ('processing_time' not in data.columns) or ('waiting_time' not in data.columns):
             data = self.calculate_times(data)
+
         data = self.scaling_data(data)
+
         # save data
         self.log_data = data[data.source == 'log']
         self.simulation_data = data[data.source == 'simulation']
-        self.alias = self.create_task_alias(data, 'task')
+        self.alias = self.create_task_alias(data, self.log_ids.activity)
 
-        self.alpha_concurrency = ao.AlphaOracle(self.log_data, self.alias, True)
+        self.alpha_concurrency = ao.AlphaOracle(self.log_data, self.log_ids, self.alias, True)
+
         # reformat and sampling data
-        self.log_data = self.reformat_events(self.log_data.to_dict('records'), 'task')
-        self.simulation_data = self.reformat_events(self.simulation_data.to_dict('records'), 'task')
+        self.log_data = self.reformat_events(self.log_data.to_dict('records'), self.log_ids.activity)
+        self.simulation_data = self.reformat_events(self.simulation_data.to_dict('records'), self.log_ids.activity)
         num_traces = int(len(self.simulation_data) * self.ramp_io_perc)
         self.simulation_data = self.simulation_data[num_traces:-num_traces]
         self.log_data = list(map(lambda i: self.log_data[i],
@@ -126,7 +143,7 @@ class SimilarityEvaluator:
         similarity = list()
 
         # define the type of processing sequencial or parallel
-        cases = len(set([x['caseid'] for x in log_data]))
+        cases = len(set([x[self.log_ids.case] for x in log_data]))
         if cases <= self.max_cases:
             args = (metric, simulation_data, log_data,
                     self.alpha_concurrency.oracle,
@@ -169,7 +186,7 @@ class SimilarityEvaluator:
         row_ind, col_ind = linear_sum_assignment(np.array(cost_matrix))
         # Create response
         for idx, idy in zip(row_ind, col_ind):
-            similarity.append(dict(caseid=simulation_data[idx]['caseid'],
+            similarity.append(dict(caseid=simulation_data[idx][self.log_ids.case],
                                    sim_order=simulation_data[idx]['profile'],
                                    log_order=log_data[idy]['profile'],
                                    sim_score=(cost_matrix[idx][idy]
@@ -179,8 +196,7 @@ class SimilarityEvaluator:
                               )
         return similarity
 
-    @staticmethod
-    def _compare_traces(args):
+    def _compare_traces(self, args):
 
         def ae_distance(et_1, et_2, st_1, st_2):
             cicle_time_s1 = (et_1 - st_1).total_seconds()
@@ -252,10 +268,10 @@ class SimilarityEvaluator:
                             element['w_1'] = s1_ele['wait_act_norm']
                             element['w_2'] = s2_ele['wait_act_norm']
                         if metric in [Metric.MAE, Metric.DL_MAE]:
-                            element['et_1'] = s1_ele['end_time']
-                            element['et_2'] = s2_ele['end_time']
-                            element['st_1'] = s1_ele['start_time']
-                            element['st_2'] = s2_ele['start_time']
+                            element['et_1'] = s1_ele[self.log_ids.end_time]
+                            element['et_2'] = s2_ele[self.log_ids.end_time]
+                            element['st_1'] = s1_ele[self.log_ids.start_time]
+                            element['st_2'] = s2_ele[self.log_ids.start_time]
                         df_matrix.append(element)
                 df_matrix = pd.DataFrame(df_matrix)
                 if metric is Metric.TSD:
@@ -298,8 +314,12 @@ class SimilarityEvaluator:
         similarity = list()
         log_data = pd.DataFrame(log_data)
         simulation_data = pd.DataFrame(simulation_data)
-        log_timelapse = (log_data.end_time.max() - log_data.start_time.min()).total_seconds()
-        sim_timelapse = (simulation_data.end_time.max() - simulation_data.start_time.min()).total_seconds()
+        log_timelapse = (
+                log_data[self.log_ids.end_time].max() -
+                log_data[self.log_ids.start_time].min()).total_seconds()
+        sim_timelapse = (
+                simulation_data[self.log_ids.end_time].max() -
+                simulation_data[self.log_ids.start_time].min()).total_seconds()
         similarity.append({'sim_score': np.abs(sim_timelapse - log_timelapse)})
         return similarity
 
@@ -350,10 +370,10 @@ class SimilarityEvaluator:
             dataframe['source'] = source
             return dataframe
 
-        data = split_date_time(log_data, 'start_time', 'log')
-        data = pd.concat([data, split_date_time(log_data, 'end_time', 'log')], ignore_index=True)
-        data = pd.concat([data, split_date_time(simulation_data, 'start_time', 'sim')], ignore_index=True)
-        data = pd.concat([data, split_date_time(simulation_data, 'end_time', 'sim')], ignore_index=True)
+        data = split_date_time(log_data, self.log_ids.start_time, 'log')
+        data = pd.concat([data, split_date_time(log_data, self.log_ids.end_time, 'log')], ignore_index=True)
+        data = pd.concat([data, split_date_time(simulation_data, self.log_ids.start_time, 'sim')], ignore_index=True)
+        data = pd.concat([data, split_date_time(simulation_data, self.log_ids.end_time, 'sim')], ignore_index=True)
         data['weekday'] = data.apply(lambda x: x.date.weekday(), axis=1)
         g_criteria = {Metric.HOUR_EMD: 'window', Metric.DAY_EMD: 'weekday', Metric.DAY_HOUR_EMD: ['weekday', 'window'],
                       Metric.CAL_EMD: 'date'}
@@ -431,18 +451,7 @@ class SimilarityEvaluator:
     # =============================================================================
 
     def create_task_alias(self, data, features):
-        """
-        Create string alias for tasks names or tuples of tasks-roles names
-
-        Parameters
-        ----------
-        features : list
-
-        Returns
-        -------
-        alias : alias dictionary
-
-        """
+        """Create string alias for tasks names or tuples of tasks-roles names."""
         data = data.to_dict('records')
         subsec_set = set()
         if isinstance(features, list):
@@ -459,57 +468,40 @@ class SimilarityEvaluator:
             alias[variables[i]] = aliases[i]
         return alias
 
-    @staticmethod
-    def calculate_times(log):
-        """Appends the indexes and relative time to the dataframe.
-        parms:
-            log: dataframe.
-        Returns:
-            Dataframe: The dataframe with the calculated features added.
-        """
+    def calculate_times(self, log):
+        """Appends the indexes and relative time to the dataframe."""
         log['processing_time'] = 0
         log['multitasking'] = 0
         log = log.to_dict('records')
-        log = sorted(log, key=lambda x: (x['source'], x['caseid']))
-        for _, group in itertools.groupby(log, key=lambda x: (x['source'], x['caseid'])):
+        log = sorted(log, key=lambda x: (x['source'], x[self.log_ids.case]))
+        for _, group in itertools.groupby(log, key=lambda x: (x['source'], x[self.log_ids.case])):
             events = list(group)
-            events = sorted(events, key=itemgetter('start_timestamp'))
+            events = sorted(events, key=itemgetter(self.log_ids.start_time))
             for i in range(0, len(events)):
                 # In one-timestamp approach the first activity of the trace
-                # is taken as instantsince there is no previous timestamp
+                # is taken as instance there is no previous timestamp
                 # to find a range
-                dur = (events[i]['end_timestamp'] - events[i]['start_timestamp']).total_seconds()
+                dur = (events[i][self.log_ids.end_time] - events[i][self.log_ids.start_time]).total_seconds()
                 if i == 0:
                     wit = 0
                 else:
-                    wit = (events[i]['start_timestamp'] - events[i - 1]['end_timestamp']).total_seconds()
+                    wit = (events[i][self.log_ids.start_time] - events[i - 1][self.log_ids.end_time]).total_seconds()
                 events[i]['waiting_time'] = wit if wit >= 0 else 0
                 events[i]['processing_time'] = dur
         return pd.DataFrame.from_dict(log)
 
     def scaling_data(self, data):
-        """
-        Scales times values activity based
-
-        Parameters
-        ----------
-        data : dataframe
-
-        Returns
-        -------
-        data : dataframe with normalized times
-
-        """
+        """Scales times values activity based."""
         df_modif = data.copy()
         np.seterr(divide='ignore')
-        summ = data.groupby(['task'])['processing_time'].max().to_dict()
-        proc_act_norm = (lambda x: x['processing_time'] / summ[x['task']]
-        if summ[x['task']] > 0 else 0)
+        summ = data.groupby([self.log_ids.activity])['processing_time'].max().to_dict()
+        proc_act_norm = (lambda x: x['processing_time'] / summ[x[self.log_ids.activity]]
+        if summ[x[self.log_ids.activity]] > 0 else 0)
         df_modif['proc_act_norm'] = df_modif.apply(proc_act_norm, axis=1)
         # ---
-        summ = data.groupby(['task'])['waiting_time'].max().to_dict()
-        wait_act_norm = (lambda x: x['waiting_time'] / summ[x['task']]
-        if summ[x['task']] > 0 else 0)
+        summ = data.groupby([self.log_ids.activity])['waiting_time'].max().to_dict()
+        wait_act_norm = (lambda x: x['waiting_time'] / summ[x[self.log_ids.activity]]
+        if summ[x[self.log_ids.activity]] > 0 else 0)
         df_modif['wait_act_norm'] = df_modif.apply(wait_act_norm, axis=1)
         return df_modif
 
@@ -529,23 +521,27 @@ class SimilarityEvaluator:
             [x.update(dict(alias=self.alias[x[features]])) for x in data]
         temp_data = list()
         # define ordering keys and columns
-        sort_key = 'start_timestamp'
+        sort_key = self.log_ids.start_time
         columns = ['alias', 'processing_time', 'proc_act_norm', 'waiting_time', 'wait_act_norm']
-        data = sorted(data, key=lambda x: (x['caseid'], x[sort_key]))
-        for key, group in itertools.groupby(data, key=lambda x: x['caseid']):
+        data = sorted(data, key=lambda x: (x[self.log_ids.case], x[sort_key]))
+        for key, group in itertools.groupby(data, key=lambda x: x[self.log_ids.case]):
             trace = list(group)
             temp_dict = dict()
             for col in columns:
                 serie = [y[col] for y in trace]
                 if col == 'alias':
-                    temp_dict = {**{'profile': serie}, **temp_dict}
+                    temp_dict = {'profile': serie, **temp_dict}
                 else:
                     serie = [y[col] for y in trace]
-                temp_dict = {**{col: serie}, **temp_dict}
-            temp_dict = {**{'caseid': key, 'start_time': trace[0][sort_key], 'end_time': trace[-1][sort_key]},
-                         **temp_dict}
+                temp_dict = {col: serie, **temp_dict}
+            temp_dict = {
+                self.log_ids.case: key,
+                self.log_ids.start_time: trace[0][sort_key],
+                self.log_ids.end_time: trace[-1][sort_key],
+                **temp_dict
+            }
             temp_data.append(temp_dict)
-        return sorted(temp_data, key=itemgetter('start_time'))
+        return sorted(temp_data, key=itemgetter(self.log_ids.start_time))
 
     @staticmethod
     def define_ranges(size, num_folds):

@@ -1,5 +1,6 @@
-import networkx as nx
 import matplotlib.pyplot as plt
+import networkx as nx
+
 from .. import utilities as sup
 
 
@@ -57,12 +58,15 @@ def _load_process_structure(bpmn, verbose) -> nx.DiGraph:
     total_elements = (len(tasks) + len(ex_gates) + len(inc_gates) + len(para_gates) + len(timer_events))
     # Adding nodes
     # index = create_nodes(g,total_elements,0,start,'start','start_name','start_id')
-    index = _create_nodes(g, total_elements, 0, list(filter(lambda x: x['task_name'] == 'Start', tasks)), 'start',
+    index = _create_nodes(g, total_elements, 0, list(filter(lambda x: x['task_name'].lower() == 'start', tasks)),
+                          'start',
                           'task_name', 'task_id', verbose)
     index = _create_nodes(g, total_elements, index,
-                          list(filter(lambda x: x['task_name'] not in ['Start', 'End'], tasks)), 'task', 'task_name',
+                          list(filter(lambda x: x['task_name'].lower() not in ['start', 'end'], tasks)), 'task',
+                          'task_name',
                           'task_id', verbose)
-    index = _create_nodes(g, total_elements, index, list(filter(lambda x: x['task_name'] == 'End', tasks)), 'end',
+    index = _create_nodes(g, total_elements, index, list(filter(lambda x: x['task_name'].lower() == 'end', tasks)),
+                          'end',
                           'task_name', 'task_id', verbose)
     index = _create_nodes(g, total_elements, index, list(filter(lambda x: x['gate_dir'] == 'Diverging', ex_gates)),
                           'gate', 'gate_name', 'gate_id', verbose)

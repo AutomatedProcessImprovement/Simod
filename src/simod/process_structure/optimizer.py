@@ -1,7 +1,7 @@
 import copy
 import multiprocessing
 from pathlib import Path
-from typing import Union, Optional, Tuple
+from typing import Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ from .miner import StructureMiner, Settings as StructureMinerSettings
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..configuration import StructureMiningAlgorithm, Metric
-from ..event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
+from ..event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from ..event_log.utilities import sample_log
 from ..simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
 
@@ -29,18 +29,20 @@ class StructureOptimizer(HyperoptPipeline):
             self,
             settings: StructureOptimizationSettings,
             log: LogReaderWriter,
-            log_ids: Optional[EventLogIDs] = None,
+            log_ids: EventLogIDs,
     ):
-        self._log_ids = SIMOD_DEFAULT_COLUMNS if log_ids is None else log_ids
+        assert log_ids is not None, 'Event log IDs must be provided'
+
+        self._log_ids = log_ids
 
         self._settings = settings
         self._log_reader = log
 
         train, validation = self._log_reader.split_timeline(0.8)
-        train = sample_log(train)
+        train = sample_log(train, log_ids)
 
         self._log_validation = validation.sort_values('start_timestamp', ascending=True).reset_index(drop=True)
-        self._log_train = LogReaderWriter.copy_without_data(self._log_reader)
+        self._log_train = LogReaderWriter.copy_without_data(self._log_reader, self._log_ids)
         self._log_train.set_data(
             train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
 
@@ -277,11 +279,11 @@ class StructureOptimizer(HyperoptPipeline):
             simulation_repetitions: int,
             json_path: Path,
             simulation_cases: int):
-        self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
         self._log_validation['source'] = 'log'
         self._log_validation['run_num'] = 0
         self._log_validation['role'] = 'SYSTEM'
-        self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
+        self._log_validation = self._log_validation[
+            ~self._log_validation[self._log_ids.activity].isin(['Start', 'start', 'End', 'end'])]
 
         num_simulations = simulation_repetitions
         cpu_count = multiprocessing.cpu_count()
@@ -319,13 +321,12 @@ class StructureOptimizer(HyperoptPipeline):
 
         return evaluation_measurements
 
-    @staticmethod
-    def _evaluate_logs(arguments) -> dict:
+    def _evaluate_logs(self, arguments) -> dict:
         data: pd.DataFrame
         sim_log: pd.DataFrame
         data, sim_log = arguments
 
-        evaluator = SimilarityEvaluator(data, sim_log, max_cases=1000)
+        evaluator = SimilarityEvaluator(data, self._log_ids, sim_log, PROSIMOS_COLUMNS, max_cases=1000)
         evaluator.measure_distance(Metric.DL)
 
         result = {
@@ -335,17 +336,15 @@ class StructureOptimizer(HyperoptPipeline):
 
         return result
 
-    @staticmethod
-    def _read_simulated_log(arguments: Tuple):
+    def _read_simulated_log(self, arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments
 
-        reader = LogReaderWriter(log_path=log_path, column_names=log_column_mapping)
+        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS, column_names=log_column_mapping)
 
-        reader.df.rename(columns={'user': 'resource'}, inplace=True)
         reader.df['role'] = reader.df['resource']
         reader.df['source'] = 'simulation'
         reader.df['run_num'] = simulation_repetition_index
-        reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
+        reader.df = reader.df[~reader.df[PROSIMOS_COLUMNS.activity].isin(['Start', 'start', 'End', 'end'])]
 
         return reader.df
 

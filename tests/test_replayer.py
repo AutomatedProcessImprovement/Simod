@@ -7,6 +7,7 @@ from typing import Tuple
 import pandas as pd
 import pytest
 
+from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.splitter import LogSplitter
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
@@ -22,7 +23,7 @@ def args(entry_point):
 
 
 def setup_data(model_path: Path, log_path: Path):
-    log = LogReaderWriter(log_path)
+    log = LogReaderWriter(log_path, STANDARD_COLUMNS)
     graph = BPMNGraph.from_bpmn_path(model_path)
 
     return graph, log
@@ -30,7 +31,7 @@ def setup_data(model_path: Path, log_path: Path):
 
 def split_log_buckets(log: LogReaderWriter, size: float, one_ts: bool) -> Tuple[pd.DataFrame, LogReaderWriter]:
     # Split log data
-    splitter = LogSplitter(pd.DataFrame(log.data))
+    splitter = LogSplitter(pd.DataFrame(log.data), STANDARD_COLUMNS)
     train, test = splitter.split_log('timeline_contained', size, one_ts)
     total_events = len(log.data)
 

@@ -2,14 +2,14 @@ import math
 import os
 import random
 from pathlib import Path
-from typing import Union, Optional, Tuple
+from typing import Optional, Tuple
 from xml.etree import ElementTree as ET
 
 import pandas as pd
 import pendulum
 
 from simod.cli_formatter import print_step
-from simod.event_log.column_mapping import EventLogIDs
+from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 
 
 def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFrame:  # TODO: must be tested
@@ -21,7 +21,7 @@ def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFra
     # calculating case durations
     cases_durations = list()
     for case_id, trace in event_log.groupby(log_ids.case):
-        duration = (trace['end_timestamp'].max() - trace['start_timestamp'].min()).total_seconds()
+        duration = (trace[log_ids.end_time].max() - trace[log_ids.start_time].min()).total_seconds()
         cases_durations.append({log_ids.case: case_id, case_duration_key: duration})
     cases_durations = pd.DataFrame(cases_durations)
 
@@ -39,52 +39,6 @@ def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFra
     return event_log
 
 
-def write_xes(log: Union[pd.DataFrame, list], output_path: Path):
-    log_df: pd.DataFrame
-
-    if isinstance(log, pd.DataFrame):
-        log_df = log
-    elif isinstance(log, list):
-        log_df = pd.DataFrame(log)
-    else:
-        raise Exception(f'Unimplemented type for {type(log)}')
-
-    log_df.rename(columns={
-        'task': 'concept:name',
-        'caseid': 'case:concept:name',
-        'event_type': 'lifecycle:transition',
-        'user': 'org:resource',
-        'end_timestamp': 'time:timestamp'
-    }, inplace=True)
-
-    log_df.drop(columns=['@@startevent_concept:name',
-                         '@@startevent_org:resource',
-                         '@@startevent_Activity',
-                         '@@startevent_Resource',
-                         '@@duration',
-                         'case:variant',
-                         'case:variant-index',
-                         'case:creator',
-                         'Activity',
-                         'Resource',
-                         'elementId',
-                         'processId',
-                         'resourceId',
-                         'resourceCost',
-                         '@@startevent_element',
-                         '@@startevent_elementId',
-                         '@@startevent_process',
-                         '@@startevent_processId',
-                         '@@startevent_resourceId',
-                         'etype'],
-                inplace=True,
-                errors='ignore')
-
-    log_df.fillna('UNDEFINED', inplace=True)
-
-    convert_df_to_xes(log_df, output_path)
-
-
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
     _, ext = os.path.splitext(log_path)
     if ext != '.csv':
@@ -98,15 +52,15 @@ def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = N
         return log_path
 
 
-def read(log_path: Path) -> Tuple[pd.DataFrame, Path]:
+def read(log_path: Path, log_ids: EventLogIDs = STANDARD_COLUMNS) -> Tuple[pd.DataFrame, Path]:
     log_path_csv = convert_xes_to_csv_if_needed(log_path)
     log = pd.read_csv(log_path_csv)
-    convert_timestamps(log)
+    convert_timestamps(log, log_ids)
     return log, log_path_csv
 
 
-def convert_timestamps(log: pd.DataFrame):
-    time_columns = ['start_timestamp', 'enabled_timestamp', 'end_timestamp', 'time:timestamp']
+def convert_timestamps(log: pd.DataFrame, log_ids: EventLogIDs):
+    time_columns = [log_ids.start_time, log_ids.enabled_time, log_ids.end_time]
     for name in time_columns:
         if name in log.columns:
             log[name] = pd.to_datetime(log[name], utc=True)
@@ -154,7 +108,7 @@ def reformat_timestamps(xes_path: Path, output_path: Path):
     tree.write(output_path)
 
 
-def sample_log(log: pd.DataFrame):
+def sample_log(log: pd.DataFrame, log_ids: EventLogIDs):
     def sample_size(population_size, confidence_level, confidence_interval):
         confidence_level_constant = {50: .67, 68: .99, 90: 1.64, 95: 1.96, 99: 2.57}
 
@@ -175,10 +129,10 @@ def sample_log(log: pd.DataFrame):
 
         return sample_size
 
-    case_ids = list(log.caseid.unique())
+    case_ids = list(log[log_ids.case].unique())
     if len(case_ids) > 1000:
         sample_size = sample_size(len(case_ids), 95.0, 3.0)
         sample_case_ids = random.sample(case_ids, sample_size)
-        log = log[log.caseid.isin(sample_case_ids)]
+        log = log[log[log_ids.case].isin(sample_case_ids)]
 
     return log

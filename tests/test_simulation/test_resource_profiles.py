@@ -1,5 +1,5 @@
+from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
-from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 
 
@@ -7,7 +7,7 @@ def test_resource_profiles_undifferentiated(entry_point):
     log_path = entry_point / 'PurchasingExample.xes'
     bpmn_path = entry_point / 'PurchasingExample.bpmn'
 
-    log_reader = LogReaderWriter(log_path)
+    log_reader = LogReaderWriter(log_path, STANDARD_COLUMNS)
     log = log_reader.get_traces_df(include_start_end_events=True)
 
     log_ids = EventLogIDs(

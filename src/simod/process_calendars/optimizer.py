@@ -10,9 +10,9 @@ from hyperopt import tpe
 from tqdm import tqdm
 
 from simod.analyzers import sim_evaluator as sim
-from simod.cli_formatter import print_subsection, print_message
+from simod.cli_formatter import print_subsection
 from simod.configuration import Metric
-from simod.event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
+from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
@@ -32,11 +32,11 @@ class CalendarOptimizer(HyperoptPipeline):
 
         self._calendar_optimizer_settings = calendar_optimizer_settings
         self._log = log
-        self._log_ids = log_ids if log_ids is not None else SIMOD_DEFAULT_COLUMNS
+        self._log_ids = log_ids
 
         # setting train and validation log data
         train, validation = self._split_timeline(0.8)
-        self._log_train = LogReaderWriter.copy_without_data(self._log)
+        self._log_train = LogReaderWriter.copy_without_data(self._log, self._log_ids)
         self._log_train.set_data(train
                                  .sort_values(self._log_ids.start_time, ascending=True)
                                  .reset_index(drop=True)
@@ -65,8 +65,6 @@ class CalendarOptimizer(HyperoptPipeline):
     def run(self) -> PipelineSettings:
         def pipeline(trial_stg: Union[dict, PipelineSettings]):
             print_subsection('Trial')
-            print_message(f'train split: {len(pd.DataFrame(self._log_train.data).caseid.unique())}, '
-                          f'validation split: {len(pd.DataFrame(self._log_validation).caseid.unique())}')
 
             # casting a dictionary provided by hyperopt to PipelineSettings for convenience
             if isinstance(trial_stg, dict):
@@ -239,18 +237,16 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return json_path, simulation_cases
 
-    @staticmethod
-    def _read_simulated_log(arguments: Tuple):
+    def _read_simulated_log(self, arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments
         assert log_path.exists(), f'Simulated log file {log_path} does not exist'
 
-        reader = LogReaderWriter(log_path=log_path, column_names=log_column_mapping)
+        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS, column_names=log_column_mapping)
 
-        reader.df.rename(columns={'user': 'resource'}, inplace=True)
         reader.df['role'] = reader.df['resource']
         reader.df['source'] = 'simulation'
         reader.df['run_num'] = simulation_repetition_index
-        reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]
+        reader.df = reader.df[~reader.df[PROSIMOS_COLUMNS.activity].isin(['Start', 'End', 'start', 'end'])]
 
         return reader.df
 
@@ -292,11 +288,10 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return evaluation_measurements
 
-    @staticmethod
-    def _evaluate_logs(args) -> dict:
+    def _evaluate_logs(self, args) -> dict:
         validation_log, log = args
 
-        evaluator = sim.SimilarityEvaluator(validation_log, log, max_cases=1000)
+        evaluator = sim.SimilarityEvaluator(validation_log, self._log_ids, log, PROSIMOS_COLUMNS, max_cases=1000)
         evaluator.measure_distance(Metric.DAY_HOUR_EMD)
 
         result = {

@@ -1,10 +1,7 @@
-"""
-Created on Sun Jan  5 18:03:15 2020
-
-@author: Manuel Camargo
-"""
 import itertools
 from enum import Enum
+
+from simod.event_log.column_mapping import EventLogIDs
 
 
 class Rel(Enum):
@@ -17,8 +14,9 @@ class Rel(Enum):
 class AlphaOracle:
     """This class provides the alpha concurrency oracle information"""
 
-    def __init__(self, log, tasks_alias, one_timestamp, look_for_loops=False):
+    def __init__(self, log, log_ids: EventLogIDs, tasks_alias, one_timestamp, look_for_loops=False):
         self.log = log
+        self.log_ids = log_ids
         self.tasks_alias = tasks_alias
         self.look_for_loops = look_for_loops
         self.oracle = self._discover_concurrency()
@@ -73,12 +71,12 @@ class AlphaOracle:
         """
         temp_data = list()
         temp_df = self.log.copy()
-        temp_df['alias'] = temp_df.apply(lambda x: self.tasks_alias[x['task']], axis=1)
+        temp_df['alias'] = temp_df.apply(lambda x: self.tasks_alias[x[self.log_ids.activity]], axis=1)
         self.log = temp_df
         log_df = self.log.to_dict('records')
-        log_df = sorted(log_df, key=lambda x: (x['caseid'], x['start_timestamp']))
+        log_df = sorted(log_df, key=lambda x: (x[self.log_ids.case], x[self.log_ids.start_time]))
 
-        for key, group in itertools.groupby(log_df, key=lambda x: x['caseid']):
+        for key, group in itertools.groupby(log_df, key=lambda x: x[self.log_ids.case]):
             trace = list(group)
             series = [y['alias'] for y in trace]
             temp_data.append(series)

@@ -43,7 +43,7 @@ class ResourcePoolDiscoverer:
             filtered_list = log[[self._activity_key, self._resource_key]]
         else:
             raise TypeError('Log must be LogReader or pd.DataFrame')
-        filtered_list = filtered_list[~filtered_list[self._activity_key].isin(['Start', 'End'])]
+        filtered_list = filtered_list[~filtered_list[self._activity_key].isin(['Start', 'start', 'End', 'end'])]
         filtered_list = filtered_list[filtered_list[self._resource_key] != 'AUTO']
         return filtered_list
 

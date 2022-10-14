@@ -1,7 +1,7 @@
 import pytest
 
 from simod.configuration import Configuration
-from simod.event_log.column_mapping import SIMOD_DEFAULT_COLUMNS
+from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings, CalendarOptimizationSettings
@@ -274,9 +274,9 @@ def test_optimizer(entry_point, test_case):
 
     log_path = entry_point / 'PurchasingExample.xes'
     model_path = entry_point / 'PurchasingExampleQBP.bpmn'
-    log = LogReaderWriter(log_path)
+    log = LogReaderWriter(log_path, STANDARD_COLUMNS)
 
-    optimizer = CalendarOptimizer(calendar_settings, log, model_path, log_ids=SIMOD_DEFAULT_COLUMNS)
+    optimizer = CalendarOptimizer(calendar_settings, log, model_path, log_ids=STANDARD_COLUMNS)
     result = optimizer.run()
 
     assert type(result) is PipelineSettings

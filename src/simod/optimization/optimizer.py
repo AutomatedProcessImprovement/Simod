@@ -11,6 +11,7 @@ from tqdm import tqdm
 from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import PDFMethod, Configuration
+from simod.event_log.column_mapping import PROSIMOS_COLUMNS
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers
@@ -34,9 +35,9 @@ class Optimizer:
     _log_test: pd.DataFrame
 
     # Downstream executors
-    _preprocessor: Optional[Preprocessor] = None
-    _structure_optimizer: Optional[StructureOptimizer] = None
-    _calendar_optimizer: Optional[CalendarOptimizer] = None
+    _preprocessor: Optional[Preprocessor]
+    _structure_optimizer: Optional[StructureOptimizer]
+    _calendar_optimizer: Optional[CalendarOptimizer]
 
     def __init__(self, settings: Configuration):
         self._settings = settings
@@ -49,7 +50,9 @@ class Optimizer:
         self._split_log(0.8)  # TODO: ratio can be an optimization parameter
 
     def _split_log(self, train_ratio: float):
-        log_reader = LogReaderWriter(self._settings.common.log_path, log=self._preprocessor.log)
+        log_reader = LogReaderWriter(self._settings.common.log_path,
+                                     self._settings.common.log_ids,
+                                     log=self._preprocessor.log)
 
         train, test = log_reader.split_timeline(train_ratio)
 
@@ -57,7 +60,8 @@ class Optimizer:
         self._log_test = test.sort_values(by=[sort_key], ascending=True).reset_index(drop=True)
 
         train = train.sort_values(by=[sort_key], ascending=True).reset_index(drop=True)
-        self._log_train = LogReaderWriter(self._settings.common.log_path, log=train, load=False)
+        self._log_train = LogReaderWriter(self._settings.common.log_path, self._settings.common.log_ids, log=train,
+                                          load=False)
 
     def _remove_outliers_from_train_data(self):
         df = self._log_train.get_traces_df(include_start_end_events=True)
@@ -70,33 +74,32 @@ class Optimizer:
 
     def _mine_and_optimize_structure(self) -> Tuple[StructurePipelineSettings, PDFMethod]:
         settings = StructureOptimizationSettings.from_configuration_v2(self._settings, self._output_dir)
-        optimizer = StructureOptimizer(settings, self._log_train)
+        optimizer = StructureOptimizer(settings, self._log_train, self._settings.common.log_ids)
         self._structure_optimizer = optimizer
         return optimizer.run(), optimizer._settings.pdef_method
 
     def _optimize_calendars(self, model_path: Path) -> CalendarPipelineSettings:
         calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)
-        optimizer = CalendarOptimizer(calendar_settings, self._log_train, model_path)
+        optimizer = CalendarOptimizer(calendar_settings, self._log_train, model_path, self._settings.common.log_ids)
         result = optimizer.run()
         self._calendar_optimizer = optimizer
         return result
 
-    @staticmethod
-    def _read_simulated_log(arguments: Tuple):
+    def _read_simulated_log(self, arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments
 
-        reader = LogReaderWriter(log_path=log_path, column_names=log_column_mapping)
+        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS, column_names=log_column_mapping)
 
-        reader.df.rename(columns={'user': 'resource'}, inplace=True)
         reader.df['role'] = reader.df['resource']
         reader.df['source'] = 'simulation'
         reader.df['run_num'] = simulation_repetition_index
-        reader.df = reader.df[~reader.df.task.isin(['Start', 'End'])]  # TODO: should we use EventLogIDs here?
+        reader.df = reader.df[
+            ~reader.df[PROSIMOS_COLUMNS.activity].isin(
+                ['Start', 'start', 'End', 'end'])]  # TODO: should we use EventLogIDs here?
 
         return reader.df
 
-    @staticmethod
-    def _evaluate_logs(arguments):
+    def _evaluate_logs(self, arguments):
         settings: Configuration
         test_log: pd.DataFrame
         simulated_log: pd.DataFrame
@@ -104,7 +107,8 @@ class Optimizer:
 
         rep = simulated_log.iloc[0].run_num
 
-        evaluator = SimilarityEvaluator(test_log, simulated_log, max_cases=1000)
+        evaluator = SimilarityEvaluator(test_log, self._settings.common.log_ids, simulated_log, PROSIMOS_COLUMNS,
+                                        max_cases=1000)
 
         measurements = []
         for metric in settings.common.evaluation_metrics:

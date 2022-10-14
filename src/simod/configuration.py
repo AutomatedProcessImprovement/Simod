@@ -5,7 +5,7 @@ from typing import Union, List, Optional, Tuple
 
 from hyperopt import hp
 
-from .event_log.column_mapping import EventLogIDs, SIMOD_DEFAULT_COLUMNS
+from .event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from .utilities import get_project_dir
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
@@ -246,7 +246,7 @@ class CommonSettings:
         if mapping is not None:
             log_ids = EventLogIDs.from_dict(mapping)
         else:
-            log_ids = SIMOD_DEFAULT_COLUMNS
+            log_ids = STANDARD_COLUMNS
 
         clean_up = config.get('clean_intermediate_files', False)
 
