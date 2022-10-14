@@ -26,3 +26,5 @@ htmlcov/
 resources/private
 build/
 vendor/
+benchmarking/logs
+tests/test_benchmarking/logs
