@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 BRANCH_NAME="master"
-PROSIMOS_BRANCH_NAME="previous_json_format"
+PROSIMOS_BRANCH_NAME="aug_2022"
 BASE_DIR=/usr/src
 PROJECT_DIR=${BASE_DIR}/Simod
 VENV_DIR=${PROJECT_DIR}/venv
@@ -21,7 +21,6 @@ pip3.10 install --upgrade pip
 
 # Installing dependencies
 cd ${PROJECT_DIR}/external_tools/Prosimos
-git pull && git checkout aug_2022
 pip3.10 install -e .
 cd $PROJECT_DIR
 pip3.10 install pm4py-wrapper
