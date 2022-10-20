@@ -65,8 +65,8 @@ class StructureOptimizer(HyperoptPipeline):
 
         def pipeline(trial_stage_settings: Union[PipelineSettings, dict]):
             print_subsection("Trial")
-            print_message(f'train split: {len(pd.DataFrame(self._log_train.data)[self._log_ids.case].unique())}, '
-                          f'validation split: {len(self._log_validation[self._log_ids.case].unique())}')
+            print_message(f'train split: {len(pd.DataFrame(self._log_train.data))}, '
+                          f'validation split: {len(self._log_validation)}')
 
             # casting a dictionary provided by hyperopt to PipelineSettings for convenience
             if isinstance(trial_stage_settings, dict):
@@ -93,13 +93,19 @@ class StructureOptimizer(HyperoptPipeline):
             trial_stage_settings.model_path = output_dir / (trial_stage_settings.project_name + '.bpmn')
 
             # structure mining
-            status, result = self.step(
-                status,
-                self._mine_structure,
-                trial_stage_settings,
-                log_path,
-                self._settings.mining_algorithm)
-            bpmn_reader, process_graph = result
+            try:
+                status, result = self.step(
+                    status,
+                    self._mine_structure,
+                    trial_stage_settings,
+                    log_path,
+                    self._settings.mining_algorithm)
+
+                bpmn_reader, process_graph = result
+            except Exception as e:
+                print_message(f'Mining failed: {e}')
+                status = STATUS_FAIL
+                bpmn_reader, process_graph = None, None
 
             # simulation parameters mining
             status, result = self.step(
@@ -108,7 +114,10 @@ class StructureOptimizer(HyperoptPipeline):
                 trial_stage_settings,
                 bpmn_reader,
                 process_graph)
-            json_path, simulation_cases = result
+            if status == STATUS_FAIL:
+                json_path, simulation_cases = None, None
+            else:
+                json_path, simulation_cases = result
 
             # simulation
             status, result = self.step(status, self._simulate_undifferentiated,

@@ -10,7 +10,7 @@ from hyperopt import tpe
 from tqdm import tqdm
 
 from simod.analyzers import sim_evaluator as sim
-from simod.cli_formatter import print_subsection
+from simod.cli_formatter import print_subsection, print_message
 from simod.configuration import Metric
 from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
@@ -65,6 +65,8 @@ class CalendarOptimizer(HyperoptPipeline):
     def run(self) -> PipelineSettings:
         def pipeline(trial_stg: Union[dict, PipelineSettings]):
             print_subsection('Trial')
+            print_message(f'train split: {len(pd.DataFrame(self._log_train.data))}, '
+                          f'validation split: {len(self._log_validation)}')
 
             # casting a dictionary provided by hyperopt to PipelineSettings for convenience
             if isinstance(trial_stg, dict):
@@ -85,8 +87,11 @@ class CalendarOptimizer(HyperoptPipeline):
             assert trial_stg.output_dir.exists(), 'Output directory does not exist'
 
             status, result = self.step(status, self._extract_parameters, trial_stg)
-            json_path, simulation_cases = result
-            assert json_path.exists(), 'Simulation parameters file does not exist'
+            if result is None:
+                status = STATUS_FAIL
+                json_path, simulation_cases = None, None
+            else:
+                json_path, simulation_cases = result
 
             status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path, simulation_cases)
             evaluation_measurements = result if status == STATUS_OK else []
