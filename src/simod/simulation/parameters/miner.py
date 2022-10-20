@@ -192,7 +192,7 @@ def mine_for_pooled_resources(
 
     # Task resource distributions
     task_resource_distributions = _task_resource_distribution_pools(  # TODO: finish
-        log, log_ids, process_graph, pdf_method, bpmn_reader, pool_profiles)
+        log, log_ids, process_graph, pdf_method, bpmn_reader)
 
     return pool_profiles, resource_calendars, task_resource_distributions
 
@@ -216,7 +216,7 @@ def mine_for_differentiated_resources(
 
     # Task resource distributions
     task_resource_distributions = _task_resource_distribution_pools(  # TODO: finish
-        log, log_ids, process_graph, pdf_method, bpmn_reader, resource_profiles)
+        log, log_ids, process_graph, pdf_method, bpmn_reader)
 
     return resource_profiles, resource_calendars, task_resource_distributions
 
@@ -226,8 +226,7 @@ def _task_resource_distribution_pools(
         log_ids: EventLogIDs,
         process_graph: DiGraph,
         pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
-        resource_profiles: List[ResourceProfile]) -> List[ActivityResourceDistribution]:
+        bpmn_reader: BPMNReaderWriter) -> List[ActivityResourceDistribution]:
     # extracting activities distribution
     log['role'] = 'SYSTEM'  # TaskEvaluator requires a role column
     resource_pool_metadata = {  # TODO: check this

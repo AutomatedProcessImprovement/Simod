@@ -108,7 +108,7 @@ class TaskEvaluator:
         # records creation
         temp_elements_data = list()
         default_record = {'type': 'FIXED', 'mean': '0', 'arg1': '0', 'arg2': '0'}
-        for task in ['Start', 'End']:
+        for task in ['start', 'end']:
             temp_elements_data.append({**{'id': sup.gen_id(), 'name': task}, **default_record})
         temp_elements_data = pd.DataFrame(temp_elements_data)
 

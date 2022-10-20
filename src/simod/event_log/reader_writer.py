@@ -79,7 +79,7 @@ class LogReaderWriter:
         else:
             df = log
 
-        assert len(df) > 0, 'Log is empty'
+        assert len(df) > 0, f'Log {self.log_path} is empty'
 
         # renaming for internal use
         # df.rename(columns=column_names, inplace=True)
@@ -120,14 +120,14 @@ class LogReaderWriter:
         end_start_times = dict()
         log = pd.DataFrame(data)
         for case, group in log.groupby(self._log_ids.case):
-            end_start_times[(case, 'Start')] = group[self._log_ids.start_time].min() - timedelta(microseconds=1)
-            end_start_times[(case, 'End')] = group[self._log_ids.end_time].max() + timedelta(microseconds=1)
+            end_start_times[(case, 'start')] = group[self._log_ids.start_time].min() - timedelta(microseconds=1)
+            end_start_times[(case, 'end')] = group[self._log_ids.end_time].max() + timedelta(microseconds=1)
         new_data = []
         data = sorted(data, key=lambda x: x[self._log_ids.case])
         for key, group in itertools.groupby(data, key=lambda x: x[self._log_ids.case]):
             trace = list(group)
-            for new_event in ['Start', 'End']:
-                idx = 0 if new_event == 'Start' else -1
+            for new_event in ['start', 'end']:
+                idx = 0 if new_event == 'start' else -1
                 temp_event = {
                     self._log_ids.case: trace[idx][self._log_ids.case],
                     self._log_ids.activity: new_event,
@@ -135,7 +135,7 @@ class LogReaderWriter:
                     self._log_ids.end_time: end_start_times[(key, new_event)],
                     self._log_ids.start_time: end_start_times[(key, new_event)],
                 }
-                if new_event == 'Start':
+                if new_event == 'start':
                     trace.insert(0, temp_event)
                 else:
                     trace.append(temp_event)

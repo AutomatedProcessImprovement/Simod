@@ -65,7 +65,6 @@ class ProsimosSettings:
 
 
 def simulate_with_prosimos(settings: ProsimosSettings):
-    print_notice(f'Prosimos simulator has been chosen')
     print_notice(f'Number of simulation cases: {settings.num_simulation_cases}')
 
     args = [

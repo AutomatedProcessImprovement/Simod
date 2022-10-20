@@ -113,15 +113,15 @@ class ResourceProfile:
 
         # handling Start and End
         if start_activity_id is not None:
-            resources.append(Resource(id='Start',
-                                      name='Start',
+            resources.append(Resource(id='start',
+                                      name='start',
                                       amount=1,
                                       cost_per_hour=0,
                                       calendar_id=calendar_id,
                                       assigned_tasks=[start_activity_id]))
         if end_activity_id is not None:
-            resources.append(Resource(id='End',
-                                      name='End',
+            resources.append(Resource(id='end',
+                                      name='end',
                                       amount=1,
                                       cost_per_hour=0,
                                       calendar_id=calendar_id,
@@ -158,6 +158,8 @@ class ResourceProfile:
         # Activities IDs mapping
         bpmn_reader = BPMNReaderWriter(bpmn_path)
         activity_ids_and_names = bpmn_reader.read_activities()
+        activity_ids_by_names = {activity['task_name'].lower(): activity['task_id']
+                                 for activity in activity_ids_and_names}
 
         # Calendars by resource name
         resource_calendars = {
@@ -175,8 +177,8 @@ class ResourceProfile:
             for name in resource_names:
                 assigned_activities_ids = []
                 for activity_name in resource_activities[name]:
-                    activity_id = next(filter(lambda a: a['task_name'] == activity_name,
-                                              activity_ids_and_names))['task_id']
+                    activity_id = activity_ids_by_names.get(activity_name.lower())
+                    assert activity_id is not None, f'Activity {activity_name} is not found in {bpmn_path}'
                     assigned_activities_ids.append(activity_id)
 
                 # NOTE: intervention to reduce cost for SYSTEM pool
