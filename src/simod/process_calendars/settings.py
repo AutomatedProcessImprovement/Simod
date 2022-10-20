@@ -32,6 +32,17 @@ class CalendarOptimizationSettings:
             case_arrival=config.calendars.case_arrival,
             resource_profiles=config.calendars.resource_profiles)
 
+    def to_dict(self) -> dict:
+        return {
+            'base_dir': self.base_dir,
+            'max_evaluations': self.max_evaluations,
+            'case_arrival': self.case_arrival.to_dict(),
+            'resource_profiles': self.resource_profiles.to_dict(),
+            'simulation_repetitions': self.simulation_repetitions,
+            'pdef_method': self.pdef_method.name,
+            'gateway_probabilities': self.gateway_probabilities.name
+        }
+
 
 @dataclass
 class ResourceOptimizationSettings:

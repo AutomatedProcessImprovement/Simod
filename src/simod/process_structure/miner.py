@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 import yaml
 
-from simod.cli_formatter import print_warning
+from simod.cli_formatter import print_warning, print_step
 from simod.configuration import PROJECT_DIR, StructureMiningAlgorithm
 
 
@@ -84,6 +84,16 @@ class Settings:
             or_rep=or_rep
         )
 
+    def to_dict(self) -> dict:
+        return {
+            'mining_algorithm': self.mining_algorithm.value,
+            'epsilon': self.epsilon,
+            'eta': self.eta,
+            'concurrency': self.concurrency,
+            'and_prior': self.and_prior,
+            'or_rep': self.or_rep
+        }
+
 
 class StructureMiner:
     """Discovers the process structure from a log file."""
@@ -129,6 +139,8 @@ class StructureMiner:
                 str(settings.epsilon), str(settings.eta),
                 str(xes_path),
                 output_path]
+
+        print_step(f'SplitMiner1 is running with the following arguments: {args}')
         subprocess.call(args)
 
     def _sm2_miner(self, xes_path: Path, settings: Settings):
@@ -137,14 +149,18 @@ class StructureMiner:
         args = ['java']
         if not pl.system().lower() == 'windows':
             args.append('-Xmx2G')
-        args.extend(['-cp',
-                     (settings._sm2_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm2_path), 'lib',
-                                                                        '*')),
-                     'au.edu.unimelb.services.ServiceProvider',
-                     'SM2',
-                     str(xes_path),
-                     output_path,
-                     str(settings.concurrency)])
+        args.extend(
+            ['-cp',
+             (settings._sm2_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm2_path), 'lib',
+                                                                '*')),
+             'au.edu.unimelb.services.ServiceProvider',
+             'SM2',
+             str(xes_path),
+             output_path,
+             str(settings.concurrency)]
+        )
+
+        print_step(f'SplitMiner2 is running with the following arguments: {args}')
         subprocess.call(args)
 
     def _sm3_miner(self, xes_path: Path, settings: Settings):
@@ -156,17 +172,21 @@ class StructureMiner:
         if not pl.system().lower() == 'windows':
             args.extend(['-Xmx2G', '-Xms1024M'])
 
-        and_prior_setting = str(settings.and_prior)
+        and_prior_setting = str(settings.and_prior).lower()
 
-        or_rep_setting = str(settings.or_rep)
+        or_rep_setting = str(settings.or_rep).lower()
 
-        args.extend(['-cp',
-                     (settings._sm3_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm3_path), 'lib',
-                                                                        '*')),
-                     'au.edu.unimelb.services.ServiceProvider',
-                     'SMD',
-                     str(settings.epsilon), str(settings.eta),
-                     and_prior_setting, or_rep_setting, 'false',
-                     str(xes_path),
-                     output_path])
+        args.extend([
+            '-cp',
+            (settings._sm3_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm3_path), 'lib', '*')),
+            'au.edu.unimelb.services.ServiceProvider',
+            'SMD',
+            str(settings.epsilon),
+            str(settings.eta),
+            and_prior_setting, or_rep_setting, 'false',
+            str(xes_path),
+            output_path
+        ])
+
+        print_step(f'SplitMiner3 is running with the following arguments: {args}')
         subprocess.call(args)
