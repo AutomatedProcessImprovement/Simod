@@ -109,8 +109,8 @@ def submit_job(job_script: Path):
 
 def main():
     log_paths = [
-        Path('logs/confidential_1000.xes'),
-        Path('logs/confidential_2000.xes'),
+        Path('logs/confidential_1000_processed.xes'),
+        Path('logs/confidential_2000_processed.xes'),
         Path('logs/cvs_pharmacy.xes'),
         Path('logs/BPI_Challenge_2012_W_Two_TS.xes'),
         Path('logs/BPI_Challenge_2017_W_Two_TS.xes'),
@@ -118,7 +118,7 @@ def main():
         Path('logs/Production.xes'),
         Path('logs/ConsultaDataMining201618.xes'),
         Path('logs/insurance.xes'),
-        Path('logs/Application-to-Approval-Government-Agency.xes'),
+        # Path('logs/Application-to-Approval-Government-Agency.xes'),
     ]
 
     config_dir = Path('configs')

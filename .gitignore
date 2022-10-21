@@ -27,4 +27,7 @@ resources/private
 build/
 vendor/
 benchmarking/logs
+benchmarking/*.csv
+benchmarking/*.yaml
+benchmarking/*.yml
 tests/test_benchmarking/logs
