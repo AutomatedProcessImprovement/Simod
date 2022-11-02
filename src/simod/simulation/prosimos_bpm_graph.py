@@ -278,7 +278,7 @@ class BPMNGraph:
         return enabled_tasks
 
     def replay_trace(self, task_sequence: list, f_arcs_frequency: dict, post_p=True) -> (
-    bool, List[bool], ProcessState):
+            bool, List[bool], ProcessState):
         p_state = ProcessState(self)
         fired_tasks = list()
         fired_or_splits = set()
@@ -638,15 +638,15 @@ class BPMNGraph:
                 flow_arcs_probability[flow_id] = probability
         else:  # otherwise, we set min_probability instead of zero and balance probabilities for valid arcs
             valid_probabilities = arcs_probabilities[arcs_probabilities > valid_probability_threshold].sum()
-            average_probability_to_balance = (
-                                                         1 - valid_probabilities - number_of_invalid_arcs * min_probability) / number_of_valid_arcs
+            extra_probability = (number_of_invalid_arcs * min_probability) - (1.0 - valid_probabilities)
+            extra_probability_per_valid_arc = extra_probability / number_of_valid_arcs
             for flow_id in flow_arcs_probability:
                 if flow_arcs_probability[flow_id] <= valid_probability_threshold:
                     # enforcing the minimum possible probability
                     probability = min_probability
                 else:
                     # balancing valid probabilities
-                    probability = flow_arcs_probability[flow_id] + average_probability_to_balance
+                    probability = flow_arcs_probability[flow_id] - extra_probability_per_valid_arc
                 flow_arcs_probability[flow_id] = probability
 
     @staticmethod

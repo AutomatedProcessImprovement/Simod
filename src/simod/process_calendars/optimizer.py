@@ -207,7 +207,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
         if status == STATUS_OK:
             similarity = np.mean([x['similarity'] for x in evaluation_measurements])
-            loss = 1 - similarity  # TODO: should it be just 'similarity'?
+            loss = similarity
             response['loss'] = loss
 
             status = status if loss > 0 else STATUS_FAIL
