@@ -1,12 +1,11 @@
 import itertools
 
-import numpy as np
 import pandas as pd
 from networkx import DiGraph
 from tqdm import tqdm
 
 from simod.configuration import PDFMethod
-from simod.discovery.pdf_finder import DistributionFinder
+from simod.discovery.distribution import get_best_distribution
 from simod.event_log.column_mapping import EventLogIDs
 
 
@@ -84,14 +83,14 @@ def __define_interarrival_distribution(inter_arrival_times: list, pdf_method: PD
     """
     # processing time discovery method
     if pdf_method is PDFMethod.AUTOMATIC:
-        return DistributionFinder(inter_arrival_times).distribution
-    elif pdf_method is PDFMethod.DEFAULT:
-        return {
-            'dname': 'EXPONENTIAL',
-            'dparams': {
-                'mean': 0,
-                'arg1': np.round(np.mean(inter_arrival_times), 2),
-                'arg2': 0
-            }
-        }
+        return get_best_distribution(inter_arrival_times)
+    # elif pdf_method is PDFMethod.DEFAULT:
+    #     return {
+    #         'dname': 'EXPONENTIAL',
+    #         'dparams': {
+    #             'mean': 0,
+    #             'arg1': np.round(np.mean(inter_arrival_times), 2),
+    #             'arg2': 0
+    #         }
+    #     }
     raise ValueError(f'PDF method not supported: {pdf_method}')

@@ -41,10 +41,10 @@ class StructureOptimizer(HyperoptPipeline):
         train, validation = self._log_reader.split_timeline(0.8)
         train = sample_log(train, log_ids)
 
-        self._log_validation = validation.sort_values('start_timestamp', ascending=True).reset_index(drop=True)
+        self._log_validation = validation.sort_values(log_ids.start_time, ascending=True).reset_index(drop=True)
         self._log_train = LogReaderWriter.copy_without_data(self._log_reader, self._log_ids)
         self._log_train.set_data(
-            train.sort_values('start_timestamp', ascending=True).reset_index(drop=True).to_dict('records'))
+            train.sort_values(log_ids.start_time, ascending=True).reset_index(drop=True).to_dict('records'))
 
         # TODO: ensure we need to copy all the logs, it's an expensive operation
         self._original_log = copy.deepcopy(log)

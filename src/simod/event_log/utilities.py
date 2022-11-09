@@ -72,11 +72,11 @@ def convert_xes_to_csv(xes_path: Path, csv_path: Path):
     os.system(' '.join(args))
 
 
-def convert_df_to_xes(df: pd.DataFrame, output_path: Path):
+def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path):
     xes_datetime_format = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
-    df['start_timestamp'] = df['start_timestamp'].apply(
+    df[log_ids.start_time] = df[log_ids.start_time].apply(
         lambda x: pendulum.parse(x.isoformat()).format(xes_datetime_format))
-    df['time:timestamp'] = df['time:timestamp'].apply(
+    df[log_ids.end_time] = df[log_ids.end_time].apply(
         lambda x: pendulum.parse(x.isoformat()).format(xes_datetime_format))
     df.to_csv(output_path, index=False)
     args = ['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes']

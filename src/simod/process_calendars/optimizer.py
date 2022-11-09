@@ -16,6 +16,7 @@ from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
+from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
 from simod.utilities import remove_asset, progress_bar_async, folder_id, file_id
@@ -26,9 +27,9 @@ class CalendarOptimizer(HyperoptPipeline):
             self,
             calendar_optimizer_settings: CalendarOptimizationSettings,
             log: LogReaderWriter,
-            model_path: Path,
+            structure_settings: Optional[StructureMinerSettings] = None,
+            model_path: Optional[Path] = None,
             log_ids: Optional[EventLogIDs] = None):
-        self._model_path = model_path
 
         self._calendar_optimizer_settings = calendar_optimizer_settings
         self._log = log
@@ -57,10 +58,28 @@ class CalendarOptimizer(HyperoptPipeline):
         self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
+        if model_path is not None:
+            self._model_path = model_path
+        else:
+            self._model_path = self._mine_structure(structure_settings, self._output_dir)
+
         self.evaluation_measurements = pd.DataFrame(
             columns=['similarity', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
 
         self._bayes_trials = Trials()
+
+    def _mine_structure(self, settings: StructureMinerSettings, output_dir: Path) -> Path:
+        print_message(f'Mining structure with settings {settings.to_dict()}')
+
+        # Saving the full pre-processed log to disk
+        log_path = output_dir / 'train_log.xes'
+        self._log_train.write_xes(log_path)
+
+        model_path = output_dir / 'train.bpmn'
+
+        StructureMiner(settings, log_path, model_path)
+
+        return model_path
 
     def run(self) -> PipelineSettings:
         def pipeline(trial_stg: Union[dict, PipelineSettings]):
@@ -298,6 +317,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
         evaluator = sim.SimilarityEvaluator(validation_log, self._log_ids, log, PROSIMOS_COLUMNS, max_cases=1000)
         evaluator.measure_distance(Metric.DAY_HOUR_EMD)
+        # TODO: use the new metric, https://github.com/AutomatedProcessImprovement/log-similarity-metrics, Absolute Hour Timestamp EMD
 
         result = {
             'run_num': log.iloc[0].run_num,

@@ -56,8 +56,7 @@ def mine_parameters(
     process_graph = bpmn_reader.as_graph()
 
     pdf_method = PDFMethod.AUTOMATIC
-    arrival_rate = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
-    arrival_distribution = Distribution.from_simod_dict(arrival_rate)
+    arrival_distribution = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
 
     # Resource parameters
 
@@ -107,8 +106,7 @@ def mine_default_24_7(
 
     resource_calendars = [calendar_24_7]
 
-    arrival_rate = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
-    arrival_distribution = Distribution.from_simod_dict(arrival_rate)
+    arrival_distribution = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
 
     arrival_calendar = calendar_24_7
 
@@ -266,15 +264,7 @@ def _task_resource_distribution_pools(
         activity_distribution: Optional[Distribution] = None
         for item in activities_distributions:
             if item['elementid'] == activity_id:
-                distribution_data = {
-                    'dname': item['type'],
-                    'dparams': {
-                        'mean': item['mean'],
-                        'arg1': item['arg1'],
-                        'arg2': item['arg2'],
-                    }
-                }
-                activity_distribution = Distribution.from_simod_dict(distribution_data)
+                activity_distribution = item['distribution']
                 break
         if activity_distribution is None:
             raise Exception(f'Distribution for activity {activity_id} not found')
@@ -335,18 +325,10 @@ def _task_resource_distribution_undifferentiated(
     # handling other (normal) activities without Start and End
     for activity_id in normal_activities_bpmn_elements_ids:
         # getting activity distribution from BPMN
-        activity_distribution: Optional[Distribution] = None
+        activity_distribution: Optional[dict] = None
         for item in activities_distributions:
             if item['elementid'] == activity_id:
-                distribution_data = {
-                    'dname': item['type'],
-                    'dparams': {
-                        'mean': item['mean'],
-                        'arg1': item['arg1'],
-                        'arg2': item['arg2'],
-                    }
-                }
-                activity_distribution = Distribution.from_simod_dict(distribution_data)
+                activity_distribution = item['distribution']
                 break
         if activity_distribution is None:
             raise Exception(f'Distribution for activity {activity_id} not found')

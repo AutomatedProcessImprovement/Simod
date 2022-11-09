@@ -10,6 +10,7 @@ from typing import List, Dict, Optional
 import pandas as pd
 from tqdm import tqdm
 
+from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.utilities import convert_df_to_xes, reformat_timestamps
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
@@ -44,7 +45,7 @@ class _AuxiliaryLogRecord:
     adjusted_duration_s: float
 
 
-def adjust_durations(log: pd.DataFrame, output_path: Optional[Path] = None, verbose=False,
+def adjust_durations(log: pd.DataFrame, log_ids: EventLogIDs, output_path: Optional[Path] = None, verbose=False,
                      is_concurrent=False, max_workers=multiprocessing.cpu_count()) -> pd.DataFrame:
     """Changes end timestamps for multitasking events without changing the overall resource utilization."""
     if verbose:
@@ -83,7 +84,7 @@ def adjust_durations(log: pd.DataFrame, output_path: Optional[Path] = None, verb
             '@@origin_ev_idx'],
             errors='ignore')
 
-        convert_df_to_xes(log, output_path)
+        convert_df_to_xes(log, log_ids, output_path)
 
         reformat_timestamps(output_path, output_path)
 

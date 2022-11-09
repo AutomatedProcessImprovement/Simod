@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from simod import utilities as sup
 from simod.configuration import PDFMethod
-from simod.discovery.pdf_finder import DistributionFinder
+from simod.discovery.distribution import get_best_distribution
 from simod.event_log.column_mapping import EventLogIDs
 
 
@@ -49,8 +49,8 @@ class TaskEvaluator:
         # processing time discovery method
         if self.pdef_method is PDFMethod.AUTOMATIC:
             elements_data = self._mine_processing_time()
-        elif self.pdef_method == PDFMethod.DEFAULT:
-            elements_data = self._default_processing_time()
+        # elif self.pdef_method == PDFMethod.DEFAULT:
+        #     elements_data = self._default_processing_time()
         else:
             raise ValueError(self.pdef_method)
 
@@ -72,13 +72,12 @@ class TaskEvaluator:
         for task in tqdm(self._tasks, desc='mining tasks distributions:'):
             s_key = self._log_ids.processing_time
             task_processing = self._log[self._log[self._log_ids.activity] == task][s_key].tolist()
-            dist = DistributionFinder(task_processing).distribution
+
+            dist = get_best_distribution(task_processing)
+
             elements_data.append({'id': sup.gen_id(),
-                                  'type': dist['dname'],
                                   'name': task,
-                                  'mean': str(dist['dparams']['mean']),
-                                  'arg1': str(dist['dparams']['arg1']),
-                                  'arg2': str(dist['dparams']['arg2'])})
+                                  'distribution': dist})
         elements_data = pd.DataFrame(elements_data)
         elements_data = elements_data.merge(
             self._model_data[['name', 'elementid']], on='name', how='left')
@@ -107,7 +106,7 @@ class TaskEvaluator:
     def _add_start_end_info(self, elements_data):
         # records creation
         temp_elements_data = list()
-        default_record = {'type': 'FIXED', 'mean': '0', 'arg1': '0', 'arg2': '0'}
+        default_record = {'distribution_name': 'FIXED', 'distribution_params': [{'value': 0}]}
         for task in ['start', 'end']:
             temp_elements_data.append({**{'id': sup.gen_id(), 'name': task}, **default_record})
         temp_elements_data = pd.DataFrame(temp_elements_data)

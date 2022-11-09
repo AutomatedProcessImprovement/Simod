@@ -1,18 +1,16 @@
 from dataclasses import dataclass
 from typing import List
 
-from simod.simulation.parameters.distributions import Distribution
-
 
 @dataclass
 class ResourceDistribution:
     """Resource is the item of activity-resource duration distribution for Prosimos."""
     resource_id: str
-    distribution: Distribution
+    distribution: dict
 
     def to_dict(self) -> dict:
         """Dictionary with the structure compatible with Prosimos:"""
-        return {'resource_id': self.resource_id} | self.distribution.to_dict()
+        return {'resource_id': self.resource_id} | self.distribution
 
 
 @dataclass

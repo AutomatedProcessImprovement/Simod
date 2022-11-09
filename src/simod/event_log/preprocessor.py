@@ -40,7 +40,8 @@ class Preprocessor:
         print_step('Multitasking pre-processing')
         self.log, log_path_csv = read(log_path)
         processed_log_path = output_dir / (log_path.stem + '_processed.xes')
-        self.log = adjust_durations(self.log, processed_log_path, is_concurrent=is_concurrent, verbose=verbose)
+        self.log = adjust_durations(self.log, self.config.common.log_ids, processed_log_path,
+                                    is_concurrent=is_concurrent, verbose=verbose)
         self.config.log_path = processed_log_path
         self._tmp_dirs.append(processed_log_path)
         print_notice(f'New log path: {self.config.log_path}')

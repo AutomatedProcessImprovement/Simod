@@ -81,9 +81,11 @@ class Optimizer:
         self._structure_optimizer = optimizer
         return optimizer.run()
 
-    def _optimize_calendars(self, model_path: Path) -> CalendarPipelineSettings:
+    def _optimize_calendars(self, structure_settings: StructureMinerSettings,
+                            model_path: Path) -> CalendarPipelineSettings:
         calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)
-        optimizer = CalendarOptimizer(calendar_settings, self._log_train, model_path, self._settings.common.log_ids)
+        optimizer = CalendarOptimizer(calendar_settings, self._log_train, structure_settings, model_path,
+                                      self._settings.common.log_ids)
         result = optimizer.run()
         self._calendar_optimizer = optimizer
         return result
@@ -229,22 +231,13 @@ class Optimizer:
         self._structure_optimizer.cleanup()
         self._calendar_optimizer.cleanup()
 
-    def _mine_structure(self, best_settings: StructurePipelineSettings, output_dir: Path) \
+    def _mine_structure(self, settings: StructureMinerSettings, output_dir: Path) \
             -> Tuple[Path, StructureMinerSettings]:
-        settings = StructureMinerSettings(
-            mining_algorithm=self._settings.structure.mining_algorithm,
-            epsilon=best_settings.epsilon,
-            eta=best_settings.eta,
-            concurrency=best_settings.concurrency,
-            and_prior=best_settings.and_prior,
-            or_rep=best_settings.or_rep,
-        )
-
         print_message(f'Mining structure with settings {settings.to_dict()}')
 
         # Saving the full pre-processed log to disk
         log_path = output_dir / self._settings.common.log_path.name
-        self._log_reader.write_xes(log_path)
+        self._log_train.write_xes(log_path)
 
         model_path = output_dir / (self._settings.common.log_path.stem + '.bpmn')
 
@@ -268,7 +261,7 @@ class Optimizer:
         print_message(f'Mining calendars with settings {settings.to_dict()}')
 
         # Taking the full pre-processed original log for extracting calendars
-        log = self._log_reader.get_traces_df(include_start_end_events=True)
+        log = self._log_train.get_traces_df(include_start_end_events=True)
 
         parameters = mine_parameters(
             settings.case_arrival, settings.resource_profiles, log, self._settings.common.log_ids, model_path,
@@ -288,20 +281,29 @@ class Optimizer:
 
         structure_settings: Optional[StructureMinerSettings] = None
 
+        model_path = None
+
         if self._settings.structure.disable_discovery is False:
             print_section('Structure optimization')
             structure_optimizer_settings = self._optimize_structure()
 
-            print_section('Mining structure using the best hyperparameters')
-            model_path, structure_settings = self._mine_structure(structure_optimizer_settings, best_result_dir)
+            structure_settings = StructureMinerSettings(
+                mining_algorithm=self._settings.structure.mining_algorithm,
+                epsilon=structure_optimizer_settings.epsilon,
+                eta=structure_optimizer_settings.eta,
+                concurrency=structure_optimizer_settings.concurrency,
+                and_prior=structure_optimizer_settings.and_prior,
+                or_rep=structure_optimizer_settings.or_rep,
+            )
         else:
             print_section('No structure discovery needed, using the provided model')
             model_path = self._settings.common.model_path
 
-        assert model_path.exists(), 'Model does not exist'
-
         print_section('Calendars optimization')
-        calendar_optimizer_settings = self._optimize_calendars(model_path)
+        calendar_optimizer_settings = self._optimize_calendars(structure_settings, model_path)
+
+        print_section('Mining structure using the best hyperparameters')
+        model_path, structure_settings = self._mine_structure(structure_settings, best_result_dir)
 
         print_section('Mining calendars using the best hyperparameters')
         parameters_path, calendars_settings = self._mine_calendars(

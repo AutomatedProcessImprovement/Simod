@@ -312,7 +312,7 @@ class StructureSettings:
         if dst is not None:
             distribution_discovery_type = PDFMethod.from_str(dst)
         else:
-            distribution_discovery_type = PDFMethod.DEFAULT
+            distribution_discovery_type = PDFMethod.AUTOMATIC
 
         return StructureSettings(
             disable_discovery=disable_discovery,

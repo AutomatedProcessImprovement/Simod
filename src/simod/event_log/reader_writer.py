@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import pandas as pd
 
-from simod.event_log.column_mapping import EventLogIDs
+from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from simod.event_log.splitter import LogSplitter
 from simod.event_log.utilities import read, convert_timestamps, convert_df_to_xes
 
@@ -189,11 +189,11 @@ class LogReaderWriter:
     def write_xes(self, output_path: Path):
         log_df = pd.DataFrame(self.data)
 
-        # TODO: use EventLogIDs
         log_df.rename(columns={
             self._log_ids.activity: 'concept:name',
             self._log_ids.case: 'case:concept:name',
             self._log_ids.resource: 'org:resource',
+            self._log_ids.start_time: 'start_timestamp',
             self._log_ids.end_time: 'time:timestamp',
             'event_type': 'lifecycle:transition',
         }, inplace=True)
@@ -223,4 +223,4 @@ class LogReaderWriter:
 
         log_df.fillna('UNDEFINED', inplace=True)
 
-        convert_df_to_xes(log_df, output_path)
+        convert_df_to_xes(log_df, STANDARD_COLUMNS, output_path)

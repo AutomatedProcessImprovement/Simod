@@ -7,7 +7,6 @@ from simod.cli_formatter import print_notice
 from simod.utilities import execute_shell_cmd
 from .parameters.activity_resources import ActivityResourceDistribution
 from .parameters.calendars import Calendar
-from .parameters.distributions import Distribution
 from .parameters.gateway_probabilities import GatewayProbabilities
 from .parameters.resource_profiles import ResourceProfile
 
@@ -27,7 +26,7 @@ class SimulationParameters:
     resource_profiles: List[ResourceProfile]
     resource_calendars: List[Calendar]
     task_resource_distributions: List[ActivityResourceDistribution]
-    arrival_distribution: Distribution
+    arrival_distribution: dict
     arrival_calendar: Calendar
     gateway_branching_probabilities: List[GatewayProbabilities]
 
@@ -41,7 +40,7 @@ class SimulationParameters:
             'task_resource_distribution':
                 [activity_resources.to_dict() for activity_resources in self.task_resource_distributions],
             'arrival_time_distribution':
-                self.arrival_distribution.to_dict(),
+                self.arrival_distribution,
             'arrival_time_calendar':
                 self.arrival_calendar.to_array(),
             'gateway_branching_probabilities':
