@@ -14,7 +14,7 @@ common:
   simulation: true
   evaluation_metrics: 
     - dl
-    - day_hour_emd
+    - absolute_hourly_emd
     - log_mae
     - mae
 preprocessing:
@@ -75,13 +75,15 @@ common:
   simulation: true
   evaluation_metrics: 
     - dl
+    - absolute_hourly_emd
     - day_hour_emd
     - log_mae
     - mae
 preprocessing:
   multitasking: false
 structure:
-  max_evaluations: 2
+  optimization_metric: dl
+  max_evaluations: 1
   mining_algorithm: sm3
   concurrency:
     - 0.0
@@ -102,7 +104,8 @@ structure:
     - true
     - false
 calendars:
-  max_evaluations: 2
+  optimization_metric: absolute_hourly_emd
+  max_evaluations: 1
   case_arrival:
     discovery_type: undifferentiated
     granularity: 60

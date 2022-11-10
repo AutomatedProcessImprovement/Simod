@@ -4,7 +4,8 @@ from typing import Optional, Union, List, Dict, Any
 
 import yaml
 
-from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod, PDFMethod, Configuration
+from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod, PDFMethod, Configuration, \
+    Metric
 
 
 @dataclass
@@ -13,6 +14,7 @@ class StructureOptimizationSettings:
     project_name: Optional[str]  # TODO: extract Pipeline settings from this class
     base_dir: Optional[Path]
 
+    optimization_metric: Metric
     gateway_probabilities: Optional[Union[GatewayProbabilitiesDiscoveryMethod, List[
         GatewayProbabilitiesDiscoveryMethod]]] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
     max_evaluations: int = 1
@@ -90,9 +92,16 @@ class StructureOptimizationSettings:
             if isinstance(or_rep, str):
                 or_rep = [or_rep.lower() == 'true']
 
+        optimization_metric = settings.get('optimization_metric', None)
+        if optimization_metric is not None:
+            optimization_metric = Metric.from_str(optimization_metric)
+        else:
+            optimization_metric = Metric.DL
+
         return StructureOptimizationSettings(
             project_name=project_name,
             base_dir=base_dir,
+            optimization_metric=optimization_metric,
             gateway_probabilities=gateway_probabilities,
             max_evaluations=max_evaluations,
             simulation_repetitions=simulation_repetitions,
@@ -106,12 +115,13 @@ class StructureOptimizationSettings:
         )
 
     @staticmethod
-    def from_configuration_v2(config: Configuration, base_dir: Path) -> 'StructureOptimizationSettings':
+    def from_configuration(config: Configuration, base_dir: Path) -> 'StructureOptimizationSettings':
         project_name = config.common.log_path.stem
 
         return StructureOptimizationSettings(
             project_name=project_name,
             base_dir=base_dir,
+            optimization_metric=config.structure.optimization_metric,
             gateway_probabilities=config.structure.gateway_probabilities,
             max_evaluations=config.structure.max_evaluations,
             simulation_repetitions=config.common.repetitions,

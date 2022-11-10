@@ -22,6 +22,9 @@ pip3.10 install --upgrade pip
 # Installing dependencies
 cd ${PROJECT_DIR}/external_tools/Prosimos
 pip3.10 install -e .
+cd ${PROJECT_DIR}/external_tools/log-similarity-metrics
+pip3.10 install -e .
+pip3.10 install dtw-python
 cd $PROJECT_DIR
 pip3.10 install pm4py-wrapper
 

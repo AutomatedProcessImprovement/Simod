@@ -9,9 +9,8 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
-from simod.analyzers import sim_evaluator as sim
+from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_subsection, print_message
-from simod.configuration import Metric
 from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
@@ -105,6 +104,7 @@ class CalendarOptimizer(HyperoptPipeline):
             trial_stg.output_dir = output_dir
             assert trial_stg.output_dir.exists(), 'Output directory does not exist'
 
+            # simulation parameters extraction
             status, result = self.step(status, self._extract_parameters, trial_stg)
             if result is None:
                 status = STATUS_FAIL
@@ -112,11 +112,14 @@ class CalendarOptimizer(HyperoptPipeline):
             else:
                 json_path, simulation_cases = result
 
+            # simulation and evaluation
             status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path, simulation_cases)
             evaluation_measurements = result if status == STATUS_OK else []
 
+            # response for hyperopt
             response, status = self._define_response(trial_stg, status, evaluation_measurements)
 
+            # recording measurements internally
             self._process_measurements(trial_stg, status, evaluation_measurements)
 
             self._reset_log_buckets()
@@ -208,7 +211,7 @@ class CalendarOptimizer(HyperoptPipeline):
         else:
             values = {
                 'similarity': 0,
-                'metric': Metric.DAY_HOUR_EMD,
+                'metric': self._calendar_optimizer_settings.optimization_metric,
             }
             values = values | data
             self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
@@ -225,8 +228,8 @@ class CalendarOptimizer(HyperoptPipeline):
         }
 
         if status == STATUS_OK:
-            similarity = np.mean([x['similarity'] for x in evaluation_measurements])
-            loss = similarity
+            distance = np.mean([x['similarity'] for x in evaluation_measurements])
+            loss = distance
             response['loss'] = loss
 
             status = status if loss > 0 else STATUS_FAIL
@@ -315,9 +318,17 @@ class CalendarOptimizer(HyperoptPipeline):
     def _evaluate_logs(self, args) -> dict:
         validation_log, log = args
 
-        evaluator = sim.SimilarityEvaluator(validation_log, self._log_ids, log, PROSIMOS_COLUMNS, max_cases=1000)
-        evaluator.measure_distance(Metric.DAY_HOUR_EMD)
-        # TODO: use the new metric, https://github.com/AutomatedProcessImprovement/log-similarity-metrics, Absolute Hour Timestamp EMD
+        # log_ids = EventLogIDs(
+        #     case='case_id',
+        #     activity='activity',
+        #     resource='resource',
+        #     start_time='start_time',
+        #     end_time='end_time',
+        #     enabled_time='enable_time'
+        # )
+
+        evaluator = SimilarityEvaluator(validation_log, self._log_ids, log, PROSIMOS_COLUMNS, max_cases=1000)
+        evaluator.measure_distance(self._calendar_optimizer_settings.optimization_metric)
 
         result = {
             'run_num': log.iloc[0].run_num,

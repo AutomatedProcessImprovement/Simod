@@ -15,9 +15,9 @@ from scipy.stats import wasserstein_distance
 
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
+from .similarity_metrics import get_absolute_timestamps_emd
 from ..configuration import Metric
 from ..event_log.column_mapping import EventLogIDs
-from ..utilities import progress_bar_async
 
 
 class SimilarityEvaluator:  # TODO: test if it works correctly
@@ -28,27 +28,22 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
                  log_ids: EventLogIDs,
                  simulation_data: pd.DataFrame,
                  simulation_log_ids: EventLogIDs,
-                 max_cases=500,
-                 dtype='log'):
-        self.dtype = dtype
+                 max_cases=500):
+        # Unmodified log data
+        self._original_log_data = log_data
+        self._original_simulation_data = simulation_data
+
+        # This log data will be modified
         self.log_data = copy.deepcopy(log_data)
-        self.log_ids = log_ids
         self.simulation_data = copy.deepcopy(simulation_data)
+
+        self.log_ids = log_ids
         self.simulation_log_ids = simulation_log_ids
         self.max_cases = max_cases
-        self._preprocess_data(dtype)
+        self.similarity = None
 
-    def _preprocess_data(self, dtype):
-        preprocessor = self._get_preprocessor(dtype)
-        return preprocessor()
-
-    def _get_preprocessor(self, dtype):
-        if dtype == 'log':
-            return self._preprocess_log
-        elif dtype == 'serie':
-            return self._preprocess_serie
-        else:
-            raise ValueError(dtype)
+        # TODO: we don't need to preprocess for all metrics
+        self._preprocess_log()
 
     def _preprocess_log(self):
         self.ramp_io_perc = 0.2
@@ -80,47 +75,32 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
         self.log_data = list(map(lambda i: self.log_data[i],
                                  np.random.randint(0, len(self.log_data), len(self.simulation_data))))
 
-    def _preprocess_serie(self):
-        # load data
-        self.log_data['source'] = 'log'
-        self.simulation_data['source'] = 'simulation'
-
-    def measure_distance(self, metric: Metric, verbose=False):
-        """
-        Measures the distance of two event-logs
-        with with tsd or dl and mae distance
-
-        Returns
-        -------
-        distance : float
-
-        """
-        self.verbose = verbose
-        # similarity measurement and matching
-        evaluator = self._get_evaluator(metric)
-        if metric in [Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
-            distance = evaluator(self.log_data, self.simulation_data, criteria=metric)
+    def measure_distance(self, metric: Metric):
+        if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
+            distance = self._evaluate_seq_distance(self.log_data, self.simulation_data, metric)
+        elif metric is Metric.LOG_MAE:
+            distance = self.log_mae_metric(self.log_data, self.simulation_data, metric)
+        elif metric in [Metric.HOUR_EMD, Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
+            distance = self.log_emd_metric(self.log_data, self.simulation_data, metric)
+        elif metric is Metric.ABSOLUTE_HOURLY_EMD:
+            distance = get_absolute_timestamps_emd(
+                self._original_log_data, self.log_ids, self._original_simulation_data, self.simulation_log_ids)
+            self.similarity = {'metric': metric, 'similarity': distance}
+            return
         else:
-            distance = evaluator(self.log_data, self.simulation_data, metric)
+            raise ValueError(f'Unsupported metric: {metric}')
+
         self.similarity = {'metric': metric, 'similarity': np.mean([x['sim_score'] for x in distance])}
 
     def _get_evaluator(self, metric: Metric):
-        if self.dtype == 'log':
-            if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
-                return self._evaluate_seq_distance
-            elif metric is Metric.LOG_MAE:
-                return self.log_mae_metric
-            elif metric in [Metric.HOUR_EMD, Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
-                return self.log_emd_metric
-            else:
-                raise ValueError(metric)
-        elif self.dtype == 'serie':
-            if metric in [Metric.HOUR_EMD, Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
-                return self.serie_emd_metric
-            else:
-                raise ValueError(metric)
+        if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
+            return self._evaluate_seq_distance
+        elif metric is Metric.LOG_MAE:
+            return self.log_mae_metric
+        elif metric in [Metric.HOUR_EMD, Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
+            return self.log_emd_metric
         else:
-            raise ValueError(self.dtype)
+            raise ValueError(metric)
 
     # =============================================================================
     # Timed string distance
@@ -163,8 +143,6 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
                      self.alpha_concurrency.oracle,
                      r) for r in ranges]
             p = pool.map_async(self._compare_traces, args)
-            if self.verbose:
-                progress_bar_async(p, f'evaluating {metric}:', reps)
             pool.close()
             # Save results
             df_matrix = pd.concat(list(p.get()), axis=0, ignore_index=True)

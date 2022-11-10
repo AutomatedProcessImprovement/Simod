@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional, Union, List
 
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings, \
-    Configuration
+    Configuration, Metric
 
 
 @dataclass
@@ -13,6 +13,7 @@ class CalendarOptimizationSettings:
     base_dir: Optional[Path]
 
     max_evaluations: int
+    optimization_metric: Metric
     case_arrival: CalendarSettings
     resource_profiles: CalendarSettings
 
@@ -25,6 +26,7 @@ class CalendarOptimizationSettings:
     def from_configuration(config: Configuration, base_dir: Path) -> 'CalendarOptimizationSettings':
         return CalendarOptimizationSettings(
             base_dir=base_dir,
+            optimization_metric=config.calendars.optimization_metric,
             simulation_repetitions=config.common.repetitions,
             pdef_method=config.structure.distribution_discovery_type,
             gateway_probabilities=config.structure.gateway_probabilities,
@@ -36,6 +38,7 @@ class CalendarOptimizationSettings:
         return {
             'base_dir': self.base_dir,
             'max_evaluations': self.max_evaluations,
+            'optimization_metric': self.optimization_metric,
             'case_arrival': self.case_arrival.to_dict(),
             'resource_profiles': self.resource_profiles.to_dict(),
             'simulation_repetitions': self.simulation_repetitions,

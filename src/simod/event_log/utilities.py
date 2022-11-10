@@ -53,6 +53,12 @@ def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = N
 
 
 def read(log_path: Path, log_ids: EventLogIDs = STANDARD_COLUMNS) -> Tuple[pd.DataFrame, Path]:
+    """Reads an event log from XES or CSV and converts timestamp to UTC.
+
+    :param log_path: Path to the event log.
+    :param log_ids: Column names of the event log.
+    :return: A tuple containing the event log dataframe and the path to CSV file.
+    """
     log_path_csv = convert_xes_to_csv_if_needed(log_path)
     log = pd.read_csv(log_path_csv)
     convert_timestamps(log, log_ids)

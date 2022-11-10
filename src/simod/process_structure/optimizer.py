@@ -336,7 +336,7 @@ class StructureOptimizer(HyperoptPipeline):
         data, sim_log = arguments
 
         evaluator = SimilarityEvaluator(data, self._log_ids, sim_log, PROSIMOS_COLUMNS, max_cases=1000)
-        evaluator.measure_distance(Metric.DL)
+        evaluator.measure_distance(self._settings.optimization_metric)
 
         result = {
             'run_num': sim_log.iloc[0].run_num,

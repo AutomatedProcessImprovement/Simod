@@ -76,7 +76,7 @@ class Optimizer:
                                  .to_dict('records'))
 
     def _optimize_structure(self) -> StructurePipelineSettings:
-        settings = StructureOptimizationSettings.from_configuration_v2(self._settings, self._output_dir)
+        settings = StructureOptimizationSettings.from_configuration(self._settings, self._output_dir)
         optimizer = StructureOptimizer(settings, self._log_train, self._settings.common.log_ids)
         self._structure_optimizer = optimizer
         return optimizer.run()

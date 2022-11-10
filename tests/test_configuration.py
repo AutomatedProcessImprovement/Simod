@@ -12,7 +12,7 @@ common:
   simulation: true
   evaluation_metrics: 
     - dl
-    - day_hour_emd
+    - absolute_hourly_emd
     - log_mae
     - mae
 preprocessing:

@@ -132,6 +132,7 @@ class Metric(Enum):
     CAL_EMD = auto()
     DL_MAE = auto()
     HOUR_EMD = auto()
+    ABSOLUTE_HOURLY_EMD = auto()
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[Metric, List[Metric]]':
@@ -160,6 +161,8 @@ class Metric(Enum):
             return cls.DL_MAE
         elif value.lower() == 'hour_emd':
             return cls.HOUR_EMD
+        elif value.lower() in ('absolute_hourly_emd', 'absolute_hour_emd', 'abs_hourly_emd', 'abs_hour_emd'):
+            return cls.ABSOLUTE_HOURLY_EMD
         else:
             raise ValueError(f'Unknown value {value}')
 
@@ -182,6 +185,8 @@ class Metric(Enum):
             return 'DL_MAE'
         elif self == Metric.HOUR_EMD:
             return 'HOUR_EMD'
+        elif self == Metric.ABSOLUTE_HOURLY_EMD:
+            return 'ABSOLUTE_HOURLY_EMD'
         return f'Unknown Metric {str(self)}'
 
 
@@ -286,6 +291,7 @@ class StructureSettings:
 
     # Structure discovery settings
 
+    optimization_metric: Metric = Metric.DL
     max_evaluations: Optional[int] = None
     mining_algorithm: Optional[StructureMiningAlgorithm] = None
     concurrency: Optional[Union[float, List[float]]] = None
@@ -314,8 +320,15 @@ class StructureSettings:
         else:
             distribution_discovery_type = PDFMethod.AUTOMATIC
 
+        optimization_metric = config.get('optimization_metric')
+        if optimization_metric is not None:
+            optimization_metric = Metric.from_str(optimization_metric)
+        else:
+            optimization_metric = Metric.DL
+
         return StructureSettings(
             disable_discovery=disable_discovery,
+            optimization_metric=optimization_metric,
             max_evaluations=config['max_evaluations'],
             mining_algorithm=mining_algorithm,
             concurrency=config['concurrency'],
@@ -405,6 +418,7 @@ class CalendarSettings:
 
 @dataclass
 class CalendarsSettings:
+    optimization_metric: Metric
     max_evaluations: int
     case_arrival: CalendarSettings
     resource_profiles: CalendarSettings
@@ -413,8 +427,14 @@ class CalendarsSettings:
     def from_dict(config: dict) -> 'CalendarsSettings':
         case_arrival = CalendarSettings.from_dict(config['case_arrival'])
         resource_profiles = CalendarSettings.from_dict(config['resource_profiles'])
+        optimization_metric = config.get('optimization_metric')
+        if optimization_metric is not None:
+            optimization_metric = Metric.from_str(optimization_metric)
+        else:
+            optimization_metric = Metric.ABSOLUTE_HOURLY_EMD
 
         return CalendarsSettings(
+            optimization_metric=optimization_metric,
             max_evaluations=config['max_evaluations'],
             case_arrival=case_arrival,
             resource_profiles=resource_profiles,
