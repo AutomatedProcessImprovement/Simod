@@ -42,16 +42,6 @@ structure:
     - false
 calendars:
   max_evaluations: 2
-  case_arrival:
-    discovery_type: undifferentiated
-    granularity: 60
-    confidence:
-      - 0.01
-      - 0.1
-    support:
-      - 0.01
-      - 0.1
-    participation: 0.4
   resource_profiles:
     discovery_type: pool
     granularity: 
@@ -106,16 +96,6 @@ structure:
 calendars:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 1
-  case_arrival:
-    discovery_type: undifferentiated
-    granularity: 60
-    confidence:
-      - 0.01
-      - 0.1
-    support:
-      - 0.01
-      - 0.1
-    participation: 0.4
   resource_profiles:
     discovery_type: undifferentiated
     granularity: 

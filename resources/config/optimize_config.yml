@@ -14,6 +14,7 @@ preprocessing:
 structure:
   max_evaluations: 2
   mining_algorithm: sm3
+  optimization_metric: dl
   concurrency:
     - 0.0
     - 1.0
@@ -34,12 +35,7 @@ structure:
     - false
 calendars:
   max_evaluations: 2
-  case_arrival:
-    discovery_type: 24_7
-    granularity: 60
-    confidence: 0.1
-    support: 0.01
-    participation: 0.4
+  optimization_metric: absolute_hourly_emd
   resource_profiles:
     discovery_type: differentiated
     granularity: 60

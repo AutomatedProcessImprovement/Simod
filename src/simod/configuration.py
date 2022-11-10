@@ -355,15 +355,25 @@ class CalendarSettings:
     participation: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
 
     @staticmethod
+    def default() -> 'CalendarSettings':
+        return CalendarSettings(
+            discovery_type=CalendarType.UNDIFFERENTIATED,
+            granularity=60,
+            confidence=0.1,
+            support=0.1,
+            participation=0.4
+        )
+
+    @staticmethod
     def from_dict(config: dict) -> 'CalendarSettings':
-        discovery_type = CalendarType.from_str(config['discovery_type'])
+        discovery_type = CalendarType.from_str(config.get('discovery_type', 'undifferentiated'))
 
         return CalendarSettings(
             discovery_type=discovery_type,
-            granularity=config['granularity'],
-            confidence=config['confidence'],
-            support=config['support'],
-            participation=config['participation'],
+            granularity=config.get('granularity', 60),
+            confidence=config.get('confidence', 0.1),
+            support=config.get('support', 0.1),
+            participation=config.get('participation', 0.4),
         )
 
     def to_hyperopt_options(self, prefix: str = '') -> List[tuple]:
@@ -430,8 +440,15 @@ class CalendarsSettings:
 
     @staticmethod
     def from_dict(config: dict) -> 'CalendarsSettings':
-        case_arrival = CalendarSettings.from_dict(config['case_arrival'])
+        # Case arrival is an optional parameter in the configuration file
+        case_arrival = config.get('case_arrival')
+        if case_arrival is not None:
+            case_arrival = CalendarSettings.from_dict(case_arrival)
+        else:
+            case_arrival = CalendarSettings.default()
+
         resource_profiles = CalendarSettings.from_dict(config['resource_profiles'])
+
         optimization_metric = config.get('optimization_metric')
         if optimization_metric is not None:
             optimization_metric = Metric.from_str(optimization_metric)
