@@ -61,11 +61,12 @@ version: 2
 common:
   log_path: assets/LoanApp_sequential_9-5.xes
   exec_mode: optimizer
-  repetitions: 1
+  repetitions: 5
   simulation: true
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
+    - cycle_time_emd
     - day_hour_emd
     - log_mae
     - mae
@@ -73,7 +74,7 @@ preprocessing:
   multitasking: false
 structure:
   optimization_metric: dl
-  max_evaluations: 1
+  max_evaluations: 40
   mining_algorithm: sm3
   concurrency:
     - 0.0
@@ -95,7 +96,7 @@ structure:
     - false
 calendars:
   optimization_metric: absolute_hourly_emd
-  max_evaluations: 1
+  max_evaluations: 20
   resource_profiles:
     discovery_type: undifferentiated
     granularity: 

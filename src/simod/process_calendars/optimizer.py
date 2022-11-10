@@ -290,7 +290,9 @@ class CalendarOptimizer(HyperoptPipeline):
                 bpmn_path=bpmn_path,
                 parameters_path=json_path,
                 output_log_path=settings.output_dir / f'simulation_log_{rep}.csv',
-                num_simulation_cases=simulation_cases)
+                num_simulation_cases=simulation_cases,
+                simulation_start=self._log_validation[self._log_ids.start_time].min(),
+            )
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)
         progress_bar_async(p, 'simulating', num_simulations)

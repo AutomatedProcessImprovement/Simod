@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 BRANCH_NAME="master"
-PROSIMOS_BRANCH_NAME="aug_2022"
+PROSIMOS_BRANCH_NAME="nov2022"
 BASE_DIR=/usr/src
 PROJECT_DIR=${BASE_DIR}/Simod
 VENV_DIR=${PROJECT_DIR}/venv

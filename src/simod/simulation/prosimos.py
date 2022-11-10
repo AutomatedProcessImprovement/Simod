@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
+import pandas as pd
+
 from simod.cli_formatter import print_notice
 from simod.utilities import execute_shell_cmd
 from .parameters.activity_resources import ActivityResourceDistribution
@@ -61,6 +63,7 @@ class ProsimosSettings:
     parameters_path: Path
     output_log_path: Path
     num_simulation_cases: int
+    simulation_start: pd.Timestamp
 
 
 def simulate_with_prosimos(settings: ProsimosSettings):
@@ -71,7 +74,8 @@ def simulate_with_prosimos(settings: ProsimosSettings):
         '--bpmn_path', settings.bpmn_path.__str__(),
         '--json_path', settings.parameters_path.__str__(),
         '--log_out_path', settings.output_log_path.__str__(),
-        '--total_cases', str(settings.num_simulation_cases)
+        '--total_cases', str(settings.num_simulation_cases),
+        '--starting_at', settings.simulation_start.isoformat()
     ]
 
     execute_shell_cmd(args)

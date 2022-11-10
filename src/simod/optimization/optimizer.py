@@ -144,7 +144,9 @@ class Optimizer:
                 bpmn_path=bpmn_path,
                 parameters_path=json_path,
                 output_log_path=output_dir / f'simulated_log_{rep}.csv',
-                num_simulation_cases=simulation_cases)
+                num_simulation_cases=simulation_cases,
+                simulation_start=self._log_test[self._settings.common.log_ids.start_time].min(),
+            )
             for rep in range(num_simulations)]
         p = pool.map_async(simulate_with_prosimos, simulation_arguments)
         progress_bar_async(p, 'simulating', num_simulations)
@@ -192,6 +194,8 @@ class Optimizer:
             model_path: Path,
             simulation_dir: Path,
             calendar_settings: CalendarPipelineSettings):
+        self._log_test.to_csv(simulation_dir / 'test_log.csv', index=False)
+
         simulation_cases = self._log_test[self._settings.common.log_ids.case].nunique()
 
         parameters_path = calendar_settings.output_dir / 'simulation_parameters.json'
