@@ -133,6 +133,7 @@ class Metric(Enum):
     DL_MAE = auto()
     HOUR_EMD = auto()
     ABSOLUTE_HOURLY_EMD = auto()
+    CYCLE_TIME_EMD = auto()
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[Metric, List[Metric]]':
@@ -163,6 +164,8 @@ class Metric(Enum):
             return cls.HOUR_EMD
         elif value.lower() in ('absolute_hourly_emd', 'absolute_hour_emd', 'abs_hourly_emd', 'abs_hour_emd'):
             return cls.ABSOLUTE_HOURLY_EMD
+        elif value.lower() == 'cycle_time_emd':
+            return cls.CYCLE_TIME_EMD
         else:
             raise ValueError(f'Unknown value {value}')
 
@@ -187,6 +190,8 @@ class Metric(Enum):
             return 'HOUR_EMD'
         elif self == Metric.ABSOLUTE_HOURLY_EMD:
             return 'ABSOLUTE_HOURLY_EMD'
+        elif self == Metric.CYCLE_TIME_EMD:
+            return 'CYCLE_TIME_EMD'
         return f'Unknown Metric {str(self)}'
 
 

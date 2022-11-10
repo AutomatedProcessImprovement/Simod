@@ -15,7 +15,7 @@ from scipy.stats import wasserstein_distance
 
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
-from .similarity_metrics import get_absolute_timestamps_emd
+from .similarity_metrics import get_absolute_timestamps_emd, get_cycle_time_emd
 from ..configuration import Metric
 from ..event_log.column_mapping import EventLogIDs
 
@@ -76,6 +76,8 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
                                  np.random.randint(0, len(self.log_data), len(self.simulation_data))))
 
     def measure_distance(self, metric: Metric):
+        similarity = {'metric': metric, 'similarity': None}
+
         if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
             distance = self._evaluate_seq_distance(self.log_data, self.simulation_data, metric)
         elif metric is Metric.LOG_MAE:
@@ -85,12 +87,20 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
         elif metric is Metric.ABSOLUTE_HOURLY_EMD:
             distance = get_absolute_timestamps_emd(
                 self._original_log_data, self.log_ids, self._original_simulation_data, self.simulation_log_ids)
-            self.similarity = {'metric': metric, 'similarity': distance}
-            return
+        elif metric is Metric.CYCLE_TIME_EMD:
+            distance = get_cycle_time_emd(
+                self._original_log_data, self.log_ids, self._original_simulation_data, self.simulation_log_ids)
         else:
             raise ValueError(f'Unsupported metric: {metric}')
 
-        self.similarity = {'metric': metric, 'similarity': np.mean([x['sim_score'] for x in distance])}
+        if isinstance(distance, list):
+            similarity['similarity'] = np.mean([x['sim_score'] for x in distance])
+        elif isinstance(distance, float):
+            similarity['similarity'] = distance
+        else:
+            raise ValueError(f'Unsupported distance type: {type(distance)}')
+
+        self.similarity = similarity
 
     def _get_evaluator(self, metric: Metric):
         if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
