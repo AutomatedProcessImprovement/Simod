@@ -21,10 +21,22 @@ pip3.10 install --upgrade pip
 
 # Installing dependencies
 cd ${PROJECT_DIR}/external_tools/Prosimos
-pip3.10 install -e .
+pip3.10 install .
 cd ${PROJECT_DIR}/external_tools/log-similarity-metrics
 pip3.10 install -e .
 pip3.10 install dtw-python
+
+# Installing cvxopt from source. Pre-compiled binaries cause problems on ARM. cvxopt is required by pm4py-wrapper
+cd $BASE_DIR
+git clone https://github.com/DrTimothyAldenDavis/SuiteSparse.git
+pushd SuiteSparse
+git checkout v5.6.0
+popd
+export CVXOPT_SUITESPARSE_SRC_DIR=$(pwd)/SuiteSparse
+git clone https://github.com/cvxopt/cvxopt.git
+cd cvxopt
+git checkout `git describe --abbrev=0 --tags`
+python setup.py install
 cd $PROJECT_DIR
 pip3.10 install pm4py-wrapper
 
