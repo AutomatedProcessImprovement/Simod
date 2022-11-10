@@ -16,6 +16,7 @@ setup(
         'xmltodict',
         'jellyfish',
         'scipy',
+        'statistics',
         'tqdm',
         'PyYAML',
         'hyperopt',

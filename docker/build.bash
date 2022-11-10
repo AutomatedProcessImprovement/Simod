@@ -37,6 +37,7 @@ git clone https://github.com/cvxopt/cvxopt.git
 cd cvxopt
 git checkout `git describe --abbrev=0 --tags`
 python setup.py install
+
 cd $PROJECT_DIR
 pip3.10 install pm4py-wrapper
 
