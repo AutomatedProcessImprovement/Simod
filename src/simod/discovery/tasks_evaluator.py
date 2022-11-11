@@ -1,5 +1,4 @@
 import networkx as nx
-import numpy as np
 import pandas as pd
 from networkx import DiGraph
 from tqdm import tqdm
@@ -61,10 +60,10 @@ class TaskEvaluator:
 
         return elements_data
 
-    def _default_processing_time(self):
-        elements_data = self._default_values()
-        elements_data = pd.DataFrame(elements_data)
-        return elements_data
+    # def _default_processing_time(self):
+    #     elements_data = self._default_values()
+    #     elements_data = pd.DataFrame(elements_data)
+    #     return elements_data
 
     def _mine_processing_time(self):
         """Performs the mining of activities durations from data."""
@@ -83,25 +82,25 @@ class TaskEvaluator:
             self._model_data[['name', 'elementid']], on='name', how='left')
         return elements_data
 
-    def _default_values(self):
-        """Performs the mining of activities durations from data."""
-        elements_data = list()
-        for task in tqdm(self._tasks, desc='mining tasks distributions:'):
-            s_key = self._log_ids.processing_time
-            task_processing = self._log[self._log[self._log_ids.activity] == task][s_key].tolist()
-            try:
-                mean_time = np.mean(task_processing) if task_processing else 0
-            except:
-                mean_time = 0
-            elements_data.append({'id': sup.gen_id(),
-                                  'type': 'EXPONENTIAL',
-                                  'name': task,
-                                  'mean': str(0),
-                                  'arg1': str(np.round(mean_time, 2)),
-                                  'arg2': str(0)})
-        elements_data = pd.DataFrame(elements_data)
-        elements_data = elements_data.merge(self._model_data[['name', 'elementid']], on='name', how='left')
-        return elements_data.to_dict('records')
+    # def _default_values(self):
+    #     """Performs the mining of activities durations from data."""
+    #     elements_data = list()
+    #     for task in tqdm(self._tasks, desc='mining tasks distributions:'):
+    #         s_key = self._log_ids.processing_time
+    #         task_processing = self._log[self._log[self._log_ids.activity] == task][s_key].tolist()
+    #         try:
+    #             mean_time = np.mean(task_processing) if task_processing else 0
+    #         except:
+    #             mean_time = 0
+    #         elements_data.append({'id': sup.gen_id(),
+    #                               'type': 'EXPONENTIAL',
+    #                               'name': task,
+    #                               'mean': str(0),
+    #                               'arg1': str(np.round(mean_time, 2)),
+    #                               'arg2': str(0)})
+    #     elements_data = pd.DataFrame(elements_data)
+    #     elements_data = elements_data.merge(self._task_ids[['name', 'elementid']], on='name', how='left')
+    #     return elements_data.to_dict('records')
 
     def _add_start_end_info(self, elements_data):
         # records creation

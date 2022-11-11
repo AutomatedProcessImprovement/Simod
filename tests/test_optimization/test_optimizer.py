@@ -59,9 +59,9 @@ calendars:
 config_yaml_B = """
 version: 2
 common:
-  log_path: assets/LoanApp_sequential_9-5.xes
+  log_path: assets/LoanApp_sequential_9-5_diffres_filtered.xes
   exec_mode: optimizer
-  repetitions: 5
+  repetitions: 1
   simulation: true
   evaluation_metrics: 
     - dl
@@ -74,7 +74,7 @@ preprocessing:
   multitasking: false
 structure:
   optimization_metric: dl
-  max_evaluations: 40
+  max_evaluations: 1
   mining_algorithm: sm3
   concurrency:
     - 0.0
@@ -95,10 +95,10 @@ structure:
     - true
     - false
 calendars:
-  optimization_metric: absolute_hourly_emd
-  max_evaluations: 20
+  optimization_metric: day_hour_emd
+  max_evaluations: 1
   resource_profiles:
-    discovery_type: undifferentiated
+    discovery_type: differentiated
     granularity: 
       - 15
       - 60

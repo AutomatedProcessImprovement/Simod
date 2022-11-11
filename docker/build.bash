@@ -12,9 +12,10 @@ git clone https://github.com/AutomatedProcessImprovement/Simod.git $PROJECT_DIR
 cd $PROJECT_DIR
 git checkout $BRANCH_NAME
 git submodule update --init --recursive
-cd external_tools/Prosimos && git checkout $PROSIMOS_BRANCH_NAME && git pull && cd ../..
+cd external_tools/Prosimos && git checkout $PROSIMOS_BRANCH_NAME && git pull
 
 # Creating virtual environment
+cd $PROJECT_DIR
 python3.10 -m venv venv
 source $VENV_DIR/bin/activate
 pip3.10 install --upgrade pip
@@ -37,6 +38,7 @@ git clone https://github.com/cvxopt/cvxopt.git
 cd cvxopt
 git checkout `git describe --abbrev=0 --tags`
 python setup.py install
+pip3.10 install glpk
 
 cd $PROJECT_DIR
 pip3.10 install pm4py-wrapper

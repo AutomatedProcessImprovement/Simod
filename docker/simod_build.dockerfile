@@ -1,6 +1,11 @@
 FROM nokal/simod-base:v2.0.0
 
-RUN apt update && apt install -y libblas-dev liblapack-dev
+RUN apt update && apt install -y  \
+    libblas-dev  \
+    liblapack-dev \
+    glpk-utils  \
+    libglpk-dev  \
+    glpk-doc
 
 WORKDIR /usr/src/
 ADD build.bash .

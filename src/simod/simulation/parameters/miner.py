@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import pandas as pd
 from networkx import DiGraph
@@ -7,6 +7,7 @@ from networkx import DiGraph
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings
 from simod.discovery import inter_arrival_distribution
+from simod.discovery.distribution import get_best_distribution
 from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.calendar_discovery import case_arrival, resource
@@ -75,7 +76,7 @@ def mine_parameters(
             log, log_ids, model_path, process_graph, pdf_method, bpmn_reader)
     elif resource_discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE:
         resource_profiles, resource_calendars, task_resource_distributions = mine_for_differentiated_resources(
-            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader)
+            log, log_ids, model_path, process_graph)
     else:
         raise ValueError(f'Unknown calendar discovery type: {resource_discovery_type}')
 
@@ -199,9 +200,7 @@ def mine_for_differentiated_resources(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         bpmn_path: Path,
-        process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter) -> Tuple:
+        process_graph: DiGraph) -> Tuple:
     """Simulation parameters for fully differentiated resources."""
 
     # Resource calendars
@@ -213,10 +212,47 @@ def mine_for_differentiated_resources(
         log, log_ids, bpmn_path, resource_calendars)
 
     # Task resource distributions
-    task_resource_distributions = _task_resource_distribution_pools(  # TODO: finish
-        log, log_ids, process_graph, pdf_method, bpmn_reader)
+    task_resource_distributions = _task_resource_distribution_differentiated(log, log_ids, process_graph)
 
     return resource_profiles, resource_calendars, task_resource_distributions
+
+
+def _task_resource_distribution_differentiated(
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        process_graph: DiGraph) -> List[ActivityResourceDistribution]:
+    """Mines activity resource distribution for fully differentiated resources for the Prosimos simulator."""
+
+    # Finding the best distributions for each activity-resource pair
+    activity_durations = {}
+    for (activity, resource_), group in log.groupby([log_ids.activity, log_ids.resource]):
+        durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
+        durations = [duration.total_seconds() for duration in durations]
+        distribution = get_best_distribution(durations)
+
+        if activity not in activity_durations:
+            activity_durations[activity] = {resource_: distribution}
+        else:
+            activity_durations[activity][resource_] = distribution
+
+    # Getting activities' IDs from the model graph
+    model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
+    model_data = model_data[model_data.type.isin(['task', 'start', 'end'])]
+    items = model_data[['name', 'id']].to_records(index=False)
+    activity_ids = {item[0]: item[1] for item in items}
+
+    # Collecting the distributions
+    activity_resource_distributions = []
+    for activity_name in activity_durations:
+        resources_distributions = [
+            ResourceDistribution(resource_, activity_durations[activity_name][resource_])
+            for resource_ in activity_durations[activity_name]
+        ]
+
+        activity_id = activity_ids[activity_name]
+        activity_resource_distributions.append(ActivityResourceDistribution(activity_id, resources_distributions))
+
+    return activity_resource_distributions
 
 
 def _task_resource_distribution_pools(
@@ -261,7 +297,7 @@ def _task_resource_distribution_pools(
     # handling other (normal) activities without Start and End
     for activity_id in normal_activities_bpmn_elements_ids:
         # getting activity distribution from BPMN
-        activity_distribution: Optional[Distribution] = None
+        activity_distribution = None
         for item in activities_distributions:
             if item['elementid'] == activity_id:
                 activity_distribution = item['distribution']
@@ -325,7 +361,7 @@ def _task_resource_distribution_undifferentiated(
     # handling other (normal) activities without Start and End
     for activity_id in normal_activities_bpmn_elements_ids:
         # getting activity distribution from BPMN
-        activity_distribution: Optional[dict] = None
+        activity_distribution = None
         for item in activities_distributions:
             if item['elementid'] == activity_id:
                 activity_distribution = item['distribution']
