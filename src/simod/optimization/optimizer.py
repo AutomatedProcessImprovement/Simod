@@ -7,9 +7,9 @@ from typing import Optional, Tuple
 import pandas as pd
 from tqdm import tqdm
 
-from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
+from simod.evaluation_metrics import compute_metric
 from simod.event_log.column_mapping import PROSIMOS_COLUMNS
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.reader_writer import LogReaderWriter
@@ -112,13 +112,10 @@ class Optimizer:
 
         rep = simulated_log.iloc[0].run_num
 
-        evaluator = SimilarityEvaluator(test_log, self._settings.common.log_ids, simulated_log, PROSIMOS_COLUMNS,
-                                        max_cases=1000)
-
         measurements = []
         for metric in settings.common.evaluation_metrics:
-            evaluator.measure_distance(metric)
-            measurements.append({'run_num': rep, **evaluator.similarity})
+            value = compute_metric(metric, test_log, self._settings.common.log_ids, simulated_log, PROSIMOS_COLUMNS)
+            measurements.append({'run_num': rep, 'metric': metric, 'similarity': value})
 
         return measurements
 

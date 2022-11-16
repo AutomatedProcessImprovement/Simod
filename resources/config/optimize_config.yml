@@ -7,8 +7,8 @@ common:
   evaluation_metrics:
     - dl
     - absolute_hourly_emd
-    - log_mae
-    - mae
+    - cycle_time_emd
+    - circadian_emd
 preprocessing:
   multitasking: false
 structure:

@@ -9,8 +9,8 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
-from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_subsection, print_message
+from simod.evaluation_metrics import compute_metric
 from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
@@ -319,25 +319,15 @@ class CalendarOptimizer(HyperoptPipeline):
 
     def _evaluate_logs(self, args) -> dict:
         validation_log, log = args
+        metric = self._calendar_optimizer_settings.optimization_metric
 
-        # log_ids = EventLogIDs(
-        #     case='case_id',
-        #     activity='activity',
-        #     resource='resource',
-        #     start_time='start_time',
-        #     end_time='end_time',
-        #     enabled_time='enable_time'
-        # )
+        value = compute_metric(metric, validation_log, self._log_ids, log, PROSIMOS_COLUMNS)
 
-        evaluator = SimilarityEvaluator(validation_log, self._log_ids, log, PROSIMOS_COLUMNS, max_cases=1000)
-        evaluator.measure_distance(self._calendar_optimizer_settings.optimization_metric)
-
-        result = {
+        return {
             'run_num': log.iloc[0].run_num,
-            **evaluator.similarity
+            'metric': metric,
+            'similarity': value,
         }
-
-        return result
 
     def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         train, validation = self._log.split_timeline(size)

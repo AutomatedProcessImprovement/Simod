@@ -26,21 +26,12 @@ def compute_metric(
     """
     from simod.analyzers.sim_evaluator import SimilarityEvaluator
 
-    if metric in [
-        Metric.TSD,
-        Metric.DL,
-        Metric.MAE,
-        Metric.DL_MAE,
-        Metric.LOG_MAE,
-        Metric.HOUR_EMD,
-        Metric.DAY_EMD,
-        Metric.DAY_HOUR_EMD,
-        Metric.CAL_EMD
-    ]:
+    if metric in [Metric.DL, Metric.CIRCADIAN_EMD]:
         evaluator = SimilarityEvaluator(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
-        result = evaluator.measure_distance(metric)['similarity']
+        evaluator.measure_distance(metric)
+        result = evaluator.similarity['similarity']
     elif metric is Metric.ABSOLUTE_HOURLY_EMD:
-        result = get_absolute_timestamps_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
+        result = get_absolute_hourly_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     elif metric is Metric.CYCLE_TIME_EMD:
         result = get_cycle_time_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     else:
@@ -49,7 +40,7 @@ def compute_metric(
     return result
 
 
-def get_absolute_timestamps_emd(
+def get_absolute_hourly_emd(
         event_log_1: pd.DataFrame,
         event_log_1_ids: EventLogIDs,
         event_log_2: pd.DataFrame,
@@ -84,3 +75,19 @@ def get_cycle_time_emd(
     """
     emd = cycle_time_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, datetime.timedelta(hours=1))
     return emd
+
+
+def get_dl(
+        event_log_1: pd.DataFrame,
+        event_log_1_ids: EventLogIDs,
+        event_log_2: pd.DataFrame,
+        event_log_2_ids: EventLogIDs) -> float:
+    raise NotImplementedError()
+
+
+def get_circadian_emd(
+        event_log_1: pd.DataFrame,
+        event_log_1_ids: EventLogIDs,
+        event_log_2: pd.DataFrame,
+        event_log_2_ids: EventLogIDs) -> float:
+    raise NotImplementedError()

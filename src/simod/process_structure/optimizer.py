@@ -9,8 +9,8 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
-from simod.analyzers.sim_evaluator import SimilarityEvaluator
 from simod.cli_formatter import print_message, print_subsection
+from simod.evaluation_metrics import compute_metric
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_default_24_7
@@ -336,16 +336,15 @@ class StructureOptimizer(HyperoptPipeline):
         data: pd.DataFrame
         sim_log: pd.DataFrame
         data, sim_log = arguments
+        metric = self._settings.optimization_metric
 
-        evaluator = SimilarityEvaluator(data, self._log_ids, sim_log, PROSIMOS_COLUMNS, max_cases=1000)
-        evaluator.measure_distance(self._settings.optimization_metric)
+        value = compute_metric(metric, data, self._log_ids, sim_log, PROSIMOS_COLUMNS)
 
-        result = {
+        return {
             'run_num': sim_log.iloc[0].run_num,
-            **evaluator.similarity
+            'metric': metric,
+            'similarity': value,
         }
-
-        return result
 
     def _read_simulated_log(self, arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments

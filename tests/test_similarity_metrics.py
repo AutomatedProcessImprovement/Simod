@@ -1,6 +1,6 @@
 import pytest
 
-from simod.analyzers.similarity_metrics import get_absolute_timestamps_emd
+from simod.evaluation_metrics import get_absolute_hourly_emd
 from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.utilities import read
 
@@ -43,6 +43,6 @@ def test_absolute_timestamp_emd(entry_point, test_data):
     event_log_1, _ = read(event_log_1_path, event_log_1_log_ids)
     event_log_2, _ = read(event_log_2_path, event_log_2_log_ids)
 
-    emd = get_absolute_timestamps_emd(event_log_1, event_log_1_log_ids, event_log_2, event_log_2_log_ids)
+    emd = get_absolute_hourly_emd(event_log_1, event_log_1_log_ids, event_log_2, event_log_2_log_ids)
 
     assert emd > 0

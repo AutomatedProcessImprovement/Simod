@@ -123,15 +123,8 @@ class CalendarType(Enum):
 
 
 class Metric(Enum):
-    TSD = auto()
-    DAY_HOUR_EMD = auto()
-    LOG_MAE = auto()
     DL = auto()
-    MAE = auto()
-    DAY_EMD = auto()
-    CAL_EMD = auto()
-    DL_MAE = auto()
-    HOUR_EMD = auto()
+    CIRCADIAN_EMD = auto()
     ABSOLUTE_HOURLY_EMD = auto()
     CYCLE_TIME_EMD = auto()
 
@@ -144,24 +137,10 @@ class Metric(Enum):
 
     @classmethod
     def _from_str(cls, value: str) -> 'Metric':
-        if value.lower() == 'tsd':
-            return cls.TSD
-        elif value.lower() == 'day_hour_emd':
-            return cls.DAY_HOUR_EMD
-        elif value.lower() == 'log_mae':
-            return cls.LOG_MAE
-        elif value.lower() == 'dl':
+        if value.lower() == 'dl':
             return cls.DL
-        elif value.lower() == 'mae':
-            return cls.MAE
-        elif value.lower() == 'day_emd':
-            return cls.DAY_EMD
-        elif value.lower() == 'cal_emd':
-            return cls.CAL_EMD
-        elif value.lower() == 'dl_mae':
-            return cls.DL_MAE
-        elif value.lower() == 'hour_emd':
-            return cls.HOUR_EMD
+        elif value.lower() == 'circadian_emd':
+            return cls.CIRCADIAN_EMD
         elif value.lower() in ('absolute_hourly_emd', 'absolute_hour_emd', 'abs_hourly_emd', 'abs_hour_emd'):
             return cls.ABSOLUTE_HOURLY_EMD
         elif value.lower() == 'cycle_time_emd':
@@ -170,24 +149,10 @@ class Metric(Enum):
             raise ValueError(f'Unknown value {value}')
 
     def __str__(self):
-        if self == Metric.TSD:
-            return 'TSD'
-        elif self == Metric.DAY_HOUR_EMD:
-            return 'DAY_HOUR_EMD'
-        elif self == Metric.LOG_MAE:
-            return 'LOG_MAE'
-        elif self == Metric.DL:
+        if self == Metric.DL:
             return 'DL'
-        elif self == Metric.MAE:
-            return 'MAE'
-        elif self == Metric.DAY_EMD:
-            return 'DAY_EMD'
-        elif self == Metric.CAL_EMD:
-            return 'CAL_EMD'
-        elif self == Metric.DL_MAE:
-            return 'DL_MAE'
-        elif self == Metric.HOUR_EMD:
-            return 'HOUR_EMD'
+        elif self == Metric.CIRCADIAN_EMD:
+            return 'CIRCADIAN_EMD'
         elif self == Metric.ABSOLUTE_HOURLY_EMD:
             return 'ABSOLUTE_HOURLY_EMD'
         elif self == Metric.CYCLE_TIME_EMD:

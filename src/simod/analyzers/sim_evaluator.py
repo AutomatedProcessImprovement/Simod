@@ -15,12 +15,11 @@ from scipy.stats import wasserstein_distance
 
 from . import alpha_oracle as ao
 from .alpha_oracle import Rel
-from .similarity_metrics import get_absolute_timestamps_emd, get_cycle_time_emd
 from ..configuration import Metric
 from ..event_log.column_mapping import EventLogIDs
 
 
-class SimilarityEvaluator:  # TODO: test if it works correctly
+class SimilarityEvaluator:
     """Evaluates the similarity of two event-logs."""
 
     def __init__(self,
@@ -42,7 +41,6 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
         self.max_cases = max_cases
         self.similarity = None
 
-        # TODO: we don't need to preprocess for all metrics
         self._preprocess_log()
 
     def _preprocess_log(self):
@@ -78,39 +76,16 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
     def measure_distance(self, metric: Metric):
         similarity = {'metric': metric, 'similarity': None}
 
-        if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
+        if metric in [Metric.DL]:
             distance = self._evaluate_seq_distance(self.log_data, self.simulation_data, metric)
-        elif metric is Metric.LOG_MAE:
-            distance = self.log_mae_metric(self.log_data, self.simulation_data, metric)
-        elif metric in [Metric.HOUR_EMD, Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
+        elif metric in [Metric.CIRCADIAN_EMD]:
             distance = self.log_emd_metric(self.log_data, self.simulation_data, metric)
-        elif metric is Metric.ABSOLUTE_HOURLY_EMD:
-            distance = get_absolute_timestamps_emd(
-                self._original_log_data, self.log_ids, self._original_simulation_data, self.simulation_log_ids)
-        elif metric is Metric.CYCLE_TIME_EMD:
-            distance = get_cycle_time_emd(
-                self._original_log_data, self.log_ids, self._original_simulation_data, self.simulation_log_ids)
         else:
             raise ValueError(f'Unsupported metric: {metric}')
 
-        if isinstance(distance, list):
-            similarity['similarity'] = np.mean([x['sim_score'] for x in distance])
-        elif isinstance(distance, float):
-            similarity['similarity'] = distance
-        else:
-            raise ValueError(f'Unsupported distance type: {type(distance)}')
+        similarity['similarity'] = np.mean([x['sim_score'] for x in distance])
 
         self.similarity = similarity
-
-    def _get_evaluator(self, metric: Metric):
-        if metric in [Metric.TSD, Metric.DL, Metric.MAE, Metric.DL_MAE]:
-            return self._evaluate_seq_distance
-        elif metric is Metric.LOG_MAE:
-            return self.log_mae_metric
-        elif metric in [Metric.HOUR_EMD, Metric.DAY_EMD, Metric.DAY_HOUR_EMD, Metric.CAL_EMD]:
-            return self.log_emd_metric
-        else:
-            raise ValueError(metric)
 
     # =============================================================================
     # Timed string distance
@@ -158,30 +133,14 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
             df_matrix = pd.concat(list(p.get()), axis=0, ignore_index=True)
         df_matrix.sort_values(by=['i', 'j'], inplace=True)
         df_matrix = df_matrix.reset_index().set_index(['i', 'j'])
-        if metric == Metric.DL_MAE:
-            dl_matrix = df_matrix[['dl_distance']].unstack().to_numpy()
-            mae_matrix = df_matrix[['mae_distance']].unstack().to_numpy()
-            # MAE normalized
-            max_mae = mae_matrix.max()
-            mae_matrix = np.divide(mae_matrix, max_mae)
-            # multiple both matrixes by Beta equal to 0.5
-            dl_matrix = np.multiply(dl_matrix, 0.5)
-            mae_matrix = np.multiply(mae_matrix, 0.5)
-            # add each point in between
-            cost_matrix = np.add(dl_matrix, mae_matrix)
-        else:
-            cost_matrix = df_matrix[['distance']].unstack().to_numpy()
+        cost_matrix = df_matrix[['distance']].unstack().to_numpy()
         row_ind, col_ind = linear_sum_assignment(np.array(cost_matrix))
         # Create response
         for idx, idy in zip(row_ind, col_ind):
             similarity.append(dict(caseid=simulation_data[idx][self.log_ids.case],
                                    sim_order=simulation_data[idx]['profile'],
                                    log_order=log_data[idy]['profile'],
-                                   sim_score=(cost_matrix[idx][idy]
-                                              if metric == Metric.MAE else
-                                              (1 - (cost_matrix[idx][idy])))
-                                   )
-                              )
+                                   sim_score=(1 - (cost_matrix[idx][idy]))))
         return similarity
 
     def _compare_traces(self, args):
@@ -246,36 +205,15 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
                 for i, s1_ele in enumerate(serie1):
                     for j, s2_ele in enumerate(serie2):
                         element = {'i': r[0]['min'] + i, 'j': r[1]['min'] + j}
-                        if metric in [Metric.TSD, Metric.DL, Metric.DL_MAE]:
+                        if metric in [Metric.DL]:
                             element['s_1'] = s1_ele['profile']
                             element['s_2'] = s2_ele['profile']
                             element['length'] = max(len(s1_ele['profile']), len(s2_ele['profile']))
-                        if metric is Metric.TSD:
-                            element['p_1'] = s1_ele['proc_act_norm']
-                            element['p_2'] = s2_ele['proc_act_norm']
-                            element['w_1'] = s1_ele['wait_act_norm']
-                            element['w_2'] = s2_ele['wait_act_norm']
-                        if metric in [Metric.MAE, Metric.DL_MAE]:
-                            element['et_1'] = s1_ele[self.log_ids.end_time]
-                            element['et_2'] = s2_ele[self.log_ids.end_time]
-                            element['st_1'] = s1_ele[self.log_ids.start_time]
-                            element['st_2'] = s2_ele[self.log_ids.start_time]
                         df_matrix.append(element)
                 df_matrix = pd.DataFrame(df_matrix)
-                if metric is Metric.TSD:
-                    df_matrix['distance'] = df_matrix.apply(
-                        lambda x: tsd_alpha(x.s_1, x.s_2, x.p_1, x.p_2, x.w_1, x.w_2, oracle) / x.length, axis=1)
-                elif metric is Metric.DL:
+                if metric is Metric.DL:
                     df_matrix['distance'] = df_matrix.apply(
                         lambda x: jf.damerau_levenshtein_distance(''.join(x.s_1), ''.join(x.s_2)) / x.length, axis=1)
-                elif metric is Metric.MAE:
-                    df_matrix['distance'] = df_matrix.apply(
-                        lambda x: ae_distance(x.et_1, x.et_2, x.st_1, x.st_2), axis=1)
-                elif metric is Metric.DL_MAE:
-                    df_matrix['dl_distance'] = df_matrix.apply(
-                        lambda x: jf.damerau_levenshtein_distance(''.join(x.s_1), ''.join(x.s_2)) / x.length, axis=1)
-                    df_matrix['mae_distance'] = df_matrix.apply(
-                        lambda x: ae_distance(x.et_1, x.et_2, x.st_1, x.st_2), axis=1)
                 else:
                     raise ValueError(metric)
                 return df_matrix
@@ -285,37 +223,10 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
         return gen(*args)
 
     # =============================================================================
-    # whole log MAE
-    # =============================================================================
-    def log_mae_metric(self, log_data: list, simulation_data: list, metric: Metric) -> list:
-        """
-        Measures the MAE distance between two whole logs
-
-        Parameters
-        ----------
-        log_data : list
-        simulation_data : list
-        Returns
-        -------
-        list
-        """
-        similarity = list()
-        log_data = pd.DataFrame(log_data)
-        simulation_data = pd.DataFrame(simulation_data)
-        log_timelapse = (
-                log_data[self.log_ids.end_time].max() -
-                log_data[self.log_ids.start_time].min()).total_seconds()
-        sim_timelapse = (
-                simulation_data[self.log_ids.end_time].max() -
-                simulation_data[self.log_ids.start_time].min()).total_seconds()
-        similarity.append({'sim_score': np.abs(sim_timelapse - log_timelapse)})
-        return similarity
-
-    # =============================================================================
     # Log emd distance
     # =============================================================================
 
-    def log_emd_metric(self, log_data: list, simulation_data: list, criteria: Metric = Metric.HOUR_EMD) -> list:
+    def log_emd_metric(self, log_data: list, simulation_data: list, criteria: Metric) -> list:
         """
         Measures the EMD distance between two logs on different aggregation
         levels specified by user by defaul per hour
@@ -363,8 +274,7 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
         data = pd.concat([data, split_date_time(simulation_data, self.log_ids.start_time, 'sim')], ignore_index=True)
         data = pd.concat([data, split_date_time(simulation_data, self.log_ids.end_time, 'sim')], ignore_index=True)
         data['weekday'] = data.apply(lambda x: x.date.weekday(), axis=1)
-        g_criteria = {Metric.HOUR_EMD: 'window', Metric.DAY_EMD: 'weekday', Metric.DAY_HOUR_EMD: ['weekday', 'window'],
-                      Metric.CAL_EMD: 'date'}
+        g_criteria = {Metric.CIRCADIAN_EMD: ['weekday', 'window']}
         similarity = list()
         for key, group in data.groupby(g_criteria[criteria]):
             w_df = group.copy()
@@ -378,58 +288,6 @@ class SimilarityEvaluator:  # TODO: test if it works correctly
                 sim_hist = np.histogram(w_df[w_df.source == 'sim'].rel_time, density=True)
             if np.isnan(np.sum(log_hist[0])) or np.isnan(np.sum(sim_hist[0])):
                 similarity.append({'window': key, 'sim_score': 0})
-            else:
-                similarity.append({'window': key, 'sim_score': wasserstein_distance(log_hist[0], sim_hist[0])})
-        return similarity
-
-    # =============================================================================
-    # serie emd distance
-    # =============================================================================
-
-    def serie_emd_metric(self, log_data, simulation_data, criteria: Metric = Metric.HOUR_EMD):
-        similarity = list()
-        window = 1
-        log_data = pd.DataFrame(log_data)
-        simulation_data = pd.DataFrame(simulation_data)
-
-        def split_date_time(dataframe, feature, source):
-            day_hour = lambda x: x[feature].hour
-            dataframe['hour'] = dataframe.apply(day_hour, axis=1)
-            date = lambda x: x[feature].date()
-            dataframe['date'] = dataframe.apply(date, axis=1)
-            # create time windows
-            i = 0
-            daily_windows = dict()
-            for x in range(24):
-                if x % window == 0:
-                    i += 1
-                daily_windows[x] = i
-            dataframe = dataframe.merge(
-                pd.DataFrame.from_dict(daily_windows, orient='index').rename_axis('hour'),
-                on='hour', how='left').rename(columns={0: 'window'})
-            dataframe = dataframe[[feature, 'date', 'window']]
-            dataframe.rename(columns={feature: 'timestamp'}, inplace=True)
-            dataframe['source'] = source
-            return dataframe
-
-        data = split_date_time(log_data, 'timestamp', 'log')
-        data = data.append(split_date_time(simulation_data, 'timestamp', 'sim'), ignore_index=True)
-        data['weekday'] = data.apply(lambda x: x.date.weekday(), axis=1)
-        g_criteria = {Metric.HOUR_EMD: 'window', Metric.DAY_EMD: 'weekday', Metric.DAY_HOUR_EMD: ['weekday', 'window'],
-                      Metric.CAL_EMD: 'date'}
-        similarity = list()
-        for key, group in data.groupby(g_criteria[criteria]):
-            w_df = group.copy()
-            w_df = w_df.reset_index()
-            basetime = w_df.timestamp.min().floor(freq='H')
-            diftime = lambda x: (x['timestamp'] - basetime).total_seconds()
-            w_df['rel_time'] = w_df.apply(diftime, axis=1)
-            with warnings.catch_warnings():
-                warnings.filterwarnings('ignore')
-                log_hist = np.histogram(w_df[w_df.source == 'log'].rel_time, density=True)
-                sim_hist = np.histogram(w_df[w_df.source == 'sim'].rel_time, density=True)
-            if np.isnan(np.sum(log_hist[0])) or np.isnan(np.sum(sim_hist[0])):
-                similarity.append({'window': key, 'sim_score': 1})
             else:
                 similarity.append({'window': key, 'sim_score': wasserstein_distance(log_hist[0], sim_hist[0])})
         return similarity
