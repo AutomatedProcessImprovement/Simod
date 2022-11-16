@@ -8,9 +8,8 @@ from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings
 from simod.discovery import inter_arrival_distribution
 from simod.discovery.distribution import get_best_distribution
-from simod.discovery.tasks_evaluator import TaskEvaluator
 from simod.event_log.column_mapping import EventLogIDs
-from simod.simulation.calendar_discovery import case_arrival, resource
+from simod.simulation.calendar_discovery import case_arrival, resource as resource_calendar
 from simod.simulation.parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
 from simod.simulation.parameters.calendars import Calendar
 from simod.simulation.parameters.distributions import Distribution
@@ -64,18 +63,18 @@ def mine_parameters(
     resource_discovery_type = resource_profiles_settings.discovery_type
     if resource_discovery_type == CalendarType.DEFAULT_24_7:
         resource_profiles, resource_calendars, task_resource_distributions = mine_default_for_resources(
-            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, Calendar.all_day_long())
+            log, log_ids, model_path, process_graph, Calendar.all_day_long())
     elif resource_discovery_type == CalendarType.DEFAULT_9_5:
         resource_profiles, resource_calendars, task_resource_distributions = mine_default_for_resources(
-            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader, Calendar.work_day())
+            log, log_ids, model_path, process_graph, Calendar.work_day())
     elif resource_discovery_type == CalendarType.UNDIFFERENTIATED:
-        resource_profiles, resource_calendars, task_resource_distributions = mine_for_undifferentiated_resources(
-            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader)
+        resource_profiles, resource_calendars, task_resource_distributions = _resource_parameters_for_undifferentiated(
+            log, log_ids, model_path, process_graph)
     elif resource_discovery_type == CalendarType.DIFFERENTIATED_BY_POOL:
-        resource_profiles, resource_calendars, task_resource_distributions = mine_for_pooled_resources(
-            log, log_ids, model_path, process_graph, pdf_method, bpmn_reader)
+        resource_profiles, resource_calendars, task_resource_distributions = _resource_parameters_for_pools(
+            log, log_ids, process_graph)
     elif resource_discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE:
-        resource_profiles, resource_calendars, task_resource_distributions = mine_for_differentiated_resources(
+        resource_profiles, resource_calendars, task_resource_distributions = _resource_parameters_for_differentiated(
             log, log_ids, model_path, process_graph)
     else:
         raise ValueError(f'Unknown calendar discovery type: {resource_discovery_type}')
@@ -113,8 +112,8 @@ def mine_default_24_7(
 
     gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probability_type)
 
-    task_resource_distributions = _task_resource_distribution_undifferentiated(
-        log, log_ids, process_graph, pdf_method, bpmn_reader, undifferentiated_resource_profile)
+    task_resource_distributions = _activity_duration_distributions_undifferentiated(
+        log, log_ids, process_graph)
 
     return SimulationParameters(
         resource_profiles=resource_profiles,
@@ -131,8 +130,6 @@ def mine_default_for_resources(
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
         calendar: Calendar) -> Tuple:
     """Simulation parameters with default calendar 24/7."""
 
@@ -141,241 +138,189 @@ def mine_default_for_resources(
 
     resource_calendars = [calendar]
 
-    task_resource_distributions = _task_resource_distribution_undifferentiated(
-        log, log_ids, process_graph, pdf_method, bpmn_reader, undifferentiated_resource_profile)
+    task_resource_distributions = _activity_duration_distributions_undifferentiated(log, log_ids, process_graph)
 
     return resource_profiles, resource_calendars, task_resource_distributions
 
 
-def mine_for_undifferentiated_resources(
+def _resource_parameters_for_undifferentiated(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         bpmn_path: Path,
-        process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter) -> Tuple:
+        process_graph: DiGraph) -> Tuple:
     """Simulation parameters with undifferentiated resources."""
 
-    # Resource calendars
-    resource_calendars = [resource.discover_undifferentiated(log, log_ids)]
-    assert len(resource_calendars) == 1, "Only one resource calendar is supported for undifferentiated resources."
+    calendars = [resource_calendar.discover_undifferentiated(log, log_ids)]
+    assert len(calendars) == 1, "Only one resource calendar is supported for undifferentiated resources."
 
-    # Resource profiles
     undifferentiated_resource_profile = ResourceProfile.undifferentiated(
-        log, log_ids, bpmn_path, resource_calendars[0].id)
+        log, log_ids, bpmn_path, calendars[0].id)
     resource_profiles = [undifferentiated_resource_profile]
 
-    # Task resource distributions
-    task_resource_distributions = _task_resource_distribution_undifferentiated(
-        log, log_ids, process_graph, pdf_method, bpmn_reader, undifferentiated_resource_profile)
+    task_resource_distributions = _activity_duration_distributions_undifferentiated(log, log_ids, process_graph)
 
-    return resource_profiles, resource_calendars, task_resource_distributions
+    return resource_profiles, calendars, task_resource_distributions
 
 
-def mine_for_pooled_resources(
-        log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        bpmn_path: Path,
-        process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter) -> Tuple:
+def _resource_parameters_for_pools(log: pd.DataFrame, log_ids: EventLogIDs, process_graph: DiGraph) -> Tuple:
     """Simulation parameters for resource pools."""
 
-    # Resource calendars
-    resource_calendars, pool_mapping = resource.discover_per_resource_pool(log, log_ids)
-    assert len(resource_calendars) > 0, "At least one resource calendar is required for resource pools."
+    calendars, pool_mapping = resource_calendar.discover_per_resource_pool(log, log_ids)
+    assert len(calendars) > 0, "At least one resource calendar is required for resource pools."
 
-    # Resource profiles
-    pool_profiles = ResourceProfile.differentiated_by_pool(
-        log, log_ids, bpmn_path, resource_calendars, pool_mapping)
+    pool_profiles = ResourceProfile.differentiated_by_pool_(log, log_ids, pool_mapping, process_graph)
 
-    # Task resource distributions
-    task_resource_distributions = _task_resource_distribution_pools(  # TODO: finish
-        log, log_ids, process_graph, pdf_method, bpmn_reader)
+    activity_duration_distributions = _activity_duration_distributions_pools(log, log_ids, process_graph, pool_mapping)
 
-    return pool_profiles, resource_calendars, task_resource_distributions
+    return pool_profiles, calendars, activity_duration_distributions
 
 
-def mine_for_differentiated_resources(
+def _resource_parameters_for_differentiated(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph) -> Tuple:
     """Simulation parameters for fully differentiated resources."""
 
-    # Resource calendars
-    resource_calendars = resource.discover_per_resource(log, log_ids)
+    resource_calendars = resource_calendar.discover_per_resource(log, log_ids)
     assert len(resource_calendars) > 0, "At least one resource calendar is required."
 
-    # Resource profiles
-    resource_profiles = ResourceProfile.differentiated_by_resource(
-        log, log_ids, bpmn_path, resource_calendars)
+    resource_profiles = ResourceProfile.differentiated_by_resource(log, log_ids, bpmn_path, resource_calendars)
 
-    # Task resource distributions
-    task_resource_distributions = _task_resource_distribution_differentiated(log, log_ids, process_graph)
+    task_resource_distributions = _activity_duration_distributions_differentiated(log, log_ids, process_graph)
 
     return resource_profiles, resource_calendars, task_resource_distributions
 
 
-def _task_resource_distribution_differentiated(
+def _activity_duration_distributions_differentiated(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         process_graph: DiGraph) -> List[ActivityResourceDistribution]:
-    """Mines activity resource distribution for fully differentiated resources for the Prosimos simulator."""
+    """
+    Mines activity duration distributions for fully differentiated resources for the Prosimos simulator.
+    """
 
     # Finding the best distributions for each activity-resource pair
-    activity_durations = {}
+    activity_duration_distributions = {}
     for (activity, resource_), group in log.groupby([log_ids.activity, log_ids.resource]):
         durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
         durations = [duration.total_seconds() for duration in durations]
         distribution = get_best_distribution(durations)
 
-        if activity not in activity_durations:
-            activity_durations[activity] = {resource_: distribution}
+        if activity not in activity_duration_distributions:
+            activity_duration_distributions[activity] = {resource_: distribution}
         else:
-            activity_durations[activity][resource_] = distribution
+            activity_duration_distributions[activity][resource_] = distribution
 
     # Getting activities' IDs from the model graph
-    model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
-    model_data = model_data[model_data.type.isin(['task', 'start', 'end'])]
-    items = model_data[['name', 'id']].to_records(index=False)
-    activity_ids = {item[0]: item[1] for item in items}
+    activity_ids = get_activities_ids_by_name(process_graph)
 
     # Collecting the distributions
-    activity_resource_distributions = []
-    for activity_name in activity_durations:
+    distributions = []
+    for activity_name in activity_duration_distributions:
         resources_distributions = [
-            ResourceDistribution(resource_, activity_durations[activity_name][resource_])
-            for resource_ in activity_durations[activity_name]
+            ResourceDistribution(resource_, activity_duration_distributions[activity_name][resource_])
+            for resource_ in activity_duration_distributions[activity_name]
         ]
 
         activity_id = activity_ids[activity_name]
-        activity_resource_distributions.append(ActivityResourceDistribution(activity_id, resources_distributions))
+        distributions.append(ActivityResourceDistribution(activity_id, resources_distributions))
 
-    return activity_resource_distributions
+    return distributions
 
 
-def _task_resource_distribution_pools(
+def _activity_duration_distributions_pools(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter) -> List[ActivityResourceDistribution]:
-    # extracting activities distribution
-    log['role'] = 'SYSTEM'  # TaskEvaluator requires a role column
-    resource_pool_metadata = {  # TODO: check this
-        'id': 'some magic id',
-        'name': 'some magic name',
-    }
-    activities_distributions = TaskEvaluator(
-        process_graph, log, log_ids, resource_pool_metadata, pdf_method).elements_data
+        pool_by_resource_name: dict) -> List[ActivityResourceDistribution]:
+    """
+    Mines activity duration distributions for pooled resources for the Prosimos simulator.
+    """
 
-    # activities' IDs and names from BPMN model
-    activities_info = bpmn_reader.read_activities()
+    # Adding pool information to the log
+    pool_key = 'pool'
+    pool_data = pd.DataFrame(pool_by_resource_name.items(), columns=[log_ids.resource, pool_key])
+    log = log.merge(pool_data, on=log_ids.resource)
 
+    # Finding the best distributions for each activity-pool pair
+    activity_duration_distributions = {}
+    for (activity, pool_name), group in log.groupby([log_ids.activity, pool_key]):
+        durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
+        durations = [duration.total_seconds() for duration in durations]
+        distribution = get_best_distribution(durations)
+
+        if activity not in activity_duration_distributions:
+            activity_duration_distributions[activity] = {pool_name: distribution}
+        else:
+            activity_duration_distributions[activity][pool_name] = distribution
+
+    # Getting activities' IDs from the model graph
+    activity_ids = get_activities_ids_by_name(process_graph)
+
+    # Collecting the distributions for Prosimos
+    distributions = []
+    for activity_name in activity_ids:
+        activity_id = activity_ids[activity_name]
+        activity_resources = log[log[log_ids.activity] == activity_name][log_ids.resource].unique()
+        resources_ = []
+        for resource in activity_resources:
+            pool = pool_by_resource_name[resource]
+            distribution = activity_duration_distributions[activity_name][pool]
+            resources_.append(ResourceDistribution(resource, distribution))
+        distributions.append(ActivityResourceDistribution(activity_id, resources_))
+
+    return distributions
+
+
+def _activity_duration_distributions_undifferentiated(
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        process_graph: DiGraph) -> List[ActivityResourceDistribution]:
+    """
+    Mines activity duration distributions for undifferentiated resources for the Prosimos simulator.
+    """
+
+    # Finding the best distribution for all activities durations
+    durations = (log[log_ids.end_time] - log[log_ids.start_time]).to_list()
+    durations = [duration.total_seconds() for duration in durations]
+    activity_duration_distribution = get_best_distribution(durations)
+
+    # Getting activities' IDs from the model graph
+    activity_ids = get_activities_ids_by_name(process_graph)
+
+    # Resources without Start and End
+    resources = log[log_ids.resource].unique()
+    resources_filtered = list(filter(lambda r: r.lower() not in ['start', 'end'], resources))
+
+    # Collecting the distributions
     task_resource_distributions = []
-    normal_activities_bpmn_elements_ids = []
+    for name in activity_ids:
+        id_ = activity_ids[name]
 
-    # handling Start and End activities if present which always have fixed duration of 0
-    for activity in activities_info:
-        if activity['task_name'].lower() in ['start', 'end']:
+        if name.lower() in ('start', 'end'):
             task_resource_distributions.append(
                 ActivityResourceDistribution(
-                    activity_id=activity['task_id'],
+                    activity_id=id_,
                     activity_resources_distributions=[
-                        ResourceDistribution(resource_id=activity['task_name'], distribution=Distribution.fixed(0))
+                        ResourceDistribution(resource_id=name, distribution=Distribution.fixed(0))
                     ]
                 )
             )
         else:
-            normal_activities_bpmn_elements_ids.append(activity['task_id'])
+            resources_distributions = [
+                ResourceDistribution(resource_, activity_duration_distribution)
+                for resource_ in resources_filtered
+            ]
 
-    # find unique resources from log that are not Start and End
-    unique_resources = set(log[log_ids.resource].values)
-    normal_resources = list(filter(lambda r: r.lower() not in ['start', 'end'], unique_resources))
-
-    # handling other (normal) activities without Start and End
-    for activity_id in normal_activities_bpmn_elements_ids:
-        # getting activity distribution from BPMN
-        activity_distribution = None
-        for item in activities_distributions:
-            if item['elementid'] == activity_id:
-                activity_distribution = item['distribution']
-                break
-        if activity_distribution is None:
-            raise Exception(f'Distribution for activity {activity_id} not found')
-
-        # in undifferentiated resources, all activities are assigned to each resource except Start and End,
-        # Start and End have their own distinct resource
-        resources_distributions = [
-            ResourceDistribution(resource, activity_distribution)
-            for resource in normal_resources
-        ]
-
-        task_resource_distributions.append(ActivityResourceDistribution(activity_id, resources_distributions))
+            task_resource_distributions.append(ActivityResourceDistribution(id_, resources_distributions))
 
     return task_resource_distributions
 
 
-def _task_resource_distribution_undifferentiated(
-        log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
-        undifferentiated_resource_profile: ResourceProfile) -> List[ActivityResourceDistribution]:
-    # extracting activities distribution
-    log['role'] = 'SYSTEM'  # TaskEvaluator requires a role column
-    resource_pool_metadata = {
-        'id': undifferentiated_resource_profile.id,
-        'name': undifferentiated_resource_profile.name
-    }
-    activities_distributions = TaskEvaluator(
-        process_graph, log, log_ids, resource_pool_metadata, pdf_method).elements_data
-
-    # activities' IDs and names from BPMN model
-    activities_info = bpmn_reader.read_activities()
-
-    task_resource_distributions = []
-    normal_activities_bpmn_elements_ids = []
-
-    # handling Start and End activities if present which always have fixed duration of 0
-    for activity in activities_info:
-        if activity['task_name'].lower() in ['start', 'end']:
-            task_resource_distributions.append(
-                ActivityResourceDistribution(
-                    activity_id=activity['task_id'],
-                    activity_resources_distributions=[
-                        ResourceDistribution(resource_id=activity['task_name'], distribution=Distribution.fixed(0))
-                    ]
-                )
-            )
-        else:
-            normal_activities_bpmn_elements_ids.append(activity['task_id'])
-
-    normal_resources = list(
-        filter(lambda r: r.name.lower() not in ['start', 'end'],
-               undifferentiated_resource_profile.resources)
-    )
-
-    # handling other (normal) activities without Start and End
-    for activity_id in normal_activities_bpmn_elements_ids:
-        # getting activity distribution from BPMN
-        activity_distribution = None
-        for item in activities_distributions:
-            if item['elementid'] == activity_id:
-                activity_distribution = item['distribution']
-                break
-        if activity_distribution is None:
-            raise Exception(f'Distribution for activity {activity_id} not found')
-
-        # in undifferentiated resources, all activities are assigned to each resource except Start and End,
-        # Start and End have their own distinct resource
-        resources_distributions = [
-            ResourceDistribution(resource.id, activity_distribution)
-            for resource in normal_resources
-        ]
-
-        task_resource_distributions.append(ActivityResourceDistribution(activity_id, resources_distributions))
-
-    return task_resource_distributions
+def get_activities_ids_by_name(process_graph: DiGraph) -> dict:
+    """Returns activities' IDs from the model graph"""
+    model_data = pd.DataFrame.from_dict(dict(process_graph.nodes.data()), orient='index')
+    model_data = model_data[model_data.type.isin(['task', 'start', 'end'])]
+    items = model_data[['name', 'id']].to_records(index=False)
+    return {item[0]: item[1] for item in items}  # {name: id}

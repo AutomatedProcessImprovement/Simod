@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
+from networkx import DiGraph
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.event_log.column_mapping import EventLogIDs
@@ -58,26 +59,7 @@ class ResourceProfile:
         :param resource_amount: The amount of each distinct resource to use. NB: Prosimos has only 1 amount implemented at the moment.
         :param total_number_of_resources: The total amount of resources. If not specified, the number of resource is taken from the log
         :param cost_per_hour: The cost per hour of the resource.
-
-        Output must be able to be converted to the following JSON:
-        {
-            "resource_profiles": [
-                {
-                    "id": "Profile ID_1",
-                    "name": "Credit Officer",
-                    "resource_list": [
-                        {
-                          "id": "resource_id_1",
-                          "name": "Credit Officer_1",
-                          "cost_per_hour": "35",
-                          "amount": 1,
-                          "calendar": "sid-222A1118-4766-43B2-A004-7DADE521982D",
-                          "assignedTasks": ["sid-622A1118-4766-43B2-A004-7DADE521982D"]
-                        },
-                    ]
-                }
-            ],
-        }
+        :return: The resource profile.
         """
         # each resource except Start and End has all activities assigned to it
         assigned_activities = []
@@ -133,6 +115,61 @@ class ResourceProfile:
         return profile
 
     @staticmethod
+    def differentiated_by_pool_(
+            log: pd.DataFrame,
+            log_ids: EventLogIDs,
+            pool_by_resource_name: PoolMapping,
+            process_graph: DiGraph,
+            resource_amount: Optional[int] = 1,
+            cost_per_hour: float = 20) -> List['ResourceProfile']:
+        from simod.simulation.parameters.miner import get_activities_ids_by_name
+
+        # NOTE: calendar.id == calendar.name == pool_name
+
+        pool_key = 'pool'
+        activity_id_key = 'activity_id'
+
+        # Adding pool information to the log
+        pool_data = pd.DataFrame(pool_by_resource_name.items(), columns=[log_ids.resource, pool_key])
+        log = log.merge(pool_data, on=log_ids.resource)
+
+        # Adding activity IDs to the log
+        activity_ids = get_activities_ids_by_name(process_graph)
+        activity_ids_data = pd.DataFrame(activity_ids.items(), columns=[log_ids.activity, activity_id_key])
+        log = log.merge(activity_ids_data, on=log_ids.activity)
+
+        # Finding activities' IDs for each pool
+        activity_ids_by_pool = {
+            pool_name: group[activity_id_key].unique().tolist()
+            for (pool_name, group) in log.groupby(pool_key)
+        }
+
+        profiles = []
+        for resource in log[log_ids.resource].unique():
+            cost = 0 if resource.lower() in ('start', 'end') else cost_per_hour
+            pool = pool_by_resource_name[resource]
+            activity_ids = activity_ids_by_pool[pool]
+
+            profiles.append(
+                ResourceProfile(
+                    id=resource,
+                    name=resource,
+                    resources=[
+                        Resource(
+                            id=resource,
+                            name=resource,
+                            amount=resource_amount,
+                            cost_per_hour=cost,
+                            calendar_id=resource,
+                            assigned_tasks=activity_ids
+                        )
+                    ]
+                )
+            )
+
+        return profiles
+
+    @staticmethod
     def differentiated_by_pool(
             log: pd.DataFrame,
             log_ids: EventLogIDs,
@@ -144,64 +181,59 @@ class ResourceProfile:
 
         # Resource names per pool
         pool_names = list(set([pool_mapping[resource_name] for resource_name in pool_mapping]))
-        pool_resources_names = {pool_name: set() for pool_name in pool_names}
+        resources_by_pool = {pool_name: set() for pool_name in pool_names}
         for resource_name in pool_mapping:
-            pool_resources_names[pool_mapping[resource_name]].add(resource_name)
+            resources_by_pool[pool_mapping[resource_name]].add(resource_name)
 
         # Activity names by resource name
         resource_names = log[log_ids.resource].unique()
         resource_activities = {resource_name: set() for resource_name in resource_names}
-        for (resource_name, data) in log.groupby([log_ids.resource]):
-            activities = data[log_ids.activity].unique()
+        for (resource_name, group) in log.groupby([log_ids.resource]):
+            activities = group[log_ids.activity].unique()
             resource_activities[resource_name] = set(activities)
 
         # Activities IDs mapping
         bpmn_reader = BPMNReaderWriter(bpmn_path)
         activity_ids_and_names = bpmn_reader.read_activities()
-        activity_ids_by_names = {activity['task_name'].lower(): activity['task_id']
-                                 for activity in activity_ids_and_names}
+        activity_ids_by_name = {activity['task_name'].lower(): activity['task_id']
+                                for activity in activity_ids_and_names}
 
         # Calendars by resource name
         resource_calendars = {
-            name: next(filter(lambda c: c.name == name, calendars))
+            name: next(filter(lambda c: c.name == resource, calendars))
             for name in pool_names
         }
 
         # Collecting profiles
         profiles = []
         for pool_name in pool_names:
+            # TODO: introduce Cost Structure Per Resource or Pool
+            cost = 0 if pool_name.lower() == 'system' else cost_per_hour
             calendar = resource_calendars[pool_name]
+            resources = resources_by_pool[pool_name]
 
-            resource_names = pool_resources_names[pool_name]
-            resources = []
-            for name in resource_names:
-                assigned_activities_ids = []
-                for activity_name in resource_activities[name]:
-                    activity_id = activity_ids_by_names.get(activity_name.lower())
-                    assert activity_id is not None, f'Activity {activity_name} is not found in {bpmn_path}'
+            assigned_activities_ids = []
+            for resource in resources:
+                for activity in resource_activities[resource]:
+                    activity_id = activity_ids_by_name[activity.lower()]
                     assigned_activities_ids.append(activity_id)
 
-                # NOTE: intervention to reduce cost for SYSTEM pool
-                cost = 0 if pool_name.lower() == 'system' else cost_per_hour
-                # TODO: make sense to introduce Cost Structure Per Resource or Pool,
-                #  so we have amount of resources and cost each resource
-
-                resources.append(
-                    Resource(
-                        id=name,
-                        name=name,
-                        amount=resource_amount,
-                        cost_per_hour=cost,
-                        calendar_id=calendar.id,
-                        assigned_tasks=assigned_activities_ids
-                    )
+            profiles.append(
+                ResourceProfile(
+                    id=pool_name,
+                    name=pool_name,
+                    resources=[
+                        Resource(
+                            id=pool_name,
+                            name=pool_name,
+                            amount=resource_amount,
+                            cost_per_hour=cost,
+                            calendar_id=calendar.id,
+                            assigned_tasks=assigned_activities_ids
+                        )
+                    ]
                 )
-
-            profiles.append(ResourceProfile(
-                id=pool_name,
-                name=pool_name,
-                resources=resources
-            ))
+            )
 
         return profiles
 
