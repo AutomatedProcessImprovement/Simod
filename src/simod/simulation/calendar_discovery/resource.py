@@ -219,14 +219,7 @@ def discover_per_resource_pool(
         for pool_name in timetables_per_pool
     ]
 
-    # Duplicating pool calendars for each resource for Prosimos
-    duplicated_calendars = []
-    calendars_by_pool = {calendar.name: calendar for calendar in calendars}
-    for resource in event_log[log_ids.resource].unique():
-        pool = pool_mapping[resource]
-        duplicated_calendars.append(Calendar(id=resource, name=resource, timetables=calendars_by_pool[pool].timetables))
-
-    return duplicated_calendars, pool_mapping
+    return calendars, pool_mapping
 
 
 def discover_per_resource(

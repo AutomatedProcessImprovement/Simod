@@ -145,27 +145,25 @@ class ResourceProfile:
         }
 
         profiles = []
-        for resource in log[log_ids.resource].unique():
-            cost = 0 if resource.lower() in ('start', 'end') else cost_per_hour
-            pool = pool_by_resource_name[resource]
+        for pool in log[pool_key].unique():
             activity_ids = activity_ids_by_pool[pool]
+            pool_resources = log[log[pool_key] == pool][log_ids.resource].unique()
 
-            profiles.append(
-                ResourceProfile(
-                    id=resource,
-                    name=resource,
-                    resources=[
-                        Resource(
-                            id=resource,
-                            name=resource,
-                            amount=resource_amount,
-                            cost_per_hour=cost,
-                            calendar_id=resource,
-                            assigned_tasks=activity_ids
-                        )
-                    ]
+            resources = []
+            for resource in pool_resources:
+                cost = 0 if resource.lower() in ('start', 'end') else cost_per_hour
+                resources.append(
+                    Resource(
+                        id=resource,
+                        name=resource,
+                        amount=resource_amount,
+                        cost_per_hour=cost,
+                        calendar_id=pool,
+                        assigned_tasks=activity_ids
+                    )
                 )
-            )
+
+            profiles.append(ResourceProfile(id=pool, name=pool, resources=resources))
 
         return profiles
 
