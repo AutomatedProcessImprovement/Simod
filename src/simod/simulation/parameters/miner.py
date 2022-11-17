@@ -5,6 +5,7 @@ import pandas as pd
 from networkx import DiGraph
 
 from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.cli_formatter import print_notice
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings
 from simod.discovery import inter_arrival_distribution
 from simod.discovery.distribution import get_best_distribution
@@ -14,6 +15,8 @@ from simod.simulation.parameters.activity_resources import ActivityResourceDistr
 from simod.simulation.parameters.calendars import Calendar
 from simod.simulation.parameters.distributions import Distribution
 from simod.simulation.parameters.gateway_probabilities import mine_gateway_probabilities
+from simod.simulation.parameters.intervals import Interval, prosimos_interval_to_interval, pd_intervals_to_intervals, \
+    intersect_intervals
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 from simod.simulation.prosimos import SimulationParameters
 
@@ -112,13 +115,13 @@ def mine_default_24_7(
 
     gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probability_type)
 
-    task_resource_distributions = _activity_duration_distributions_undifferentiated(
+    activity_duration_distributions = _activity_duration_distributions_undifferentiated(
         log, log_ids, process_graph)
 
     return SimulationParameters(
         resource_profiles=resource_profiles,
         resource_calendars=resource_calendars,
-        task_resource_distributions=task_resource_distributions,
+        task_resource_distributions=activity_duration_distributions,
         arrival_distribution=arrival_distribution,
         arrival_calendar=arrival_calendar,
         gateway_branching_probabilities=gateway_probabilities_
@@ -138,9 +141,9 @@ def mine_default_for_resources(
 
     resource_calendars = [calendar]
 
-    task_resource_distributions = _activity_duration_distributions_undifferentiated(log, log_ids, process_graph)
+    activity_duration_distributions = _activity_duration_distributions_undifferentiated(log, log_ids, process_graph)
 
-    return resource_profiles, resource_calendars, task_resource_distributions
+    return resource_profiles, resource_calendars, activity_duration_distributions
 
 
 def _resource_parameters_for_undifferentiated(
@@ -187,24 +190,39 @@ def _resource_parameters_for_differentiated(
 
     resource_profiles = ResourceProfile.differentiated_by_resource(log, log_ids, bpmn_path, resource_calendars)
 
-    task_resource_distributions = _activity_duration_distributions_differentiated(log, log_ids, process_graph)
+    activity_duration_distributions = _activity_duration_distributions_differentiated(
+        log, log_ids, process_graph, resource_calendars)
 
-    return resource_profiles, resource_calendars, task_resource_distributions
+    return resource_profiles, resource_calendars, activity_duration_distributions
 
 
 def _activity_duration_distributions_differentiated(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
-        process_graph: DiGraph) -> List[ActivityResourceDistribution]:
+        process_graph: DiGraph,
+        calendars: List[Calendar]) -> List[ActivityResourceDistribution]:
     """
     Mines activity duration distributions for fully differentiated resources for the Prosimos simulator.
     """
-
     # Finding the best distributions for each activity-resource pair
     activity_duration_distributions = {}
     for (activity, resource_), group in log.groupby([log_ids.activity, log_ids.resource]):
-        durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
-        durations = [duration.total_seconds() for duration in durations]
+        # Naive approach
+        #
+        # durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
+        # durations = [duration.total_seconds() for duration in durations]
+
+        calendar = next((calendar for calendar in calendars if calendar.id == resource_), None)
+        assert calendar is not None, f"Resource calendar for resource {resource_} not found."
+
+        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar)
+        if len(durations) == 0:
+            durations = [0]
+            print_notice(f"No durations for activity {activity} and resource {resource_}. "
+                         f"Setting the activity duration distribution to fixed(0).")
+
+        # Computing the distribution
+
         distribution = get_best_distribution(durations)
 
         if activity not in activity_duration_distributions:
@@ -227,6 +245,35 @@ def _activity_duration_distributions_differentiated(
         distributions.append(ActivityResourceDistribution(activity_id, resources_distributions))
 
     return distributions
+
+
+def _get_activity_durations_without_off_duty(df: pd.DataFrame, log_ids: EventLogIDs, calendar: Calendar) -> List[float]:
+    """
+    Returns activity durations without off-duty time.
+    """
+    activity_intervals = _get_activity_intervals(df, log_ids)
+    overlapping_intervals = _get_overlapping_intervals(activity_intervals, calendar)
+    overlapping_durations = [interval.duration().total_seconds() for interval in overlapping_intervals]
+    return overlapping_durations
+
+
+def _get_activity_intervals(df: pd.DataFrame, log_ids: EventLogIDs) -> List[pd.Interval]:
+    """
+    Returns a list of activity intervals.
+    """
+    start_times = df[log_ids.start_time].to_list()
+    end_times = df[log_ids.end_time].to_list()
+    return [pd.Interval(start, end) for start, end in zip(start_times, end_times)]
+
+
+def _get_overlapping_intervals(intervals: List[pd.Interval], calendar: Calendar) -> List[Interval]:
+    """
+    Returns a list of intervals that overlap with the calendar.
+    """
+    calendar_intervals = [prosimos_interval_to_interval(timetable.to_dict()) for timetable in calendar.timetables]
+    intervals_ = pd_intervals_to_intervals(intervals)
+    overlapping_intervals = intersect_intervals(intervals_, calendar_intervals)
+    return overlapping_intervals
 
 
 def _activity_duration_distributions_pools(
