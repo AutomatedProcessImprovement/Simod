@@ -3,8 +3,9 @@ from pathlib import Path
 import click
 
 from simod.configuration import Configuration
+from simod.event_log.preprocessor import Preprocessor
 from simod.optimization.optimizer import Optimizer
-from simod.utilities import get_project_dir
+from simod.utilities import get_project_dir, folder_id
 
 
 @click.group()
@@ -35,7 +36,13 @@ def optimize(ctx, config_path):
     repository_dir = get_project_dir()
     config_path = repository_dir / config_path
     settings = Configuration.from_path(config_path)
-    Optimizer(settings).run()
+
+    output_dir = get_project_dir() / 'outputs' / folder_id()
+
+    preprocessor = Preprocessor(settings, output_dir)
+    settings = preprocessor.run()
+
+    Optimizer(settings, log=preprocessor.log, output_dir=output_dir).run()
 
 
 if __name__ == "__main__":

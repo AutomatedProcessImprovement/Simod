@@ -67,9 +67,7 @@ common:
     - dl
     - absolute_hourly_emd
     - cycle_time_emd
-    - day_hour_emd
-    - log_mae
-    - mae
+    - circadian_emd
 preprocessing:
   multitasking: false
 structure:
@@ -95,7 +93,7 @@ structure:
     - true
     - false
 calendars:
-  optimization_metric: day_hour_emd
+  optimization_metric: absolute_hourly_emd
   max_evaluations: 1
   resource_profiles:
     discovery_type: differentiated
@@ -117,7 +115,7 @@ test_cases = [
     #     'settings': Configuration.from_stream(config_yaml_A),
     # },
     {
-        'name': 'loan_app_undifferentited',
+        'name': 'loan_app_undifferentiated',
         'settings': Configuration.from_stream(config_yaml_B),
     },
 ]

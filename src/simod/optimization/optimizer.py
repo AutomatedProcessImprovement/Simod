@@ -10,7 +10,6 @@ from tqdm import tqdm
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
 from simod.event_log.column_mapping import PROSIMOS_COLUMNS
-from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers
 from simod.metrics.metrics import compute_metric
@@ -38,23 +37,22 @@ class Optimizer:
     _log_test: pd.DataFrame
 
     # Downstream executors
-    _preprocessor: Optional[Preprocessor]
     _structure_optimizer: Optional[StructureOptimizer]
     _calendar_optimizer: Optional[CalendarOptimizer]
 
-    def __init__(self, settings: Configuration):
+    def __init__(self, settings: Configuration, log: Optional[pd.DataFrame] = None, output_dir: Optional[Path] = None):
         self._settings = settings
 
-        self._output_dir = get_project_dir() / 'outputs' / folder_id()
-
-        self._preprocessor = Preprocessor(settings, self._output_dir)
-        self._settings = self._preprocessor.run()
+        if output_dir is None:
+            self._output_dir = get_project_dir() / 'outputs' / folder_id()
+        else:
+            self._output_dir = output_dir
 
         self._log_reader = LogReaderWriter(self._settings.common.log_path,
                                            self._settings.common.log_ids,
-                                           log=self._preprocessor.log)
+                                           log=log)
 
-        self._split_log(0.8, self._log_reader)  # TODO: ratio can be an optimization parameter
+        self._split_log(0.8, self._log_reader)
 
     def _split_log(self, train_ratio: float, log_reader: LogReaderWriter):
         train, test = log_reader.split_timeline(train_ratio)
@@ -238,6 +236,7 @@ class Optimizer:
 
         # Saving the full pre-processed log to disk
         log_path = output_dir / self._settings.common.log_path.name
+        log_path = log_path.with_suffix('.xes')
         self._log_train.write_xes(log_path)
 
         model_path = output_dir / (self._settings.common.log_path.stem + '.bpmn')

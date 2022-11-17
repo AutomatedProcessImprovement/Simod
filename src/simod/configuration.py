@@ -250,7 +250,7 @@ class PreprocessingSettings:
     @staticmethod
     def from_dict(config: dict) -> 'PreprocessingSettings':
         return PreprocessingSettings(
-            multitasking=config['multitasking'],
+            multitasking=config.get('multitasking', False),
         )
 
 

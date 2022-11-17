@@ -5,7 +5,8 @@ from simod import cli
 # NOTE: these are mostly general overall long-running tests to check if everything finishes without exceptions
 
 optimize_config_files = [
-    'optimize_config.yml',
+    # 'optimize_config.yml',
+    'optimize_config_no_start_times.yml',
 ]
 
 

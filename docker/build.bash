@@ -26,6 +26,8 @@ pip3.10 install .
 cd ${PROJECT_DIR}/external_tools/log-similarity-metrics
 pip3.10 install -e .
 pip3.10 install dtw-python
+cd ${PROJECT_DIR}/external_tools/start-time-estimator
+pip3.10 install -e .
 
 # Installing cvxopt from source. Pre-compiled binaries cause problems on ARM. cvxopt is required by pm4py-wrapper
 cd $BASE_DIR
@@ -36,7 +38,7 @@ popd
 export CVXOPT_SUITESPARSE_SRC_DIR=$(pwd)/SuiteSparse
 git clone https://github.com/cvxopt/cvxopt.git
 cd cvxopt
-git checkout `git describe --abbrev=0 --tags`
+git checkout $(git describe --abbrev=0 --tags)
 python setup.py install
 pip3.10 install glpk
 

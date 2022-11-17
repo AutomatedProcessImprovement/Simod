@@ -66,7 +66,13 @@ def read(log_path: Path, log_ids: EventLogIDs = STANDARD_COLUMNS) -> Tuple[pd.Da
 
 
 def convert_timestamps(log: pd.DataFrame, log_ids: EventLogIDs):
-    time_columns = [log_ids.start_time, log_ids.enabled_time, log_ids.end_time]
+    time_columns = [
+        log_ids.start_time,
+        log_ids.end_time,
+        log_ids.enabled_time,
+        log_ids.available_time,
+        log_ids.estimated_start_time,
+    ]
     for name in time_columns:
         if name in log.columns:
             log[name] = pd.to_datetime(log[name], utc=True)

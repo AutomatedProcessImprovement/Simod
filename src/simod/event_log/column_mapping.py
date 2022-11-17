@@ -10,8 +10,10 @@ class EventLogIDs:
     start_time: str = 'start_timestamp'
     end_time: str = 'end_timestamp'
     enabled_time: str = 'enabled_timestamp'
-    role: str = 'role'
     processing_time: str = 'processing_time'
+    available_time: str = 'available_time'
+    estimated_start_time: str = 'estimated_start_time'
+    role: str = 'role'
 
     @staticmethod
     def from_dict(config: dict) -> 'EventLogIDs':

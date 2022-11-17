@@ -4,3 +4,6 @@
 [submodule "external_tools/log-similarity-metrics"]
 	path = external_tools/log-similarity-metrics
 	url = https://github.com/AutomatedProcessImprovement/log-similarity-metrics.git
+[submodule "external_tools/start-time-estimator"]
+	path = external_tools/start-time-estimator
+	url = https://github.com/AutomatedProcessImprovement/start-time-estimator.git

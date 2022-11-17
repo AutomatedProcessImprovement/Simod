@@ -4,6 +4,8 @@ from typing import Optional
 
 import pandas as pd
 
+from estimate_start_times.config import Configuration as StartTimeEstimatorConfiguration
+from estimate_start_times.estimator import StartTimeEstimator
 from simod.cli_formatter import print_step, print_section, print_notice
 from simod.configuration import Configuration
 from simod.event_log.multitasking import adjust_durations
@@ -25,10 +27,12 @@ class Settings:
 
 
 class Preprocessor:
-    """Preprocessor executes any event log pre-processing required according to the configuration."""
+    """
+    Preprocessor executes any event log pre-processing required according to the configuration.
+    """
     config: Configuration
     output_dir: Path
-    log: Optional[pd.DataFrame] = None
+    log: Optional[pd.DataFrame]
 
     _tmp_dirs: [Path] = []
 
@@ -36,24 +40,44 @@ class Preprocessor:
         self.config = config
         self.output_dir = output_dir
 
-    def _multitasking_processing(self, log_path: Path, output_dir: Path, is_concurrent=False, verbose=False):
-        print_step('Multitasking pre-processing')
-        self.log, log_path_csv = read(log_path)
-        processed_log_path = output_dir / (log_path.stem + '_processed.xes')
+        self.log, _ = read(self.config.common.log_path)
+
+    def run(self) -> Configuration:
+        """
+        Executes all pre-processing steps and updates the configuration if necessary.
+        """
+        print_section('Pre-processing')
+
+        if self.config.common.log_ids.start_time not in self.log.columns:
+            self._add_start_times()
+
+        if self.config.preprocessing.multitasking is True:
+            self._adjust_for_multitasking()
+
+        return self.config
+
+    def _adjust_for_multitasking(self, is_concurrent=False, verbose=False):
+        print_step('Adjusting timestamps for multitasking')
+
+        processed_log_path = self.output_dir / (self.config.common.log_path.stem + '_processed.xes')
+
         self.log = adjust_durations(self.log, self.config.common.log_ids, processed_log_path,
                                     is_concurrent=is_concurrent, verbose=verbose)
         self.config.log_path = processed_log_path
         self._tmp_dirs.append(processed_log_path)
         print_notice(f'New log path: {self.config.log_path}')
 
-    def run(self) -> Configuration:
-        """Executes all pre-processing steps and updates the configuration if necessary."""
-        print_section('Pre-processing')
+    def _add_start_times(self):
+        print_step('Adding start times')
 
-        if self.config.preprocessing.multitasking is True:
-            self._multitasking_processing(self.config.common.log_path, self.output_dir)
+        configuration = StartTimeEstimatorConfiguration(
+            log_ids=self.config.common.log_ids,
+        )
 
-        return self.config
+        assert self.log is not None, 'Log is None'
+
+        extended_event_log = StartTimeEstimator(self.log, configuration).estimate(replace_recorded_start_times=True)
+        self.log = extended_event_log
 
     def cleanup(self):
         for folder in self._tmp_dirs:
