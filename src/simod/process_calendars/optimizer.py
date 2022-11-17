@@ -10,10 +10,10 @@ from hyperopt import tpe
 from tqdm import tqdm
 
 from simod.cli_formatter import print_subsection, print_message
-from simod.evaluation_metrics import compute_metric
 from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
+from simod.metrics.metrics import compute_metric
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
 from simod.simulation.parameters.miner import mine_parameters

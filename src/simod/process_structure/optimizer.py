@@ -10,9 +10,9 @@ from hyperopt import tpe
 from tqdm import tqdm
 
 from simod.cli_formatter import print_message, print_subsection
-from simod.evaluation_metrics import compute_metric
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
+from simod.metrics.metrics import compute_metric
 from simod.simulation.parameters.miner import mine_default_24_7
 from simod.utilities import remove_asset, progress_bar_async, file_id, folder_id
 from .miner import StructureMiner, Settings as StructureMinerSettings

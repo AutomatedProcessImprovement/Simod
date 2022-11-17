@@ -9,11 +9,11 @@ from tqdm import tqdm
 
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
-from simod.evaluation_metrics import compute_metric
 from simod.event_log.column_mapping import PROSIMOS_COLUMNS
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers
+from simod.metrics.metrics import compute_metric
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings, CalendarOptimizationSettings
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner

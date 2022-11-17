@@ -1,8 +1,8 @@
 import pytest
 
-from simod.evaluation_metrics import get_absolute_hourly_emd
 from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.utilities import read
+from simod.metrics.metrics import get_absolute_hourly_emd
 
 test_cases = [
     {
