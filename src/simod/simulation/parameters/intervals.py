@@ -33,6 +33,9 @@ class WeekDay(Enum):
         elif value_lowered == "sunday":
             return WeekDay.SUNDAY
 
+    def next(self):
+        return WeekDay((self.value + 1) % 7)
+
     def __lt__(self, other):
         return self.value < other.value
 
@@ -218,6 +221,38 @@ def prosimos_interval_to_interval(interval: dict) -> Interval:
                             left_time=interval["beginTime"],
                             right_time=interval["endTime"])
     return new_interval
+
+
+def prosimos_interval_to_interval_safe(interval: dict) -> List[Interval]:
+    """
+    Converts a Prosimos interval to a list of custom intervals, and splits a multiple-days interval to multiple single
+    day intervals.
+
+    :param interval: Prosimos interval.
+    :return: List of Interval.
+    """
+
+    from_day = WeekDay.from_string(interval["from"])
+    to_day = WeekDay.from_string(interval["to"])
+
+    if from_day == to_day:
+        new_intervals = [Interval(left_day=from_day,
+                                  right_day=to_day,
+                                  left_time=interval["beginTime"],
+                                  right_time=interval["endTime"])]
+    else:
+        new_intervals = [Interval(left_day=from_day,
+                                  right_day=from_day,
+                                  left_time=interval["beginTime"],
+                                  right_time='23:59:59.999999')]
+        return new_intervals + prosimos_interval_to_interval_safe({
+            "from": from_day.next().name,
+            "to": to_day.name,
+            "beginTime": '00:00:00.000000',
+            "endTime": interval["endTime"]
+        })
+
+    return new_intervals
 
 
 def intersect_intervals(intervals1: [Interval], intervals2: [Interval]) -> [Interval]:

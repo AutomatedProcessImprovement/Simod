@@ -15,8 +15,8 @@ from simod.simulation.parameters.activity_resources import ActivityResourceDistr
 from simod.simulation.parameters.calendars import Calendar
 from simod.simulation.parameters.distributions import Distribution
 from simod.simulation.parameters.gateway_probabilities import mine_gateway_probabilities
-from simod.simulation.parameters.intervals import Interval, prosimos_interval_to_interval, pd_intervals_to_intervals, \
-    intersect_intervals
+from simod.simulation.parameters.intervals import Interval, pd_intervals_to_intervals, \
+    intersect_intervals, prosimos_interval_to_interval_safe
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 from simod.simulation.prosimos import SimulationParameters
 
@@ -116,7 +116,7 @@ def mine_default_24_7(
     gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probability_type)
 
     activity_duration_distributions = _activity_duration_distributions_undifferentiated(
-        log, log_ids, process_graph)
+        log, log_ids, process_graph, calendar_24_7)
 
     return SimulationParameters(
         resource_profiles=resource_profiles,
@@ -160,7 +160,8 @@ def _resource_parameters_for_undifferentiated(
         log, log_ids, bpmn_path, calendars[0].id)
     resource_profiles = [undifferentiated_resource_profile]
 
-    task_resource_distributions = _activity_duration_distributions_undifferentiated(log, log_ids, process_graph)
+    task_resource_distributions = _activity_duration_distributions_undifferentiated(
+        log, log_ids, process_graph, calendars[0])
 
     return resource_profiles, calendars, task_resource_distributions
 
@@ -173,7 +174,8 @@ def _resource_parameters_for_pools(log: pd.DataFrame, log_ids: EventLogIDs, proc
 
     pool_profiles = ResourceProfile.differentiated_by_pool_(log, log_ids, pool_mapping, process_graph)
 
-    activity_duration_distributions = _activity_duration_distributions_pools(log, log_ids, process_graph, pool_mapping)
+    activity_duration_distributions = _activity_duration_distributions_pools(
+        log, log_ids, process_graph, pool_mapping, calendars)
 
     return pool_profiles, calendars, activity_duration_distributions
 
@@ -270,9 +272,13 @@ def _get_overlapping_intervals(intervals: List[pd.Interval], calendar: Calendar)
     """
     Returns a list of intervals that overlap with the calendar.
     """
-    calendar_intervals = [prosimos_interval_to_interval(timetable.to_dict()) for timetable in calendar.timetables]
+    calendar_intervals = []
+    for timetable in calendar.timetables:
+        calendar_intervals.extend(prosimos_interval_to_interval_safe(timetable.to_dict()))
+
     intervals_ = pd_intervals_to_intervals(intervals)
     overlapping_intervals = intersect_intervals(intervals_, calendar_intervals)
+
     return overlapping_intervals
 
 
@@ -280,7 +286,8 @@ def _activity_duration_distributions_pools(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         process_graph: DiGraph,
-        pool_by_resource_name: dict) -> List[ActivityResourceDistribution]:
+        pool_by_resource_name: dict,
+        calendars: List[Calendar]) -> List[ActivityResourceDistribution]:
     """
     Mines activity duration distributions for pooled resources for the Prosimos simulator.
     """
@@ -293,8 +300,20 @@ def _activity_duration_distributions_pools(
     # Finding the best distributions for each activity-pool pair
     activity_duration_distributions = {}
     for (activity, pool_name), group in log.groupby([log_ids.activity, pool_key]):
-        durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
-        durations = [duration.total_seconds() for duration in durations]
+        # Naive approach
+        #
+        # durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
+        # durations = [duration.total_seconds() for duration in durations]
+
+        calendar = next((calendar for calendar in calendars if calendar.id == pool_name), None)
+        assert calendar is not None, f"Resource calendar for resource {pool_name} not found."
+
+        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar)
+        if len(durations) == 0:
+            durations = [0]
+            print_notice(f"No durations for activity {activity} and pool {pool_name}. "
+                         f"Setting the activity duration distribution to fixed(0).")
+
         distribution = get_best_distribution(durations)
 
         if activity not in activity_duration_distributions:
@@ -323,14 +342,21 @@ def _activity_duration_distributions_pools(
 def _activity_duration_distributions_undifferentiated(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
-        process_graph: DiGraph) -> List[ActivityResourceDistribution]:
+        process_graph: DiGraph,
+        calendar: Calendar) -> List[ActivityResourceDistribution]:
     """
     Mines activity duration distributions for undifferentiated resources for the Prosimos simulator.
     """
 
     # Finding the best distribution for all activities durations
-    durations = (log[log_ids.end_time] - log[log_ids.start_time]).to_list()
-    durations = [duration.total_seconds() for duration in durations]
+    # Naive approach
+    #
+    # durations = (log[log_ids.end_time] - log[log_ids.start_time]).to_list()
+    # durations = [duration.total_seconds() for duration in durations]
+    durations = _get_activity_durations_without_off_duty(log, log_ids, calendar)
+    if len(durations) == 0:
+        durations = [0]
+
     activity_duration_distribution = get_best_distribution(durations)
 
     # Getting activities' IDs from the model graph
