@@ -199,6 +199,7 @@ class ExecutionMode(Enum):
 @dataclass
 class CommonSettings:
     log_path: Path
+    test_log_path: Path
     log_ids: Optional[EventLogIDs]
     model_path: Optional[Path]
     exec_mode: ExecutionMode
@@ -212,6 +213,12 @@ class CommonSettings:
         log_path = Path(config['log_path'])
         if not log_path.is_absolute():
             log_path = PROJECT_DIR / log_path
+
+        test_log_path = config.get('test_log_path', None)
+        if test_log_path is not None:
+            test_log_path = Path(test_log_path)
+            if not test_log_path.is_absolute():
+                test_log_path = PROJECT_DIR / test_log_path
 
         exec_mode = ExecutionMode.from_str(config['exec_mode'])
 
@@ -233,6 +240,7 @@ class CommonSettings:
 
         return CommonSettings(
             log_path=log_path,
+            test_log_path=test_log_path,
             log_ids=log_ids,
             model_path=model_path,
             exec_mode=exec_mode,

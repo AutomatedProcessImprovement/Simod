@@ -33,15 +33,11 @@ class LogReaderWriter:
     # log_path_xes: Path
     df: pd.DataFrame
     data: list  # TODO: remove the list and use DataFrame everywhere
-    _column_names: dict  # TODO: use EventLogIDs
     _log_ids: EventLogIDs
-    _column_filter: Optional[list] = None
 
     def __init__(self,
                  log_path: Path,
                  log_ids: EventLogIDs,
-                 column_names: dict = DEFAULT_XES_COLUMNS,  # TODO: replace with EventLogIDs
-                 column_filter: Optional[list] = DEFAULT_FILTER,
                  load: bool = True,
                  log: Optional[pd.DataFrame] = None):
         if isinstance(log_path, str):
@@ -68,12 +64,9 @@ class LogReaderWriter:
         self._log_ids = log_ids
 
         if load:
-            self._read_log(log, column_filter, column_names)
+            self._read_log(log)
 
-        self._column_names = column_names
-        self._column_filter = column_filter
-
-    def _read_log(self, log: Optional[pd.DataFrame], column_filter: list, column_names: dict):
+    def _read_log(self, log: Optional[pd.DataFrame]):
         if log is None:
             df, log_path_csv = read(self.log_path)
         else:
@@ -112,7 +105,6 @@ class LogReaderWriter:
     def copy_without_data(log: 'LogReaderWriter', log_ids: EventLogIDs) -> 'LogReaderWriter':
         """Copies LogReader without copying underlying data."""
         reader = LogReaderWriter(log_path=log.log_path, log_ids=log_ids, load=False)
-        reader._column_names = log._column_names
         return reader
 
     def _append_csv_start_end_entries(self, data: list) -> list:

@@ -9,10 +9,6 @@ from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.parameters.calendars import Calendar, Timetable
 
 UNDIFFERENTIATED_RESOURCE_POOL_KEY = "undifferentiated_resource_pool"
-RESOURCE_KEY = "org:resource"
-ACTIVITY_KEY = "concept:name"
-START_TIMESTAMP_KEY = "start_timestamp"
-END_TIMESTAMP_KEY = "time:timestamp"
 
 PoolName = NewType('PoolName', str)
 ResourceName = NewType('ResourceName', str)
@@ -73,7 +69,7 @@ def _discover_timetables(event_log: pd.DataFrame,
         else:
             resource = UNDIFFERENTIATED_RESOURCE_POOL_KEY
         activity = event[log_ids.activity]
-        start_time = event[START_TIMESTAMP_KEY]
+        start_time = event[log_ids.start_time]
         end_time = event[log_ids.end_time]
 
         calendar_factory.check_date_time(resource, activity, start_time)

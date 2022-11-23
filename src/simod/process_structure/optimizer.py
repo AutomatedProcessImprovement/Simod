@@ -349,7 +349,7 @@ class StructureOptimizer(HyperoptPipeline):
     def _read_simulated_log(self, arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments
 
-        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS, column_names=log_column_mapping)
+        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS)
 
         reader.df['role'] = reader.df['resource']
         reader.df['source'] = 'simulation'

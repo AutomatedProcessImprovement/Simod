@@ -58,9 +58,9 @@ class CalendarOptimizer(HyperoptPipeline):
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         if model_path is not None:
-            self._model_path = model_path
+            self._train_model_path = model_path
         else:
-            self._model_path = self._mine_structure(structure_settings, self._output_dir)
+            self._train_model_path = self._mine_structure(structure_settings, self._output_dir)
 
         self.evaluation_measurements = pd.DataFrame(
             columns=['similarity', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
@@ -92,7 +92,7 @@ class CalendarOptimizer(HyperoptPipeline):
                     trial_stg,
                     # TODO: output_dir is rewritten below anyway, but it's needed for the constructor
                     output_dir=self._output_dir,
-                    model_path=self._model_path,
+                    model_path=self._train_model_path,
                 )
 
             # initializing status
@@ -145,7 +145,7 @@ class CalendarOptimizer(HyperoptPipeline):
             data=best,
             initial_settings=self._calendar_optimizer_settings,
             output_dir=Path(self.best_output),
-            model_path=self._model_path)
+            model_path=self._train_model_path)
         self.best_parameters = best_settings
 
         # Save evaluation measurements
@@ -253,7 +253,7 @@ class CalendarOptimizer(HyperoptPipeline):
         log = self._log_train.get_traces_df(include_start_end_events=True)
 
         parameters = mine_parameters(
-            settings.case_arrival, settings.resource_profiles, log, self._log_ids, self._model_path,
+            settings.case_arrival, settings.resource_profiles, log, self._log_ids, settings.model_path,
             settings.gateway_probabilities)
 
         json_path = settings.output_dir / 'simulation_parameters.json'
@@ -268,7 +268,7 @@ class CalendarOptimizer(HyperoptPipeline):
         log_path, log_column_mapping, simulation_repetition_index = arguments
         assert log_path.exists(), f'Simulated log file {log_path} does not exist'
 
-        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS, column_names=log_column_mapping)
+        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS)
 
         reader.df['role'] = reader.df['resource']
         reader.df['source'] = 'simulation'
@@ -279,7 +279,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
     def _simulate_with_prosimos(self, settings: PipelineSettings, json_path: Path, simulation_cases: int):
         num_simulations = self._calendar_optimizer_settings.simulation_repetitions
-        bpmn_path = self._model_path
+        bpmn_path = settings.model_path
         cpu_count = multiprocessing.cpu_count()
         w_count = num_simulations if num_simulations <= cpu_count else cpu_count
         pool = multiprocessing.Pool(processes=w_count)

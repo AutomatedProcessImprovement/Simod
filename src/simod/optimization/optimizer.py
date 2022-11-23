@@ -11,7 +11,7 @@ from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
 from simod.event_log.column_mapping import PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
-from simod.event_log.utilities import remove_outliers
+from simod.event_log.utilities import remove_outliers, read
 from simod.metrics.metrics import compute_metric
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings, CalendarOptimizationSettings
@@ -52,7 +52,13 @@ class Optimizer:
                                            self._settings.common.log_ids,
                                            log=log)
 
-        self._split_log(0.8, self._log_reader)
+        if self._settings.common.test_log_path is not None:
+            self._log_train = LogReaderWriter(self._settings.common.log_path, self._settings.common.log_ids)
+            self._log_test, _ = read(self._settings.common.test_log_path, self._settings.common.log_ids)
+        else:
+            self._split_log(0.8, self._log_reader)
+
+        return
 
     def _split_log(self, train_ratio: float, log_reader: LogReaderWriter):
         train, test = log_reader.split_timeline(train_ratio)
@@ -91,7 +97,7 @@ class Optimizer:
     def _read_simulated_log(self, arguments: Tuple):
         log_path, log_column_mapping, simulation_repetition_index = arguments
 
-        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS, column_names=log_column_mapping)
+        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS)
 
         reader.df['role'] = reader.df['resource']
         reader.df['source'] = 'simulation'
