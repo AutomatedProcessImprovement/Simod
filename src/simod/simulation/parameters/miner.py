@@ -15,8 +15,8 @@ from simod.simulation.parameters.activity_resources import ActivityResourceDistr
 from simod.simulation.parameters.calendars import Calendar
 from simod.simulation.parameters.distributions import Distribution
 from simod.simulation.parameters.gateway_probabilities import mine_gateway_probabilities
-from simod.simulation.parameters.intervals import Interval, pd_intervals_to_intervals, \
-    intersect_intervals, prosimos_interval_to_interval_safe
+from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
+    pd_interval_to_interval
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 from simod.simulation.prosimos import SimulationParameters
 
@@ -255,7 +255,11 @@ def _get_activity_durations_without_off_duty(df: pd.DataFrame, log_ids: EventLog
     """
     activity_intervals = _get_activity_intervals(df, log_ids)
     overlapping_intervals = _get_overlapping_intervals(activity_intervals, calendar)
-    overlapping_durations = [interval.duration().total_seconds() for interval in overlapping_intervals]
+    overlapping_durations = []
+    for intervals in overlapping_intervals:
+        duration_intervals = [interval.duration().total_seconds() for interval in intervals]
+        overlapping_durations.append(sum(duration_intervals))
+
     return overlapping_durations
 
 
@@ -268,16 +272,23 @@ def _get_activity_intervals(df: pd.DataFrame, log_ids: EventLogIDs) -> List[pd.I
     return [pd.Interval(start, end) for start, end in zip(start_times, end_times)]
 
 
-def _get_overlapping_intervals(intervals: List[pd.Interval], calendar: Calendar) -> List[Interval]:
+def _get_overlapping_intervals(intervals: List[pd.Interval], calendar: Calendar) -> List[List[Interval]]:
     """
-    Returns a list of intervals that overlap with the calendar.
+    Returns a list of lists of intervals that overlap with the calendar. First level of the list has intervals for each
+    activity. So, each activity can have 1+ intervals.
     """
     calendar_intervals = []
     for timetable in calendar.timetables:
         calendar_intervals.extend(prosimos_interval_to_interval_safe(timetable.to_dict()))
 
-    intervals_ = pd_intervals_to_intervals(intervals)
-    overlapping_intervals = intersect_intervals(intervals_, calendar_intervals)
+    intervals_ = [
+        pd_interval_to_interval(interval)
+        for interval in sorted(intervals, key=lambda item: item.left)
+    ]
+
+    overlapping_intervals = []
+    for interval in intervals_:
+        overlapping_intervals.append(intersect_intervals(interval, calendar_intervals))
 
     return overlapping_intervals
 
@@ -353,11 +364,18 @@ def _activity_duration_distributions_undifferentiated(
     #
     # durations = (log[log_ids.end_time] - log[log_ids.start_time]).to_list()
     # durations = [duration.total_seconds() for duration in durations]
-    durations = _get_activity_durations_without_off_duty(log, log_ids, calendar)
-    if len(durations) == 0:
-        durations = [0]
 
-    activity_duration_distribution = get_best_distribution(durations)
+    activity_duration_distributions = {}
+    for (activity, group) in log.groupby(log_ids.activity):
+        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar)
+        if len(durations) == 0:
+            durations = [0]
+            print_notice(f"No durations for activity {activity}. "
+                         f"Setting the activity duration distribution to fixed(0).")
+
+        activity_duration_distribution = get_best_distribution(durations)
+
+        activity_duration_distributions[activity] = activity_duration_distribution
 
     # Getting activities' IDs from the model graph
     activity_ids = get_activities_ids_by_name(process_graph)
@@ -367,12 +385,13 @@ def _activity_duration_distributions_undifferentiated(
     resources_filtered = list(filter(lambda r: r.lower() not in ['start', 'end'], resources))
 
     # Collecting the distributions
-    task_resource_distributions = []
+    distributions = []
     for name in activity_ids:
         id_ = activity_ids[name]
+        activity_duration_distribution = activity_duration_distributions[name]
 
         if name.lower() in ('start', 'end'):
-            task_resource_distributions.append(
+            distributions.append(
                 ActivityResourceDistribution(
                     activity_id=id_,
                     activity_resources_distributions=[
@@ -386,9 +405,9 @@ def _activity_duration_distributions_undifferentiated(
                 for resource_ in resources_filtered
             ]
 
-            task_resource_distributions.append(ActivityResourceDistribution(id_, resources_distributions))
+            distributions.append(ActivityResourceDistribution(id_, resources_distributions))
 
-    return task_resource_distributions
+    return distributions
 
 
 def get_activities_ids_by_name(process_graph: DiGraph) -> dict:
