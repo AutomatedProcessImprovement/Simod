@@ -5,6 +5,7 @@ from typing import Union, List, Optional, Tuple
 
 from hyperopt import hp
 
+from .cli_formatter import print_notice
 from .event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from .utilities import get_project_dir
 
@@ -71,7 +72,7 @@ class GatewayProbabilitiesDiscoveryMethod(Enum):
         elif self == GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE:
             return 'equiprobable'
         elif self == GatewayProbabilitiesDiscoveryMethod.RANDOM:
-            return 'random'
+            raise NotImplementedError('Random gateway probabilities are not supported')
         return f'Unknown GateManagement {str(self)}'
 
 
@@ -264,9 +265,6 @@ class PreprocessingSettings:
 
 @dataclass
 class StructureSettings:
-    # Flag to turn off structure discovery, the model must be provided in CommonSettings then
-    disable_discovery: bool
-
     # Structure discovery settings
 
     optimization_metric: Metric = Metric.DL
@@ -283,10 +281,6 @@ class StructureSettings:
 
     @staticmethod
     def from_dict(config: dict) -> 'StructureSettings':
-        disable_discovery = config.get('disable_discovery', False)
-        if disable_discovery:
-            return StructureSettings(disable_discovery=True)
-
         mining_algorithm = StructureMiningAlgorithm.from_str(config['mining_algorithm'])
 
         gateway_probabilities = [GatewayProbabilitiesDiscoveryMethod.from_str(g) for g in
@@ -305,7 +299,6 @@ class StructureSettings:
             optimization_metric = Metric.DL
 
         return StructureSettings(
-            disable_discovery=disable_discovery,
             optimization_metric=optimization_metric,
             max_evaluations=config['max_evaluations'],
             mining_algorithm=mining_algorithm,
@@ -451,6 +444,17 @@ class Configuration:
         preprocessing_settings = PreprocessingSettings.from_dict(config['preprocessing'])
         structure_settings = StructureSettings.from_dict(config['structure'])
         calendars_settings = CalendarsSettings.from_dict(config['calendars'])
+
+        # If the model is provided, we don't execute SplitMiner. Then, ignore the mining_algorithm setting
+        if common_settings.model_path is not None:
+            print_notice(f'Ignoring structure settings because the model is provided')
+            structure_settings.mining_algorithm = None
+            structure_settings.epsilon = None
+            structure_settings.eta = None
+            structure_settings.and_prior = None
+            structure_settings.or_prior = None
+            structure_settings.or_rep = None
+            structure_settings.concurrency = None
 
         return Configuration(
             common=common_settings,

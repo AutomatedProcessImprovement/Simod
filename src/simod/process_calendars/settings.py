@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional
 
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings, \
     Configuration, Metric
@@ -19,8 +19,6 @@ class CalendarOptimizationSettings:
 
     simulation_repetitions: int = 1
     pdef_method: Optional[PDFMethod] = PDFMethod.AUTOMATIC
-    gateway_probabilities: Optional[Union[GatewayProbabilitiesDiscoveryMethod, List[
-        GatewayProbabilitiesDiscoveryMethod]]] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
 
     @staticmethod
     def from_configuration(config: Configuration, base_dir: Path) -> 'CalendarOptimizationSettings':
@@ -29,7 +27,6 @@ class CalendarOptimizationSettings:
             optimization_metric=config.calendars.optimization_metric,
             simulation_repetitions=config.common.repetitions,
             pdef_method=config.structure.distribution_discovery_type,
-            gateway_probabilities=config.structure.gateway_probabilities,
             max_evaluations=config.calendars.max_evaluations,
             case_arrival=config.calendars.case_arrival,
             resource_profiles=config.calendars.resource_profiles)
@@ -43,7 +40,6 @@ class CalendarOptimizationSettings:
             'resource_profiles': self.resource_profiles.to_dict(),
             'simulation_repetitions': self.simulation_repetitions,
             'pdef_method': self.pdef_method.name,
-            'gateway_probabilities': self.gateway_probabilities.name
         }
 
 
@@ -118,7 +114,7 @@ class PipelineSettings:
 
     # This one is taken from the structure settings, because it's not relevant to calendars
     # but is required for parameters extraction
-    gateway_probabilities: Optional[GatewayProbabilitiesDiscoveryMethod]
+    gateway_probabilities_method: Optional[GatewayProbabilitiesDiscoveryMethod]
 
     case_arrival: CalendarSettings
     resource_profiles: CalendarSettings
@@ -129,13 +125,8 @@ class PipelineSettings:
             initial_settings: CalendarOptimizationSettings,
             output_dir: Path,
             model_path: Path,
+            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     ) -> 'PipelineSettings':
-        gp_index = data['gateway_probabilities']
-        if isinstance(initial_settings.gateway_probabilities, list):
-            gateway_probabilities = initial_settings.gateway_probabilities[gp_index]
-        else:
-            gateway_probabilities = initial_settings.gateway_probabilities
-
         # Case arrival
 
         case_arrival_index = data['case_arrival']
@@ -206,23 +197,27 @@ class PipelineSettings:
         )
 
         return PipelineSettings(
+            gateway_probabilities_method=gateway_probabilities_method,
             output_dir=output_dir,
             model_path=model_path,
-            gateway_probabilities=gateway_probabilities,
             case_arrival=case_arrival_settings,
             resource_profiles=resource_profiles_settings,
         )
 
     @staticmethod
-    def from_hyperopt_option_dict(data: dict, output_dir: Path, model_path: Path) -> 'PipelineSettings':
+    def from_hyperopt_option_dict(
+            data: dict,
+            output_dir: Path,
+            model_path: Path,
+            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod) -> 'PipelineSettings':
         case_arrival_settings = CalendarSettings.from_hyperopt_option(data['case_arrival'])
 
         resource_profiles_settings = CalendarSettings.from_hyperopt_option(data['resource_profiles'])
 
         return PipelineSettings(
+            gateway_probabilities_method=gateway_probabilities_method,
             output_dir=output_dir,
             model_path=model_path,
-            gateway_probabilities=data['gateway_probabilities'],
             case_arrival=case_arrival_settings,
             resource_profiles=resource_profiles_settings,
         )
@@ -231,7 +226,6 @@ class PipelineSettings:
         return {
             'output_dir': str(self.output_dir),
             'model_path': str(self.model_path),
-            'gateway_probabilities': self.gateway_probabilities.name,
             'case_arrival': self.case_arrival.to_dict(),
             'resource_profiles': self.resource_profiles.to_dict(),
         }

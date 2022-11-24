@@ -65,14 +65,18 @@ class ResourceProfile:
         assigned_activities = []
 
         start_activity_id: Optional[str] = None
+        start_activity_name: Optional[str] = None
         end_activity_id: Optional[str] = None
+        end_activity_name: Optional[str] = None
 
         for activity in BPMNReaderWriter(bpmn_path).read_activities():
             activity_name_lowered = activity['task_name'].lower()
             if activity_name_lowered == 'start':
                 start_activity_id = activity['task_id']
+                start_activity_name = activity['task_name']
             elif activity_name_lowered == 'end':
                 end_activity_id = activity['task_id']
+                end_activity_name = activity['task_name']
             else:
                 assigned_activities.append(activity['task_id'])
 
@@ -95,15 +99,15 @@ class ResourceProfile:
 
         # handling Start and End
         if start_activity_id is not None:
-            resources.append(Resource(id='start',
-                                      name='start',
+            resources.append(Resource(id=start_activity_name,
+                                      name=start_activity_name,
                                       amount=1,
                                       cost_per_hour=0,
                                       calendar_id=calendar_id,
                                       assigned_tasks=[start_activity_id]))
         if end_activity_id is not None:
-            resources.append(Resource(id='end',
-                                      name='end',
+            resources.append(Resource(id=end_activity_name,
+                                      name=end_activity_name,
                                       amount=1,
                                       cost_per_hour=0,
                                       calendar_id=calendar_id,

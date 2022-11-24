@@ -209,11 +209,6 @@ def _activity_duration_distributions_differentiated(
     # Finding the best distributions for each activity-resource pair
     activity_duration_distributions = {}
     for (activity, resource_), group in log.groupby([log_ids.activity, log_ids.resource]):
-        # Naive approach
-        #
-        # durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
-        # durations = [duration.total_seconds() for duration in durations]
-
         calendar = next((calendar for calendar in calendars if calendar.id == resource_), None)
         assert calendar is not None, f"Resource calendar for resource {resource_} not found."
 
@@ -311,11 +306,6 @@ def _activity_duration_distributions_pools(
     # Finding the best distributions for each activity-pool pair
     activity_duration_distributions = {}
     for (activity, pool_name), group in log.groupby([log_ids.activity, pool_key]):
-        # Naive approach
-        #
-        # durations = (group[log_ids.end_time] - group[log_ids.start_time]).to_list()
-        # durations = [duration.total_seconds() for duration in durations]
-
         calendar = next((calendar for calendar in calendars if calendar.id == pool_name), None)
         assert calendar is not None, f"Resource calendar for resource {pool_name} not found."
 
@@ -360,10 +350,6 @@ def _activity_duration_distributions_undifferentiated(
     """
 
     # Finding the best distribution for all activities durations
-    # Naive approach
-    #
-    # durations = (log[log_ids.end_time] - log[log_ids.start_time]).to_list()
-    # durations = [duration.total_seconds() for duration in durations]
 
     activity_duration_distributions = {}
     for (activity, group) in log.groupby(log_ids.activity):
@@ -388,7 +374,6 @@ def _activity_duration_distributions_undifferentiated(
     distributions = []
     for name in activity_ids:
         id_ = activity_ids[name]
-        activity_duration_distribution = activity_duration_distributions[name]
 
         if name.lower() in ('start', 'end'):
             distributions.append(
@@ -400,6 +385,7 @@ def _activity_duration_distributions_undifferentiated(
                 )
             )
         else:
+            activity_duration_distribution = activity_duration_distributions[name]
             resources_distributions = [
                 ResourceDistribution(resource_, activity_duration_distribution)
                 for resource_ in resources_filtered

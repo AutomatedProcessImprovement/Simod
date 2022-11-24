@@ -1,5 +1,6 @@
 import copy
 import multiprocessing
+import shutil
 from pathlib import Path
 from typing import Union, Tuple
 
@@ -9,7 +10,7 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from tqdm import tqdm
 
-from simod.cli_formatter import print_message, print_subsection
+from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.metrics.metrics import compute_metric
@@ -39,7 +40,7 @@ class StructureOptimizer(HyperoptPipeline):
         self._log_reader = log
 
         train, validation = self._log_reader.split_timeline(0.8)
-        train = sample_log(train, log_ids)
+        train = sample_log(train, log_ids)  # TODO: remove this in future
 
         self._log_validation = validation.sort_values(log_ids.start_time, ascending=True).reset_index(drop=True)
         self._log_train = LogReaderWriter.copy_without_data(self._log_reader, self._log_ids)
@@ -71,7 +72,7 @@ class StructureOptimizer(HyperoptPipeline):
             # casting a dictionary provided by hyperopt to PipelineSettings for convenience
             if isinstance(trial_stage_settings, dict):
                 trial_stage_settings = PipelineSettings(
-                    model_path=None,
+                    model_path=self._settings.model_path,
                     output_dir=None,
                     project_name=self._settings.project_name,
                     **trial_stage_settings)
@@ -88,24 +89,29 @@ class StructureOptimizer(HyperoptPipeline):
             log_path = output_dir / (trial_stage_settings.project_name + '.xes')
             self._log_train.write_xes(log_path)
 
-            # redefining pipeline settings
-            trial_stage_settings.output_dir = output_dir
-            trial_stage_settings.model_path = output_dir / (trial_stage_settings.project_name + '.bpmn')
-
             # structure mining
+            trial_stage_settings.output_dir = output_dir
+            model_path = output_dir / (trial_stage_settings.project_name + '.bpmn')
+            bpmn_reader, process_graph = None, None
             try:
-                status, result = self.step(
-                    status,
-                    self._mine_structure,
-                    trial_stage_settings,
-                    log_path,
-                    self._settings.mining_algorithm)
+                if trial_stage_settings.model_path is None:
+                    trial_stage_settings.model_path = model_path
+                    print_step('Executing SplitMiner')
+                    status, result = self.step(status, self._mine_structure, trial_stage_settings, log_path,
+                                               self._settings.mining_algorithm)
+                else:
+                    if self._settings.model_path is not None:
+                        shutil.copy(self._settings.model_path, model_path)
+                    else:
+                        raise ValueError('Model path is not provided')
 
-                bpmn_reader, process_graph = result
+                    print_step('Model is provided, skipping SplitMiner execution')
+
+                bpmn_reader = BPMNReaderWriter(trial_stage_settings.model_path)
+                process_graph = bpmn_reader.as_graph()
             except Exception as e:
                 print_message(f'Mining failed: {e}')
                 status = STATUS_FAIL
-                bpmn_reader, process_graph = None, None
 
             # simulation parameters mining
             status, result = self.step(
@@ -176,25 +182,28 @@ class StructureOptimizer(HyperoptPipeline):
     @staticmethod
     def _define_search_space(settings: StructureOptimizationSettings) -> dict:
         space = {
-            'gateway_probabilities': hp.choice('gateway_probabilities', settings.gateway_probabilities),
+            'gateway_probabilities_method': hp.choice('gateway_probabilities_method',
+                                                      settings.gateway_probabilities_method),
         }
 
-        if settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-                                         StructureMiningAlgorithm.SPLIT_MINER_3]:
-            space |= {
-                'epsilon': hp.uniform('epsilon', *settings.epsilon),
-                'eta': hp.uniform('eta', *settings.eta),
-            }
-
-            if settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
+        # When a BPMN model is not provided, we call SplitMiner and optimize the SplitMiner input parameters
+        if settings.model_path is None:
+            if settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                             StructureMiningAlgorithm.SPLIT_MINER_3]:
                 space |= {
-                    'and_prior': hp.choice('and_prior', list(map(lambda v: str(v).lower(), settings.and_prior))),
-                    'or_rep': hp.choice('or_rep', list(map(lambda v: str(v).lower(), settings.or_rep))),
+                    'epsilon': hp.uniform('epsilon', *settings.epsilon),
+                    'eta': hp.uniform('eta', *settings.eta),
                 }
-        elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-            space |= {
-                'concurrency': hp.uniform('concurrency', *settings.concurrency)
-            }
+
+                if settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
+                    space |= {
+                        'and_prior': hp.choice('and_prior', list(map(lambda v: str(v).lower(), settings.and_prior))),
+                        'or_rep': hp.choice('or_rep', list(map(lambda v: str(v).lower(), settings.or_rep))),
+                    }
+            elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+                space |= {
+                    'concurrency': hp.uniform('concurrency', *settings.concurrency)
+                }
 
         return space
 
@@ -244,9 +253,9 @@ class StructureOptimizer(HyperoptPipeline):
     def _mine_structure(
             settings: PipelineSettings,
             log_path: Path,
-            mining_algorithm: StructureMiningAlgorithm) -> Tuple:
-
+            mining_algorithm: StructureMiningAlgorithm) -> None:
         miner_settings = StructureMinerSettings(
+            gateway_probabilities_method=settings.gateway_probabilities_method,
             mining_algorithm=mining_algorithm,
             epsilon=settings.epsilon,
             eta=settings.eta,
@@ -257,10 +266,7 @@ class StructureOptimizer(HyperoptPipeline):
 
         _ = StructureMiner(miner_settings, xes_path=log_path, output_model_path=settings.model_path)
 
-        bpmn_reader = BPMNReaderWriter(settings.model_path)
-        process_graph = bpmn_reader.as_graph()
-
-        return bpmn_reader, process_graph
+        return
 
     def _extract_parameters_undifferentiated(self, settings: PipelineSettings, bpmn_reader, process_graph) -> Tuple:
         log = self._log_train.get_traces_df(include_start_end_events=True)
@@ -273,7 +279,7 @@ class StructureOptimizer(HyperoptPipeline):
             process_graph,
             pdf_method,
             bpmn_reader,
-            settings.gateway_probabilities)
+            settings.gateway_probabilities_method)
 
         json_path = settings.model_path.with_suffix('.json')
         simulation_parameters.to_json_file(json_path)

@@ -11,11 +11,12 @@ from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDi
 @dataclass
 class StructureOptimizationSettings:
     """Settings for the structure optimizer."""
-    project_name: Optional[str]  # TODO: extract Pipeline settings from this class
+    project_name: Optional[str]
     base_dir: Optional[Path]
+    model_path: Optional[Path]
 
     optimization_metric: Metric
-    gateway_probabilities: Optional[Union[GatewayProbabilitiesDiscoveryMethod, List[
+    gateway_probabilities_method: Optional[Union[GatewayProbabilitiesDiscoveryMethod, List[
         GatewayProbabilitiesDiscoveryMethod]]] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
     max_evaluations: int = 1
     simulation_repetitions: int = 1
@@ -32,14 +33,17 @@ class StructureOptimizationSettings:
     #
     # Singular Structure Miner configuration used to compose the search space and split epsilon, eta and concurrency
     # lists into singular values.
-    mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
+    mining_algorithm: Optional[StructureMiningAlgorithm] = None
     #
     # Split Miner 3
     and_prior: List[bool] = field(default_factory=lambda: [False])
     or_rep: List[bool] = field(default_factory=lambda: [False])
 
     @staticmethod
-    def from_stream(stream: Union[str, bytes], base_dir: Path) -> 'StructureOptimizationSettings':
+    def from_stream(
+            stream: Union[str, bytes],
+            base_dir: Path,
+            model_path: Optional[Path] = None) -> 'StructureOptimizationSettings':
         settings = yaml.load(stream, Loader=yaml.FullLoader)
 
         project_name = settings.get('project_name', None)
@@ -47,14 +51,16 @@ class StructureOptimizationSettings:
         if 'structure_optimizer' in settings:
             settings = settings['structure_optimizer']
 
-        gateway_probabilities = settings.get('gateway_probabilities', None)
-        if gateway_probabilities is None:
-            gateway_probabilities = settings.get('gate_management', None)  # legacy key support
-        if gateway_probabilities is not None:
-            if isinstance(gateway_probabilities, list):
-                gateway_probabilities = [GatewayProbabilitiesDiscoveryMethod.from_str(g) for g in gateway_probabilities]
-            elif isinstance(gateway_probabilities, str):
-                gateway_probabilities = GatewayProbabilitiesDiscoveryMethod.from_str(gateway_probabilities)
+        gateway_probabilities_method = settings.get('gateway_probabilities', None)
+        if gateway_probabilities_method is None:
+            gateway_probabilities_method = settings.get('gate_management', None)  # legacy key support
+        if gateway_probabilities_method is not None:
+            if isinstance(gateway_probabilities_method, list):
+                gateway_probabilities_method = [GatewayProbabilitiesDiscoveryMethod.from_str(g) for g in
+                                                gateway_probabilities_method]
+            elif isinstance(gateway_probabilities_method, str):
+                gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.from_str(
+                    gateway_probabilities_method)
             else:
                 raise ValueError('Gateway probabilities must be a list or a string.')
 
@@ -79,8 +85,6 @@ class StructureOptimizationSettings:
         mining_algorithm = settings.get('mining_algorithm', None)
         if mining_algorithm is None:
             mining_algorithm = settings.get('mining_alg', None)  # legacy key support
-        if mining_algorithm is not None:
-            mining_algorithm = StructureMiningAlgorithm.SPLIT_MINER_3
 
         and_prior = settings.get('and_prior', None)
         if and_prior is not None:
@@ -101,8 +105,9 @@ class StructureOptimizationSettings:
         return StructureOptimizationSettings(
             project_name=project_name,
             base_dir=base_dir,
+            model_path=model_path,
             optimization_metric=optimization_metric,
-            gateway_probabilities=gateway_probabilities,
+            gateway_probabilities_method=gateway_probabilities_method,
             max_evaluations=max_evaluations,
             simulation_repetitions=simulation_repetitions,
             pdef_method=pdef_method,
@@ -121,8 +126,9 @@ class StructureOptimizationSettings:
         return StructureOptimizationSettings(
             project_name=project_name,
             base_dir=base_dir,
+            model_path=config.common.model_path,
             optimization_metric=config.structure.optimization_metric,
-            gateway_probabilities=config.structure.gateway_probabilities,
+            gateway_probabilities_method=config.structure.gateway_probabilities,
             max_evaluations=config.structure.max_evaluations,
             simulation_repetitions=config.common.repetitions,
             pdef_method=config.structure.distribution_discovery_type,
@@ -144,7 +150,7 @@ class PipelineSettings:
     project_name: str  # this doesn't change and just inherits from the project settings, used for file naming
 
     # Optimization settings
-    gateway_probabilities: GatewayProbabilitiesDiscoveryMethod
+    gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     # for Split Miner 1 and 3
     epsilon: Optional[float] = None
     eta: Optional[float] = None
@@ -157,7 +163,7 @@ class PipelineSettings:
     def optimization_parameters_as_dict(self, mining_algorithm: StructureMiningAlgorithm) -> Dict[str, Any]:
         """Returns a dictionary of parameters relevant for the optimizer."""
         optimization_parameters = {
-            'gateway_probabilities': self.gateway_probabilities,
+            'gateway_probabilities': self.gateway_probabilities_method,
             'output_dir': self.output_dir,
         }
 
@@ -169,8 +175,6 @@ class PipelineSettings:
             optimization_parameters['or_rep'] = self.or_rep
         elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             optimization_parameters['concurrency'] = self.concurrency
-        else:
-            raise ValueError(mining_algorithm)
 
         return optimization_parameters
 
@@ -185,9 +189,9 @@ class PipelineSettings:
         Create a settings object from a hyperopt's dictionary that returned as a result of the optimization.
         Initial settings are required, because for some settings, hyperopt returns an index of the settings' list.
         """
-        gateway_probabilities_index = data.get('gateway_probabilities')
+        gateway_probabilities_index = data.get('gateway_probabilities_method')
         assert gateway_probabilities_index is not None
-        gateway_probabilities = initial_settings.gateway_probabilities[gateway_probabilities_index]
+        gateway_probabilities_method = initial_settings.gateway_probabilities_method[gateway_probabilities_index]
 
         epsilon = data.get('epsilon')
         eta = data.get('eta')
@@ -210,8 +214,6 @@ class PipelineSettings:
                 or_rep = initial_settings.or_rep[or_rep_index]
         elif initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             assert concurrency is not None
-        else:
-            raise ValueError(f'Unknown mining algorithm: {initial_settings.mining_algorithm}')
 
         output_dir = model_path.parent
 
@@ -219,7 +221,7 @@ class PipelineSettings:
             output_dir=output_dir,
             model_path=model_path,
             project_name=project_name,
-            gateway_probabilities=gateway_probabilities,
+            gateway_probabilities_method=gateway_probabilities_method,
             epsilon=epsilon,
             eta=eta,
             concurrency=concurrency,
@@ -233,7 +235,7 @@ class PipelineSettings:
             'output_dir': str(self.output_dir),
             'model_path': str(self.model_path),
             'project_name': self.project_name,
-            'gateway_probabilities': str(self.gateway_probabilities),
+            'gateway_probabilities_method': str(self.gateway_probabilities_method),
             'epsilon': self.epsilon,
             'eta': self.eta,
             'concurrency': self.concurrency,

@@ -19,18 +19,9 @@ DEFAULT_XES_COLUMNS = {
     'time:timestamp': 'end_timestamp'
 }
 
-QBP_CSV_COLUMNS = {
-    'resource': 'user'
-}
-
-DEFAULT_FILTER = ['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']
-
-TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
-
 
 class LogReaderWriter:
     log_path: Path
-    # log_path_xes: Path
     df: pd.DataFrame
     data: list  # TODO: remove the list and use DataFrame everywhere
     _log_ids: EventLogIDs
@@ -48,19 +39,6 @@ class LogReaderWriter:
 
         self.df = log
         self.log_path = log_path
-        # _, ext = os.path.splitext(log_path)
-        # if ext != '.csv':
-        #     # NOTE: XES is needed for CalenderImp Java dependency which will be removed later
-        #     self.log_path_xes = log_path
-        #     self.log_path = log_path.with_suffix('.csv')
-        #     convert_xes_to_csv(log_path, self.log_path)
-        # else:
-        #     self.log_path = log_path
-        #
-        #     # NOTE: we assume that XES is located at the same path
-        #     self.log_path_xes = log_path.with_suffix('.xes')
-        # TODO: should we convert CSV to XES if XES isn't provided
-
         self._log_ids = log_ids
 
         if load:
@@ -112,14 +90,14 @@ class LogReaderWriter:
         end_start_times = dict()
         log = pd.DataFrame(data)
         for case, group in log.groupby(self._log_ids.case):
-            end_start_times[(case, 'start')] = group[self._log_ids.start_time].min() - timedelta(microseconds=1)
-            end_start_times[(case, 'end')] = group[self._log_ids.end_time].max() + timedelta(microseconds=1)
+            end_start_times[(case, 'Start')] = group[self._log_ids.start_time].min() - timedelta(microseconds=1)
+            end_start_times[(case, 'End')] = group[self._log_ids.end_time].max() + timedelta(microseconds=1)
         new_data = []
         data = sorted(data, key=lambda x: x[self._log_ids.case])
         for key, group in itertools.groupby(data, key=lambda x: x[self._log_ids.case]):
             trace = list(group)
-            for new_event in ['start', 'end']:
-                idx = 0 if new_event == 'start' else -1
+            for new_event in ['Start', 'End']:
+                idx = 0 if new_event == 'Start' else -1
                 temp_event = {
                     self._log_ids.case: trace[idx][self._log_ids.case],
                     self._log_ids.activity: new_event,
@@ -127,7 +105,7 @@ class LogReaderWriter:
                     self._log_ids.end_time: end_start_times[(key, new_event)],
                     self._log_ids.start_time: end_start_times[(key, new_event)],
                 }
-                if new_event == 'start':
+                if new_event == 'Start':
                     trace.insert(0, temp_event)
                 else:
                     trace.append(temp_event)

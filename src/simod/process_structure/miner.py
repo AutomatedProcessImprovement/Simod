@@ -8,12 +8,13 @@ from typing import Optional, Union
 import yaml
 
 from simod.cli_formatter import print_warning, print_step
-from simod.configuration import PROJECT_DIR, StructureMiningAlgorithm
+from simod.configuration import PROJECT_DIR, StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod
 
 
 @dataclass
 class Settings:
     """Settings for the structure miner."""
+    gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
 
     # Split Miner 1 and 3
@@ -38,6 +39,10 @@ class Settings:
 
         if 'structure_optimizer' in settings:
             settings = settings['structure_optimizer']
+
+        gateway_probabilities_method = settings.get('gateway_probabilities_method', None)
+        if gateway_probabilities_method is not None:
+            gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.from_str(gateway_probabilities_method)
 
         mining_algorithm = settings.get('mining_algorithm', None)
         if mining_algorithm is None:
@@ -76,6 +81,7 @@ class Settings:
                 raise ValueError('or_rep must be a list or a string.')
 
         return Settings(
+            gateway_probabilities_method=gateway_probabilities_method,
             mining_algorithm=mining_algorithm,
             epsilon=epsilon,
             eta=eta,
@@ -86,7 +92,8 @@ class Settings:
 
     def to_dict(self) -> dict:
         return {
-            'mining_algorithm': self.mining_algorithm.value,
+            'mining_algorithm': self.mining_algorithm.value if self.mining_algorithm else None,
+            'gateway_probabilities_method': self.gateway_probabilities_method.value if self.gateway_probabilities_method else None,
             'epsilon': self.epsilon,
             'eta': self.eta,
             'concurrency': self.concurrency,

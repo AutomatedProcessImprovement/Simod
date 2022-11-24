@@ -1,6 +1,7 @@
 import itertools
 import json
 import multiprocessing
+import shutil
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -86,7 +87,7 @@ class Optimizer:
         return optimizer.run()
 
     def _optimize_calendars(self, structure_settings: StructureMinerSettings,
-                            model_path: Path) -> CalendarPipelineSettings:
+                            model_path: Optional[Path]) -> CalendarPipelineSettings:
         calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)
         optimizer = CalendarOptimizer(calendar_settings, self._log_train, structure_settings, model_path,
                                       self._settings.common.log_ids)
@@ -259,7 +260,7 @@ class Optimizer:
         settings = CalendarPipelineSettings(
             output_dir=output_dir,
             model_path=model_path,
-            gateway_probabilities=best_settings.gateway_probabilities,
+            gateway_probabilities_method=best_settings.gateway_probabilities_method,
             case_arrival=best_settings.case_arrival,
             resource_profiles=best_settings.resource_profiles,
         )
@@ -271,7 +272,7 @@ class Optimizer:
 
         parameters = mine_parameters(
             settings.case_arrival, settings.resource_profiles, log, self._settings.common.log_ids, model_path,
-            settings.gateway_probabilities)
+            settings.gateway_probabilities_method)
 
         json_path = settings.output_dir / 'simulation_parameters.json'
 
@@ -285,31 +286,27 @@ class Optimizer:
         best_result_dir = self._output_dir / 'best_result'
         best_result_dir.mkdir(parents=True, exist_ok=True)
 
-        structure_settings: Optional[StructureMinerSettings] = None
-
-        model_path = None
-
-        if self._settings.structure.disable_discovery is False:
-            print_section('Structure optimization')
-            structure_optimizer_settings = self._optimize_structure()
-
-            structure_settings = StructureMinerSettings(
-                mining_algorithm=self._settings.structure.mining_algorithm,
-                epsilon=structure_optimizer_settings.epsilon,
-                eta=structure_optimizer_settings.eta,
-                concurrency=structure_optimizer_settings.concurrency,
-                and_prior=structure_optimizer_settings.and_prior,
-                or_rep=structure_optimizer_settings.or_rep,
-            )
-        else:
-            print_section('No structure discovery needed, using the provided model')
-            model_path = self._settings.common.model_path
+        print_section('Structure optimization')
+        structure_optimizer_settings = self._optimize_structure()
+        structure_settings = StructureMinerSettings(
+            gateway_probabilities_method=structure_optimizer_settings.gateway_probabilities_method,
+            mining_algorithm=self._settings.structure.mining_algorithm,
+            epsilon=structure_optimizer_settings.epsilon,
+            eta=structure_optimizer_settings.eta,
+            concurrency=structure_optimizer_settings.concurrency,
+            and_prior=structure_optimizer_settings.and_prior,
+            or_rep=structure_optimizer_settings.or_rep,
+        )
 
         print_section('Calendars optimization')
+        model_path = self._settings.common.model_path
         calendar_optimizer_settings = self._optimize_calendars(structure_settings, model_path)
 
-        print_section('Mining structure using the best hyperparameters')
-        model_path, structure_settings = self._mine_structure(structure_settings, best_result_dir)
+        if model_path is None:
+            print_section('Mining structure using the best hyperparameters')
+            model_path, structure_settings = self._mine_structure(structure_settings, best_result_dir)
+        else:
+            shutil.copy(model_path, best_result_dir)
 
         print_section('Mining calendars using the best hyperparameters')
         parameters_path, calendars_settings = self._mine_calendars(
