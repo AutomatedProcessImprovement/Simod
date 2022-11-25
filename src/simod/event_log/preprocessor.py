@@ -40,7 +40,7 @@ class Preprocessor:
         self.config = config
         self.output_dir = output_dir
 
-        self.log, _ = read(self.config.common.log_path)
+        self.log, _ = read(self.config.common.log_path, self.config.common.log_ids)
 
     def run(self) -> Configuration:
         """

@@ -62,6 +62,8 @@ def read(log_path: Path, log_ids: EventLogIDs = STANDARD_COLUMNS) -> Tuple[pd.Da
     log_path_csv = convert_xes_to_csv_if_needed(log_path)
     log = pd.read_csv(log_path_csv)
     convert_timestamps(log, log_ids)
+    log[log_ids.resource].fillna('NOT_SET', inplace=True)
+    log[log_ids.resource] = log[log_ids.resource].astype(str)
     return log, log_path_csv
 
 

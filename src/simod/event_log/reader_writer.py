@@ -46,7 +46,7 @@ class LogReaderWriter:
 
     def _read_log(self, log: Optional[pd.DataFrame]):
         if log is None:
-            df, log_path_csv = read(self.log_path)
+            df, log_path_csv = read(self.log_path, self._log_ids)
         else:
             df = log
 
