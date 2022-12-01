@@ -9,26 +9,46 @@ from simod.process_structure.settings import StructureOptimizationSettings, Pipe
 from simod.utilities import get_project_dir
 
 structure_config_sm3 = """
-mining_algorithm: sm3
-max_evaluations: 2
-concurrency:
-- 0.0
-- 1.0
-epsilon:
-- 0.0
-- 1.0
-eta:
-- 0.0
-- 1.0
-gateway_probabilities:
-- equiprobable
-- discovery
-or_rep:
-- true
-- false
-and_prior:
-- true
-- false
+version: 2
+common:
+  log_path: assets/PurchasingExample.xes
+  exec_mode: optimizer
+  repetitions: 1
+  simulation: true
+  evaluation_metrics: 
+    - dl
+    - absolute_hourly_emd
+preprocessing:
+  multitasking: false
+structure:
+  max_evaluations: 1
+  mining_algorithm: sm3
+  concurrency:
+    - 0.0
+    - 1.0
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
+  gateway_probabilities:
+    - equiprobable
+    - discovery
+  or_rep:
+    - true
+    - false
+  and_prior:
+    - true
+    - false
+calendars:
+  max_evaluations: 1
+  resource_profiles:
+    discovery_type: differentiated
+    granularity: 60
+    confidence: 0.1
+    support: 0.7
+    participation: 0.4
 """
 
 structure_optimizer_test_data = [
@@ -49,7 +69,7 @@ def test_structure_optimizer(entry_point, test_data):
 
     log_reader = LogReaderWriter(log_path, STANDARD_COLUMNS)
 
-    optimizer = StructureOptimizer(settings, log_reader)
+    optimizer = StructureOptimizer(settings, log_reader, STANDARD_COLUMNS)
     result: PipelineSettings = optimizer.run()
 
     assert type(result) is PipelineSettings
@@ -64,6 +84,7 @@ def test_structure_optimizer(entry_point, test_data):
 
     # Testing that the returned result actually has the biggest similarity
     assert len(optimizer.evaluation_measurements) > 0
-    assert result.gateway_probabilities == optimizer.evaluation_measurements['gateway_probabilities'].to_list()[0]
+    assert result.gateway_probabilities_method == optimizer.evaluation_measurements['gateway_probabilities'].to_list()[
+        0]
     assert result.eta == optimizer.evaluation_measurements['eta'].to_list()[0]
     assert result.epsilon == optimizer.evaluation_measurements['epsilon'].to_list()[0]

@@ -17,8 +17,6 @@ common:
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
-    - log_mae
-    - mae
 preprocessing:
   multitasking: false
 structure:
@@ -44,16 +42,6 @@ structure:
     - false
 calendars:
   max_evaluations: 2
-  case_arrival:
-    discovery_type: undifferentiated
-    granularity: 60
-    confidence:
-      - 0.01
-      - 0.1
-    support:
-      - 0.01
-      - 0.1
-    participation: 0.4
   resource_profiles:
     discovery_type: pool
     granularity: 60
@@ -76,8 +64,6 @@ common:
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
-    - log_mae
-    - mae
 preprocessing:
   multitasking: false
 structure:
@@ -103,16 +89,6 @@ structure:
     - false
 calendars:
   max_evaluations: 2
-  case_arrival:
-    discovery_type: 24_7
-    granularity: 60
-    confidence:
-      - 0.01
-      - 0.1
-    support:
-      - 0.01
-      - 0.1
-    participation: 0.4
   resource_profiles:
     discovery_type: pool
     granularity: 60
@@ -135,8 +111,6 @@ common:
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
-    - log_mae
-    - mae
 preprocessing:
   multitasking: false
 structure:
@@ -162,16 +136,6 @@ structure:
     - false
 calendars:
   max_evaluations: 2
-  case_arrival:
-    discovery_type: 24_7
-    granularity: 60
-    confidence:
-      - 0.01
-      - 0.1
-    support:
-      - 0.01
-      - 0.1
-    participation: 0.4
   resource_profiles:
     discovery_type: 
       - pool
@@ -196,8 +160,6 @@ common:
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
-    - log_mae
-    - mae
 preprocessing:
   multitasking: false
 structure:
@@ -223,20 +185,6 @@ structure:
     - false
 calendars:
   max_evaluations: 2
-  case_arrival:
-    discovery_type: 24_7
-    granularity:
-      - 15 
-      - 60
-    confidence:
-      - 0.01
-      - 0.1
-    support:
-      - 0.01
-      - 0.1
-    participation:
-      - 0.1 
-      - 0.4
   resource_profiles:
     discovery_type: differentiated
     granularity: 60
@@ -276,7 +224,7 @@ def test_optimizer(entry_point, test_case):
     model_path = entry_point / 'PurchasingExampleQBP.bpmn'
     log = LogReaderWriter(log_path, STANDARD_COLUMNS)
 
-    optimizer = CalendarOptimizer(calendar_settings, log, model_path, log_ids=STANDARD_COLUMNS)
+    optimizer = CalendarOptimizer(calendar_settings, log, model_path=model_path, log_ids=STANDARD_COLUMNS)
     result = optimizer.run()
 
     assert type(result) is PipelineSettings

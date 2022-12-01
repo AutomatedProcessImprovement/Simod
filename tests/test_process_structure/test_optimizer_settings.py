@@ -5,7 +5,7 @@ from simod.process_structure.settings import StructureOptimizationSettings
 from simod.utilities import get_project_dir
 
 settings_a = """
-structure_optimizer:
+structure:
   max_evaluations: 2
   gateway_probabilities:
     - equiprobable
@@ -20,7 +20,7 @@ gate_management:
 """
 
 settings_with_miner_settings = """
-structure_optimizer:
+structure:
   max_evaluations: 2
   gateway_probabilities:
     - equiprobable
@@ -71,8 +71,8 @@ def test_miner_settings(test_data: dict):
         test_data['config_data'], base_dir=test_data['structure_output_dir'])
 
     assert settings.max_evaluations == 2
-    assert settings.gateway_probabilities == [GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE,
-                                              GatewayProbabilitiesDiscoveryMethod.DISCOVERY]
+    assert settings.gateway_probabilities_method == [GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE,
+                                                     GatewayProbabilitiesDiscoveryMethod.DISCOVERY]
     if test_data['expected_miner_settings']:
         assert settings.epsilon == [0.0, 1.0]
         assert settings.concurrency == [0.0, 1.0]

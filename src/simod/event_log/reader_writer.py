@@ -11,14 +11,6 @@ from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from simod.event_log.splitter import LogSplitter
 from simod.event_log.utilities import read, convert_timestamps, convert_df_to_xes
 
-DEFAULT_XES_COLUMNS = {
-    'concept:name': 'task',
-    'case:concept:name': 'caseid',
-    'lifecycle:transition': 'event_type',
-    'org:resource': 'user',
-    'time:timestamp': 'end_timestamp'
-}
-
 
 class LogReaderWriter:
     log_path: Path

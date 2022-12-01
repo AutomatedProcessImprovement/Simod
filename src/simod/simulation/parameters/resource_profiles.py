@@ -190,7 +190,7 @@ class ResourceProfile:
         # Activity names by resource name
         resource_names = log[log_ids.resource].unique()
         resource_activities = {resource_name: set() for resource_name in resource_names}
-        for (resource_name, group) in log.groupby([log_ids.resource]):
+        for (resource_name, group) in log.groupby(log_ids.resource):
             activities = group[log_ids.activity].unique()
             resource_activities[resource_name] = set(activities)
 
@@ -251,7 +251,7 @@ class ResourceProfile:
         # Activity names by resource name
         resource_names = log[log_ids.resource].unique()
         resource_activities = {resource_name: set() for resource_name in resource_names}
-        for (resource_name, data) in log.groupby([log_ids.resource]):
+        for (resource_name, data) in log.groupby(log_ids.resource):
             activities = data[log_ids.activity].unique()
             resource_activities[resource_name] = set(activities)
 

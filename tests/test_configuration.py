@@ -13,8 +13,6 @@ common:
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
-    - log_mae
-    - mae
 preprocessing:
   multitasking: false
 structure:
@@ -40,16 +38,6 @@ structure:
     - false
 calendars:
   max_evaluations: 2
-  case_arrival:
-    discovery_type: undifferentiated
-    granularity: 60
-    confidence:
-      - 0.01
-      - 0.1
-    support:
-      - 0.01
-      - 0.1
-    participation: 0.4
   resource_profiles:
     discovery_type: pool
     granularity: 60

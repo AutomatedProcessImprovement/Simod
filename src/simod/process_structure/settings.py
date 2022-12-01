@@ -48,21 +48,28 @@ class StructureOptimizationSettings:
 
         project_name = settings.get('project_name', None)
 
-        if 'structure_optimizer' in settings:
-            settings = settings['structure_optimizer']
+        if 'structure' in settings:
+            settings = settings['structure']
 
-        gateway_probabilities_method = settings.get('gateway_probabilities', None)
-        if gateway_probabilities_method is None:
-            gateway_probabilities_method = settings.get('gate_management', None)  # legacy key support
+        gateway_probabilities_method = (
+                settings.get('gateway_probabilities', None)
+                or settings.get('gate_management')  # legacy key support
+        )
         if gateway_probabilities_method is not None:
             if isinstance(gateway_probabilities_method, list):
-                gateway_probabilities_method = [GatewayProbabilitiesDiscoveryMethod.from_str(g) for g in
-                                                gateway_probabilities_method]
+                gateway_probabilities_method = [
+                    GatewayProbabilitiesDiscoveryMethod.from_str(g)
+                    for g in gateway_probabilities_method
+                ]
             elif isinstance(gateway_probabilities_method, str):
                 gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.from_str(
                     gateway_probabilities_method)
+            elif isinstance(gateway_probabilities_method, GatewayProbabilitiesDiscoveryMethod):
+                pass
             else:
                 raise ValueError('Gateway probabilities must be a list or a string.')
+        else:
+            gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
 
         max_evaluations = settings.get('max_evaluations', None)
         if max_evaluations is None:
@@ -74,7 +81,7 @@ class StructureOptimizationSettings:
         if pdef_method is not None:
             pdef_method = PDFMethod.from_str(pdef_method)
         else:
-            pdef_method = PDFMethod.DEFAULT
+            pdef_method = PDFMethod.AUTOMATIC
 
         epsilon = settings.get('epsilon', None)
 
@@ -82,9 +89,11 @@ class StructureOptimizationSettings:
 
         concurrency = settings.get('concurrency', 0.0)
 
-        mining_algorithm = settings.get('mining_algorithm', None)
-        if mining_algorithm is None:
-            mining_algorithm = settings.get('mining_alg', None)  # legacy key support
+        mining_algorithm = settings.get('mining_algorithm', None) or settings.get('mining_alg', None)
+        if mining_algorithm is not None:
+            mining_algorithm = StructureMiningAlgorithm.from_str(mining_algorithm)
+        else:
+            mining_algorithm = StructureMiningAlgorithm.SPLIT_MINER_3
 
         and_prior = settings.get('and_prior', None)
         if and_prior is not None:

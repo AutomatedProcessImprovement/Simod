@@ -62,7 +62,7 @@ def test_replay_trace(args):
         try:
             flow_arcs_frequency = dict()
             for trace in traces:
-                task_sequence = [event['task'] for event in trace]
+                task_sequence = [event[STANDARD_COLUMNS.activity] for event in trace]
                 graph.replay_trace(task_sequence, flow_arcs_frequency)
         except Exception as e:
             exc_type, exc_value, _ = sys.exc_info()

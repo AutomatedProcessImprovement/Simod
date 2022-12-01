@@ -132,7 +132,7 @@ class StructureMiner:
         elif miner is StructureMiningAlgorithm.SPLIT_MINER_3:
             return self._sm3_miner
         else:
-            raise ValueError(miner)
+            raise ValueError(f'Unknown mining algorithm: {miner}')
 
     def _model_path_without_suffix(self) -> Path:
         if self._output_model_path is not None:

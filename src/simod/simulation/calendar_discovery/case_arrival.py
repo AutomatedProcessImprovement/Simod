@@ -15,7 +15,7 @@ def _discover_undifferentiated(
         desired_support=0.7,
         min_participation=0.4):
     calendar_factory = CalendarFactory(granularity)
-    for (case_id, group) in event_log.groupby(by=[log_ids.case]):
+    for (case_id, group) in event_log.groupby(by=log_ids.case):
         resource = UNDIFFERENTIATED_RESOURCE_POOL_KEY
         start_time = group[log_ids.start_time].min()
         end_time = group[log_ids.end_time].max()

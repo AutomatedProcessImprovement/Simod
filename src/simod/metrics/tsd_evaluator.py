@@ -172,12 +172,12 @@ class TimedStringDistanceEvaluator:
         """Scales times values activity based."""
         df_modif = data.copy()
         np.seterr(divide='ignore')
-        summ = data.groupby([self.log_ids.activity])['processing_time'].max().to_dict()
+        summ = data.groupby(self.log_ids.activity)['processing_time'].max().to_dict()
         proc_act_norm = (lambda x: x['processing_time'] / summ[x[self.log_ids.activity]]
         if summ[x[self.log_ids.activity]] > 0 else 0)
         df_modif['proc_act_norm'] = df_modif.apply(proc_act_norm, axis=1)
         # ---
-        summ = data.groupby([self.log_ids.activity])['waiting_time'].max().to_dict()
+        summ = data.groupby(self.log_ids.activity)['waiting_time'].max().to_dict()
         wait_act_norm = (lambda x: x['waiting_time'] / summ[x[self.log_ids.activity]]
         if summ[x[self.log_ids.activity]] > 0 else 0)
         df_modif['wait_act_norm'] = df_modif.apply(wait_act_norm, axis=1)

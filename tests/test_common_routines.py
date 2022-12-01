@@ -22,10 +22,9 @@ def test_remove_outliers(args):
     for arg in args:
         log_path = arg['log_path']
         log = LogReaderWriter(log_path, STANDARD_COLUMNS)
-        print(f'Running test for {log_path}')
         result = remove_outliers(log.df, log_ids=STANDARD_COLUMNS)
         assert result is not None
-        assert 'caseid' in result.keys()
+        assert STANDARD_COLUMNS.case in result.keys()
         assert 'duration_seconds' not in result.keys()
 
 

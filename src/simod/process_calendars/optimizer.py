@@ -14,6 +14,7 @@ from extraneous_activity_delays.bpmn_enhancer import set_number_instances_to_sim
 from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from simod.cli_formatter import print_subsection, print_message
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
@@ -57,7 +58,10 @@ class CalendarOptimizer(HyperoptPipeline):
         self._original_log_train = copy.deepcopy(self._log_train)
         self._original_log_validation = copy.deepcopy(self._log_validation)
 
-        self._gateway_probabilities_method = structure_settings.gateway_probabilities_method
+        if structure_settings is not None:
+            self._gateway_probabilities_method = structure_settings.gateway_probabilities_method
+        else:
+            self._gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
 
         # creating files and folders
         self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')

@@ -2,8 +2,8 @@
 from typing import Union
 
 import networkx as nx
+import numpy as np
 import pandas as pd
-import scipy
 from scipy.stats import pearsonr
 
 from simod.event_log.reader_writer import LogReaderWriter
@@ -99,8 +99,8 @@ class ResourcePoolDiscoverer:
         correl_matrix = list()
         for profile_x in profiles:
             for profile_y in profiles:
-                x = scipy.array(profile_x['profile'])
-                y = scipy.array(profile_y['profile'])
+                x = np.array(profile_x['profile'])
+                y = np.array(profile_y['profile'])
                 r_row, p_value = pearsonr(x, y)
                 correl_matrix.append(({'x': profile_x[self._resource_key],
                                        'y': profile_y[self._resource_key],

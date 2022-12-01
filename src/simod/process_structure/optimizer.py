@@ -182,8 +182,11 @@ class StructureOptimizer(HyperoptPipeline):
     @staticmethod
     def _define_search_space(settings: StructureOptimizationSettings) -> dict:
         space = {
-            'gateway_probabilities_method': hp.choice('gateway_probabilities_method',
-                                                      settings.gateway_probabilities_method),
+            'gateway_probabilities_method':
+                hp.choice('gateway_probabilities_method',
+                          settings.gateway_probabilities_method
+                          if isinstance(settings.gateway_probabilities_method, list)
+                          else [settings.gateway_probabilities_method]),
         }
 
         # When a BPMN model is not provided, we call SplitMiner and optimize the SplitMiner input parameters

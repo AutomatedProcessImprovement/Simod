@@ -1,4 +1,4 @@
-from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
+from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 
@@ -10,12 +10,7 @@ def test_resource_profiles_undifferentiated(entry_point):
     log_reader = LogReaderWriter(log_path, STANDARD_COLUMNS)
     log = log_reader.get_traces_df(include_start_end_events=True)
 
-    log_ids = EventLogIDs(
-        case='caseid',
-        resource='user',
-        activity='task',
-        end_time='end_timestamp',
-    )
+    log_ids = STANDARD_COLUMNS
 
     calendar_id = 'foo'
 

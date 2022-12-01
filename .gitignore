@@ -30,4 +30,5 @@ benchmarking/logs
 benchmarking/*.csv
 benchmarking/*.yaml
 benchmarking/*.yml
+benchmarking/results
 tests/test_benchmarking/logs

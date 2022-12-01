@@ -22,7 +22,7 @@ def test_mine_default_24_7(entry_point, log_name):
     model_path = entry_point / 'PurchasingExample.bpmn'
     bpmn_reader = BPMNReaderWriter(model_path)
     process_graph = bpmn_reader.as_graph()
-    pdf_method = PDFMethod.DEFAULT
+    pdf_method = PDFMethod.AUTOMATIC
     gateways_probability_type = GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE
 
     result = mine_default_24_7(

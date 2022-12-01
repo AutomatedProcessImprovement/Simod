@@ -12,9 +12,7 @@ common:
   simulation: true
   evaluation_metrics: 
     - dl
-    - day_hour_emd
-    - log_mae
-    - mae
+    - absolute_hourly_emd
   log_ids:
     case: "case:concept:name"
     activity: "concept:name"
@@ -57,7 +55,7 @@ calendars:
       - 0.1
     participation: 0.4
   resource_profiles:
-    discovery_type: pool
+    discovery_type: differentiated
     granularity: 60
     confidence:
       - 0.5
@@ -85,11 +83,6 @@ test_cases = [
     #     'config': config_str
     # },
     # {
-    #     'log_name': 'BPI_Challenge_2017_W_Two_TS.xes',
-    #     'name': 'BPI_Challenge_2017_W_Two_TS',
-    #     'config': config_str
-    # },
-    # {
     #     'log_name': 'ConsultaDataMining201618.xes',
     #     'name': 'ConsultaDataMining201618',
     #     'config': config_str
@@ -104,7 +97,22 @@ test_cases = [
     #     'name': 'PurchasingExample',
     #     'config': config_str
     # },
+    # {
+    #     'log_name': 'cvs_pharmacy_processed.xes',
+    #     'name': 'cvs_pharmacy_processed',
+    #     'config': config_str
+    # },
 
+    # {
+    #     'log_name': 'insurance.xes',
+    #     'name': 'insurance',
+    #     'config': config_str
+    # },
+    # {
+    #     'log_name': 'BPI_Challenge_2017_W_Two_TS.xes',
+    #     'name': 'BPI_Challenge_2017_W_Two_TS',
+    #     'config': config_str
+    # },
     # {
     #     'log_name': 'Application-to-Approval-Government-Agency.xes',
     #     'name': 'Application-to-Approval-Government-Agency',

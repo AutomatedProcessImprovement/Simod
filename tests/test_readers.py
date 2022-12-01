@@ -1,20 +1,25 @@
 import pytest
 
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.event_log.column_mapping import STANDARD_COLUMNS
-from simod.event_log.reader_writer import DEFAULT_XES_COLUMNS, LogReaderWriter
+from simod.event_log.column_mapping import STANDARD_COLUMNS, EventLogIDs
+from simod.event_log.reader_writer import LogReaderWriter
 
 arguments = [
-    {'log_path': 'Production.xes', 'column_names': DEFAULT_XES_COLUMNS},
-    {'log_path': 'PurchasingExampleCustomSim.csv',
-     'column_names': {
-         'CaseID': 'caseid',
-         'Activity': 'task',
-         'EnableTimestamp': 'enabled_timestamp',
-         'StartTimestamp': 'start_timestamp',
-         'EndTimestamp': 'end_timestamp',
-         'Resource': 'user',
-     }}
+    {
+        'log_path': 'Production.xes',
+        'column_names': STANDARD_COLUMNS
+    },
+    {
+        'log_path': 'PurchasingExampleCustomSim.csv',
+        'column_names': EventLogIDs(
+            case='CaseID',
+            activity='Activity',
+            resource='Resource',
+            start_time='StartTimestamp',
+            end_time='EndTimestamp',
+            enabled_time='EnableTimestamp',
+        )
+    }
 ]
 
 
