@@ -35,10 +35,10 @@ structure:
   gateway_probabilities:
     - equiprobable
     - discovery
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 calendars:
@@ -76,8 +76,8 @@ def test_structure_optimizer(entry_point, test_data):
     assert result.output_dir is not None
     assert result.output_dir.exists()
     # for sm3
-    assert result.and_prior is not None
-    assert result.or_rep is not None
+    assert result.prioritize_parallelism is not None
+    assert result.replace_or_joins is not None
     assert result.eta is not None
     assert result.epsilon is not None
     assert result.concurrency is None

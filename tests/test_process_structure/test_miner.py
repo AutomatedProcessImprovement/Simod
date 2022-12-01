@@ -14,10 +14,10 @@ eta: 1.0
 gate_management:
 - equiprobable
 - discovery
-or_rep:
+replace_or_joins:
 - true
 - false
-and_prior:
+prioritize_parallelism:
 - true
 - false
 """
@@ -31,10 +31,10 @@ eta: 1.0
 gate_management:
 - equiprobable
 - discovery
-or_rep:
+replace_or_joins:
 - true
 - false
-and_prior:
+prioritize_parallelism:
 - true
 - false
 """
@@ -48,10 +48,10 @@ eta: 1.0
 gate_management:
 - equiprobable
 - discovery
-or_rep:
+replace_or_joins:
 - true
 - false
-and_prior:
+prioritize_parallelism:
 - true
 - false
 """

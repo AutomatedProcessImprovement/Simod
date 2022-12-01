@@ -35,10 +35,10 @@ structure:
   eta:
     - 0.0
     - 1.0
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false    
 """
@@ -77,5 +77,5 @@ def test_miner_settings(test_data: dict):
         assert settings.epsilon == [0.0, 1.0]
         assert settings.concurrency == [0.0, 1.0]
         assert settings.eta == [0.0, 1.0]
-        assert settings.or_rep == [True, False]
-        assert settings.and_prior == [True, False]
+        assert settings.replace_or_joins == [True, False]
+        assert settings.prioritize_parallelism == [True, False]

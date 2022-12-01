@@ -25,8 +25,8 @@ class Settings:
     concurrency: Optional[float] = 0.0
 
     # Split Miner 3
-    and_prior: Optional[bool] = False
-    or_rep: Optional[bool] = False
+    prioritize_parallelism: Optional[bool] = False
+    replace_or_joins: Optional[bool] = False
 
     # Private
     _sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer/splitminer.jar'
@@ -62,23 +62,23 @@ class Settings:
         concurrency = settings.get('concurrency', 0.0)
         assert type(concurrency) is not list, 'concurrency must be a single value'
 
-        and_prior = settings.get('and_prior', None)
-        if and_prior is not None:
-            if isinstance(and_prior, str):
-                and_prior = [and_prior.lower() == 'true']
-            elif isinstance(and_prior, list):
-                and_prior = and_prior
+        prioritize_parallelism = settings.get('prioritize_parallelism', None)
+        if prioritize_parallelism is not None:
+            if isinstance(prioritize_parallelism, str):
+                prioritize_parallelism = [prioritize_parallelism.lower() == 'true']
+            elif isinstance(prioritize_parallelism, list):
+                prioritize_parallelism = prioritize_parallelism
             else:
-                raise ValueError('and_prior must be a list or a string.')
+                raise ValueError('prioritize_parallelism must be a list or a string.')
 
-        or_rep = settings.get('or_rep', None)
-        if or_rep is not None:
-            if isinstance(or_rep, str):
-                or_rep = [or_rep.lower() == 'true']
-            elif isinstance(or_rep, list):
-                or_rep = or_rep
+        replace_or_joins = settings.get('replace_or_joins', None)
+        if replace_or_joins is not None:
+            if isinstance(replace_or_joins, str):
+                replace_or_joins = [replace_or_joins.lower() == 'true']
+            elif isinstance(replace_or_joins, list):
+                replace_or_joins = replace_or_joins
             else:
-                raise ValueError('or_rep must be a list or a string.')
+                raise ValueError('replace_or_joins must be a list or a string.')
 
         return Settings(
             gateway_probabilities_method=gateway_probabilities_method,
@@ -86,8 +86,8 @@ class Settings:
             epsilon=epsilon,
             eta=eta,
             concurrency=concurrency,
-            and_prior=and_prior,
-            or_rep=or_rep
+            prioritize_parallelism=prioritize_parallelism,
+            replace_or_joins=replace_or_joins
         )
 
     def to_dict(self) -> dict:
@@ -97,8 +97,8 @@ class Settings:
             'epsilon': self.epsilon,
             'eta': self.eta,
             'concurrency': self.concurrency,
-            'and_prior': self.and_prior,
-            'or_rep': self.or_rep
+            'prioritize_parallelism': self.prioritize_parallelism,
+            'replace_or_joins': self.replace_or_joins
         }
 
 
@@ -142,10 +142,13 @@ class StructureMiner:
 
     def _sm1_miner(self, xes_path: Path, settings: Settings):
         output_path = str(self._model_path_without_suffix())
-        args = ['java', '-jar', settings._sm1_path,
-                str(settings.epsilon), str(settings.eta),
-                str(xes_path),
-                output_path]
+        args = [
+            'java', '-jar', settings._sm1_path,
+            str(settings.epsilon),
+            str(settings.eta),
+            str(xes_path),
+            output_path
+        ]
 
         print_step(f'SplitMiner1 is running with the following arguments: {args}')
         subprocess.call(args)
@@ -158,8 +161,7 @@ class StructureMiner:
             args.append('-Xmx2G')
         args.extend(
             ['-cp',
-             (settings._sm2_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm2_path), 'lib',
-                                                                '*')),
+             (settings._sm2_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm2_path), 'lib', '*')),
              'au.edu.unimelb.services.ServiceProvider',
              'SM2',
              str(xes_path),
@@ -179,18 +181,23 @@ class StructureMiner:
         if not pl.system().lower() == 'windows':
             args.extend(['-Xmx2G', '-Xms1024M'])
 
-        and_prior_setting = str(settings.and_prior).lower()
-
-        or_rep_setting = str(settings.or_rep).lower()
+        # prioritizes parallelism on loops
+        parallelism_first = str(settings.prioritize_parallelism).lower()
+        # replaces non trivial OR joins
+        replace_or_joins = str(settings.replace_or_joins).lower()
+        # removes loop activity markers (false increases model complexity)
+        remove_loop_activity_markers = 'false'
 
         args.extend([
             '-cp',
             (settings._sm3_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm3_path), 'lib', '*')),
             'au.edu.unimelb.services.ServiceProvider',
             'SMD',
-            str(settings.epsilon),
             str(settings.eta),
-            and_prior_setting, or_rep_setting, 'false',
+            str(settings.epsilon),
+            parallelism_first,
+            replace_or_joins,
+            remove_loop_activity_markers,
             str(xes_path),
             output_path
         ])

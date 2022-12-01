@@ -36,8 +36,8 @@ class StructureOptimizationSettings:
     mining_algorithm: Optional[StructureMiningAlgorithm] = None
     #
     # Split Miner 3
-    and_prior: List[bool] = field(default_factory=lambda: [False])
-    or_rep: List[bool] = field(default_factory=lambda: [False])
+    prioritize_parallelism: List[bool] = field(default_factory=lambda: [False])
+    replace_or_joins: List[bool] = field(default_factory=lambda: [False])
 
     @staticmethod
     def from_stream(
@@ -95,15 +95,15 @@ class StructureOptimizationSettings:
         else:
             mining_algorithm = StructureMiningAlgorithm.SPLIT_MINER_3
 
-        and_prior = settings.get('and_prior', None)
-        if and_prior is not None:
-            if isinstance(and_prior, str):
-                and_prior = [and_prior.lower() == 'true']
+        prioritize_parallelism = settings.get('prioritize_parallelism', None)
+        if prioritize_parallelism is not None:
+            if isinstance(prioritize_parallelism, str):
+                prioritize_parallelism = [prioritize_parallelism.lower() == 'true']
 
-        or_rep = settings.get('or_rep', None)
-        if or_rep is not None:
-            if isinstance(or_rep, str):
-                or_rep = [or_rep.lower() == 'true']
+        replace_or_joins = settings.get('replace_or_joins', None)
+        if replace_or_joins is not None:
+            if isinstance(replace_or_joins, str):
+                replace_or_joins = [replace_or_joins.lower() == 'true']
 
         optimization_metric = settings.get('optimization_metric', None)
         if optimization_metric is not None:
@@ -124,8 +124,8 @@ class StructureOptimizationSettings:
             eta=eta,
             concurrency=concurrency,
             mining_algorithm=mining_algorithm,
-            and_prior=and_prior,
-            or_rep=or_rep
+            prioritize_parallelism=prioritize_parallelism,
+            replace_or_joins=replace_or_joins
         )
 
     @staticmethod
@@ -145,8 +145,8 @@ class StructureOptimizationSettings:
             eta=config.structure.eta,
             concurrency=config.structure.concurrency,
             mining_algorithm=config.structure.mining_algorithm,
-            and_prior=config.structure.and_prior,
-            or_rep=config.structure.or_rep
+            prioritize_parallelism=config.structure.prioritize_parallelism,
+            replace_or_joins=config.structure.replace_or_joins
         )
 
 
@@ -166,8 +166,8 @@ class PipelineSettings:
     # for Split Miner 2
     concurrency: Optional[float] = 0.0
     # for Split Miner 3
-    and_prior: Optional[bool] = None
-    or_rep: Optional[bool] = None
+    prioritize_parallelism: Optional[bool] = None
+    replace_or_joins: Optional[bool] = None
 
     def optimization_parameters_as_dict(self, mining_algorithm: StructureMiningAlgorithm) -> Dict[str, Any]:
         """Returns a dictionary of parameters relevant for the optimizer."""
@@ -180,8 +180,8 @@ class PipelineSettings:
                                 StructureMiningAlgorithm.SPLIT_MINER_3]:
             optimization_parameters['epsilon'] = self.epsilon
             optimization_parameters['eta'] = self.eta
-            optimization_parameters['and_prior'] = self.and_prior
-            optimization_parameters['or_rep'] = self.or_rep
+            optimization_parameters['prioritize_parallelism'] = self.prioritize_parallelism
+            optimization_parameters['replace_or_joins'] = self.replace_or_joins
         elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             optimization_parameters['concurrency'] = self.concurrency
 
@@ -205,10 +205,10 @@ class PipelineSettings:
         epsilon = data.get('epsilon')
         eta = data.get('eta')
         concurrency = data.get('concurrency')
-        and_prior_index = data.get('and_prior')
-        and_prior = None
-        or_rep_index = data.get('or_rep')
-        or_rep = None
+        prioritize_parallelism_index = data.get('prioritize_parallelism')
+        prioritize_parallelism = None
+        replace_or_joins_index = data.get('replace_or_joins')
+        replace_or_joins = None
 
         if initial_settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
                                                  StructureMiningAlgorithm.SPLIT_MINER_3]:
@@ -216,11 +216,11 @@ class PipelineSettings:
             assert eta is not None
 
             if initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
-                assert and_prior_index is not None
-                assert or_rep_index is not None
+                assert prioritize_parallelism_index is not None
+                assert replace_or_joins_index is not None
 
-                and_prior = initial_settings.and_prior[and_prior_index]
-                or_rep = initial_settings.or_rep[or_rep_index]
+                prioritize_parallelism = initial_settings.prioritize_parallelism[prioritize_parallelism_index]
+                replace_or_joins = initial_settings.replace_or_joins[replace_or_joins_index]
         elif initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
             assert concurrency is not None
 
@@ -234,8 +234,8 @@ class PipelineSettings:
             epsilon=epsilon,
             eta=eta,
             concurrency=concurrency,
-            and_prior=and_prior,
-            or_rep=or_rep,
+            prioritize_parallelism=prioritize_parallelism,
+            replace_or_joins=replace_or_joins,
         )
 
     def to_dict(self) -> dict:
@@ -248,6 +248,6 @@ class PipelineSettings:
             'epsilon': self.epsilon,
             'eta': self.eta,
             'concurrency': self.concurrency,
-            'and_prior': str(self.and_prior),
-            'or_rep': str(self.or_rep),
+            'prioritize_parallelism': str(self.prioritize_parallelism),
+            'replace_or_joins': str(self.replace_or_joins),
         }

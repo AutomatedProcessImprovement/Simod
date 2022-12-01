@@ -56,8 +56,8 @@ class StructureOptimizer(HyperoptPipeline):
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluation_measurements = pd.DataFrame(
-            columns=['similarity', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta', 'and_prior', 'or_rep',
-                     'output_dir'])
+            columns=['similarity', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta',
+                     'prioritize_parallelism', 'replace_or_joins', 'output_dir'])
 
         self._bayes_trials = Trials()
 
@@ -200,8 +200,12 @@ class StructureOptimizer(HyperoptPipeline):
 
                 if settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
                     space |= {
-                        'and_prior': hp.choice('and_prior', list(map(lambda v: str(v).lower(), settings.and_prior))),
-                        'or_rep': hp.choice('or_rep', list(map(lambda v: str(v).lower(), settings.or_rep))),
+                        'prioritize_parallelism':
+                            hp.choice('prioritize_parallelism',
+                                      list(map(lambda v: str(v).lower(), settings.prioritize_parallelism))),
+                        'replace_or_joins':
+                            hp.choice('replace_or_joins',
+                                      list(map(lambda v: str(v).lower(), settings.replace_or_joins))),
                     }
             elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
                 space |= {
@@ -263,8 +267,8 @@ class StructureOptimizer(HyperoptPipeline):
             epsilon=settings.epsilon,
             eta=settings.eta,
             concurrency=settings.concurrency,
-            and_prior=settings.and_prior,
-            or_rep=settings.or_rep,
+            prioritize_parallelism=settings.prioritize_parallelism,
+            replace_or_joins=settings.replace_or_joins,
         )
 
         _ = StructureMiner(miner_settings, xes_path=log_path, output_model_path=settings.model_path)

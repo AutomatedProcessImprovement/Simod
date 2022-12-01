@@ -271,12 +271,12 @@ class StructureSettings:
     max_evaluations: Optional[int] = None
     mining_algorithm: Optional[StructureMiningAlgorithm] = None
     concurrency: Optional[Union[float, List[float]]] = None
-    epsilon: Optional[Union[float, List[float]]] = None
-    eta: Optional[Union[float, List[float]]] = None
+    epsilon: Optional[Union[float, List[float]]] = None  # parallelism threshold (epsilon)
+    eta: Optional[Union[float, List[float]]] = None  # percentile for frequency threshold (eta)
     gateway_probabilities: Optional[
         Union[GatewayProbabilitiesDiscoveryMethod, List[GatewayProbabilitiesDiscoveryMethod]]] = None
-    or_rep: Optional[Union[bool, List[bool]]] = None
-    and_prior: Optional[Union[bool, List[bool]]] = None
+    replace_or_joins: Optional[Union[bool, List[bool]]] = None  # should replace non-trivial OR joins
+    prioritize_parallelism: Optional[Union[bool, List[bool]]] = None  # should prioritize parallelism on loops
     distribution_discovery_type: Optional[PDFMethod] = None
 
     @staticmethod
@@ -306,8 +306,8 @@ class StructureSettings:
             epsilon=config['epsilon'],
             eta=config['eta'],
             gateway_probabilities=gateway_probabilities,
-            or_rep=config['or_rep'],
-            and_prior=config['and_prior'],
+            replace_or_joins=config['replace_or_joins'],
+            prioritize_parallelism=config['prioritize_parallelism'],
             distribution_discovery_type=distribution_discovery_type
         )
 
@@ -451,9 +451,9 @@ class Configuration:
             structure_settings.mining_algorithm = None
             structure_settings.epsilon = None
             structure_settings.eta = None
-            structure_settings.and_prior = None
+            structure_settings.prioritize_parallelism = None
             structure_settings.or_prior = None
-            structure_settings.or_rep = None
+            structure_settings.replace_or_joins = None
             structure_settings.concurrency = None
 
         return Configuration(

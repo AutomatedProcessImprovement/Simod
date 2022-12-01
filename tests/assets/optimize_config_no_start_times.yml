@@ -27,17 +27,17 @@ structure:
   gateway_probabilities:
     - equiprobable
     - discovery
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 calendars:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 1
   resource_profiles:
-    discovery_type: differentiated
+    discovery_type: pool
     granularity: 60
     confidence: 0.1
     support: 0.7

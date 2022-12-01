@@ -294,8 +294,8 @@ class Optimizer:
             epsilon=structure_optimizer_settings.epsilon,
             eta=structure_optimizer_settings.eta,
             concurrency=structure_optimizer_settings.concurrency,
-            and_prior=structure_optimizer_settings.and_prior,
-            or_rep=structure_optimizer_settings.or_rep,
+            prioritize_parallelism=structure_optimizer_settings.prioritize_parallelism,
+            replace_or_joins=structure_optimizer_settings.replace_or_joins,
         )
 
         print_section('Calendars optimization')

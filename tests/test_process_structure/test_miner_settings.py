@@ -13,10 +13,10 @@ structure_optimizer:
   gateway_probabilities:
     - equiprobable
     - discovery
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 """
@@ -26,10 +26,10 @@ mining_algorithm: sm3
 concurrency: 1.0
 epsilon: 1.0
 eta: 1.0
-or_rep:
+replace_or_joins:
 - true
 - false
-and_prior:
+prioritize_parallelism:
 - true
 - false
 """
@@ -40,10 +40,10 @@ structure_optimizer:
   concurrency: 1.0
   epsilon: 1.0
   eta: 1.0
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 """

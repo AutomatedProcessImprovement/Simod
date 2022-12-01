@@ -34,10 +34,10 @@ structure:
   gateway_probabilities:
     - equiprobable
     - discovery
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 calendars:
@@ -81,10 +81,10 @@ structure:
   gateway_probabilities:
     - equiprobable
     - discovery
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 calendars:
@@ -128,10 +128,10 @@ structure:
   gateway_probabilities:
     - equiprobable
     - discovery
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 calendars:
@@ -177,10 +177,10 @@ structure:
   gateway_probabilities:
     - equiprobable
     - discovery
-  or_rep:
+  replace_or_joins:
     - true
     - false
-  and_prior:
+  prioritize_parallelism:
     - true
     - false
 calendars:
