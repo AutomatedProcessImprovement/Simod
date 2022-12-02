@@ -8,14 +8,13 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from tqdm import tqdm
 
 from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.metrics.metrics import compute_metric
 from simod.simulation.parameters.miner import mine_default_24_7
-from simod.utilities import remove_asset, progress_bar_async, file_id, folder_id
+from simod.utilities import remove_asset, file_id, folder_id
 from .miner import StructureMiner, Settings as StructureMinerSettings
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
@@ -307,10 +306,8 @@ class StructureOptimizer(HyperoptPipeline):
         self._log_validation = self._log_validation[
             ~self._log_validation[self._log_ids.activity].isin(['Start', 'start', 'End', 'end'])]
 
-        num_simulations = simulation_repetitions
         cpu_count = multiprocessing.cpu_count()
-        w_count = num_simulations if num_simulations <= cpu_count else cpu_count
-        pool = multiprocessing.Pool(processes=w_count)
+        w_count = simulation_repetitions if simulation_repetitions <= cpu_count else cpu_count
 
         # Simulate
         simulation_arguments = [
@@ -321,27 +318,35 @@ class StructureOptimizer(HyperoptPipeline):
                 num_simulation_cases=simulation_cases,
                 simulation_start=self._log_validation[self._log_ids.start_time].min(),
             )
-            for rep in range(num_simulations)]
-        p = pool.map_async(simulate_with_prosimos, simulation_arguments)
-        progress_bar_async(p, 'simulating', num_simulations)
+            for rep in range(simulation_repetitions)]
+
+        print_step(f'Simulating {len(simulation_arguments)} times with {w_count} workers')
+        with multiprocessing.Pool(w_count) as pool:
+            pool.map_async(simulate_with_prosimos, simulation_arguments)
+            pool.close()
+            pool.join()
 
         # Read simulated logs
-        read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
-                          for index in range(num_simulations)]
-        p = pool.map_async(self._read_simulated_log, read_arguments)
-        progress_bar_async(p, 'reading simulated logs', num_simulations)
+        read_arguments = [
+            (simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
+            for index in range(simulation_repetitions)
+        ]
+
+        print_step(f'Reading {len(read_arguments)} simulated logs with {w_count} workers')
+        with multiprocessing.Pool(w_count) as pool:
+            async_result = pool.map_async(self._read_simulated_log, read_arguments)
+            pool.close()
+            pool.join()
+        simulated_logs = async_result.get()
 
         # Evaluate
-        evaluation_arguments = [(self._log_validation, log) for log in p.get()]
-        if simulation_cases > 1000:
+        evaluation_arguments = [(self._log_validation, log) for log in simulated_logs]
+        print_step(f'Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers')
+        with multiprocessing.Pool(w_count) as pool:
+            async_result = pool.map_async(self._evaluate_logs, evaluation_arguments)
             pool.close()
-            evaluation_measurements = [self._evaluate_logs(args)
-                                       for args in tqdm(evaluation_arguments, 'evaluating results')]
-        else:
-            p = pool.map_async(self._evaluate_logs, evaluation_arguments)
-            progress_bar_async(p, 'evaluating results', num_simulations)
-            pool.close()
-            evaluation_measurements = p.get()
+            pool.join()
+        evaluation_measurements = async_result.get()
 
         return evaluation_measurements
 

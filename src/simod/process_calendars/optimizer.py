@@ -8,12 +8,11 @@ import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from lxml import etree
-from tqdm import tqdm
 
 from extraneous_activity_delays.bpmn_enhancer import set_number_instances_to_simulate, set_start_datetime_to_simulate
 from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
-from simod.cli_formatter import print_subsection, print_message
+from simod.cli_formatter import print_subsection, print_message, print_step
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
@@ -23,7 +22,7 @@ from simod.process_calendars.settings import CalendarOptimizationSettings, Pipel
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
-from simod.utilities import remove_asset, progress_bar_async, folder_id, file_id
+from simod.utilities import remove_asset, folder_id, file_id
 
 
 class CalendarOptimizer(HyperoptPipeline):
@@ -294,7 +293,6 @@ class CalendarOptimizer(HyperoptPipeline):
         bpmn_path = settings.model_path
         cpu_count = multiprocessing.cpu_count()
         w_count = num_simulations if num_simulations <= cpu_count else cpu_count
-        pool = multiprocessing.Pool(processes=w_count)
 
         # Simulate
         simulation_arguments = [
@@ -306,26 +304,34 @@ class CalendarOptimizer(HyperoptPipeline):
                 simulation_start=self._log_validation[self._log_ids.start_time].min(),
             )
             for rep in range(num_simulations)]
-        p = pool.map_async(simulate_with_prosimos, simulation_arguments)
-        progress_bar_async(p, 'simulating', num_simulations)
+
+        print_step(f'Simulating {len(simulation_arguments)} times with {w_count} workers')
+        with multiprocessing.Pool(w_count) as pool:
+            pool.map_async(simulate_with_prosimos, simulation_arguments)
+            pool.close()
+            pool.join()
 
         # Read simulated logs
-        read_arguments = [(simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
-                          for index in range(num_simulations)]
-        p = pool.map_async(self._read_simulated_log, read_arguments)
-        progress_bar_async(p, 'reading simulated logs', num_simulations)
+        read_arguments = [
+            (simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
+            for index in range(num_simulations)
+        ]
+
+        print_step(f'Reading {len(read_arguments)} simulated logs with {w_count} workers')
+        with multiprocessing.Pool(w_count) as pool:
+            async_result = pool.map_async(self._read_simulated_log, read_arguments)
+            pool.close()
+            pool.join()
+        simulated_logs = async_result.get()
 
         # Evaluate
-        evaluation_arguments = [(self._log_validation, log) for log in p.get()]
-        if simulation_cases > 1000:
+        evaluation_arguments = [(self._log_validation, log) for log in simulated_logs]
+        print_step(f'Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers')
+        with multiprocessing.Pool(w_count) as pool:
+            async_result = pool.map_async(self._evaluate_logs, evaluation_arguments)
             pool.close()
-            evaluation_measurements = [self._evaluate_logs(args)
-                                       for args in tqdm(evaluation_arguments, 'evaluating results')]
-        else:
-            p = pool.map_async(self._evaluate_logs, evaluation_arguments)
-            progress_bar_async(p, 'evaluating results', num_simulations)
-            pool.close()
-            evaluation_measurements = p.get()
+            pool.join()
+        evaluation_measurements = async_result.get()
 
         return evaluation_measurements
 
