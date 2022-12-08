@@ -1,5 +1,4 @@
 import copy
-import multiprocessing
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -12,16 +11,15 @@ from lxml import etree
 from extraneous_activity_delays.bpmn_enhancer import set_number_instances_to_simulate, set_start_datetime_to_simulate
 from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
-from simod.cli_formatter import print_subsection, print_message, print_step
+from simod.cli_formatter import print_subsection, print_message
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
-from simod.event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
+from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.metrics.metrics import compute_metric
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
 from simod.simulation.parameters.miner import mine_parameters
-from simod.simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
+from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import remove_asset, folder_id, file_id
 
 
@@ -72,7 +70,7 @@ class CalendarOptimizer(HyperoptPipeline):
             self._train_model_path = self._mine_structure(structure_settings, self._output_dir)
 
         self.evaluation_measurements = pd.DataFrame(
-            columns=['similarity', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
+            columns=['value', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
 
         self._bayes_trials = Trials()
 
@@ -165,7 +163,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
         # Save evaluation measurements
         assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
-        self.evaluation_measurements.sort_values('similarity', ascending=False, inplace=True)
+        self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
         self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
 
         return best_settings
@@ -212,16 +210,16 @@ class CalendarOptimizer(HyperoptPipeline):
         }
 
         if status == STATUS_OK:
-            for sim_val in evaluation_measurements:
+            for measurement in evaluation_measurements:
                 values = {
-                    'similarity': sim_val['similarity'],
-                    'metric': sim_val['metric'],
+                    'value': measurement['value'],
+                    'metric': measurement['metric'],
                 }
                 values = values | data
                 self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
             values = {
-                'similarity': 0,
+                'value': 0,
                 'metric': self._calendar_optimizer_settings.optimization_metric,
             }
             values = values | data
@@ -239,7 +237,7 @@ class CalendarOptimizer(HyperoptPipeline):
         }
 
         if status == STATUS_OK:
-            distance = np.mean([x['similarity'] for x in evaluation_measurements])
+            distance = np.mean([x['value'] for x in evaluation_measurements])
             loss = distance
             response['loss'] = loss
 
@@ -275,77 +273,21 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return json_path, simulation_cases
 
-    def _read_simulated_log(self, arguments: Tuple):
-        log_path, log_column_mapping, simulation_repetition_index = arguments
-        assert log_path.exists(), f'Simulated log file {log_path} does not exist'
-
-        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS)
-
-        reader.df['role'] = reader.df['resource']
-        reader.df['source'] = 'simulation'
-        reader.df['run_num'] = simulation_repetition_index
-        reader.df = reader.df[~reader.df[PROSIMOS_COLUMNS.activity].isin(['Start', 'End', 'start', 'end'])]
-
-        return reader.df
-
     def _simulate_with_prosimos(self, settings: PipelineSettings, json_path: Path, simulation_cases: int):
         num_simulations = self._calendar_optimizer_settings.simulation_repetitions
         bpmn_path = settings.model_path
-        cpu_count = multiprocessing.cpu_count()
-        w_count = num_simulations if num_simulations <= cpu_count else cpu_count
 
-        # Simulate
-        simulation_arguments = [
-            ProsimosSettings(
-                bpmn_path=bpmn_path,
-                parameters_path=json_path,
-                output_log_path=settings.output_dir / f'simulation_log_{rep}.csv',
-                num_simulation_cases=simulation_cases,
-                simulation_start=self._log_validation[self._log_ids.start_time].min(),
-            )
-            for rep in range(num_simulations)]
-
-        print_step(f'Simulating {len(simulation_arguments)} times with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            pool.map_async(simulate_with_prosimos, simulation_arguments)
-            pool.close()
-            pool.join()
-
-        # Read simulated logs
-        read_arguments = [
-            (simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
-            for index in range(num_simulations)
-        ]
-
-        print_step(f'Reading {len(read_arguments)} simulated logs with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            async_result = pool.map_async(self._read_simulated_log, read_arguments)
-            pool.close()
-            pool.join()
-        simulated_logs = async_result.get()
-
-        # Evaluate
-        evaluation_arguments = [(self._log_validation, log) for log in simulated_logs]
-        print_step(f'Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            async_result = pool.map_async(self._evaluate_logs, evaluation_arguments)
-            pool.close()
-            pool.join()
-        evaluation_measurements = async_result.get()
-
-        return evaluation_measurements
-
-    def _evaluate_logs(self, args) -> dict:
-        validation_log, log = args
-        metric = self._calendar_optimizer_settings.optimization_metric
-
-        value = compute_metric(metric, validation_log, self._log_ids, log, PROSIMOS_COLUMNS)
-
-        return {
-            'run_num': log.iloc[0].run_num,
-            'metric': metric,
-            'similarity': value,
-        }
+        return simulate_and_evaluate(
+            model_path=bpmn_path,
+            parameters_path=json_path,
+            output_dir=settings.output_dir,
+            simulation_cases=simulation_cases,
+            simulation_start_time=self._log_validation[self._log_ids.start_time].min(),
+            validation_log=self._log_validation,
+            validation_log_ids=self._log_ids,
+            metrics=[self._calendar_optimizer_settings.optimization_metric],
+            num_simulations=num_simulations,
+        )
 
     def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         train, validation = self._log.split_timeline(size)

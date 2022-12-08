@@ -1,18 +1,15 @@
 import json
 import json
-import multiprocessing
 import shutil
 from pathlib import Path
 from typing import Optional, Tuple
 
 import pandas as pd
 
-from simod.cli_formatter import print_section, print_message, print_step
+from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
-from simod.event_log.column_mapping import PROSIMOS_COLUMNS
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers, read
-from simod.metrics.metrics import compute_metric
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings, CalendarOptimizationSettings
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
@@ -20,7 +17,7 @@ from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import PipelineSettings as StructurePipelineSettings, \
     StructureOptimizationSettings
 from simod.simulation.parameters.miner import mine_parameters
-from simod.simulation.prosimos import ProsimosSettings, simulate_with_prosimos, PROSIMOS_COLUMN_MAPPING
+from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import file_id, get_project_dir, folder_id
 
 
@@ -94,90 +91,6 @@ class Optimizer:
         self._calendar_optimizer = optimizer
         return result
 
-    def _read_simulated_log(self, arguments: Tuple):
-        log_path, log_column_mapping, simulation_repetition_index = arguments
-
-        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS)
-
-        reader.df['role'] = reader.df['resource']
-        reader.df['source'] = 'simulation'
-        reader.df['run_num'] = simulation_repetition_index
-        reader.df = reader.df[
-            ~reader.df[PROSIMOS_COLUMNS.activity].isin(
-                ['Start', 'start', 'End', 'end'])]  # TODO: should we use EventLogIDs here?
-
-        return reader.df
-
-    def _evaluate_logs(self, arguments):
-        settings: Configuration
-        test_log: pd.DataFrame
-        simulated_log: pd.DataFrame
-        settings, test_log, simulated_log = arguments
-
-        rep = simulated_log.iloc[0].run_num
-
-        measurements = []
-        for metric in settings.common.evaluation_metrics:
-            value = compute_metric(metric, test_log, self._settings.common.log_ids, simulated_log, PROSIMOS_COLUMNS)
-            measurements.append({'run_num': rep, 'metric': metric, 'similarity': value})
-
-        return measurements
-
-    def _simulate(
-            self,
-            settings: Configuration,
-            bpmn_path: Path,
-            json_path: Path,
-            simulation_cases: int,
-            output_dir: Path):
-        assert bpmn_path.exists(), f'Process model {bpmn_path} does not exist.'
-        assert json_path.exists(), f'Simulation parameters file {json_path} does not exist.'
-        assert output_dir.exists(), f'Output folder {output_dir} does not exist.'
-
-        num_simulations = settings.common.repetitions
-        cpu_count = multiprocessing.cpu_count()
-        w_count = num_simulations if num_simulations <= cpu_count else cpu_count
-
-        # Simulate
-        simulation_arguments = [
-            ProsimosSettings(
-                bpmn_path=bpmn_path,
-                parameters_path=json_path,
-                output_log_path=output_dir / f'simulated_log_{rep}.csv',
-                num_simulation_cases=simulation_cases,
-                simulation_start=self._log_test[self._settings.common.log_ids.start_time].min(),
-            )
-            for rep in range(num_simulations)]
-
-        print_step(f'Simulating {len(simulation_arguments)} times with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            pool.map_async(simulate_with_prosimos, simulation_arguments)
-            pool.close()
-            pool.join()
-
-        # Read simulated logs
-        read_arguments = [
-            (simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
-            for index in range(num_simulations)
-        ]
-        print_step(f'Reading {len(read_arguments)} simulated logs with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            async_result = pool.map_async(self._read_simulated_log, read_arguments)
-            pool.close()
-            pool.join()
-        simulated_logs = async_result.get()
-
-        # Evaluate
-        evaluation_arguments = [(settings, self._log_test, log) for log in simulated_logs]
-        print_step(f'Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            async_result = pool.map_async(self._evaluate_logs, evaluation_arguments)
-            pool.close()
-            pool.join()
-        evaluation_measurements = async_result.get()
-
-        return evaluation_measurements
-
     def _mine_simulation_parameters(self, output_dir: Path, model_path: Path) -> Path:
         log = self._log_test
         log_ids = self._settings.common.log_ids
@@ -208,12 +121,25 @@ class Optimizer:
         parameters_path = calendar_settings.output_dir / 'simulation_parameters.json'
         assert parameters_path.exists(), f'Best calendar simulation parameters file does not exist'
 
-        measurements = self._simulate(
-            settings=self._settings,
-            bpmn_path=model_path,
-            json_path=parameters_path,
+        num_simulations = self._settings.common.repetitions
+
+        metrics = self._settings.common.evaluation_metrics \
+            if isinstance(self._settings.common.evaluation_metrics, list) \
+            else [self._settings.common.evaluation_metrics]
+
+        simulation_start_time = self._log_test[self._settings.common.log_ids.start_time].min()
+
+        measurements = simulate_and_evaluate(
+            model_path=model_path,
+            parameters_path=parameters_path,
+            output_dir=simulation_dir,
             simulation_cases=simulation_cases,
-            output_dir=simulation_dir)
+            simulation_start_time=simulation_start_time,
+            validation_log=self._log_test,
+            validation_log_ids=self._settings.common.log_ids,
+            num_simulations=num_simulations,
+            metrics=metrics,
+        )
 
         measurements_path = simulation_dir.parent / file_id(prefix='evaluation_')
         measurements_df = pd.DataFrame.from_records(measurements)

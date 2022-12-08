@@ -1,5 +1,4 @@
 import copy
-import multiprocessing
 import shutil
 from pathlib import Path
 from typing import Union, Tuple
@@ -12,16 +11,15 @@ from hyperopt import tpe
 from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.metrics.metrics import compute_metric
 from simod.simulation.parameters.miner import mine_default_24_7
 from simod.utilities import remove_asset, file_id, folder_id
 from .miner import StructureMiner, Settings as StructureMinerSettings
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..configuration import StructureMiningAlgorithm, Metric
-from ..event_log.column_mapping import EventLogIDs, PROSIMOS_COLUMNS
+from ..event_log.column_mapping import EventLogIDs
 from ..event_log.utilities import sample_log
-from ..simulation.prosimos import PROSIMOS_COLUMN_MAPPING, ProsimosSettings, simulate_with_prosimos
+from ..simulation.prosimos import simulate_and_evaluate
 
 
 class StructureOptimizer(HyperoptPipeline):
@@ -55,8 +53,8 @@ class StructureOptimizer(HyperoptPipeline):
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluation_measurements = pd.DataFrame(
-            columns=['similarity', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta',
-                     'prioritize_parallelism', 'replace_or_joins', 'output_dir'])
+            columns=['value', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta', 'prioritize_parallelism',
+                     'replace_or_joins', 'output_dir'])
 
         self._bayes_trials = Trials()
 
@@ -170,7 +168,7 @@ class StructureOptimizer(HyperoptPipeline):
         self.best_parameters = best_settings
 
         # Save evaluation measurements
-        self.evaluation_measurements.sort_values('similarity', ascending=False, inplace=True)
+        self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
         self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
 
         return best_settings
@@ -217,8 +215,9 @@ class StructureOptimizer(HyperoptPipeline):
     def _define_response(
             status: str,
             evaluation_measurements: list,
-            pipeline_settings: PipelineSettings) -> Tuple[dict, str]:
-        similarity = np.mean([x['similarity'] for x in evaluation_measurements])
+            pipeline_settings: PipelineSettings,
+    ) -> Tuple[dict, str]:
+        similarity = np.mean([x['value'] for x in evaluation_measurements])
         loss = 1 - similarity
         status = status if loss > 0 else STATUS_FAIL
 
@@ -240,16 +239,16 @@ class StructureOptimizer(HyperoptPipeline):
         optimization_parameters['status'] = status
 
         if status == STATUS_OK:
-            for sim_val in evaluation_measurements:
+            for measurement in evaluation_measurements:
                 values = {
-                    'similarity': sim_val['similarity'],
-                    'metric': sim_val['metric'],
+                    'value': measurement['value'],
+                    'metric': measurement['metric'],
                 }
                 values = values | optimization_parameters
                 self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
             values = {
-                'similarity': 0,
+                'value': 0,
                 'metric': Metric.DL,
             }
             values = values | optimization_parameters
@@ -306,75 +305,17 @@ class StructureOptimizer(HyperoptPipeline):
         self._log_validation = self._log_validation[
             ~self._log_validation[self._log_ids.activity].isin(['Start', 'start', 'End', 'end'])]
 
-        cpu_count = multiprocessing.cpu_count()
-        w_count = simulation_repetitions if simulation_repetitions <= cpu_count else cpu_count
-
-        # Simulate
-        simulation_arguments = [
-            ProsimosSettings(
-                bpmn_path=settings.model_path,
-                parameters_path=json_path,
-                output_log_path=settings.output_dir / f'simulated_log_{rep}.csv',
-                num_simulation_cases=simulation_cases,
-                simulation_start=self._log_validation[self._log_ids.start_time].min(),
-            )
-            for rep in range(simulation_repetitions)]
-
-        print_step(f'Simulating {len(simulation_arguments)} times with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            pool.map_async(simulate_with_prosimos, simulation_arguments)
-            pool.close()
-            pool.join()
-
-        # Read simulated logs
-        read_arguments = [
-            (simulation_arguments[index].output_log_path, PROSIMOS_COLUMN_MAPPING, index)
-            for index in range(simulation_repetitions)
-        ]
-
-        print_step(f'Reading {len(read_arguments)} simulated logs with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            async_result = pool.map_async(self._read_simulated_log, read_arguments)
-            pool.close()
-            pool.join()
-        simulated_logs = async_result.get()
-
-        # Evaluate
-        evaluation_arguments = [(self._log_validation, log) for log in simulated_logs]
-        print_step(f'Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers')
-        with multiprocessing.Pool(w_count) as pool:
-            async_result = pool.map_async(self._evaluate_logs, evaluation_arguments)
-            pool.close()
-            pool.join()
-        evaluation_measurements = async_result.get()
-
-        return evaluation_measurements
-
-    def _evaluate_logs(self, arguments) -> dict:
-        data: pd.DataFrame
-        sim_log: pd.DataFrame
-        data, sim_log = arguments
-        metric = self._settings.optimization_metric
-
-        value = compute_metric(metric, data, self._log_ids, sim_log, PROSIMOS_COLUMNS)
-
-        return {
-            'run_num': sim_log.iloc[0].run_num,
-            'metric': metric,
-            'similarity': value,
-        }
-
-    def _read_simulated_log(self, arguments: Tuple):
-        log_path, log_column_mapping, simulation_repetition_index = arguments
-
-        reader = LogReaderWriter(log_path=log_path, log_ids=PROSIMOS_COLUMNS)
-
-        reader.df['role'] = reader.df['resource']
-        reader.df['source'] = 'simulation'
-        reader.df['run_num'] = simulation_repetition_index
-        reader.df = reader.df[~reader.df[PROSIMOS_COLUMNS.activity].isin(['Start', 'start', 'End', 'end'])]
-
-        return reader.df
+        return simulate_and_evaluate(
+            model_path=settings.model_path,
+            parameters_path=json_path,
+            output_dir=settings.output_dir,
+            simulation_cases=simulation_cases,
+            simulation_start_time=self._log_validation[self._log_ids.start_time].min(),
+            validation_log=self._log_validation,
+            validation_log_ids=self._log_ids,
+            metrics=[self._settings.optimization_metric],
+            num_simulations=simulation_repetitions,
+        )
 
     def _reset_log_buckets(self):
         self._log_reader = copy.deepcopy(self._original_log)
