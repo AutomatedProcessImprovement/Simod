@@ -13,7 +13,10 @@ from simod.configuration import PROJECT_DIR, StructureMiningAlgorithm, GatewayPr
 
 @dataclass
 class Settings:
-    """Settings for the structure miner."""
+    """
+    Settings for the structure miner.
+    """
+
     gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
 

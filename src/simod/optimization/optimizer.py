@@ -76,20 +76,25 @@ class Optimizer:
                                  .reset_index(drop=True)
                                  .to_dict('records'))
 
-    def _optimize_structure(self) -> StructurePipelineSettings:
+    def _optimize_structure(self) -> Tuple[StructureOptimizationSettings, StructurePipelineSettings]:
         settings = StructureOptimizationSettings.from_configuration(self._settings, self._output_dir)
         optimizer = StructureOptimizer(settings, self._log_train, self._settings.common.log_ids)
         self._structure_optimizer = optimizer
-        return optimizer.run()
+        best_pipeline_settings = optimizer.run()
 
-    def _optimize_calendars(self, structure_settings: StructureMinerSettings,
-                            model_path: Optional[Path]) -> CalendarPipelineSettings:
+        return settings, best_pipeline_settings
+
+    def _optimize_calendars(
+            self,
+            structure_settings: StructureMinerSettings,
+            model_path: Optional[Path],
+    ) -> Tuple[CalendarOptimizationSettings, CalendarPipelineSettings]:
         calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)
         optimizer = CalendarOptimizer(calendar_settings, self._log_train, structure_settings, model_path,
                                       self._settings.common.log_ids)
-        result = optimizer.run()
+        best_pipeline_settings = optimizer.run()
         self._calendar_optimizer = optimizer
-        return result
+        return calendar_settings, best_pipeline_settings
 
     def _mine_simulation_parameters(self, output_dir: Path, model_path: Path) -> Path:
         log = self._log_test
@@ -148,13 +153,23 @@ class Optimizer:
     def _export_canonical_model(
             self, output_dir: Path,
             structure_settings: StructureMinerSettings,
-            calendar_settings: CalendarPipelineSettings):
+            structure_optimizer_settings: StructureOptimizationSettings,
+            calendar_settings: CalendarPipelineSettings,
+            calendar_optimizer_settings: CalendarOptimizationSettings,
+    ):
         canon_path = output_dir / 'canonical_model.json'
 
+        structure = structure_settings.to_dict() | {
+            'optimization_metric': str(structure_optimizer_settings.optimization_metric)
+        }
+
+        calendars = calendar_settings.to_dict() | {
+            'optimization_metric': str(calendar_optimizer_settings.optimization_metric)
+        }
+
         canon = {
-            'structure': structure_settings.to_dict(),
-            'calendars': calendar_settings.to_dict(),
-            'resource_profile_type': self._settings.calendars.resource_profiles.discovery_type.name
+            'structure': structure,
+            'calendars': calendars,
         }
 
         with open(canon_path, 'w') as f:
@@ -218,39 +233,41 @@ class Optimizer:
         best_result_dir.mkdir(parents=True, exist_ok=True)
 
         print_section('Structure optimization')
-        structure_optimizer_settings = self._optimize_structure()
-        structure_settings = StructureMinerSettings(
-            gateway_probabilities_method=structure_optimizer_settings.gateway_probabilities_method,
+        structure_optimizer_settings, structure_pipeline_settings = self._optimize_structure()
+        structure_miner_settings = StructureMinerSettings(
+            gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
             mining_algorithm=self._settings.structure.mining_algorithm,
-            epsilon=structure_optimizer_settings.epsilon,
-            eta=structure_optimizer_settings.eta,
-            concurrency=structure_optimizer_settings.concurrency,
-            prioritize_parallelism=structure_optimizer_settings.prioritize_parallelism,
-            replace_or_joins=structure_optimizer_settings.replace_or_joins,
+            epsilon=structure_pipeline_settings.epsilon,
+            eta=structure_pipeline_settings.eta,
+            concurrency=structure_pipeline_settings.concurrency,
+            prioritize_parallelism=structure_pipeline_settings.prioritize_parallelism,
+            replace_or_joins=structure_pipeline_settings.replace_or_joins,
         )
 
         print_section('Calendars optimization')
         model_path = self._settings.common.model_path
-        calendar_optimizer_settings = self._optimize_calendars(structure_settings, model_path)
+        calendar_optimizer_settings, calendar_pipeline_settings = self._optimize_calendars(
+            structure_miner_settings, model_path)
 
         if model_path is None:
             print_section('Mining structure using the best hyperparameters')
-            model_path, structure_settings = self._mine_structure(structure_settings, best_result_dir)
+            model_path, structure_miner_settings = self._mine_structure(structure_miner_settings, best_result_dir)
         else:
             shutil.copy(model_path, best_result_dir)
 
         print_section('Mining calendars using the best hyperparameters')
         parameters_path, calendars_settings = self._mine_calendars(
-            calendar_optimizer_settings, model_path, best_result_dir)
+            calendar_pipeline_settings, model_path, best_result_dir)
 
         print_section('Evaluation')
-
         simulation_dir = best_result_dir / 'simulation'
         simulation_dir.mkdir(parents=True)
-
         self._evaluate_model(model_path, simulation_dir, calendars_settings)
 
         self._clean_up()
 
         print_section('Exporting canonical model')
-        self._export_canonical_model(best_result_dir, structure_settings, calendars_settings)
+        self._export_canonical_model(best_result_dir, structure_miner_settings, structure_optimizer_settings,
+                                     calendars_settings, calendar_optimizer_settings)
+
+        self._settings.to_yaml(best_result_dir)

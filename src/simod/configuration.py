@@ -3,6 +3,7 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Union, List, Optional, Tuple
 
+import yaml
 from hyperopt import hp
 
 from .cli_formatter import print_notice
@@ -251,6 +252,19 @@ class CommonSettings:
             clean_intermediate_files=clean_up
         )
 
+    def to_dict(self) -> dict:
+        return {
+            'log_path': str(self.log_path),
+            'test_log_path': str(self.test_log_path),
+            'log_ids': self.log_ids.to_dict(),
+            'model_path': str(self.model_path),
+            'exec_mode': str(self.exec_mode),
+            'repetitions': self.repetitions,
+            'simulation': self.simulation,
+            'evaluation_metrics': [str(metric) for metric in self.evaluation_metrics],
+            'clean_intermediate_files': self.clean_intermediate_files
+        }
+
 
 @dataclass
 class PreprocessingSettings:
@@ -261,6 +275,11 @@ class PreprocessingSettings:
         return PreprocessingSettings(
             multitasking=config.get('multitasking', False),
         )
+
+    def to_dict(self) -> dict:
+        return {
+            'multitasking': self.multitasking
+        }
 
 
 @dataclass
@@ -311,6 +330,19 @@ class StructureSettings:
             distribution_discovery_type=distribution_discovery_type
         )
 
+    def to_dict(self) -> dict:
+        return {
+            'optimization_metric': str(self.optimization_metric),
+            'max_evaluations': self.max_evaluations,
+            'mining_algorithm': str(self.mining_algorithm),
+            'concurrency': self.concurrency,
+            'epsilon': self.epsilon,
+            'eta': self.eta,
+            'gateway_probabilities': [str(g) for g in self.gateway_probabilities],
+            'replace_or_joins': self.replace_or_joins,
+            'prioritize_parallelism': self.prioritize_parallelism,
+            'distribution_discovery_type': str(self.distribution_discovery_type)
+        }
 
 @dataclass
 class CalendarSettings:
@@ -428,9 +460,21 @@ class CalendarsSettings:
             resource_profiles=resource_profiles,
         )
 
+    def to_dict(self) -> dict:
+        return {
+            'optimization_metric': str(self.optimization_metric),
+            'max_evaluations': self.max_evaluations,
+            'case_arrival': self.case_arrival.to_dict(),
+            'resource_profiles': self.resource_profiles.to_dict(),
+        }
+
 
 @dataclass
 class Configuration:
+    """
+    Simod configuration containing all the settings for structure and calendars optimizations.
+    """
+
     common: CommonSettings
     preprocessing: PreprocessingSettings
     structure: StructureSettings
@@ -473,3 +517,23 @@ class Configuration:
     def from_path(file_path: Path) -> 'Configuration':
         with file_path.open() as f:
             return Configuration.from_stream(f)
+
+    def to_dict(self) -> dict:
+        return {
+            'version': 2,
+            'common': self.common.to_dict(),
+            'preprocessing': self.preprocessing.to_dict(),
+            'structure': self.structure.to_dict(),
+            'calendars': self.calendars.to_dict(),
+        }
+
+    def to_yaml(self, output_dir: Path):
+        """
+        Saves the configuration to a YAML file in the provided output directory.
+        :param output_dir: Output directory.
+        :return: None.
+        """
+        data = yaml.dump(self.to_dict(), sort_keys=False)
+        output_path = output_dir / 'configuration.yaml'
+        with output_path.open('w') as f:
+            f.write(data)

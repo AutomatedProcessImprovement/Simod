@@ -19,9 +19,17 @@ class EventLogIDs:
     def from_dict(config: dict) -> 'EventLogIDs':
         return EventLogIDs(**config)
 
+    def to_dict(self) -> dict:
+        return {
+            attr.name: getattr(self, attr.name)
+            for attr in fields(self.__class__)
+        }
+
     def renaming_dict(self, to_ids: 'EventLogIDs') -> dict:
-        attrs = fields(self.__class__)
-        return {getattr(self, attr.name): getattr(to_ids, attr.name) for attr in attrs}
+        return {
+            getattr(self, attr.name): getattr(to_ids, attr.name)
+            for attr in fields(self.__class__)
+        }
 
 
 SIMOD_DEFAULT_COLUMNS = EventLogIDs(
