@@ -25,6 +25,7 @@ preprocessing:
   multitasking: false
 structure:
   max_evaluations: 40
+  optimization_metric: dl
   mining_algorithm: sm3
   concurrency:
     - 0.0
@@ -46,8 +47,9 @@ structure:
     - false
 calendars:
   max_evaluations: 40
+  optimization_metric: absolute_hourly_emd
   resource_profiles:
-    discovery_type: undifferentiated
+    discovery_type: differentiated
     granularity: 
       - 15
       - 60
@@ -61,18 +63,28 @@ calendars:
 """
 
 
-def create_configuration_file(log_path: Path, config_base: str, config_dir: Path, test_log_path: Optional[Path] = None):
-    """Create a configuration file"""
+def create_configuration_file(
+        log_path: Path,
+        config_base: str,
+        config_dir: Path,
+        test_log_path: Optional[Path] = None,
+        prefix: Optional[str] = None):
+    """
+    Creates a configuration file
+    """
     config = config_base.replace('assets/train_Production.xes', str(log_path.absolute()))
     if test_log_path:
         config = config.replace('assets/test_Production.xes', str(test_log_path.absolute()))
-    config_path = (config_dir / Path(log_path).stem).with_suffix('.yml')
+
+    config_path = (config_dir / (Path(log_path).stem + prefix)).with_suffix('.yml')
+
     with open(config_path, 'w') as f:
         f.write(config)
+
     return config_path
 
 
-def create_job_script(jobs_dir: Path, config_path: Path):
+def create_job_script(jobs_dir: Path, config_path: Path, prefix: Optional[str] = None):
     """Create a job script"""
 
     job_name = config_path.stem
@@ -98,7 +110,8 @@ source /gpfs/space/home/suvorau/simod_v3.2.0_prerelease_2/Simod/venv/bin/activat
 xvfb-run simod optimize --config_path {config_path.absolute()}
 """
 
-    job_script = jobs_dir / f'{job_name}.sh'
+    job_script = jobs_dir / f'{job_name}{prefix}.sh'
+
     with open(job_script, 'w') as f:
         f.write(script)
 
@@ -112,6 +125,8 @@ def submit_job(job_script: Path):
 
 
 def main():
+    prefix = '_differentiated_absolute-hourly-emd'
+
     log_paths = [
         (Path('logs/BPIC_2012_W_contained_train.csv'), Path('logs/BPIC_2012_W_contained_test.csv')),
         (Path('logs/BPIC_2017_W_contained_train.csv'), Path('logs/BPIC_2017_W_contained_test.csv')),
@@ -125,7 +140,7 @@ def main():
     config_dir.mkdir(exist_ok=True)
 
     config_paths = [
-        create_configuration_file(log_path[0], config_str, config_dir, test_log_path=log_path[1])
+        create_configuration_file(log_path[0], config_str, config_dir, test_log_path=log_path[1], prefix=prefix)
         for log_path in log_paths
     ]
 
@@ -133,7 +148,7 @@ def main():
     jobs_dir.mkdir(exist_ok=True)
 
     job_paths = [
-        create_job_script(jobs_dir, config_path)
+        create_job_script(jobs_dir, config_path, prefix=prefix)
         for config_path in config_paths
     ]
 

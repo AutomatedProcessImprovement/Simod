@@ -6,7 +6,6 @@ import yaml
 
 def extract_log_data(file_path: Path):
     with file_path.open('r') as f:
-        slurm_file = str(file_path)
         name = None
         status = None
         error_line = None
@@ -26,7 +25,7 @@ def extract_log_data(file_path: Path):
             dir = get_folder(line)
             folder = dir if dir is not None else folder
 
-    return {'slurm_file': slurm_file, 'name': name, 'status': status, 'error': error_line, 'folder': folder}
+    return {'name': name, 'status': status, 'error': error_line, 'folder': folder}
 
 
 def get_log_name(log: str):
@@ -44,7 +43,7 @@ def get_success_status(log: str):
 
 
 def get_error_status(log: str):
-    result = re.search(r'(error)', log, re.I)
+    result = re.search(r'(error|AllTrialsFailed)', log, re.I)
     if result:
         return result.group(0)
     return None
@@ -57,10 +56,39 @@ def get_folder(log: str):
     return None
 
 
-data = [
-    extract_log_data(file)
-    for file in Path('.').glob('slurm-*.out')
+# differentiated_slurm_log_names = [
+#     'slurm-34258544.out',
+#     'slurm-34256706.out',
+#     'slurm-34258543.out',
+#     'slurm-34258545.out',
+#     'slurm-34258548.out',
+#     'slurm-34258542.out',
+#     'slurm-34258546.out',
+#     'slurm-34258547.out',
+#     'slurm-34254742.out',
+# ]
+
+undifferentiated_slurm_log_names = [
+    'slurm-34797943.out',
+    'slurm-34797944.out',
+    'slurm-34797945.out',
+    'slurm-34797946.out',
+    'slurm-34797947.out',
+    'slurm-34797948.out',
+    'slurm-34797949.out',
 ]
 
-with open('slurm_metadata.yml', 'w') as f:
-    yaml.dump(data, f)
+
+def save_metadata(log_names: list, file_name: str):
+    data = [
+        extract_log_data(file)
+        for file in Path('.').glob('slurm-*.out')
+        if file.name in log_names
+    ]
+
+    with open(file_name, 'w') as f:
+        yaml.dump(data, f)
+
+
+# save_metadata(differentiated_slurm_log_names, 'differentiated_slurm_metadata.yml')
+save_metadata(undifferentiated_slurm_log_names, 'undifferentiated_slurm_metadata.yml')
