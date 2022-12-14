@@ -259,7 +259,7 @@ class CalendarOptimizer(HyperoptPipeline):
     #     parameters.resource_table.to_pickle(os.path.join(settings.output_dir, 'resource_table.pkl'))
 
     def _extract_parameters(self, settings: PipelineSettings) -> Tuple:
-        log = self._log_train.get_traces_df(include_start_end_events=True)
+        log = self._log_train.get_traces_df()
 
         parameters = mine_parameters(
             settings.case_arrival, settings.resource_profiles, log, self._log_ids, settings.model_path,

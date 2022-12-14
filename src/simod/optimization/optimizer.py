@@ -68,7 +68,7 @@ class Optimizer:
                                           load=False)
 
     def _remove_outliers_from_train_data(self):
-        df = self._log_train.get_traces_df(include_start_end_events=True)
+        df = self._log_train.get_traces_df()
         df = remove_outliers(df, self._settings.common.log_ids)
         sort_key = self._settings.common.log_ids.start_time
         self._log_train.set_data(df
@@ -214,7 +214,7 @@ class Optimizer:
         print_message(f'Mining calendars with settings {settings.to_dict()}')
 
         # Taking the full pre-processed original log for extracting calendars
-        log = self._log_train.get_traces_df(include_start_end_events=True)
+        log = self._log_train.get_traces_df()
 
         parameters = mine_parameters(
             settings.case_arrival, settings.resource_profiles, log, self._settings.common.log_ids, model_path,

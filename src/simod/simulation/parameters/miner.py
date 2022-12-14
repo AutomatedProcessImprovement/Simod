@@ -58,8 +58,7 @@ def mine_parameters(
     bpmn_reader = BPMNReaderWriter(model_path)
     process_graph = bpmn_reader.as_graph()
 
-    pdf_method = PDFMethod.AUTOMATIC
-    arrival_distribution = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
+    arrival_distribution = inter_arrival_distribution.discover(log, log_ids)
 
     # Resource parameters
 
@@ -109,7 +108,7 @@ def mine_default_24_7(
 
     resource_calendars = [calendar_24_7]
 
-    arrival_distribution = inter_arrival_distribution.discover(process_graph, log, log_ids, pdf_method)
+    arrival_distribution = inter_arrival_distribution.discover(log, log_ids)
 
     arrival_calendar = calendar_24_7
 

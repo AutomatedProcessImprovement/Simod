@@ -115,7 +115,6 @@ class StructureOptimizer(HyperoptPipeline):
                 status,
                 self._extract_parameters_undifferentiated,
                 trial_stage_settings,
-                bpmn_reader,
                 process_graph)
             if status == STATUS_FAIL:
                 json_path, simulation_cases = None, None
@@ -273,17 +272,14 @@ class StructureOptimizer(HyperoptPipeline):
 
         return
 
-    def _extract_parameters_undifferentiated(self, settings: PipelineSettings, bpmn_reader, process_graph) -> Tuple:
-        log = self._log_train.get_traces_df(include_start_end_events=True)
-        pdf_method = self._settings.pdef_method
+    def _extract_parameters_undifferentiated(self, settings: PipelineSettings, process_graph) -> Tuple:
+        log = self._log_train.get_traces_df()
 
         simulation_parameters = mine_default_24_7(
             log,
             self._log_ids,
             settings.model_path,
             process_graph,
-            pdf_method,
-            bpmn_reader,
             settings.gateway_probabilities_method)
 
         json_path = settings.model_path.with_suffix('.json')
@@ -302,8 +298,6 @@ class StructureOptimizer(HyperoptPipeline):
         self._log_validation['source'] = 'log'
         self._log_validation['run_num'] = 0
         self._log_validation['role'] = 'SYSTEM'
-        self._log_validation = self._log_validation[
-            ~self._log_validation[self._log_ids.activity].isin(['Start', 'start', 'End', 'end'])]
 
         return simulate_and_evaluate(
             model_path=settings.model_path,

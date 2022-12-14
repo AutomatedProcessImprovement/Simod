@@ -1,6 +1,4 @@
 import copy
-import logging
-import sys
 from pathlib import Path
 from typing import Tuple
 
@@ -48,23 +46,3 @@ def split_log_buckets(log: LogReaderWriter, size: float, one_ts: bool) -> Tuple[
     log_train.set_data(train.sort_values(key, ascending=True).reset_index(drop=True).to_dict('records'))
 
     return log_test, log_train
-
-
-def test_replay_trace(args):
-    for arg in args:
-        model_path = arg['model_path']
-        log_path = arg['log_path']
-        print(f'Testing {log_path.name}')
-
-        graph, log = setup_data(model_path, log_path)
-        traces = log.get_traces()
-
-        try:
-            flow_arcs_frequency = dict()
-            for trace in traces:
-                task_sequence = [event[STANDARD_COLUMNS.activity] for event in trace]
-                graph.replay_trace(task_sequence, flow_arcs_frequency)
-        except Exception as e:
-            exc_type, exc_value, _ = sys.exc_info()
-            logging.exception(e)
-            pytest.fail(f'Should not fail, failed with: {e}')

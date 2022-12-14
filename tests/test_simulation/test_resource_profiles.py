@@ -8,7 +8,7 @@ def test_resource_profiles_undifferentiated(entry_point):
     bpmn_path = entry_point / 'PurchasingExample.bpmn'
 
     log_reader = LogReaderWriter(log_path, STANDARD_COLUMNS)
-    log = log_reader.get_traces_df(include_start_end_events=True)
+    log = log_reader.get_traces_df()
 
     log_ids = STANDARD_COLUMNS
 

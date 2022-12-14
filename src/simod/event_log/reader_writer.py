@@ -1,7 +1,3 @@
-import itertools
-from _operator import itemgetter
-from datetime import timedelta
-from operator import itemgetter
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -44,21 +40,8 @@ class LogReaderWriter:
 
         assert len(df) > 0, f'Log {self.log_path} is empty'
 
-        # renaming for internal use
-        # df.rename(columns=column_names, inplace=True)
-
-        # type conversion
-        # df = df.astype({'caseid': object})
         convert_timestamps(df, self._log_ids)
 
-        # filtering out Start and End fake events
-        df = df[(df[self._log_ids.activity] != 'Start') & (df[self._log_ids.activity] != 'End')].reset_index(drop=True)
-        df = df[(df[self._log_ids.activity] != 'start') & (df[self._log_ids.activity] != 'end')].reset_index(drop=True)
-
-        # filtering columns
-        # if column_filter is not None:
-        #     df = df[column_filter]
-        # ['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']
         df = df[[
             self._log_ids.case,
             self._log_ids.activity,
@@ -68,7 +51,6 @@ class LogReaderWriter:
         ]]
 
         self.data = df.to_dict('records')
-        self.data = self._append_csv_start_end_entries(self.data)
         self.df = pd.DataFrame(self.data)  # TODO: can we these log manipulations clearer?
 
     @staticmethod
@@ -77,56 +59,12 @@ class LogReaderWriter:
         reader = LogReaderWriter(log_path=log.log_path, log_ids=log_ids, load=False)
         return reader
 
-    def _append_csv_start_end_entries(self, data: list) -> list:
-        """Adds START and END activities at the beginning and end of each trace."""
-        end_start_times = dict()
-        log = pd.DataFrame(data)
-        for case, group in log.groupby(self._log_ids.case):
-            end_start_times[(case, 'Start')] = group[self._log_ids.start_time].min() - timedelta(microseconds=1)
-            end_start_times[(case, 'End')] = group[self._log_ids.end_time].max() + timedelta(microseconds=1)
-        new_data = []
-        data = sorted(data, key=lambda x: x[self._log_ids.case])
-        for key, group in itertools.groupby(data, key=lambda x: x[self._log_ids.case]):
-            trace = list(group)
-            for new_event in ['Start', 'End']:
-                idx = 0 if new_event == 'Start' else -1
-                temp_event = {
-                    self._log_ids.case: trace[idx][self._log_ids.case],
-                    self._log_ids.activity: new_event,
-                    self._log_ids.resource: new_event,
-                    self._log_ids.end_time: end_start_times[(key, new_event)],
-                    self._log_ids.start_time: end_start_times[(key, new_event)],
-                }
-                if new_event == 'Start':
-                    trace.insert(0, temp_event)
-                else:
-                    trace.append(temp_event)
-            new_data.extend(trace)
-        return new_data
-
     def set_data(self, data: list):
         self.data = data
         self.df = pd.DataFrame(self.data)
 
-    def get_traces(self):
-        """Returns the data split by caseid and ordered by start_timestamp."""
-        cases = list(set([x[self._log_ids.case] for x in self.data]))
-        traces = []
-        for case in cases:
-            order_key = self._log_ids.start_time
-            trace = sorted(
-                list(filter(lambda x: (x[self._log_ids.case] == case), self.data)),
-                key=itemgetter(order_key))
-            traces.append(trace)
-        return traces
-
-    def get_traces_df(self, include_start_end_events: bool = False) -> pd.DataFrame:
-        if include_start_end_events:
-            return self.df
-        return self.df[
-            (self.df[self._log_ids.activity] not in ('Start', 'start')) & (
-                    self.df[self._log_ids.activity] not in ('End', 'end'))].reset_index(
-            drop=True)
+    def get_traces_df(self) -> pd.DataFrame:
+        return self.df
 
     def split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """

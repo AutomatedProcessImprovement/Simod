@@ -220,7 +220,6 @@ def _read_simulated_log(arguments: Tuple):
     reader.df['role'] = reader.df['resource']
     reader.df['source'] = 'simulation'
     reader.df['run_num'] = simulation_repetition_index
-    reader.df = reader.df[~reader.df[PROSIMOS_COLUMNS.activity].isin(['Start', 'start', 'End', 'end'])]
 
     return reader.df
 
