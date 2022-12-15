@@ -2,26 +2,30 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Union
 
+import lxml.etree
 import networkx as nx
 import xmltodict as xtd
 
-from simod.configuration import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
 from simod.bpm import graph
+from simod.configuration import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
 
 
 class BPMNReaderWriter:
-    """BPMN 2.0 model reader and writer."""
+    """
+    BPMN 2.0 model reader and writer.
+    """
+
     model_path: Path
 
-    _tree: ET.ElementTree
-    _root: ET.Element
-    _ns: dict
+    tree: lxml.etree.ElementTree
+    namespace: dict
+    _root: lxml.etree.Element
 
     def __init__(self, model_path: Union[str, Path]):
         self.model_path = Path(model_path)
-        self._tree = ET.parse(model_path)
-        self._root = self._tree.getroot()
-        self._ns = {'xmlns': BPMN_NAMESPACE_URI}
+        self.tree = lxml.etree.parse(str(self.model_path))
+        self._root = self.tree.getroot()
+        self.namespace = {'xmlns': BPMN_NAMESPACE_URI}
 
     def as_graph(self) -> nx.DiGraph:
         return graph.from_bpmn_reader(self)
@@ -29,8 +33,8 @@ class BPMNReaderWriter:
     def read_activities(self):
         """Activities information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for task in process.findall('xmlns:task', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for task in process.findall('xmlns:task', self.namespace):
                 task_id = task.get('id')
                 task_name = task.get('name')
                 values.append(dict(task_id=task_id, task_name=task_name))
@@ -39,8 +43,8 @@ class BPMNReaderWriter:
     def read_exclusive_gateways(self):
         """Exclusive gateways information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for ex_gateway in process.findall('xmlns:exclusiveGateway', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for ex_gateway in process.findall('xmlns:exclusiveGateway', self.namespace):
                 gate_id = ex_gateway.get('id')
                 gate_name = ex_gateway.get('name')
                 gate_dir = ex_gateway.get('gatewayDirection')
@@ -50,8 +54,8 @@ class BPMNReaderWriter:
     def read_inclusive_gateways(self):
         """Inclusive gateways information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for inc_gateway in process.findall('xmlns:inclusiveGateway', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for inc_gateway in process.findall('xmlns:inclusiveGateway', self.namespace):
                 gate_id = inc_gateway.get('id')
                 gate_name = inc_gateway.get('name')
                 gate_dir = inc_gateway.get('gatewayDirection')
@@ -61,8 +65,8 @@ class BPMNReaderWriter:
     def read_parallel_gateways(self):
         """Parallel gateways information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for para_gateway in process.findall('xmlns:parallelGateway', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for para_gateway in process.findall('xmlns:parallelGateway', self.namespace):
                 gate_id = para_gateway.get('id')
                 gate_name = para_gateway.get('name')
                 gate_dir = para_gateway.get('gatewayDirection')
@@ -72,8 +76,8 @@ class BPMNReaderWriter:
     def read_start_events(self):
         """Start events information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for start_event in process.findall('xmlns:startEvent', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for start_event in process.findall('xmlns:startEvent', self.namespace):
                 start_id = start_event.get('id')
                 start_name = start_event.get('name')
                 values.append(dict(start_id=start_id, start_name=start_name))
@@ -82,8 +86,8 @@ class BPMNReaderWriter:
     def read_end_events(self):
         """End events information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for end_event in process.findall('xmlns:endEvent', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for end_event in process.findall('xmlns:endEvent', self.namespace):
                 end_id = end_event.get('id')
                 end_name = end_event.get('name')
                 values.append(dict(end_id=end_id, end_name=end_name))
@@ -92,8 +96,8 @@ class BPMNReaderWriter:
     def read_intermediate_catch_events(self):
         """Intermediate catch events information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for timer_event in process.findall('xmlns:intermediateCatchEvent', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for timer_event in process.findall('xmlns:intermediateCatchEvent', self.namespace):
                 timer_id = timer_event.get('id')
                 timer_name = timer_event.get('name')
                 values.append(dict(timer_id=timer_id, timer_name=timer_name))
@@ -102,8 +106,8 @@ class BPMNReaderWriter:
     def read_sequence_flows(self):
         """Sequence flows information from the model."""
         values = []
-        for process in self._root.findall('xmlns:process', self._ns):
-            for sequence in process.findall('xmlns:sequenceFlow', self._ns):
+        for process in self._root.findall('xmlns:process', self.namespace):
+            for sequence in process.findall('xmlns:sequenceFlow', self.namespace):
                 sf_id = sequence.get('id')
                 source = sequence.get('sourceRef')
                 target = sequence.get('targetRef')

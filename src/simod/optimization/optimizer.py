@@ -8,6 +8,7 @@ import pandas as pd
 
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
+from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
 from simod.event_log.reader_writer import LogReaderWriter
 from simod.event_log.utilities import remove_outliers, read
 from simod.process_calendars.optimizer import CalendarOptimizer
@@ -22,7 +23,10 @@ from simod.utilities import file_id, get_project_dir, folder_id
 
 
 class Optimizer:
-    """Structure and calendars optimization."""
+    """
+    Structure and calendars optimization.
+    """
+
     _settings: Configuration
     _output_dir: Path
 
@@ -117,14 +121,13 @@ class Optimizer:
     def _evaluate_model(
             self,
             model_path: Path,
-            simulation_dir: Path,
-            calendar_settings: CalendarPipelineSettings):
+            parameters_path: Path,
+            simulation_dir: Path):
+        assert parameters_path.exists(), f'Best calendar simulation parameters file does not exist'
+
         self._log_test.to_csv(simulation_dir / 'test_log.csv', index=False)
 
         simulation_cases = self._log_test[self._settings.common.log_ids.case].nunique()
-
-        parameters_path = calendar_settings.output_dir / 'simulation_parameters.json'
-        assert parameters_path.exists(), f'Best calendar simulation parameters file does not exist'
 
         num_simulations = self._settings.common.repetitions
 
@@ -259,10 +262,23 @@ class Optimizer:
         parameters_path, calendars_settings = self._mine_calendars(
             calendar_pipeline_settings, model_path, best_result_dir)
 
+        print_section('Mining extraneous delay timers')
+        with parameters_path.open() as f:
+            parameters = json.load(f)
+        _, model_path, parameters_path = discover_extraneous_delay_timers(
+            self._log_train.get_traces_df(),
+            self._settings.common.log_ids,
+            model_path,
+            parameters,
+            base_dir=best_result_dir,
+            num_iterations=50,
+            max_alpha=50,
+        )
+
         print_section('Evaluation')
         simulation_dir = best_result_dir / 'simulation'
         simulation_dir.mkdir(parents=True)
-        self._evaluate_model(model_path, simulation_dir, calendars_settings)
+        self._evaluate_model(model_path, parameters_path, simulation_dir)
 
         self._clean_up()
 

@@ -6,7 +6,7 @@ from networkx import DiGraph
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, CalendarSettings
 from simod.discovery import inter_arrival_distribution
 from simod.discovery.distribution import get_best_distribution
 from simod.event_log.column_mapping import EventLogIDs
@@ -27,10 +27,11 @@ def mine_parameters(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         model_path: Path,
-        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod
+        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod,
 ) -> SimulationParameters:
-    """Mine simulation parameters given the settings for resources and case arrival."""
-
+    """
+    Mine simulation parameters given the settings for resources and case arrival.
+    """
     gateway_probabilities = mine_gateway_probabilities(log, log_ids, model_path, gateways_probability_type)
 
     # Case arrival parameters
@@ -81,14 +82,17 @@ def mine_parameters(
     else:
         raise ValueError(f'Unknown calendar discovery type: {resource_discovery_type}')
 
-    return SimulationParameters(
+    parameters = SimulationParameters(
         gateway_branching_probabilities=gateway_probabilities,
         arrival_calendar=arrival_calendar,
         arrival_distribution=arrival_distribution,
         resource_profiles=resource_profiles,
         resource_calendars=resource_calendars,
         task_resource_distributions=task_resource_distributions,
+        event_distribution=None,
     )
+
+    return parameters
 
 
 def mine_default_24_7(
@@ -96,8 +100,6 @@ def mine_default_24_7(
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph,
-        pdf_method: PDFMethod,
-        bpmn_reader: BPMNReaderWriter,
         gateways_probability_type: GatewayProbabilitiesDiscoveryMethod) -> SimulationParameters:
     """Simulation parameters with default calendar 24/7."""
 
@@ -123,7 +125,8 @@ def mine_default_24_7(
         task_resource_distributions=activity_duration_distributions,
         arrival_distribution=arrival_distribution,
         arrival_calendar=arrival_calendar,
-        gateway_branching_probabilities=gateway_probabilities_
+        gateway_branching_probabilities=gateway_probabilities_,
+        event_distribution=None,
     )
 
 
@@ -140,7 +143,8 @@ def mine_default_for_resources(
 
     resource_calendars = [calendar]
 
-    activity_duration_distributions = _activity_duration_distributions_undifferentiated(log, log_ids, process_graph)
+    activity_duration_distributions = _activity_duration_distributions_undifferentiated(
+        log, log_ids, process_graph, calendar)
 
     return resource_profiles, resource_calendars, activity_duration_distributions
 

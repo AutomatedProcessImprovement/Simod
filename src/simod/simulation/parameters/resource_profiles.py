@@ -272,9 +272,12 @@ class ResourceProfile:
 
             assigned_activities_ids = []
             for activity_name in resource_activities[resource_name]:
-                activity_id = next(filter(lambda a: a['task_name'] == activity_name,
-                                          activity_ids_and_names))['task_id']
-                assigned_activities_ids.append(activity_id)
+                try:
+                    activity_id = next(filter(lambda a: a['task_name'] == activity_name,
+                                              activity_ids_and_names))['task_id']
+                    assigned_activities_ids.append(activity_id)
+                except StopIteration:
+                    raise ValueError(f'Activity {activity_name} is not found in the BPMN file')
 
             # NOTE: intervention to reduce cost for SYSTEM pool
             is_system_resource = resource_name.lower() == 'start' or resource_name.lower() == 'end'

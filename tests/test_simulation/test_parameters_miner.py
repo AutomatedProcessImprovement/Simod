@@ -1,7 +1,7 @@
 import pytest
 
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod, PDFMethod
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.utilities import read
 from simod.simulation.parameters.calendars import Calendar

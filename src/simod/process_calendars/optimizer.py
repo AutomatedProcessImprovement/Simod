@@ -6,11 +6,7 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from lxml import etree
 
-from extraneous_activity_delays.bpmn_enhancer import set_number_instances_to_simulate, set_start_datetime_to_simulate
-from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration
-from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from simod.cli_formatter import print_subsection, print_message
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs
@@ -133,11 +129,6 @@ class CalendarOptimizer(HyperoptPipeline):
 
             return response
 
-        # Adding timers to the model
-        # log = self._log_train.get_traces_df(include_start_end_events=True)
-        # modified_model_path = CalendarOptimizer.add_extraneous_delay_timers(log, self._log_ids, self._train_model_path)
-        # self._train_model_path = modified_model_path
-
         # Optimization
         space = self._define_search_space(self._calendar_optimizer_settings)
         best = fmin(fn=pipeline,
@@ -246,18 +237,6 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return response, status
 
-    # def _extract_parameters(self, settings: PipelineSettings):
-    #     parameters = self._extract_time_parameters(settings)
-    #
-    #     self._xml_print(parameters._asdict(), os.path.join(settings.output_dir, settings.project_name + '.bpmn'))
-    #     self._log_validation.rename(columns={'user': 'resource'}, inplace=True)
-    #     self._log_validation['source'] = 'log'
-    #     self._log_validation['run_num'] = 0
-    #     self._log_validation = self._log_validation.merge(parameters.resource_table[['resource', 'role']],
-    #                                                       on='resource', how='left')
-    #     self._log_validation = self._log_validation[~self._log_validation.task.isin(['Start', 'End'])]
-    #     parameters.resource_table.to_pickle(os.path.join(settings.output_dir, 'resource_table.pkl'))
-
     def _extract_parameters(self, settings: PipelineSettings) -> Tuple:
         log = self._log_train.get_traces_df()
 
@@ -300,44 +279,3 @@ class CalendarOptimizer(HyperoptPipeline):
         self._log = self._original_log  # TODO: no need
         self._log_train = copy.deepcopy(self._original_log_train)
         self._log_validation = copy.deepcopy(self._original_log_validation)
-
-    @staticmethod
-    def add_extraneous_delay_timers(event_log: pd.DataFrame, log_ids: EventLogIDs, model_path: Path) -> Path:
-        """
-        Adds extraneous delay timers to the BPMN model.
-        See https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.
-
-        :param event_log: The event log.
-        :param log_ids: The event log IDs.
-        :param model_path: The BPMN model path.
-        :return: The path to the BPMN model with extraneous delay timers.
-        """
-
-        # log_path = entry_point / test_data['log_name']
-        # model_path = entry_point / test_data['model_name']
-
-        # log_ids = STANDARD_COLUMNS
-        configuration = ExtraneousActivityDelaysConfiguration(
-            log_ids=log_ids,
-            num_evaluations=1,
-            num_evaluation_simulations=1,
-        )
-
-        # event_log = pd.read_csv(log_path)
-        # event_log[log_ids.start_time] = pd.to_datetime(event_log[log_ids.start_time], utc=True)
-        # event_log[log_ids.end_time] = pd.to_datetime(event_log[log_ids.end_time], utc=True)
-        # event_log[log_ids.resource].fillna("NOT_SET", inplace=True)
-        # event_log[log_ids.resource] = event_log[log_ids.resource].astype("string")
-
-        parser = etree.XMLParser(remove_blank_text=True)
-        bpmn_model = etree.parse(model_path, parser)
-        set_number_instances_to_simulate(bpmn_model, len(event_log[configuration.log_ids.case].unique()))
-        set_start_datetime_to_simulate(bpmn_model, min(event_log[configuration.log_ids.start_time]))
-
-        enhancer = HyperOptEnhancer(event_log, bpmn_model, configuration)
-        enhanced_bpmn_model = enhancer.enhance_bpmn_model_with_delays()
-
-        output_path = model_path.with_stem(model_path.stem + '_timers')
-        enhanced_bpmn_model.write(output_path, pretty_print=True)
-
-        return output_path

@@ -8,8 +8,13 @@ from simod.optimization.optimizer import Optimizer
 config_yaml_B = """
 version: 2
 common:
-  log_path: tests/assets/PurchasingExample.xes
-  model_path: tests/assets/PurchasingExample.bpmn
+  log_path: tests/assets/LoanApp_sequential_9-5_timers.csv
+  log_ids:
+    case: case_id
+    activity: Activity
+    resource: Resource
+    start_time: start_time
+    end_time: end_time
   exec_mode: optimizer
   repetitions: 1
   simulation: true

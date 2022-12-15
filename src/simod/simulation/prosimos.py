@@ -3,7 +3,7 @@ import json
 import multiprocessing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import pandas as pd
 
@@ -23,17 +23,21 @@ cpu_count = multiprocessing.cpu_count()
 
 @dataclass
 class SimulationParameters:
-    """Simulation parameters required by Prosimos."""
+    """
+    Prosimos simulation parameters.
+    """
+
     resource_profiles: List[ResourceProfile]
     resource_calendars: List[Calendar]
     task_resource_distributions: List[ActivityResourceDistribution]
     arrival_distribution: dict
     arrival_calendar: Calendar
     gateway_branching_probabilities: List[GatewayProbabilities]
+    event_distribution: Optional[dict]
 
     def to_dict(self) -> dict:
         """Dictionary compatible with Prosimos."""
-        return {
+        parameters = {
             'resource_profiles':
                 [resource_profile.to_dict() for resource_profile in self.resource_profiles],
             'resource_calendars':
@@ -47,6 +51,11 @@ class SimulationParameters:
             'gateway_branching_probabilities':
                 [gateway_probabilities.to_dict() for gateway_probabilities in self.gateway_branching_probabilities]
         }
+
+        if self.event_distribution:
+            parameters['event_distribution'] = self.event_distribution
+
+        return parameters
 
     def to_json_file(self, file_path: Path) -> None:
         """JSON compatible with Prosimos."""

@@ -344,6 +344,7 @@ class StructureSettings:
             'distribution_discovery_type': str(self.distribution_discovery_type)
         }
 
+
 @dataclass
 class CalendarSettings:
     discovery_type: Union[CalendarType, List[CalendarType]]
@@ -354,6 +355,10 @@ class CalendarSettings:
 
     @staticmethod
     def default() -> 'CalendarSettings':
+        """
+        Default settings for calendar discovery. Used for case arrival rate discovery if no settings provided.
+        """
+
         return CalendarSettings(
             discovery_type=CalendarType.UNDIFFERENTIATED,
             granularity=60,

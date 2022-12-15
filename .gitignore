@@ -32,3 +32,4 @@ benchmarking/*.yaml
 benchmarking/*.yml
 benchmarking/results
 tests/test_benchmarking/logs
+sandbox
