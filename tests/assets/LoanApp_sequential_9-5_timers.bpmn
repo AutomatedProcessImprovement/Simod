@@ -165,55 +165,55 @@
         <endEvent id="node14" name="">
             <incoming>edge20</incoming>
         </endEvent>
-        <task id="node0" name="Check  application  form completeness">
+        <task id="node0" name=" Check  application  form completeness">
             <incoming>edge26</incoming>
             <outgoing>edge23</outgoing>
         </task>
-        <task id="node1" name="Return application back to applicant">
+        <task id="node1" name=" Return application back to applicant">
             <incoming>edge21</incoming>
             <outgoing>edge2</outgoing>
         </task>
-        <task id="node2" name="Applicant completes form">
+        <task id="node2" name=" Applicant completes form">
             <incoming>edge2</incoming>
             <outgoing>edge24</outgoing>
         </task>
-        <task id="node3" name="Check credit history">
+        <task id="node3" name=" Check credit history">
             <incoming>edge22</incoming>
             <outgoing>edge10</outgoing>
         </task>
-        <task id="node4" name="Assess loan risk">
+        <task id="node4" name=" Assess loan risk">
             <incoming>edge10</incoming>
             <outgoing>edge29</outgoing>
         </task>
-        <task id="node5" name="Reject application">
+        <task id="node5" name=" Reject application">
             <incoming>edge27</incoming>
             <outgoing>edge18</outgoing>
         </task>
-        <task id="node6" name="Design loan offer">
+        <task id="node6" name=" Design loan offer">
             <incoming>edge28</incoming>
             <outgoing>edge13</outgoing>
         </task>
-        <task id="node7" name="Approve Loan Offer">
+        <task id="node7" name=" Approve Loan Offer">
             <incoming>edge13</incoming>
             <outgoing>edge5</outgoing>
         </task>
-        <task id="node8" name="Prepare acceptance pack">
+        <task id="node8" name=" Prepare acceptance pack">
             <incoming>edge5</incoming>
             <outgoing>edge6</outgoing>
         </task>
-        <task id="node9" name="Approve and send&#160; acceptance pack">
+        <task id="node9" name=" Approve and send&#160; acceptance pack">
             <incoming>edge6</incoming>
             <outgoing>edge32</outgoing>
         </task>
-        <task id="node10" name="Approve application">
+        <task id="node10" name=" Approve application">
             <incoming>edge30</incoming>
             <outgoing>edge19</outgoing>
         </task>
-        <task id="node11" name="Consider re-design loan offer">
+        <task id="node11" name=" Consider re-design loan offer">
             <incoming>edge31</incoming>
             <outgoing>edge14</outgoing>
         </task>
-        <task id="node12" name="Cancel application">
+        <task id="node12" name=" Cancel application">
             <incoming>edge14</incoming>
             <outgoing>edge17</outgoing>
         </task>

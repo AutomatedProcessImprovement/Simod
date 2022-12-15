@@ -57,10 +57,6 @@ prioritize_parallelism:
 """
 
 structure_optimizer_test_data = [
-    # {
-    #     'name': 'Split Miner 1',
-    #     'config_data': structure_config_sm1
-    # },
     {
         'name': 'Split Miner 2',
         'config_data': structure_config_sm2
@@ -72,6 +68,7 @@ structure_optimizer_test_data = [
 ]
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('test_data', structure_optimizer_test_data,
                          ids=[test_data['name'] for test_data in structure_optimizer_test_data])
 def test_miner(entry_point, test_data):

@@ -63,6 +63,7 @@ class CalendarOptimizer(HyperoptPipeline):
         if model_path is not None:
             self._train_model_path = model_path
         else:
+            assert structure_settings is not None, 'Structure settings must be provided if model path is not provided'
             self._train_model_path = self._mine_structure(structure_settings, self._output_dir)
 
         self.evaluation_measurements = pd.DataFrame(

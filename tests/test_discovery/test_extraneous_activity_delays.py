@@ -33,6 +33,7 @@ test_cases = [
 ]
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
 def test_extraneous_activity_delays(test_data, entry_point):
     log_path = entry_point / test_data['log_name']
@@ -45,15 +46,6 @@ def test_extraneous_activity_delays(test_data, entry_point):
     event_log[log_ids.end_time] = pd.to_datetime(event_log[log_ids.end_time], utc=True)
     event_log[log_ids.resource].fillna("NOT_SET", inplace=True)
     event_log[log_ids.resource] = event_log[log_ids.resource].astype("string")
-
-    # removing extra spaces in activity names from the log
-    event_log[log_ids.activity] = event_log[log_ids.activity].str.strip()
-
-    # removing extra spaces in activity names from the model
-    tree = etree.parse(str(model_path))
-    for element in tree.xpath('//bpmn:task', namespaces={'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}):
-        element.attrib['name'] = element.attrib['name'].strip()
-    tree.write(str(model_path), pretty_print=True)
 
     case_arrival_settings = CalendarSettings.default()
     resource_settings = CalendarSettings.default()
@@ -87,6 +79,7 @@ def test_extraneous_activity_delays(test_data, entry_point):
         assert 'event_distribution' not in enhanced_simulation_model.simulation_parameters
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
 def test_discover_extraneous_delay_timers(test_data, entry_point):
     log_path = entry_point / test_data['log_name']
@@ -117,8 +110,8 @@ def test_discover_extraneous_delay_timers(test_data, entry_point):
         case_arrival_settings, resource_settings, event_log, log_ids, model_path,
         GatewayProbabilitiesDiscoveryMethod.DISCOVERY)
 
-    (out_model_path, out_parameters_path) = discover_extraneous_delay_timers(event_log, log_ids, model_path, parameters,
-                                                                             num_iterations=1)
+    _, out_model_path, out_parameters_path = discover_extraneous_delay_timers(
+        event_log, log_ids, model_path, parameters, num_iterations=1)
 
     assert out_model_path.exists()
     assert out_parameters_path.exists()

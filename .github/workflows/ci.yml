@@ -52,7 +52,7 @@ jobs:
           tags: ${{ env.DOCKERHUB_REPO }}:latest,${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
           file: docker/simod_build.dockerfile
           context: docker/
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64 #,linux/arm64
 
       - name: Create a release
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}

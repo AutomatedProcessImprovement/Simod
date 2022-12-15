@@ -23,6 +23,7 @@ arguments = [
 ]
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('arg', arguments, ids=map(lambda x: x['log_path'], arguments))
 def test_logreader_new(entry_point, arg):
     log_path = entry_point / arg['log_path']
@@ -41,6 +42,7 @@ def test_copy_without_data(entry_point, arg):
     assert copy2.data == ['foo', 'bar']
 
 
+@pytest.mark.integration
 def test_BpmnReader(entry_point):
     bpmn_path = entry_point / 'PurchasingExample.bpmn'
     bpmn_reader = BPMNReaderWriter(bpmn_path)

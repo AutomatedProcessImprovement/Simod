@@ -64,7 +64,7 @@ def _best_fit_distribution_1(data):
     best_emd = sys.float_info.max
     for dist_c in dist_candidates:
         ev_list = list()
-        for i in range(0, len(data)):
+        for _ in range(0, len(data)):
             ev_list.append(_evaluate_distribution_function(dist_c["distribution_name"], dist_c["distribution_params"]))
 
         emd = wasserstein_distance(data, ev_list)

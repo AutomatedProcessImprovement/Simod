@@ -15,6 +15,11 @@ def process_confidential_2000():
     fill_missing_values(log_path, ['org:resource', 'resourceId'])
 
 
+def process_cvs_pharmacy():
+    log_path = Path('logs/cvs_pharmacy.csv')
+    fill_missing_values(log_path, ['org:resource', 'resourceId'])
+
+
 def fill_missing_values(log_path: Path, columns: list):
     df = pd.read_csv(log_path)
 
@@ -41,7 +46,11 @@ def modify_timestamp_in_xml(log_path: Path):
     root.write(str(log_path), encoding='utf-8', xml_declaration=True)
 
 
-# df = pd.read_csv('logs/confidential_1000.csv')
+df = pd.read_csv('logs/LoanApp_sequential_9-5.csv')
+convert_timestamps(df, ['start_time', 'end_time'])
+df['Resource'].fillna('NotSpecified', inplace=True)
+df.to_csv('logs/LoanApp_sequential_9-5.csv', index=False)
 
-process_confidential_1000()
-process_confidential_2000()
+# process_confidential_1000()
+# process_confidential_2000()
+# process_cvs_pharmacy()

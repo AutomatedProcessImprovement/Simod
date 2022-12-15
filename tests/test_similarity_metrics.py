@@ -32,6 +32,7 @@ test_cases = [
 ]
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
 def test_absolute_timestamp_emd(entry_point, test_data):
     event_log_1_path = entry_point / test_data['event_log_1']['log_name']

@@ -9,7 +9,6 @@ common:
   log_path: logs/confidential_1000_processed.xes
   exec_mode: optimizer
   repetitions: 1
-  simulation: true
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd

@@ -270,8 +270,6 @@ class StructureOptimizer(HyperoptPipeline):
 
         _ = StructureMiner(miner_settings, xes_path=log_path, output_model_path=settings.model_path)
 
-        return
-
     def _extract_parameters_undifferentiated(self, settings: PipelineSettings, process_graph) -> Tuple:
         log = self._log_train.get_traces_df()
 

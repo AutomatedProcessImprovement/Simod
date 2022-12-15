@@ -17,7 +17,6 @@ common:
     end_time: end_time
   exec_mode: optimizer
   repetitions: 1
-  simulation: true
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
@@ -72,6 +71,7 @@ test_cases = [
 ]
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
 def test_optimizer(test_data, entry_point):
     settings: Configuration = test_data['settings']

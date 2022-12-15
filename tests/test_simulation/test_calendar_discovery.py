@@ -6,6 +6,7 @@ from simod.simulation.calendar_discovery import case_arrival, resource
 from simod.simulation.parameters.calendars import Calendar
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
 def test_case_arrival_discover_undifferentiated(entry_point, log_name):
     log_path = entry_point / log_name
@@ -25,6 +26,7 @@ def test_case_arrival_discover_undifferentiated(entry_point, log_name):
     log_path_csv.unlink()
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
 def test_resource_discover_undifferentiated(entry_point, log_name):
     log_path = entry_point / log_name
@@ -45,6 +47,7 @@ def test_resource_discover_undifferentiated(entry_point, log_name):
     log_path_csv.unlink()
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
 def test_resource_discover_per_resource_pool(entry_point, log_name):
     log_path = entry_point / log_name
@@ -65,6 +68,7 @@ def test_resource_discover_per_resource_pool(entry_point, log_name):
     log_path_csv.unlink()
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
 def test_resource_discover_per_resource(entry_point, log_name):
     log_path = entry_point / log_name

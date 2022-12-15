@@ -5,8 +5,8 @@ from typing import Optional, Union
 import pandas as pd
 from lxml import etree
 
-from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration, SimulationEngine, \
-    SimulationModel
+from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration, \
+    SimulationEngine, SimulationModel
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.prosimos import SimulationParameters

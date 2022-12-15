@@ -9,7 +9,6 @@ common:
   log_path: assets/Production.xes
   exec_mode: optimizer
   repetitions: 1
-  simulation: true
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
@@ -53,8 +52,6 @@ calendars:
 
 @pytest.mark.parametrize('test_case', [config_yaml_C])
 def test_configuration(test_case):
-    """Smoke test."""
-
     config = yaml.safe_load(test_case)
     result = Configuration.from_yaml(config)
 

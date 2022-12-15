@@ -37,6 +37,17 @@ class Settings:
     _sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
 
     @staticmethod
+    def default() -> 'Settings':
+        return Settings(
+            gateway_probabilities_method=GatewayProbabilitiesDiscoveryMethod.DISCOVERY,
+            mining_algorithm=StructureMiningAlgorithm.SPLIT_MINER_3,
+            prioritize_parallelism=False,
+            replace_or_joins=False,
+            epsilon=0.5,
+            eta=0.5,
+        )
+
+    @staticmethod
     def from_stream(stream: Union[str, bytes]) -> Optional['Settings']:
         settings = yaml.load(stream, Loader=yaml.FullLoader)
 
@@ -65,21 +76,23 @@ class Settings:
         concurrency = settings.get('concurrency', 0.0)
         assert type(concurrency) is not list, 'concurrency must be a single value'
 
-        prioritize_parallelism = settings.get('prioritize_parallelism', None)
-        if prioritize_parallelism is not None:
-            if isinstance(prioritize_parallelism, str):
-                prioritize_parallelism = [prioritize_parallelism.lower() == 'true']
-            elif isinstance(prioritize_parallelism, list):
-                prioritize_parallelism = prioritize_parallelism
+        prioritize_parallelism = None
+        parallelism = settings.get('prioritize_parallelism', None)
+        if parallelism is not None:
+            if isinstance(parallelism, str):
+                prioritize_parallelism = [parallelism.lower() == 'true']
+            elif isinstance(parallelism, list):
+                prioritize_parallelism = parallelism
             else:
                 raise ValueError('prioritize_parallelism must be a list or a string.')
 
-        replace_or_joins = settings.get('replace_or_joins', None)
-        if replace_or_joins is not None:
-            if isinstance(replace_or_joins, str):
-                replace_or_joins = [replace_or_joins.lower() == 'true']
-            elif isinstance(replace_or_joins, list):
-                replace_or_joins = replace_or_joins
+        replace_or_joins = None
+        or_joins = settings.get('replace_or_joins', None)
+        if or_joins is not None:
+            if isinstance(or_joins, str):
+                replace_or_joins = [or_joins.lower() == 'true']
+            elif isinstance(or_joins, list):
+                replace_or_joins = or_joins
             else:
                 raise ValueError('replace_or_joins must be a list or a string.')
 
@@ -160,7 +173,7 @@ class StructureMiner:
         output_path = str(self._model_path_without_suffix())
         sep = ';' if pl.system().lower() == 'windows' else ':'
         args = ['java']
-        if not pl.system().lower() == 'windows':
+        if pl.system().lower() != 'windows':
             args.append('-Xmx2G')
         args.extend(
             ['-cp',
@@ -181,7 +194,7 @@ class StructureMiner:
 
         args = ['java']
 
-        if not pl.system().lower() == 'windows':
+        if pl.system().lower() != 'windows':
             args.extend(['-Xmx2G', '-Xms1024M'])
 
         # prioritizes parallelism on loops

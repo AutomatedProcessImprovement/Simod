@@ -29,7 +29,6 @@ class LogSplitter:
             raise ValueError(method)
 
     def _timeline_contained(self, size: float, one_timestamp: bool):
-        # log = self.log.data.to_dict('records')
         num_events = int(np.round(len(self.log) * (1 - size)))
 
         df_train = self.log.iloc[num_events:]
@@ -53,7 +52,6 @@ class LogSplitter:
         return df_train, df_test
 
     def _timeline_trace(self, size: float, one_timestamp: bool):
-        # log = self.log.data.to_dict('records')
         cases = self.log[self.log.pos_trace == 1]
         key = self.log_ids.end_time if one_timestamp else self.log_ids.start_time
         cases = cases.sort_values(key, ascending=False)

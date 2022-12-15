@@ -11,6 +11,7 @@ from simod.event_log.utilities import read
 from simod.simulation.calendar_discovery import case_arrival
 
 
+@pytest.mark.integration
 def test_calendar_module(entry_point):
     log_path = entry_point / 'PurchasingExample.xes'
     log_path_csv = log_path.with_stem(str(uuid.uuid4())).with_suffix('.csv')
@@ -41,33 +42,7 @@ def test_calendar_module(entry_point):
     assert 'Kim Passa' in calendar
 
 
-# @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
-# def test_calendar_discover_undifferentiated(entry_point, log_name):
-#     log_path = entry_point / log_name
-#     log, log_path_csv = read(log_path)
-#     result = resource_calendar.discover_undifferentiated(log)
-#     assert result
-#     log_path_csv.unlink()
-#
-#
-# @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
-# def test_calendar_discover_per_resource_pool(entry_point, log_name):
-#     log_path = entry_point / log_name
-#     log, log_path_csv = read(log_path)
-#     result = resource_calendar.discover_per_resource_pool(log)
-#     assert result
-#     log_path_csv.unlink()
-#
-#
-# @pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
-# def test_calendar_discover_per_resource(entry_point, log_name):
-#     log_path = entry_point / log_name
-#     log, log_path_csv = read(log_path)
-#     result = resource_calendar.discover_per_resource(log)
-#     assert result
-#     log_path_csv.unlink()
-
-
+@pytest.mark.integration
 def test_resource_pool_analyzer(entry_point):
     log_path = entry_point / 'PurchasingExample.xes'
     log, log_path_csv = read(log_path)

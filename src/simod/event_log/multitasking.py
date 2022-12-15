@@ -45,9 +45,18 @@ class _AuxiliaryLogRecord:
     adjusted_duration_s: float
 
 
-def adjust_durations(log: pd.DataFrame, log_ids: EventLogIDs, output_path: Optional[Path] = None, verbose=False,
-                     is_concurrent=False, max_workers=multiprocessing.cpu_count()) -> pd.DataFrame:
-    """Changes end timestamps for multitasking events without changing the overall resource utilization."""
+def adjust_durations(
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        output_path: Optional[Path] = None,
+        verbose=False,
+        is_concurrent=False,
+        max_workers=multiprocessing.cpu_count()
+) -> pd.DataFrame:
+    """
+    Changes end timestamps for multitasking events without changing the overall resource utilization.
+    """
+    metrics_before = None
     if verbose:
         metrics_before = _resource_metrics(log)
 
@@ -68,7 +77,7 @@ def adjust_durations(log: pd.DataFrame, log_ids: EventLogIDs, output_path: Optio
                 aux_log.extend(aux_records)
         _update_end_timestamps(aux_log, log)
 
-    if verbose:
+    if verbose and metrics_before is not None:
         metrics = _resource_metrics(log)
         print('Utilization before equals the one after: ', metrics_before['utilization'] == metrics['utilization'])
         print("Resource events equal:", metrics_before['number_of_events'] == metrics['number_of_events'])
@@ -175,11 +184,3 @@ def _resource_metrics(log: pd.DataFrame) -> dict:
         result = ((end_timestamps - start_timestamps) / (max_end - min_start)).sum()
         utilization[resource] = result
     return {'utilization': utilization, 'number_of_events': number_of_events}
-
-
-if __name__ == '__main__':
-    import sys
-
-    log_path = Path(sys.argv[1])
-    output_path = Path(sys.argv[2])
-    adjust_durations(log_path, output_path, verbose=True)

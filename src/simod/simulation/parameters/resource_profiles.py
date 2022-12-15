@@ -50,7 +50,8 @@ class ResourceProfile:
             resource_amount: Optional[int] = 1,
             total_number_of_resources: Optional[int] = None,
             cost_per_hour: float = 20) -> 'ResourceProfile':
-        """Extracts undifferentiated resource profiles for Prosimos. For the structure optimizing stage, calendars do not matter.
+        """Extracts undifferentiated resource profiles for Prosimos. For the structure optimizing stage,
+        calendars do not matter.
 
         :param log: The event log to use.
         :param log_ids: The event log IDs to use.
@@ -61,31 +62,15 @@ class ResourceProfile:
         :param cost_per_hour: The cost per hour of the resource.
         :return: The resource profile.
         """
-        # each resource except Start and End has all activities assigned to it
-        assigned_activities = []
-
-        start_activity_id: Optional[str] = None
-        start_activity_name: Optional[str] = None
-        end_activity_id: Optional[str] = None
-        end_activity_name: Optional[str] = None
-
-        for activity in BPMNReaderWriter(bpmn_path).read_activities():
-            activity_name_lowered = activity['task_name'].lower()
-            if activity_name_lowered == 'start':
-                start_activity_id = activity['task_id']
-                start_activity_name = activity['task_name']
-            elif activity_name_lowered == 'end':
-                end_activity_id = activity['task_id']
-                end_activity_name = activity['task_name']
-            else:
-                assigned_activities.append(activity['task_id'])
+        assigned_activities = [
+            activity['task_id']
+            for activity in BPMNReaderWriter(bpmn_path).read_activities()
+        ]
 
         if total_number_of_resources is not None and total_number_of_resources > 0:
             resources_names = (f'SYSTEM_{i}' for i in range(total_number_of_resources))
         else:
-            resources_names = list(
-                filter(lambda name: name.lower() not in ['start', 'end'],
-                       log[log_ids.resource].unique().tolist()))
+            resources_names = log[log_ids.resource].unique().tolist()
 
         resources = [
             Resource(id=name,
@@ -96,22 +81,6 @@ class ResourceProfile:
                      assigned_tasks=assigned_activities)
             for name in resources_names
         ]
-
-        # handling Start and End
-        if start_activity_id is not None:
-            resources.append(Resource(id=start_activity_name,
-                                      name=start_activity_name,
-                                      amount=1,
-                                      cost_per_hour=0,
-                                      calendar_id=calendar_id,
-                                      assigned_tasks=[start_activity_id]))
-        if end_activity_id is not None:
-            resources.append(Resource(id=end_activity_name,
-                                      name=end_activity_name,
-                                      amount=1,
-                                      cost_per_hour=0,
-                                      calendar_id=calendar_id,
-                                      assigned_tasks=[end_activity_id]))
 
         profile_name = 'UNDIFFERENTIATED_RESOURCE_PROFILE'
         profile = ResourceProfile(id=profile_name, name=profile_name, resources=list(resources))
@@ -261,7 +230,7 @@ class ResourceProfile:
 
         # Calendars by resource name
         resource_calendars = {
-            name: next(filter(lambda c: c.name == name, calendars))
+            name: next(filter(lambda c, name_=name: c.name == name_, calendars))
             for name in resource_names
         }
 
@@ -273,7 +242,7 @@ class ResourceProfile:
             assigned_activities_ids = []
             for activity_name in resource_activities[resource_name]:
                 try:
-                    activity_id = next(filter(lambda a: a['task_name'] == activity_name,
+                    activity_id = next(filter(lambda a, name=activity_name: a['task_name'] == name,
                                               activity_ids_and_names))['task_id']
                     assigned_activities_ids.append(activity_id)
                 except StopIteration:

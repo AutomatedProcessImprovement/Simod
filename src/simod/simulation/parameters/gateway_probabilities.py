@@ -46,7 +46,10 @@ def mine_gateway_probabilities(
     traces = []
     for case in cases:
         order_key = log_ids.start_time
-        trace = sorted(list(filter(lambda x: (x[log_ids.case] == case), log_records)), key=itemgetter(order_key))
+        trace = sorted(
+            list(filter(lambda x, case_=case: (x[log_ids.case] == case_),
+                        log_records)),
+            key=itemgetter(order_key))
         traces.append(trace)
 
     sequences = __discover_with_gateway_management(traces, log_ids, bpmn_graph, gateways_probability_type)
@@ -71,8 +74,9 @@ def __discover_with_gateway_management(
         arcs_frequencies = __compute_sequence_flow_frequencies(log_traces, log_ids, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:
-        raise Exception(
-            f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, {type(gate_management)}')
+        raise ValueError(
+            f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, '
+            f'{type(gate_management)}')
 
     sequences = []
     for gateway_id in gateways_branching:

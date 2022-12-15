@@ -144,7 +144,9 @@ def discover_per_resource_pool(
     pool_resources_by_pool_name = {}
     for pool_name in set(pool_mapping.values()):
         pool_resources_by_pool_name[pool_name] = set(
-            filter(lambda resource_name: pool_mapping[resource_name] == pool_name, pool_mapping))
+            filter(lambda resource_name, pool=pool_name: pool_mapping[resource_name] == pool,
+                   pool_mapping)
+        )
 
     # (a) Discovering a calendar for pools without any calendars as one single pool
 
@@ -287,24 +289,3 @@ def discover_per_resource(
     ]
 
     return calendars
-
-
-def discover(
-        event_log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        calendar_type: CalendarType,
-        granularity=60,
-        min_confidence=0.1,
-        desired_support=0.7,
-        min_participation=0.4) -> Union[Calendar, List[Calendar]]:
-    if calendar_type == CalendarType.UNDIFFERENTIATED:
-        return discover_undifferentiated(
-            event_log, log_ids, granularity, min_confidence, desired_support, min_participation)
-    elif calendar_type == CalendarType.DIFFERENTIATED_BY_POOL:
-        return discover_per_resource_pool(
-            event_log, log_ids, granularity, min_confidence, desired_support, min_participation)
-    elif calendar_type == CalendarType.DIFFERENTIATED_BY_RESOURCE:
-        return discover_per_resource(
-            event_log, log_ids, granularity, min_confidence, desired_support, min_participation)
-    else:
-        raise ValueError("Unknown calendar type.")

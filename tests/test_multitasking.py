@@ -1,10 +1,13 @@
 from pathlib import Path
 
+import pytest
+
 from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.event_log.multitasking import adjust_durations
 from simod.event_log.utilities import read, reformat_timestamps
 
 
+@pytest.mark.integration
 def test_adjust_durations_purchasing_example(entry_point):
     log_path = Path(entry_point) / 'PurchasingExampleMultitasking.xes'
     log, log_path_csv = read(log_path)
@@ -15,6 +18,7 @@ def test_adjust_durations_purchasing_example(entry_point):
     log_path_csv.unlink()
 
 
+@pytest.mark.integration
 def test_adjust_durations_purchasing_example2(entry_point):
     log_path = entry_point / 'PurchasingExampleMultitasking2.xes'
     log, log_path_csv = read(log_path)
@@ -25,6 +29,7 @@ def test_adjust_durations_purchasing_example2(entry_point):
     log_path_csv.unlink()
 
 
+@pytest.mark.integration
 def test_adjust_durations_purchasing_example3(entry_point):
     log_path = entry_point / 'PurchasingExampleMultitasking3.xes'
     log, log_path_csv = read(log_path)
@@ -36,6 +41,7 @@ def test_adjust_durations_purchasing_example3(entry_point):
     log_path_csv.unlink()
 
 
+@pytest.mark.integration
 def test_adjust_durations_consulta(entry_point):
     log_path = entry_point / 'ConsultaDataMining201618.xes'
     log, log_path_csv = read(log_path)

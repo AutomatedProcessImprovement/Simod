@@ -82,6 +82,10 @@ def mine_parameters(
     else:
         raise ValueError(f'Unknown calendar discovery type: {resource_discovery_type}')
 
+    assert len(resource_profiles) > 0, 'No resource profiles found'
+    assert len(resource_calendars) > 0, 'No resource calendars found'
+    assert len(task_resource_distributions) > 0, 'No task resource distributions found'
+
     parameters = SimulationParameters(
         gateway_branching_probabilities=gateway_probabilities,
         arrival_calendar=arrival_calendar,

@@ -14,7 +14,6 @@ common:
   log_path: assets/PurchasingExample.xes
   exec_mode: optimizer
   repetitions: 1
-  simulation: true
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
@@ -59,6 +58,7 @@ structure_optimizer_test_data = [
 ]
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize('test_data', structure_optimizer_test_data,
                          ids=[test_data['name'] for test_data in structure_optimizer_test_data])
 def test_structure_optimizer(entry_point, test_data):

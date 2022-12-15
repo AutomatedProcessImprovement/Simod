@@ -59,8 +59,6 @@ class Optimizer:
         else:
             self._split_log(0.8, self._log_reader)
 
-        return
-
     def _split_log(self, train_ratio: float, log_reader: LogReaderWriter):
         train, test = log_reader.split_timeline(train_ratio)
 

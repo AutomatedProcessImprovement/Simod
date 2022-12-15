@@ -201,14 +201,26 @@ class ExecutionMode(Enum):
 @dataclass
 class CommonSettings:
     log_path: Path
-    test_log_path: Path
+    test_log_path: Optional[Path]
     log_ids: Optional[EventLogIDs]
     model_path: Optional[Path]
     exec_mode: ExecutionMode
     repetitions: int
-    simulation: bool
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool
+
+    @staticmethod
+    def default() -> 'CommonSettings':
+        return CommonSettings(
+            log_path=Path('example_log.csv'),
+            test_log_path=None,
+            log_ids=STANDARD_COLUMNS,
+            model_path=None,
+            exec_mode=ExecutionMode.OPTIMIZER,
+            repetitions=1,
+            evaluation_metrics=[Metric.DL, Metric.ABSOLUTE_HOURLY_EMD, Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
+            clean_intermediate_files=False
+        )
 
     @staticmethod
     def from_dict(config: dict) -> 'CommonSettings':
@@ -247,7 +259,6 @@ class CommonSettings:
             model_path=model_path,
             exec_mode=exec_mode,
             repetitions=config['repetitions'],
-            simulation=config['simulation'],
             evaluation_metrics=metrics,
             clean_intermediate_files=clean_up
         )
@@ -260,7 +271,6 @@ class CommonSettings:
             'model_path': str(self.model_path),
             'exec_mode': str(self.exec_mode),
             'repetitions': self.repetitions,
-            'simulation': self.simulation,
             'evaluation_metrics': [str(metric) for metric in self.evaluation_metrics],
             'clean_intermediate_files': self.clean_intermediate_files
         }
@@ -269,6 +279,12 @@ class CommonSettings:
 @dataclass
 class PreprocessingSettings:
     multitasking: bool
+
+    @staticmethod
+    def default() -> 'PreprocessingSettings':
+        return PreprocessingSettings(
+            multitasking=False
+        )
 
     @staticmethod
     def from_dict(config: dict) -> 'PreprocessingSettings':
@@ -284,7 +300,9 @@ class PreprocessingSettings:
 
 @dataclass
 class StructureSettings:
-    # Structure discovery settings
+    """
+    Structure discovery settings.
+    """
 
     optimization_metric: Metric = Metric.DL
     max_evaluations: Optional[int] = None
@@ -297,6 +315,21 @@ class StructureSettings:
     replace_or_joins: Optional[Union[bool, List[bool]]] = None  # should replace non-trivial OR joins
     prioritize_parallelism: Optional[Union[bool, List[bool]]] = None  # should prioritize parallelism on loops
     distribution_discovery_type: Optional[PDFMethod] = None
+
+    @staticmethod
+    def default() -> 'StructureSettings':
+        return StructureSettings(
+            optimization_metric=Metric.DL,
+            max_evaluations=1,
+            mining_algorithm=StructureMiningAlgorithm.SPLIT_MINER_2,
+            concurrency=None,
+            epsilon=[0.0, 1.0],
+            eta=[0.0, 1.0],
+            gateway_probabilities=GatewayProbabilitiesDiscoveryMethod.DISCOVERY,
+            replace_or_joins=False,
+            prioritize_parallelism=False,
+            distribution_discovery_type=PDFMethod.AUTOMATIC,
+        )
 
     @staticmethod
     def from_dict(config: dict) -> 'StructureSettings':
@@ -442,6 +475,18 @@ class CalendarsSettings:
     resource_profiles: CalendarSettings
 
     @staticmethod
+    def default() -> 'CalendarsSettings':
+        resource_settings = CalendarSettings.default()
+        resource_settings.discovery_type = CalendarType.DIFFERENTIATED_BY_RESOURCE
+
+        return CalendarsSettings(
+            optimization_metric=Metric.ABSOLUTE_HOURLY_EMD,
+            max_evaluations=1,
+            case_arrival=CalendarSettings.default(),
+            resource_profiles=resource_settings
+        )
+
+    @staticmethod
     def from_dict(config: dict) -> 'CalendarsSettings':
         # Case arrival is an optional parameter in the configuration file
         case_arrival = config.get('case_arrival')
@@ -484,6 +529,20 @@ class Configuration:
     preprocessing: PreprocessingSettings
     structure: StructureSettings
     calendars: CalendarsSettings
+
+    @staticmethod
+    def default() -> 'Configuration':
+        """
+        Default configuration for Simod. Used mostly for testing purposes. Most of those settings should be discovered
+        by Simod automatically.
+        """
+
+        return Configuration(
+            common=CommonSettings.default(),
+            preprocessing=PreprocessingSettings.default(),
+            structure=StructureSettings.default(),
+            calendars=CalendarsSettings.default()
+        )
 
     @staticmethod
     def from_yaml(config: dict) -> 'Configuration':
