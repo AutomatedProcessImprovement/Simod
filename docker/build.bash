@@ -20,14 +20,19 @@ python3.10 -m venv venv
 source $VENV_DIR/bin/activate
 pip3.10 install --upgrade pip
 
+# Removing cvxopt and glpk, because they're installed on OS level
+pip3.10 uninstall -y cvxopt glpk
+
 # Installing dependencies
-cd ${PROJECT_DIR}/external_tools/Prosimos
-pip3.10 install .
 cd ${PROJECT_DIR}/external_tools/log-similarity-metrics
 pip3.10 install -e .
 pip3.10 install dtw-python
 cd ${PROJECT_DIR}/external_tools/start-time-estimator
 pip3.10 install -e .
+cd ${PROJECT_DIR}/external_tools/extraneous-activity-delays
+pip3.10 install -e .
+cd ${PROJECT_DIR}/external_tools/Prosimos
+pip3.10 install .
 
 # Installing cvxopt from source. Pre-compiled binaries cause problems on ARM. cvxopt is required by pm4py-wrapper
 cd $BASE_DIR

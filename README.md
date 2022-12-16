@@ -96,7 +96,6 @@ common:
   test_log_path: resources/event_logs/PurchasingExampleTest.xes  # Optional: Path to the test event log in XES or CSV format
   exec_mode: optimizer  # Execution mode: optimizer or single (not used)
   repetitions: 1  # Number of simulations of the final model to obtain more accurate evaluations. Values between 1 and 50
-  simulation: true  # (not used)
   evaluation_metrics: # A list of evaluation metrics to use on the final model
     - dl
     - absolute_hourly_emd
