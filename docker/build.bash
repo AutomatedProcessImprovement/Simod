@@ -20,9 +20,6 @@ python3.10 -m venv venv
 source $VENV_DIR/bin/activate
 pip3.10 install --upgrade pip
 
-# Removing cvxopt and glpk, because they're installed on OS level
-pip3.10 uninstall -y cvxopt glpk
-
 # Installing dependencies
 cd ${PROJECT_DIR}/external_tools/log-similarity-metrics
 pip3.10 install -e .
@@ -52,3 +49,6 @@ pip3.10 install pm4py-wrapper
 
 # Installing Simod
 pip3.10 install -e .
+
+# Removing cvxopt and glpk, because they're installed on OS level
+pip3.10 uninstall -y cvxopt glpk
