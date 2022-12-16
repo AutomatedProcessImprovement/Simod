@@ -32,7 +32,7 @@ pip3.10 install -e .
 cd ${PROJECT_DIR}/external_tools/extraneous-activity-delays
 pip3.10 install -e .
 cd ${PROJECT_DIR}/external_tools/Prosimos
-pip3.10 install .
+pip3.10 install -e .
 
 # Installing cvxopt from source. Pre-compiled binaries cause problems on ARM. cvxopt is required by pm4py-wrapper
 cd $BASE_DIR

@@ -5,8 +5,7 @@ RUN apt update && apt install -y  \
     liblapack-dev \
     python3-cvxopt \
     glpk-utils  \
-    libglpk-dev  \
-    glpk-doc
+    libglpk-dev
 
 WORKDIR /usr/src/
 ADD build.bash .
