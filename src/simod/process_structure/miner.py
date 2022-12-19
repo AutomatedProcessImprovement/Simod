@@ -10,6 +10,10 @@ import yaml
 from simod.cli_formatter import print_warning, print_step
 from simod.configuration import PROJECT_DIR, StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod
 
+sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer/splitminer.jar'
+sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
+sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
+
 
 @dataclass
 class Settings:
@@ -32,9 +36,9 @@ class Settings:
     replace_or_joins: Optional[bool] = False
 
     # Private
-    _sm1_path: Path = PROJECT_DIR / 'external_tools/splitminer/splitminer.jar'
-    _sm2_path: Path = PROJECT_DIR / 'external_tools/splitminer2/sm2.jar'
-    _sm3_path: Path = PROJECT_DIR / 'external_tools/splitminer3/bpmtk.jar'
+    _sm1_path: Path = sm1_path
+    _sm2_path: Path = sm2_path
+    _sm3_path: Path = sm3_path
 
     @staticmethod
     def default() -> 'Settings':
@@ -119,40 +123,57 @@ class Settings:
 
 
 class StructureMiner:
-    """Discovers the process structure from a log file."""
-    _settings: Settings
-    _xes_path: Path
-    _output_model_path: Path
+    """
+    Discovers the process structure from an event log file in XES format.
+    """
 
-    def __init__(self, settings: Settings, xes_path: Path, output_model_path: Path):
-        self._settings = settings
-        self._xes_path = xes_path
-        self._output_model_path = output_model_path
-        self._run()
+    def __init__(
+            self,
+            mining_algorithm: StructureMiningAlgorithm,
+            xes_path: Path,
+            output_model_path: Path,
+            concurrency: Optional[float] = None,
+            eta: Optional[float] = None,
+            epsilon: Optional[float] = None,
+            prioritize_parallelism: Optional[bool] = None,
+            replace_or_joins: Optional[bool] = None,
+    ):
+        global sm2_path, sm3_path
 
-    def _run(self):
-        self._mining_structure(self._xes_path)
+        self.xes_path = xes_path
+        self.output_model_path = output_model_path
+        self.mining_algorithm = mining_algorithm
 
-        assert self._output_model_path.exists(), \
-            f"Model file {self._output_model_path} hasn't been mined"
+        if mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+            self.concurrency = concurrency
+            self.split_miner_path = sm2_path
+        elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
+            self.eta = eta
+            self.epsilon = epsilon
+            self.prioritize_parallelism = prioritize_parallelism
+            self.replace_or_joins = replace_or_joins
+            self.split_miner_path = sm3_path
+        else:
+            raise ValueError(f'Unknown mining algorithm: {mining_algorithm}')
 
-    def _mining_structure(self, xes_path: Path):
-        miner = self._get_miner(self._settings.mining_algorithm)
-        miner(xes_path, self._settings)
+    def run(self):
+        miner = self.mining_algorithm
 
-    def _get_miner(self, miner: StructureMiningAlgorithm):
         if miner is StructureMiningAlgorithm.SPLIT_MINER_1:
             raise NotImplementedError('Split Miner 1 is not supported anymore.')
         elif miner is StructureMiningAlgorithm.SPLIT_MINER_2:
-            return self._sm2_miner
+            self._sm2_miner(self.xes_path, self.split_miner_path, self.concurrency)
         elif miner is StructureMiningAlgorithm.SPLIT_MINER_3:
-            return self._sm3_miner
+            self._sm3_miner(self.xes_path, self.split_miner_path, self.eta, self.epsilon, self.prioritize_parallelism,
+                            self.replace_or_joins)
         else:
             raise ValueError(f'Unknown mining algorithm: {miner}')
 
+        assert self.output_model_path.exists(), f"Model file {self.output_model_path} hasn't been mined"
+
     def _model_path_without_suffix(self) -> Path:
-        if self._output_model_path is not None:
-            return self._output_model_path.with_suffix('')
+        if self.output_model_path is not None:
+            return self.output_model_path.with_suffix('')
         else:
             raise ValueError('No output model path specified.')
 
@@ -169,7 +190,7 @@ class StructureMiner:
         print_step(f'SplitMiner1 is running with the following arguments: {args}')
         subprocess.call(args)
 
-    def _sm2_miner(self, xes_path: Path, settings: Settings):
+    def _sm2_miner(self, xes_path: Path, sm2_path: Path, concurrency: float):
         output_path = str(self._model_path_without_suffix())
         sep = ';' if pl.system().lower() == 'windows' else ':'
         args = ['java']
@@ -177,18 +198,26 @@ class StructureMiner:
             args.append('-Xmx2G')
         args.extend(
             ['-cp',
-             (settings._sm2_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm2_path), 'lib', '*')),
+             (sm2_path.__str__() + sep + os.path.join(os.path.dirname(sm2_path), 'lib', '*')),
              'au.edu.unimelb.services.ServiceProvider',
              'SM2',
              str(xes_path),
              output_path,
-             str(settings.concurrency)]
+             str(concurrency)]
         )
 
         print_step(f'SplitMiner2 is running with the following arguments: {args}')
         subprocess.call(args)
 
-    def _sm3_miner(self, xes_path: Path, settings: Settings):
+    def _sm3_miner(
+            self,
+            xes_path: Path,
+            sm3_path: Path,
+            eta: float,
+            epsilon: float,
+            prioritize_parallelism: bool,
+            replace_or_joins: bool,
+    ):
         output_path = str(self._model_path_without_suffix())
         sep = ';' if pl.system().lower() == 'windows' else ':'
 
@@ -198,19 +227,19 @@ class StructureMiner:
             args.extend(['-Xmx2G', '-Xms1024M'])
 
         # prioritizes parallelism on loops
-        parallelism_first = str(settings.prioritize_parallelism).lower()
+        parallelism_first = str(prioritize_parallelism).lower()
         # replaces non trivial OR joins
-        replace_or_joins = str(settings.replace_or_joins).lower()
+        replace_or_joins = str(replace_or_joins).lower()
         # removes loop activity markers (false increases model complexity)
         remove_loop_activity_markers = 'false'
 
         args.extend([
             '-cp',
-            (settings._sm3_path.__str__() + sep + os.path.join(os.path.dirname(settings._sm3_path), 'lib', '*')),
+            (sm3_path.__str__() + sep + os.path.join(os.path.dirname(sm3_path), 'lib', '*')),
             'au.edu.unimelb.services.ServiceProvider',
             'SMD',
-            str(settings.eta),
-            str(settings.epsilon),
+            str(eta),
+            str(epsilon),
             parallelism_first,
             replace_or_joins,
             remove_loop_activity_markers,

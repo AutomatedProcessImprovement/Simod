@@ -19,7 +19,7 @@ test_cases = [
     },
     {
         'name': 'B',
-        'log_name': 'LoanApp_sequential_9-5_timers.csv',
+        'log_name': 'LoanApp_sequential_9-5_diffres_timers.csv',
         'log_ids': EventLogIDs(
             start_time='start_time',
             end_time='end_time',
@@ -71,8 +71,6 @@ def test_extraneous_activity_delays(test_data, entry_point):
     enhancer = HyperOptEnhancer(event_log, simulation_model, configuration)
     enhanced_simulation_model = enhancer.enhance_simulation_model_with_delays()
 
-    enhanced_simulation_model.bpmn_document.write(model_path.with_stem(model_path.stem + '_timers'), pretty_print=True)
-
     if test_data['should_have_delays']:
         assert 'event_distribution' in enhanced_simulation_model.simulation_parameters
     else:
@@ -92,15 +90,6 @@ def test_discover_extraneous_delay_timers(test_data, entry_point):
     event_log[log_ids.end_time] = pd.to_datetime(event_log[log_ids.end_time], utc=True)
     event_log[log_ids.resource].fillna("NOT_SET", inplace=True)
     event_log[log_ids.resource] = event_log[log_ids.resource].astype("string")
-
-    # removing extra spaces in activity names from the log
-    event_log[log_ids.activity] = event_log[log_ids.activity].str.strip()
-
-    # removing extra spaces in activity names from the model
-    tree = etree.parse(str(model_path))
-    for element in tree.xpath('//bpmn:task', namespaces={'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}):
-        element.attrib['name'] = element.attrib['name'].strip()
-    tree.write(str(model_path), pretty_print=True)
 
     case_arrival_settings = CalendarSettings.default()
     resource_settings = CalendarSettings.default()

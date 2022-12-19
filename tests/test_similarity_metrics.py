@@ -8,13 +8,13 @@ test_cases = [
     {
         'name': 'A',
         'event_log_1': {
-            'log_name': 'LoanApp_sequential_9-5.csv',
+            'log_name': 'LoanApp_sequential_9-5_diffres_timers.csv',
             'log_ids': EventLogIDs(
-                resource='org:resource',
-                activity='concept:name',
-                start_time='start_timestamp',
-                end_time='time:timestamp',
-                case='case:concept:name',
+                resource='Resource',
+                activity='Activity',
+                start_time='start_time',
+                end_time='end_time',
+                case='case_id',
             )
         },
         'event_log_2': {

@@ -79,5 +79,15 @@ def test_miner(entry_point, test_data):
     with tempfile.TemporaryDirectory() as tmp_dir:
         output_path = Path(tmp_dir) / 'model.bpmn'
 
-        StructureMiner(settings, log_path, output_path)
+        StructureMiner(
+            settings.mining_algorithm,
+            log_path,
+            output_path,
+            eta=settings.eta,
+            epsilon=settings.epsilon,
+            concurrency=settings.concurrency,
+            replace_or_joins=settings.replace_or_joins,
+            prioritize_parallelism=settings.prioritize_parallelism,
+        ).run()
+
         assert output_path.exists()

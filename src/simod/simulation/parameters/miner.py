@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import pandas as pd
 from networkx import DiGraph
@@ -27,12 +27,16 @@ def mine_parameters(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         model_path: Path,
-        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod,
+        gateways_probability_method: Optional[GatewayProbabilitiesDiscoveryMethod] = None,
+        gateway_probabilities: Optional[list] = None,
 ) -> SimulationParameters:
     """
     Mine simulation parameters given the settings for resources and case arrival.
     """
-    gateway_probabilities = mine_gateway_probabilities(log, log_ids, model_path, gateways_probability_type)
+    if gateway_probabilities is None:
+        assert gateways_probability_method is not None, \
+            "Either gateway probabilities or a method to mine them must be provided."
+        gateway_probabilities = mine_gateway_probabilities(log, log_ids, model_path, gateways_probability_method)
 
     # Case arrival parameters
 

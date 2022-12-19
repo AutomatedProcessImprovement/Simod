@@ -3,7 +3,7 @@ import json
 import multiprocessing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 import pandas as pd
 
@@ -15,7 +15,7 @@ from .parameters.gateway_probabilities import GatewayProbabilities
 from .parameters.resource_profiles import ResourceProfile
 from ..configuration import Metric
 from ..event_log.column_mapping import PROSIMOS_COLUMNS, EventLogIDs
-from ..event_log.reader_writer import LogReaderWriter
+from ..event_log.utilities import read
 from ..metrics.metrics import compute_metric
 
 cpu_count = multiprocessing.cpu_count()
@@ -32,7 +32,7 @@ class SimulationParameters:
     task_resource_distributions: List[ActivityResourceDistribution]
     arrival_distribution: dict
     arrival_calendar: Calendar
-    gateway_branching_probabilities: List[GatewayProbabilities]
+    gateway_branching_probabilities: Union[List[GatewayProbabilities], List[dict]]
     event_distribution: Optional[dict]
 
     def to_dict(self) -> dict:
@@ -49,7 +49,12 @@ class SimulationParameters:
             'arrival_time_calendar':
                 self.arrival_calendar.to_array(),
             'gateway_branching_probabilities':
-                [gateway_probabilities.to_dict() for gateway_probabilities in self.gateway_branching_probabilities]
+                [
+                    gateway_probabilities.to_dict()
+                    for gateway_probabilities in self.gateway_branching_probabilities
+                ]
+                if isinstance(self.gateway_branching_probabilities[0], GatewayProbabilities)
+                else self.gateway_branching_probabilities,
         }
 
         if self.event_distribution:
@@ -224,13 +229,13 @@ def evaluate_logs(
 def _read_simulated_log(arguments: Tuple):
     log_path, log_ids, simulation_repetition_index = arguments
 
-    reader = LogReaderWriter(log_path=log_path, log_ids=log_ids)
+    df, _ = read(log_path, log_ids=log_ids)
 
-    reader.df['role'] = reader.df['resource']
-    reader.df['source'] = 'simulation'
-    reader.df['run_num'] = simulation_repetition_index
+    df['role'] = df['resource']
+    df['source'] = 'simulation'
+    df['run_num'] = simulation_repetition_index
 
-    return reader.df
+    return df
 
 
 def _evaluate_logs_using_metrics(arguments: Tuple) -> List[dict]:

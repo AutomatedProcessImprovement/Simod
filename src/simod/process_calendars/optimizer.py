@@ -1,4 +1,3 @@
-import copy
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -10,7 +9,7 @@ from hyperopt import tpe
 from simod.cli_formatter import print_subsection, print_message
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs
-from simod.event_log.reader_writer import LogReaderWriter
+from simod.event_log.event_log import EventLog
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
@@ -20,48 +19,40 @@ from simod.utilities import remove_asset, folder_id, file_id
 
 
 class CalendarOptimizer(HyperoptPipeline):
+    _event_log: EventLog
+    _log_train: pd.DataFrame
+    _log_validation: pd.DataFrame
+    _log_ids: EventLogIDs
+    _gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
+    _gateway_probabilities: Optional[dict]
+    _train_model_path: Path
+    _output_dir: Path
+
+    evaluation_measurements: pd.DataFrame
+
     def __init__(
             self,
             calendar_optimizer_settings: CalendarOptimizationSettings,
-            log: LogReaderWriter,
+            event_log: EventLog,
             structure_settings: Optional[StructureMinerSettings] = None,
-            model_path: Optional[Path] = None,
-            log_ids: Optional[EventLogIDs] = None):
+            train_model_path: Optional[Path] = None,
+            gateway_probabilities: Optional[list] = None):
 
         self._calendar_optimizer_settings = calendar_optimizer_settings
-        self._log = log
-        self._log_ids = log_ids
+        self._event_log = event_log
+        self._log_ids = event_log.log_ids
+        self._gateway_probabilities = gateway_probabilities
+        self._gateway_probabilities_method = structure_settings.gateway_probabilities_method
 
-        # setting train and validation log data
-        train, validation = self._split_timeline(0.8)
-        self._log_train = LogReaderWriter.copy_without_data(self._log, self._log_ids)
-        self._log_train.set_data(train
-                                 .sort_values(self._log_ids.start_time, ascending=True)
-                                 .reset_index(drop=True)
-                                 .to_dict('records'))
-        self._log_validation = validation
+        self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
+        self._log_validation = event_log.validation_partition.sort_values(event_log.log_ids.start_time, ascending=True)
 
-        log_df = pd.DataFrame(self._log_train.data)
-        self._conformant_traces = log_df
-        self._process_stats = log_df
-
-        # setting original log data
-        # TODO: deepcopy is expensive, can we do better?
-        self._original_log = copy.deepcopy(log)
-        self._original_log_train = copy.deepcopy(self._log_train)
-        self._original_log_validation = copy.deepcopy(self._log_validation)
-
-        if structure_settings is not None:
-            self._gateway_probabilities_method = structure_settings.gateway_probabilities_method
-        else:
-            self._gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
-
-        # creating files and folders
+        # Calendar optimization base folder
         self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
-        if model_path is not None:
-            self._train_model_path = model_path
+        if train_model_path is not None:
+            self._train_model_path = train_model_path
         else:
             assert structure_settings is not None, 'Structure settings must be provided if model path is not provided'
             self._train_model_path = self._mine_structure(structure_settings, self._output_dir)
@@ -74,65 +65,69 @@ class CalendarOptimizer(HyperoptPipeline):
     def _mine_structure(self, settings: StructureMinerSettings, output_dir: Path) -> Path:
         print_message(f'Mining structure with settings {settings.to_dict()}')
 
-        # Saving the full pre-processed log to disk
         log_path = output_dir / 'train_log.xes'
-        self._log_train.write_xes(log_path)
+        self._event_log.train_to_xes(log_path)
 
         model_path = output_dir / 'train.bpmn'
 
-        StructureMiner(settings, log_path, model_path)
+        StructureMiner(
+            settings.mining_algorithm,
+            log_path,
+            model_path,
+            concurrency=settings.concurrency,
+            eta=settings.eta,
+            epsilon=settings.epsilon,
+            prioritize_parallelism=settings.prioritize_parallelism,
+            replace_or_joins=settings.replace_or_joins,
+        )
 
         return model_path
 
+    def _optimization_objective(self, trial_stg: Union[dict, PipelineSettings]):
+        print_subsection('Calendar Optimization Trial')
+
+        # casting a dictionary provided by hyperopt to PipelineSettings for convenience
+        if isinstance(trial_stg, dict):
+            trial_stg = PipelineSettings.from_hyperopt_option_dict(
+                trial_stg,
+                output_dir=self._output_dir,
+                model_path=self._train_model_path,
+                gateway_probabilities_method=self._gateway_probabilities_method
+            )
+
+        # initializing status
+        status = STATUS_OK
+
+        # creating and defining folders and paths
+        output_dir = self._output_dir / folder_id(prefix='calendars_trial_')
+        output_dir.mkdir(parents=True, exist_ok=True)
+        trial_stg.output_dir = output_dir
+
+        # simulation parameters extraction
+        status, result = self.step(status, self._extract_parameters, trial_stg)
+        if result is None:
+            status = STATUS_FAIL
+            json_path, simulation_cases = None, None
+        else:
+            json_path, simulation_cases = result
+
+        # simulation and evaluation
+        status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path, simulation_cases)
+        evaluation_measurements = result if status == STATUS_OK else []
+
+        # response for hyperopt
+        response, status = self._define_response(trial_stg, status, evaluation_measurements)
+
+        # recording measurements internally
+        self._process_measurements(trial_stg, status, evaluation_measurements)
+
+        return response
+
     def run(self) -> PipelineSettings:
-        def pipeline(trial_stg: Union[dict, PipelineSettings]):
-            print_subsection('Trial')
-            print_message(f'train split: {len(pd.DataFrame(self._log_train.data))}, '
-                          f'validation split: {len(self._log_validation)}')
-
-            # casting a dictionary provided by hyperopt to PipelineSettings for convenience
-            if isinstance(trial_stg, dict):
-                trial_stg = PipelineSettings.from_hyperopt_option_dict(
-                    trial_stg,
-                    output_dir=self._output_dir,
-                    model_path=self._train_model_path,
-                    gateway_probabilities_method=self._gateway_probabilities_method
-                )
-
-            # initializing status
-            status = STATUS_OK
-
-            # creating and defining folders and paths
-            output_dir = self._output_dir / folder_id(prefix='calendars_trial_')
-            output_dir.mkdir(parents=True, exist_ok=True)
-            trial_stg.output_dir = output_dir
-            assert trial_stg.output_dir.exists(), 'Output directory does not exist'
-
-            # simulation parameters extraction
-            status, result = self.step(status, self._extract_parameters, trial_stg)
-            if result is None:
-                status = STATUS_FAIL
-                json_path, simulation_cases = None, None
-            else:
-                json_path, simulation_cases = result
-
-            # simulation and evaluation
-            status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path, simulation_cases)
-            evaluation_measurements = result if status == STATUS_OK else []
-
-            # response for hyperopt
-            response, status = self._define_response(trial_stg, status, evaluation_measurements)
-
-            # recording measurements internally
-            self._process_measurements(trial_stg, status, evaluation_measurements)
-
-            self._reset_log_buckets()
-
-            return response
 
         # Optimization
         space = self._define_search_space(self._calendar_optimizer_settings)
-        best = fmin(fn=pipeline,
+        best = fmin(fn=self._optimization_objective,
                     space=space,
                     algo=tpe.suggest,
                     max_evals=self._calendar_optimizer_settings.max_evaluations,
@@ -239,17 +234,20 @@ class CalendarOptimizer(HyperoptPipeline):
         return response, status
 
     def _extract_parameters(self, settings: PipelineSettings) -> Tuple:
-        log = self._log_train.get_traces_df()
-
         parameters = mine_parameters(
-            settings.case_arrival, settings.resource_profiles, log, self._log_ids, settings.model_path,
-            settings.gateway_probabilities_method)
+            settings.case_arrival,
+            settings.resource_profiles,
+            self._log_train,
+            self._log_ids,
+            settings.model_path,
+            gateways_probability_method=self._gateway_probabilities_method,
+            gateway_probabilities=self._gateway_probabilities)
 
         json_path = settings.output_dir / 'simulation_parameters.json'
 
         parameters.to_json_file(json_path)
 
-        simulation_cases = log[self._log_ids.case].nunique()
+        simulation_cases = self._log_train[self._log_ids.case].nunique()
 
         return json_path, simulation_cases
 
@@ -268,15 +266,3 @@ class CalendarOptimizer(HyperoptPipeline):
             metrics=[self._calendar_optimizer_settings.optimization_metric],
             num_simulations=num_simulations,
         )
-
-    def _split_timeline(self, size: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        train, validation = self._log.split_timeline(size)
-        key = self._log_ids.start_time
-        validation = validation.sort_values(key, ascending=True).reset_index(drop=True)
-        train = train.sort_values(key, ascending=True).reset_index(drop=True)
-        return train, validation
-
-    def _reset_log_buckets(self):
-        self._log = self._original_log  # TODO: no need
-        self._log_train = copy.deepcopy(self._original_log_train)
-        self._log_validation = copy.deepcopy(self._original_log_validation)

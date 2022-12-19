@@ -1,10 +1,10 @@
-from simod.event_log.column_mapping import STANDARD_COLUMNS, EventLogIDs
-from simod.event_log.reader_writer import LogReaderWriter
+from simod.event_log.column_mapping import EventLogIDs
+from simod.event_log.utilities import read
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 
 
 def test_resource_profiles_undifferentiated(entry_point):
-    log_path = entry_point / 'LoanApp_sequential_9-5_timers.csv'
+    log_path = entry_point / 'LoanApp_sequential_9-5_diffres_timers.csv'
     bpmn_path = entry_point / 'LoanApp_sequential_9-5_timers.bpmn'
 
     log_ids = EventLogIDs(
@@ -15,8 +15,7 @@ def test_resource_profiles_undifferentiated(entry_point):
         end_time='end_time',
     )
 
-    log_reader = LogReaderWriter(log_path, log_ids)
-    log = log_reader.get_traces_df()
+    log, _ = read(log_path, log_ids)
 
     calendar_id = 'foo'
 

@@ -1,5 +1,4 @@
 import json
-import json
 import shutil
 from pathlib import Path
 from typing import Optional, Tuple
@@ -9,8 +8,7 @@ import pandas as pd
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
-from simod.event_log.reader_writer import LogReaderWriter
-from simod.event_log.utilities import remove_outliers, read
+from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings, CalendarOptimizationSettings
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
@@ -28,79 +26,62 @@ class Optimizer:
     """
 
     _settings: Configuration
+    _event_log: EventLog
     _output_dir: Path
 
-    # Loaded and preprocessed event log
-    _log_reader: LogReaderWriter
-
-    # Event log split
-    _log_train: LogReaderWriter
-    _log_test: pd.DataFrame
-
-    # Downstream executors
     _structure_optimizer: Optional[StructureOptimizer]
     _calendar_optimizer: Optional[CalendarOptimizer]
 
-    def __init__(self, settings: Configuration, log: Optional[pd.DataFrame] = None, output_dir: Optional[Path] = None):
+    def __init__(
+            self,
+            settings: Configuration,
+            event_log: Optional[EventLog] = None,
+            output_dir: Optional[Path] = None
+    ):
         self._settings = settings
+
+        if event_log is None:
+            self._event_log = EventLog.from_path(settings.common.log_path, settings.common.log_ids)
+        else:
+            self._event_log = event_log
 
         if output_dir is None:
             self._output_dir = get_project_dir() / 'outputs' / folder_id()
         else:
             self._output_dir = output_dir
 
-        self._log_reader = LogReaderWriter(self._settings.common.log_path,
-                                           self._settings.common.log_ids,
-                                           log=log)
-
-        if self._settings.common.test_log_path is not None:
-            self._log_train = LogReaderWriter(self._settings.common.log_path, self._settings.common.log_ids)
-            self._log_test, _ = read(self._settings.common.test_log_path, self._settings.common.log_ids)
-        else:
-            self._split_log(0.8, self._log_reader)
-
-    def _split_log(self, train_ratio: float, log_reader: LogReaderWriter):
-        train, test = log_reader.split_timeline(train_ratio)
-
-        sort_key = self._settings.common.log_ids.start_time
-        self._log_test = test.sort_values(by=[sort_key], ascending=True).reset_index(drop=True)
-
-        train = train.sort_values(by=[sort_key], ascending=True).reset_index(drop=True)
-        self._log_train = LogReaderWriter(self._settings.common.log_path, self._settings.common.log_ids, log=train,
-                                          load=False)
-
-    def _remove_outliers_from_train_data(self):
-        df = self._log_train.get_traces_df()
-        df = remove_outliers(df, self._settings.common.log_ids)
-        sort_key = self._settings.common.log_ids.start_time
-        self._log_train.set_data(df
-                                 .sort_values(by=[sort_key], ascending=True)
-                                 .reset_index(drop=True)
-                                 .to_dict('records'))
-
-    def _optimize_structure(self) -> Tuple[StructureOptimizationSettings, StructurePipelineSettings]:
+    def _optimize_structure(self) -> Tuple[StructureOptimizationSettings, StructurePipelineSettings, Path, list]:
         settings = StructureOptimizationSettings.from_configuration(self._settings, self._output_dir)
-        optimizer = StructureOptimizer(settings, self._log_train, self._settings.common.log_ids)
+        optimizer = StructureOptimizer(settings, self._event_log)
         self._structure_optimizer = optimizer
-        best_pipeline_settings = optimizer.run()
+        best_pipeline_settings, model_path, gateway_probabilities = optimizer.run()
 
-        return settings, best_pipeline_settings
+        return settings, best_pipeline_settings, model_path, gateway_probabilities
 
     def _optimize_calendars(
             self,
             structure_settings: StructureMinerSettings,
             model_path: Optional[Path],
+            gateway_probabilities: list,
     ) -> Tuple[CalendarOptimizationSettings, CalendarPipelineSettings]:
         calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)
-        optimizer = CalendarOptimizer(calendar_settings, self._log_train, structure_settings, model_path,
-                                      self._settings.common.log_ids)
+
+        optimizer = CalendarOptimizer(
+            calendar_settings,
+            self._event_log,
+            structure_settings=structure_settings,
+            train_model_path=model_path,
+            gateway_probabilities=gateway_probabilities)
+
         best_pipeline_settings = optimizer.run()
+
         self._calendar_optimizer = optimizer
+
         return calendar_settings, best_pipeline_settings
 
     def _mine_simulation_parameters(self, output_dir: Path, model_path: Path) -> Path:
-        log = self._log_test
-        log_ids = self._settings.common.log_ids
+        log = self._event_log.train_partition
+        log_ids = self._event_log.log_ids
         profile_type = self._settings.calendars.resource_profiles.discovery_type
 
         parameters = mine_parameters(
@@ -123,17 +104,15 @@ class Optimizer:
             simulation_dir: Path):
         assert parameters_path.exists(), f'Best calendar simulation parameters file does not exist'
 
-        self._log_test.to_csv(simulation_dir / 'test_log.csv', index=False)
-
-        simulation_cases = self._log_test[self._settings.common.log_ids.case].nunique()
-
         num_simulations = self._settings.common.repetitions
+        simulation_cases = self._event_log.test_partition[self._settings.common.log_ids.case].nunique()
+        simulation_start_time = self._event_log.test_partition[self._settings.common.log_ids.start_time].min()
 
         metrics = self._settings.common.evaluation_metrics \
             if isinstance(self._settings.common.evaluation_metrics, list) \
             else [self._settings.common.evaluation_metrics]
 
-        simulation_start_time = self._log_test[self._settings.common.log_ids.start_time].min()
+        self._event_log.test_partition.to_csv(simulation_dir / 'test_log.csv', index=False)
 
         measurements = simulate_and_evaluate(
             model_path=model_path,
@@ -141,8 +120,8 @@ class Optimizer:
             output_dir=simulation_dir,
             simulation_cases=simulation_cases,
             simulation_start_time=simulation_start_time,
-            validation_log=self._log_test,
-            validation_log_ids=self._settings.common.log_ids,
+            validation_log=self._event_log.test_partition,
+            validation_log_ids=self._event_log.log_ids,
             num_simulations=num_simulations,
             metrics=metrics,
         )
@@ -150,31 +129,6 @@ class Optimizer:
         measurements_path = simulation_dir.parent / file_id(prefix='evaluation_')
         measurements_df = pd.DataFrame.from_records(measurements)
         measurements_df.to_csv(measurements_path, index=False)
-
-    def _export_canonical_model(
-            self, output_dir: Path,
-            structure_settings: StructureMinerSettings,
-            structure_optimizer_settings: StructureOptimizationSettings,
-            calendar_settings: CalendarPipelineSettings,
-            calendar_optimizer_settings: CalendarOptimizationSettings,
-    ):
-        canon_path = output_dir / 'canonical_model.json'
-
-        structure = structure_settings.to_dict() | {
-            'optimization_metric': str(structure_optimizer_settings.optimization_metric)
-        }
-
-        calendars = calendar_settings.to_dict() | {
-            'optimization_metric': str(calendar_optimizer_settings.optimization_metric)
-        }
-
-        canon = {
-            'structure': structure,
-            'calendars': calendars,
-        }
-
-        with open(canon_path, 'w') as f:
-            json.dump(canon, f)
 
     def _clean_up(self):
         if not self._settings.common.clean_intermediate_files:
@@ -188,14 +142,21 @@ class Optimizer:
             -> Tuple[Path, StructureMinerSettings]:
         print_message(f'Mining structure with settings {settings.to_dict()}')
 
-        # Saving the full pre-processed log to disk
-        log_path = output_dir / self._settings.common.log_path.name
-        log_path = log_path.with_suffix('.xes')
-        self._log_train.write_xes(log_path)
+        log_path = (output_dir / self._event_log.process_name).with_suffix('.xes')
+        self._event_log.train_to_xes(log_path)
 
-        model_path = output_dir / (self._settings.common.log_path.stem + '.bpmn')
+        model_path = output_dir / (self._event_log.process_name + '.bpmn')
 
-        StructureMiner(settings, log_path, model_path)
+        StructureMiner(
+            settings.mining_algorithm,
+            log_path,
+            model_path,
+            concurrency=settings.concurrency,
+            eta=settings.eta,
+            epsilon=settings.epsilon,
+            prioritize_parallelism=settings.prioritize_parallelism,
+            replace_or_joins=settings.replace_or_joins,
+        ).run()
 
         return model_path, settings
 
@@ -214,12 +175,9 @@ class Optimizer:
 
         print_message(f'Mining calendars with settings {settings.to_dict()}')
 
-        # Taking the full pre-processed original log for extracting calendars
-        log = self._log_train.get_traces_df()
-
         parameters = mine_parameters(
-            settings.case_arrival, settings.resource_profiles, log, self._settings.common.log_ids, model_path,
-            settings.gateway_probabilities_method)
+            settings.case_arrival, settings.resource_profiles, self._event_log.train_partition, self._event_log.log_ids,
+            model_path, settings.gateway_probabilities_method)
 
         json_path = settings.output_dir / 'simulation_parameters.json'
 
@@ -228,13 +186,15 @@ class Optimizer:
         return json_path, settings
 
     def run(self):
-        self._remove_outliers_from_train_data()
-
         best_result_dir = self._output_dir / 'best_result'
         best_result_dir.mkdir(parents=True, exist_ok=True)
 
+        model_path = self._settings.common.model_path
+
+        # TODO: optimize only gateway probabilities if structure is provided
+
         print_section('Structure optimization')
-        structure_optimizer_settings, structure_pipeline_settings = self._optimize_structure()
+        structure_optimizer_settings, structure_pipeline_settings, model_path, gateway_probabilities = self._optimize_structure()
         structure_miner_settings = StructureMinerSettings(
             gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
             mining_algorithm=self._settings.structure.mining_algorithm,
@@ -246,9 +206,8 @@ class Optimizer:
         )
 
         print_section('Calendars optimization')
-        model_path = self._settings.common.model_path
         calendar_optimizer_settings, calendar_pipeline_settings = self._optimize_calendars(
-            structure_miner_settings, model_path)
+            structure_miner_settings, model_path, gateway_probabilities)
 
         if model_path is None:
             print_section('Mining structure using the best hyperparameters')
@@ -264,8 +223,8 @@ class Optimizer:
         with parameters_path.open() as f:
             parameters = json.load(f)
         _, model_path, parameters_path = discover_extraneous_delay_timers(
-            self._log_train.get_traces_df(),
-            self._settings.common.log_ids,
+            self._event_log.train_partition,
+            self._event_log.log_ids,
             model_path,
             parameters,
             base_dir=best_result_dir,
@@ -281,7 +240,33 @@ class Optimizer:
         self._clean_up()
 
         print_section('Exporting canonical model')
-        self._export_canonical_model(best_result_dir, structure_miner_settings, structure_optimizer_settings,
-                                     calendars_settings, calendar_optimizer_settings)
+        _export_canonical_model(best_result_dir, structure_miner_settings, structure_optimizer_settings,
+                                calendars_settings, calendar_optimizer_settings)
 
         self._settings.to_yaml(best_result_dir)
+
+
+def _export_canonical_model(
+        output_dir: Path,
+        structure_settings: StructureMinerSettings,
+        structure_optimizer_settings: StructureOptimizationSettings,
+        calendar_settings: CalendarPipelineSettings,
+        calendar_optimizer_settings: CalendarOptimizationSettings,
+):
+    canon_path = output_dir / 'canonical_model.json'
+
+    structure = structure_settings.to_dict() | {
+        'optimization_metric': str(structure_optimizer_settings.optimization_metric)
+    }
+
+    calendars = calendar_settings.to_dict() | {
+        'optimization_metric': str(calendar_optimizer_settings.optimization_metric)
+    }
+
+    canon = {
+        'structure': structure,
+        'calendars': calendars,
+    }
+
+    with open(canon_path, 'w') as f:
+        json.dump(canon, f)

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 
@@ -8,6 +8,7 @@ from estimate_start_times.config import Configuration as StartTimeEstimatorConfi
 from estimate_start_times.estimator import StartTimeEstimator
 from simod.cli_formatter import print_step, print_section, print_notice
 from simod.configuration import Configuration
+from simod.event_log.event_log import EventLog
 from simod.event_log.multitasking import adjust_durations
 from simod.event_log.utilities import read
 from simod.utilities import remove_asset
@@ -30,19 +31,21 @@ class Preprocessor:
     """
     Preprocessor executes any event log pre-processing required according to the configuration.
     """
+
     config: Configuration
     output_dir: Path
     log: Optional[pd.DataFrame]
 
+    _csv_log_path: Optional[Path]
     _tmp_dirs: [Path] = []
 
     def __init__(self, config: Configuration, output_dir: Path):
         self.config = config
         self.output_dir = output_dir
 
-        self.log, _ = read(self.config.common.log_path, self.config.common.log_ids)
+        self.log, self._csv_log_path = read(self.config.common.log_path, self.config.common.log_ids)
 
-    def run(self) -> Configuration:
+    def run(self) -> Tuple[Configuration, EventLog]:
         """
         Executes all pre-processing steps and updates the configuration if necessary.
         """
@@ -54,7 +57,14 @@ class Preprocessor:
         if self.config.preprocessing.multitasking is True:
             self._adjust_for_multitasking()
 
-        return self.config
+        event_log = EventLog.from_df(
+            self.log,
+            self.config.common.log_ids,
+            log_path=self.config.common.log_path,
+            csv_log_path=self._csv_log_path,
+        )
+
+        return self.config, event_log
 
     def _adjust_for_multitasking(self, is_concurrent=False, verbose=False):
         print_step('Adjusting timestamps for multitasking')

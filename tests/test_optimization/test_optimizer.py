@@ -8,7 +8,7 @@ from simod.optimization.optimizer import Optimizer
 config_yaml_B = """
 version: 2
 common:
-  log_path: tests/assets/LoanApp_sequential_9-5_timers.csv
+  log_path: tests/assets/LoanApp_sequential_9-5_diffres_timers.csv
   log_ids:
     case: case_id
     activity: Activity
@@ -71,7 +71,7 @@ test_cases = [
 ]
 
 
-@pytest.mark.integration
+@pytest.mark.system
 @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
 def test_optimizer(test_data, entry_point):
     settings: Configuration = test_data['settings']

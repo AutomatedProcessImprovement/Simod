@@ -9,7 +9,7 @@ optimize_config_files = [
 ]
 
 
-@pytest.mark.integration
+@pytest.mark.system
 @pytest.mark.parametrize('path', optimize_config_files)
 def test_optimize(entry_point, runner, path):
     config_path = entry_point / path

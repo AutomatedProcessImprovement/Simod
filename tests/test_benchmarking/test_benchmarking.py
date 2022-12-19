@@ -120,11 +120,11 @@ test_cases = [
 ]
 
 
-@pytest.mark.benchmark
-@pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
-def test_benchmarking(test_data, entry_point):
-    settings: Configuration = Configuration.from_stream(test_data['config'])
-    settings.common.log_path = entry_point.absolute().parent / 'test_benchmarking/logs' / test_data['log_name']
-    optimizer = Optimizer(settings)
-
-    optimizer.run()
+# @pytest.mark.benchmark
+# @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
+# def test_benchmarking(test_data, entry_point):
+#     settings: Configuration = Configuration.from_stream(test_data['config'])
+#     settings.common.log_path = entry_point.absolute().parent / 'test_benchmarking/logs' / test_data['log_name']
+#     optimizer = Optimizer(settings)
+#
+#     optimizer.run()

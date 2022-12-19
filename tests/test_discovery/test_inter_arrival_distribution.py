@@ -19,7 +19,7 @@ def test_discover(test_data, entry_point):
     log_path = entry_point / test_data['log_name']
 
     log_ids = STANDARD_COLUMNS
-    (log, _) = read(log_path, log_ids)
+    log, _ = read(log_path, log_ids)
 
     result = inter_arrival_distribution.discover(log, log_ids)
 

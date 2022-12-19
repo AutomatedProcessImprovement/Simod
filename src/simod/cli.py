@@ -40,9 +40,9 @@ def optimize(ctx, config_path):
     output_dir = get_project_dir() / 'outputs' / folder_id()
 
     preprocessor = Preprocessor(settings, output_dir)
-    settings = preprocessor.run()
+    settings, event_log = preprocessor.run()
 
-    Optimizer(settings, log=preprocessor.log, output_dir=output_dir).run()
+    Optimizer(settings, event_log=event_log, output_dir=output_dir).run()
 
 
 if __name__ == "__main__":

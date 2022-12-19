@@ -1,12 +1,9 @@
 ﻿from operator import itemgetter
-from typing import Union
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
-
-from simod.event_log.reader_writer import LogReaderWriter
 
 
 class ResourcePoolDiscoverer:
@@ -22,7 +19,7 @@ class ResourcePoolDiscoverer:
     _resource_key = 'user'
 
     def __init__(self,
-                 log: Union[LogReaderWriter, pd.DataFrame],
+                 log: pd.DataFrame,
                  drawing=False,
                  sim_threshold=0.7,
                  activity_key='task',
@@ -31,22 +28,17 @@ class ResourcePoolDiscoverer:
         self._resource_key = resource_key
         self._drawing = drawing
         self._sim_threshold = sim_threshold
-        self._data = self.__read_resource_pool(log)
+        self._data = self._filter_log(log)
         self.tasks = {val: i for i, val in enumerate(self._data[self._activity_key].unique())}
         self.users = {val: i for i, val in enumerate(self._data[self._resource_key].unique())}
-        self.roles, self.resource_table = self.__discover_roles()
+        self.roles, self.resource_table = self._discover_roles()
 
-    def __read_resource_pool(self, log: Union[LogReaderWriter, pd.DataFrame]):
-        if isinstance(log, LogReaderWriter):
-            filtered_list = pd.DataFrame(log.data)[[self._activity_key, self._resource_key]]
-        elif isinstance(log, pd.DataFrame):
-            filtered_list = log[[self._activity_key, self._resource_key]]
-        else:
-            raise TypeError('Log must be LogReader or pd.DataFrame')
+    def _filter_log(self, log: pd.DataFrame):
+        filtered_list = log[[self._activity_key, self._resource_key]]
         filtered_list = filtered_list[filtered_list[self._resource_key] != 'AUTO']
         return filtered_list
 
-    def __discover_roles(self):
+    def _discover_roles(self):
         associations = lambda x: (self.tasks[x[self._activity_key]], self.users[x[self._resource_key]])
         self._data['ac_rl'] = self._data.apply(associations, axis=1)
 
@@ -54,12 +46,12 @@ class ResourcePoolDiscoverer:
             columns={self._activity_key: 'freq'})
         freq_matrix = {x['ac_rl']: x['freq'] for x in freq_matrix.to_dict('records')}
 
-        profiles = self.__build_profile(freq_matrix)
+        profiles = self._build_profile(freq_matrix)
 
         # NOTE: Pearson coefficient calculation might fail if too few resources
         try:
             # building of a correl matrix between resources profiles
-            correl_matrix = self.__det_correl_matrix(profiles)
+            correl_matrix = self._det_correl_matrix(profiles)
             # creation of a rel network between resources
             g = nx.Graph()
             for user in self.users.values():
@@ -74,7 +66,7 @@ class ResourcePoolDiscoverer:
             # extraction of fully connected subgraphs as roles
             sub_graphs = list((g.subgraph(c) for c in nx.connected_components(g)))
             # role definition from graph
-            roles = self.__role_definition(sub_graphs)
+            roles = self._role_definition(sub_graphs)
             return roles
         except ValueError:
             members = self._data[self._resource_key].unique()
@@ -84,7 +76,7 @@ class ResourcePoolDiscoverer:
             resource_table = [{'role': role, 'resource': member} for member in members]
             return roles, resource_table
 
-    def __build_profile(self, freq_matrix):
+    def _build_profile(self, freq_matrix):
         profiles = list()
         for user, idx in self.users.items():
             profile = [0, ] * len(self.tasks)
@@ -94,7 +86,7 @@ class ResourcePoolDiscoverer:
             profiles.append({self._resource_key: idx, 'profile': profile})
         return profiles
 
-    def __det_correl_matrix(self, profiles):
+    def _det_correl_matrix(self, profiles):
         correl_matrix = list()
         for profile_x in profiles:
             for profile_y in profiles:
@@ -106,7 +98,7 @@ class ResourcePoolDiscoverer:
                                        'distance': r_row}))
         return correl_matrix
 
-    def __role_definition(self, sub_graphs):
+    def _role_definition(self, sub_graphs):
         user_index = {v: k for k, v in self.users.items()}
         records = list()
         for i in range(0, len(sub_graphs)):

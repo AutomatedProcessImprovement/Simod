@@ -1,4 +1,4 @@
-import copy
+import json
 import shutil
 from pathlib import Path
 from typing import Union, Tuple
@@ -9,7 +9,6 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 
 from simod.cli_formatter import print_message, print_subsection, print_step
-from simod.event_log.reader_writer import LogReaderWriter
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_default_24_7
 from simod.utilities import remove_asset, file_id, folder_id
@@ -18,39 +17,36 @@ from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..configuration import StructureMiningAlgorithm, Metric
 from ..event_log.column_mapping import EventLogIDs
-from ..event_log.utilities import sample_log
+from ..event_log.event_log import EventLog
 from ..simulation.prosimos import simulate_and_evaluate
 
 
 class StructureOptimizer(HyperoptPipeline):
+    _event_log: EventLog
+    _log_train: pd.DataFrame
+    _log_validation: pd.DataFrame
+    _log_ids: EventLogIDs
+    _train_log_path: Path
+    _output_dir: Path
+
+    evaluation_measurements: pd.DataFrame
+
     def __init__(
             self,
             settings: StructureOptimizationSettings,
-            log: LogReaderWriter,
-            log_ids: EventLogIDs,
+            event_log: EventLog,
     ):
-        assert log_ids is not None, 'Event log IDs must be provided'
-
-        self._log_ids = log_ids
-
+        self._event_log = event_log
         self._settings = settings
-        self._log_reader = log
+        self._log_ids = event_log.log_ids
 
-        train, validation = self._log_reader.split_timeline(0.8)
-        train = sample_log(train, log_ids)  # TODO: remove this in future
-
-        self._log_validation = validation.sort_values(log_ids.start_time, ascending=True).reset_index(drop=True)
-        self._log_train = LogReaderWriter.copy_without_data(self._log_reader, self._log_ids)
-        self._log_train.set_data(
-            train.sort_values(log_ids.start_time, ascending=True).reset_index(drop=True).to_dict('records'))
-
-        # TODO: ensure we need to copy all the logs, it's an expensive operation
-        self._original_log = copy.deepcopy(log)
-        self._original_log_train = copy.deepcopy(self._log_train)
-        self._original_log_validation = copy.deepcopy(self._log_validation)
+        self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
+        self._log_validation = event_log.validation_partition.sort_values(event_log.log_ids.start_time, ascending=True)
 
         self._output_dir = self._settings.base_dir / folder_id(prefix='structure_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
+
+        self._train_log_path = self._output_dir / (event_log.process_name + '.xes')
 
         self.evaluation_measurements = pd.DataFrame(
             columns=['value', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta', 'prioritize_parallelism',
@@ -58,92 +54,86 @@ class StructureOptimizer(HyperoptPipeline):
 
         self._bayes_trials = Trials()
 
-    def run(self) -> PipelineSettings:
-        self._log_train = copy.deepcopy(self._original_log_train)
+    def _optimization_objective(self, trial_stage_settings: Union[PipelineSettings, dict]):
+        print_subsection("Structure Optimization Trial")
 
-        def pipeline(trial_stage_settings: Union[PipelineSettings, dict]):
-            print_subsection("Trial")
-            print_message(f'train split: {len(pd.DataFrame(self._log_train.data))}, '
-                          f'validation split: {len(self._log_validation)}')
+        # casting a dictionary provided by hyperopt to PipelineSettings for convenience
+        if isinstance(trial_stage_settings, dict):
+            trial_stage_settings = PipelineSettings(
+                model_path=self._settings.model_path,
+                output_dir=None,
+                project_name=self._event_log.process_name,
+                **trial_stage_settings)
+        print_message(f'Parameters: {trial_stage_settings}', capitalize=False)
 
-            # casting a dictionary provided by hyperopt to PipelineSettings for convenience
-            if isinstance(trial_stage_settings, dict):
-                trial_stage_settings = PipelineSettings(
-                    model_path=self._settings.model_path,
-                    output_dir=None,
-                    project_name=self._settings.project_name,
-                    **trial_stage_settings)
-            print_message(f'Parameters: {trial_stage_settings}', capitalize=False)
+        # initializing status
+        status = STATUS_OK
 
-            # initializing status
-            status = STATUS_OK
+        # current trial folder
+        output_dir = self._output_dir / folder_id(prefix='structure_trial_')
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-            # current trial folder
-            output_dir = self._output_dir / folder_id(prefix='structure_trial_')
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            # saving customized event-log for the external tools
-            log_path = output_dir / (trial_stage_settings.project_name + '.xes')
-            self._log_train.write_xes(log_path)
-
-            # structure mining
-            trial_stage_settings.output_dir = output_dir
-            model_path = output_dir / (trial_stage_settings.project_name + '.bpmn')
-            bpmn_reader, process_graph = None, None
-            try:
-                if trial_stage_settings.model_path is None:
-                    trial_stage_settings.model_path = model_path
-                    print_step('Executing SplitMiner')
-                    status, result = self.step(status, self._mine_structure, trial_stage_settings, log_path,
-                                               self._settings.mining_algorithm)
-                else:
-                    if self._settings.model_path is not None:
-                        shutil.copy(self._settings.model_path, model_path)
-                    else:
-                        raise ValueError('Model path is not provided')
-
-                    print_step('Model is provided, skipping SplitMiner execution')
-
-                bpmn_reader = BPMNReaderWriter(trial_stage_settings.model_path)
-                process_graph = bpmn_reader.as_graph()
-            except Exception as e:
-                print_message(f'Mining failed: {e}')
-                status = STATUS_FAIL
-
-            # simulation parameters mining
-            status, result = self.step(
-                status,
-                self._extract_parameters_undifferentiated,
-                trial_stage_settings,
-                process_graph)
-            if status == STATUS_FAIL:
-                json_path, simulation_cases = None, None
+        # structure mining
+        trial_stage_settings.output_dir = output_dir
+        model_path = output_dir / (trial_stage_settings.project_name + '.bpmn')
+        bpmn_reader, process_graph = None, None
+        try:
+            if trial_stage_settings.model_path is None:
+                trial_stage_settings.model_path = model_path
+                print_step('Executing SplitMiner')
+                status, result = self.step(status, self._mine_structure,
+                                           trial_stage_settings, self._train_log_path, self._settings.mining_algorithm)
             else:
-                json_path, simulation_cases = result
+                if self._settings.model_path is not None:
+                    shutil.copy(self._settings.model_path, model_path)
+                else:
+                    raise ValueError('Model path is not provided')
 
-            # simulation
-            status, result = self.step(status, self._simulate_undifferentiated,
-                                       trial_stage_settings,
-                                       self._settings.simulation_repetitions,
-                                       json_path,
-                                       simulation_cases)
-            evaluation_measurements = result if status == STATUS_OK else []
+                print_step('Model is provided, skipping SplitMiner execution')
 
-            # loss
-            response, status = self._define_response(status, evaluation_measurements, trial_stage_settings)
-            print(f'StructureOptimizer pipeline response: {response}')
+            bpmn_reader = BPMNReaderWriter(trial_stage_settings.model_path)
+            process_graph = bpmn_reader.as_graph()
+        except Exception as e:
+            print_message(f'Mining failed: {e}')
+            status = STATUS_FAIL
 
-            # saving results
-            self._process_measurements(trial_stage_settings, status, evaluation_measurements)
+        # simulation parameters mining
+        status, result = self.step(
+            status,
+            self._extract_parameters_undifferentiated,
+            trial_stage_settings,
+            process_graph)
+        if status == STATUS_FAIL:
+            json_path, simulation_cases = None, None
+        else:
+            json_path, simulation_cases = result
 
-            self._reset_log_buckets()
+        # simulation
+        status, result = self.step(status, self._simulate_undifferentiated,
+                                   trial_stage_settings,
+                                   self._settings.simulation_repetitions,
+                                   json_path,
+                                   simulation_cases)
+        evaluation_measurements = result if status == STATUS_OK else []
 
-            return response
+        # loss
+        response, status = self._define_response(status, evaluation_measurements, trial_stage_settings)
+        print(f'StructureOptimizer pipeline response: {response}')
+
+        # saving results
+        self._process_measurements(trial_stage_settings, status, evaluation_measurements)
+
+        # self._reset_log_buckets()
+
+        return response
+
+    def run(self) -> Tuple[PipelineSettings, Path, list]:
+        self._event_log.train_to_xes(self._train_log_path)
 
         space = self._define_search_space(self._settings)
 
         # Optimization
-        best = fmin(fn=pipeline,
+        best = fmin(fn=self._optimization_objective,
                     space=space,
                     algo=tpe.suggest,
                     max_evals=self._settings.max_evaluations,
@@ -166,11 +156,14 @@ class StructureOptimizer(HyperoptPipeline):
         )
         self.best_parameters = best_settings
 
+        best_parameters_path = best_model_path.parent / 'simulation_parameters.json'
+        best_gateway_probabilities = json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
+
         # Save evaluation measurements
         self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
         self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
 
-        return best_settings
+        return best_settings, best_model_path, best_gateway_probabilities
 
     def cleanup(self):
         remove_asset(self._output_dir)
@@ -258,32 +251,31 @@ class StructureOptimizer(HyperoptPipeline):
             settings: PipelineSettings,
             log_path: Path,
             mining_algorithm: StructureMiningAlgorithm) -> None:
-        miner_settings = StructureMinerSettings(
-            gateway_probabilities_method=settings.gateway_probabilities_method,
-            mining_algorithm=mining_algorithm,
-            epsilon=settings.epsilon,
-            eta=settings.eta,
+        StructureMiner(
+            mining_algorithm,
+            log_path,
+            settings.model_path,
             concurrency=settings.concurrency,
+            eta=settings.eta,
+            epsilon=settings.epsilon,
             prioritize_parallelism=settings.prioritize_parallelism,
             replace_or_joins=settings.replace_or_joins,
-        )
-
-        _ = StructureMiner(miner_settings, xes_path=log_path, output_model_path=settings.model_path)
+        ).run()
 
     def _extract_parameters_undifferentiated(self, settings: PipelineSettings, process_graph) -> Tuple:
-        log = self._log_train.get_traces_df()
-
+        # Below, we mine simulation parameters with undifferentiated resources, because we optimize the structure,
+        # not calendars. So, we do not need to differentiate resources.
         simulation_parameters = mine_default_24_7(
-            log,
+            self._log_train,
             self._log_ids,
             settings.model_path,
             process_graph,
             settings.gateway_probabilities_method)
 
-        json_path = settings.model_path.with_suffix('.json')
+        json_path = settings.model_path.parent / 'simulation_parameters.json'
         simulation_parameters.to_json_file(json_path)
 
-        simulation_cases = log[self._log_ids.case].nunique()
+        simulation_cases = self._log_train[self._log_ids.case].nunique()
 
         return json_path, simulation_cases
 
@@ -308,8 +300,3 @@ class StructureOptimizer(HyperoptPipeline):
             metrics=[self._settings.optimization_metric],
             num_simulations=simulation_repetitions,
         )
-
-    def _reset_log_buckets(self):
-        self._log_reader = copy.deepcopy(self._original_log)
-        self._log_train = copy.deepcopy(self._original_log_train)
-        self._log_validation = copy.deepcopy(self._original_log_validation)

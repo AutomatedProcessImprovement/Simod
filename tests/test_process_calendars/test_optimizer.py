@@ -2,7 +2,7 @@ import pytest
 
 from simod.configuration import Configuration, CalendarType
 from simod.event_log.column_mapping import EventLogIDs
-from simod.event_log.reader_writer import LogReaderWriter
+from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings, CalendarOptimizationSettings
 from simod.utilities import get_project_dir
@@ -22,11 +22,12 @@ test_cases = [
     }
 ]
 
-base_dir = get_project_dir() / 'outputs'
 
-
+@pytest.mark.integration
 @pytest.mark.parametrize('test_case', test_cases, ids=[case['name'] for case in test_cases])
 def test_optimizer(entry_point, test_case):
+    base_dir = get_project_dir() / 'outputs'
+
     log_ids = EventLogIDs(
         case='case_id',
         activity='Activity',
@@ -41,11 +42,12 @@ def test_optimizer(entry_point, test_case):
 
     calendar_settings = CalendarOptimizationSettings.from_configuration(settings, base_dir)
 
-    log_path = entry_point / 'LoanApp_sequential_9-5_timers.csv'
+    log_path = entry_point / 'LoanApp_sequential_9-5_diffres_timers.csv'
     model_path = entry_point / 'LoanApp_sequential_9-5_timers.bpmn'
-    log = LogReaderWriter(log_path, log_ids)
 
-    optimizer = CalendarOptimizer(calendar_settings, log, model_path=model_path, log_ids=log_ids)
+    event_log = EventLog.from_path(log_path, log_ids)
+
+    optimizer = CalendarOptimizer(calendar_settings, event_log, train_model_path=model_path)
     result = optimizer.run()
 
     assert type(result) is PipelineSettings

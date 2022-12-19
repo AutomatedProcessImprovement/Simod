@@ -1,28 +1,4 @@
-import pytest
-
-from simod.event_log.column_mapping import STANDARD_COLUMNS
-from simod.event_log.reader_writer import LogReaderWriter
-from simod.event_log.utilities import remove_outliers
 from simod.utilities import file_contains
-
-
-@pytest.fixture
-def args(entry_point):
-    args = [
-        {'model_path': entry_point / 'PurchasingExample.bpmn',
-         'log_path': entry_point / 'PurchasingExample.xes'},
-    ]
-    return args
-
-
-def test_remove_outliers(args):
-    for arg in args:
-        log_path = arg['log_path']
-        log = LogReaderWriter(log_path, STANDARD_COLUMNS)
-        result = remove_outliers(log.df, log_ids=STANDARD_COLUMNS)
-        assert result is not None
-        assert STANDARD_COLUMNS.case in result.keys()
-        assert 'duration_seconds' not in result.keys()
 
 
 def test_file_contains(entry_point):

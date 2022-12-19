@@ -3,7 +3,7 @@ import os.path
 import pytest
 
 from simod.event_log.column_mapping import STANDARD_COLUMNS
-from simod.event_log.reader_writer import LogReaderWriter
+from simod.event_log.event_log import EventLog
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import StructureOptimizationSettings, PipelineSettings
 from simod.utilities import get_project_dir
@@ -67,10 +67,10 @@ def test_structure_optimizer(entry_point, test_data):
     log_path = entry_point / 'PurchasingExample.xes'
     settings.project_name = os.path.splitext(os.path.basename(log_path))[0]
 
-    log_reader = LogReaderWriter(log_path, STANDARD_COLUMNS)
+    event_log = EventLog.from_path(log_path, STANDARD_COLUMNS)
 
-    optimizer = StructureOptimizer(settings, log_reader, STANDARD_COLUMNS)
-    result: PipelineSettings = optimizer.run()
+    optimizer = StructureOptimizer(settings, event_log)
+    result, _, _ = optimizer.run()
 
     assert type(result) is PipelineSettings
     assert result.output_dir is not None
