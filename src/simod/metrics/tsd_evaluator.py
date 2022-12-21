@@ -1,7 +1,7 @@
 import itertools
 import multiprocessing
 import string
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor as Pool
 from operator import itemgetter
 
 import jellyfish as jf
@@ -83,18 +83,17 @@ class TimedStringDistanceEvaluator:
             ranges = self.define_ranges(mx_len, int(np.ceil(cpu_count / 2)))
             ranges = list(itertools.product(*[ranges, ranges]))
 
-            pool = Pool(processes=cpu_count)
-            args = [
-                (simulation_data[r[0]['min']:r[0]['max']],
-                 log_data[r[1]['min']:r[1]['max']],
-                 r)
-                for r in ranges
-            ]
-            p = pool.map_async(self._compare_traces, args)
-            pool.close()
+            with Pool(max_workers=cpu_count) as pool:
+                args = [
+                    (simulation_data[r[0]['min']:r[0]['max']],
+                     log_data[r[1]['min']:r[1]['max']],
+                     r)
+                    for r in ranges
+                ]
+                comparison_results = pool.map(self._compare_traces, args)
 
             # Save results
-            df_matrix = pd.concat(list(p.get()), axis=0, ignore_index=True)
+            df_matrix = pd.concat(list(comparison_results), axis=0, ignore_index=True)
 
         df_matrix.sort_values(by=['i', 'j'], inplace=True)
         df_matrix = df_matrix.reset_index().set_index(['i', 'j'])

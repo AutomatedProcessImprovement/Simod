@@ -1,6 +1,7 @@
 import itertools
 import json
 import multiprocessing
+from concurrent.futures import ProcessPoolExecutor as Pool
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Optional, Union
@@ -169,10 +170,8 @@ def simulate_in_parallel(
 
     print_step(f'Simulating {len(simulation_arguments)} times with {w_count} workers')
 
-    with multiprocessing.Pool(w_count) as pool:
-        pool.map_async(simulate, simulation_arguments)
-        pool.close()
-        pool.join()
+    with Pool(w_count) as pool:
+        pool.map(simulate, simulation_arguments)
 
     simulation_log_paths = [simulation_argument.output_log_path for simulation_argument in simulation_arguments]
 
@@ -201,11 +200,8 @@ def evaluate_logs(
 
     print_step(f'Reading {len(read_arguments)} simulated logs with {w_count} workers')
 
-    with multiprocessing.Pool(w_count) as pool:
-        async_result = pool.map_async(_read_simulated_log, read_arguments)
-        pool.close()
-        pool.join()
-    simulated_logs = async_result.get()
+    with Pool(w_count) as pool:
+        simulated_logs = pool.map(_read_simulated_log, read_arguments)
 
     # Evaluate
 
@@ -216,11 +212,8 @@ def evaluate_logs(
 
     print_step(f'Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers')
 
-    with multiprocessing.Pool(w_count) as pool:
-        async_result = pool.map_async(_evaluate_logs_using_metrics, evaluation_arguments)
-        pool.close()
-        pool.join()
-    evaluation_measurements = async_result.get()
+    with Pool(w_count) as pool:
+        evaluation_measurements = pool.map(_evaluate_logs_using_metrics, evaluation_arguments)
     evaluation_measurements = list(itertools.chain.from_iterable(evaluation_measurements))
 
     return evaluation_measurements
