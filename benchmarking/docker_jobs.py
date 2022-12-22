@@ -132,11 +132,11 @@ def run_docker_job(config_path: Path, host_input_dir: Path, host_output_dir: Pat
 
     docker_run_script = f"""#!/bin/bash
 
-    cd /usr/src/Simod
-    source venv/bin/activate
-    Xvfb :99 &>/dev/null & disown
-    simod optimize --config_path {container_base_path}/configs/{config_path.name}
-    """
+cd /usr/src/Simod
+source venv/bin/activate
+Xvfb :99 &>/dev/null & disown
+simod optimize --config_path {container_base_path}/configs/{config_path.name}
+"""
 
     docker_run_script_path = host_input_dir / 'docker_run.sh'
     docker_run_container_script_path = container_base_path / 'docker_run.sh'
@@ -170,12 +170,12 @@ def main():
     host_output_dir.mkdir(exist_ok=True, parents=True)
 
     log_paths = [
-        # (Path('logs/Production_train.csv'), Path('logs/Production_test.csv')),
-        (Path('logs/ConsultaDataMining201618_train.csv'), Path('logs/ConsultaDataMining201618_test.csv')),
-        (Path('logs/BPIC_2012_W_contained_train.csv'), Path('logs/BPIC_2012_W_contained_test.csv')),
-        (Path('logs/BPIC_2017_W_contained_train.csv'), Path('logs/BPIC_2017_W_contained_test.csv')),
-        (Path('logs/poc_processmining_train.csv'), Path('logs/poc_processmining_test.csv')),
-        (Path('logs/Governmental_Agency_train.csv'), Path('logs/Governmental_Agency_test.csv')),
+        (Path('logs/Production_train.csv'), Path('logs/Production_test.csv')),
+        # (Path('logs/ConsultaDataMining201618_train.csv'), Path('logs/ConsultaDataMining201618_test.csv')),
+        # (Path('logs/BPIC_2012_W_contained_train.csv'), Path('logs/BPIC_2012_W_contained_test.csv')),
+        # (Path('logs/BPIC_2017_W_contained_train.csv'), Path('logs/BPIC_2017_W_contained_test.csv')),
+        # (Path('logs/poc_processmining_train.csv'), Path('logs/poc_processmining_test.csv')),
+        # (Path('logs/Governmental_Agency_train.csv'), Path('logs/Governmental_Agency_test.csv')),
     ]
 
     config_paths = [
