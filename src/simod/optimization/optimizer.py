@@ -41,7 +41,12 @@ class Optimizer:
         self._settings = settings
 
         if event_log is None:
-            self._event_log = EventLog.from_path(settings.common.log_path, settings.common.log_ids)
+            self._event_log = EventLog.from_path(
+                path=settings.common.log_path,
+                log_ids=settings.common.log_ids,
+                process_name=settings.common.log_path.stem,
+                test_path=settings.common.test_log_path,
+            )
         else:
             self._event_log = event_log
 
@@ -78,24 +83,6 @@ class Optimizer:
         self._calendar_optimizer = optimizer
 
         return calendar_settings, best_pipeline_settings
-
-    def _mine_simulation_parameters(self, output_dir: Path, model_path: Path) -> Path:
-        log = self._event_log.train_partition
-        log_ids = self._event_log.log_ids
-        profile_type = self._settings.calendars.resource_profiles.discovery_type
-
-        parameters = mine_parameters(
-            self._settings.calendars.case_arrival,
-            self._settings.calendars.resource_profiles,
-            log,
-            log_ids,
-            model_path,
-            self._settings.structure.gateway_probabilities)
-
-        json_path = output_dir / f'simulation_parameters_{profile_type.value}.json'
-        parameters.to_json_file(json_path)
-
-        return json_path
 
     def _evaluate_model(
             self,

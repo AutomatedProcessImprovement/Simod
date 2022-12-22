@@ -51,6 +51,7 @@ class EventLog:
     def from_df(
             log: pd.DataFrame,
             log_ids: EventLogIDs,
+            test_log: Optional[pd.DataFrame] = None,
             process_name: Optional[str] = None,
             log_path: Optional[Path] = None,
             csv_log_path: Optional[Path] = None,
@@ -58,8 +59,14 @@ class EventLog:
         """
         Creates an EventLog from a DataFrame.
         """
-        train_validation_df, test_df = split_log(log, log_ids, training_percentage=0.8)
-        train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=0.8)
+        split_ratio = 0.8
+
+        if test_log is None:
+            train_validation_df, test_df = split_log(log, log_ids, training_percentage=split_ratio)
+            train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
+        else:
+            train_df, validation_df = split_log(log, log_ids, training_percentage=split_ratio)
+            test_df = test_log
 
         return EventLog(
             log_ids=log_ids,
@@ -76,13 +83,22 @@ class EventLog:
             path: Path,
             log_ids: EventLogIDs,
             process_name: Optional[str] = None,
+            test_path: Optional[Path] = None,
     ) -> 'EventLog':
         """
         Loads an event log from a file and does the log split for training, validation, and test.
         """
+        split_ratio = 0.8
+
         df, csv_path = read(path, log_ids)
-        train_validation_df, test_df = split_log(df, log_ids, training_percentage=0.8)
-        train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=0.8)
+
+        if test_path is None:
+            train_validation_df, test_df = split_log(df, log_ids, training_percentage=split_ratio)
+            train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
+        else:
+            train_df, validation_df = split_log(df, log_ids, training_percentage=split_ratio)
+            test_df, _ = read(test_path, log_ids)
+
         return EventLog(
             log_ids=log_ids,
             log_path=path,
@@ -90,30 +106,6 @@ class EventLog:
             log_train=train_df.sort_values(by=log_ids.start_time),
             log_validation=validation_df.sort_values(by=log_ids.start_time),
             log_test=test_df.sort_values(by=log_ids.start_time),
-            process_name=process_name,
-        )
-
-    @staticmethod
-    def from_path_with_test(
-            path: Path,
-            test_path: Path,
-            log_ids: EventLogIDs,
-            process_name: Optional[str] = None,
-    ) -> 'EventLog':
-        """
-        Loads an event log and test log from files, and does the log split for training, and validation.
-        """
-        df, csv_path = read(path, log_ids)
-        train_df, validation_df = split_log(df, log_ids, training_percentage=0.8)
-        test_df, _ = read(test_path, log_ids)
-
-        return EventLog(
-            log_ids=log_ids,
-            log_path=path,
-            csv_log_path=csv_path,
-            log_train=train_df,
-            log_validation=validation_df,
-            log_test=test_df,
             process_name=process_name,
         )
 

@@ -3,7 +3,9 @@ from pathlib import Path
 import click
 
 from simod.configuration import Configuration
+from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
+from simod.event_log.utilities import read
 from simod.optimization.optimizer import Optimizer
 from simod.utilities import get_project_dir, folder_id
 
@@ -61,9 +63,6 @@ def optimize(ctx, config_path):
     )
 
     output_dir = get_project_dir() / 'outputs' / folder_id()
-
-    preprocessor = Preprocessor(settings, output_dir)
-    settings, event_log = preprocessor.run()
 
     Optimizer(settings, event_log=event_log, output_dir=output_dir).run()
 
