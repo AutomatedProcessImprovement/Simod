@@ -1,0 +1,14 @@
+---
+- name: Update the Docker image
+  hosts: main
+
+  tasks:
+    - name: Pull the latest Docker image
+      community.docker.docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+        pull:
+          platform: amd64
+      vars:
+        docker_image: nokal/simod:latest
+      tags: docker

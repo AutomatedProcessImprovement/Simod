@@ -1,0 +1,45 @@
+---
+- name: Set up experiments environment
+  hosts: main
+
+  tasks:
+    - set_fact:
+        experiment_name: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+
+    - name: Create experiments folder
+      ansible.builtin.file:
+        path: ~/simod_experiments/{{ experiment_name }}
+        state: directory
+        mode: 0775
+
+    - name: Copy the input folder
+      ansible.builtin.copy:
+        src: ../benchmarking/input
+        dest: ~/simod_experiments/{{ experiment_name }}
+        mode: 0775
+
+    - name: Copy the Python script
+      ansible.builtin.copy:
+        src: ../benchmarking/docker_jobs.py
+        dest: ~/simod_experiments/{{ experiment_name }}
+        mode: 0775
+
+    - name: Copy the Python script
+      ansible.builtin.copy:
+        src: ../benchmarking/docker_collect_results.py
+        dest: ~/simod_experiments/{{ experiment_name }}
+        mode: 0775
+
+- name: Start the experiments
+  hosts: main
+
+  tasks:
+    - name: Start the experiments
+      ansible.builtin.command: "~/miniconda3/bin/python docker_jobs.py"
+      args:
+        chdir: ~/simod_experiments/{{ experiment_name }}
+
+    - name: Collect results
+      ansible.builtin.command: "~/miniconda3/bin/python docker_collect_results.py"
+      args:
+        chdir: ~/simod_experiments/{{ experiment_name }}
