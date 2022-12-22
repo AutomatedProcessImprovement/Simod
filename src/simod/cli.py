@@ -37,6 +37,29 @@ def optimize(ctx, config_path):
     config_path = repository_dir / config_path
     settings = Configuration.from_path(config_path)
 
+    # NOTE: EventLog requires start_time column to be present for split_log() to work.
+    #   So, we do pre-processing before creating the EventLog object.
+
+    log, csv_path = read(settings.common.log_path, settings.common.log_ids)
+
+    preprocessor = Preprocessor(log, settings.common.log_ids)
+    processed_log = preprocessor.run(
+        multitasking=settings.preprocessing.multitasking,
+    )
+
+    test_log = None
+    if settings.common.test_log_path is not None:
+        test_log, _ = read(settings.common.test_log_path, settings.common.log_ids)
+
+    event_log = EventLog.from_df(
+        log=processed_log,  # would be split into training and validation if test is provided, otherwise into test too
+        log_ids=settings.common.log_ids,
+        process_name=settings.common.log_path.stem,
+        test_log=test_log,
+        log_path=settings.common.log_path,
+        csv_log_path=csv_path,
+    )
+
     output_dir = get_project_dir() / 'outputs' / folder_id()
 
     preprocessor = Preprocessor(settings, output_dir)

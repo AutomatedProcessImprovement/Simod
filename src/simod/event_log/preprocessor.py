@@ -1,17 +1,14 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import pandas as pd
 
 from estimate_start_times.config import Configuration as StartTimeEstimatorConfiguration
 from estimate_start_times.estimator import StartTimeEstimator
-from simod.cli_formatter import print_step, print_section, print_notice
-from simod.configuration import Configuration
-from simod.event_log.event_log import EventLog
+from simod.cli_formatter import print_step, print_section
+from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.multitasking import adjust_durations
-from simod.event_log.utilities import read
-from simod.utilities import remove_asset
 
 
 @dataclass
@@ -29,66 +26,51 @@ class Settings:
 
 class Preprocessor:
     """
-    Preprocessor executes any event log pre-processing required according to the configuration.
+    Preprocessor executes event log pre-processing according to the `run()` arguments and returns the modified log back.
     """
 
-    config: Configuration
-    output_dir: Path
-    log: Optional[pd.DataFrame]
+    _log: pd.DataFrame
+    _log_ids: EventLogIDs
 
-    _csv_log_path: Optional[Path]
-    _tmp_dirs: [Path] = []
+    def __init__(self, log: pd.DataFrame, log_ids: EventLogIDs):
+        self._log = log.copy()
+        self._log_ids = log_ids
 
-    def __init__(self, config: Configuration, output_dir: Path):
-        self.config = config
-        self.output_dir = output_dir
-
-        self.log, self._csv_log_path = read(self.config.common.log_path, self.config.common.log_ids)
-
-    def run(self) -> Tuple[Configuration, EventLog]:
+    def run(self, multitasking: bool = False) -> pd.DataFrame:
         """
         Executes all pre-processing steps and updates the configuration if necessary.
+
+        Start times discovery is always executed if the log does not contain the start time column.
+
+        :param multitasking: Whether to adjust the timestamps for multitasking.
+        :return: The pre-processed event log.
         """
         print_section('Pre-processing')
 
-        if self.config.common.log_ids.start_time not in self.log.columns:
+        if self._log_ids.start_time not in self._log.columns:
             self._add_start_times()
 
-        if self.config.preprocessing.multitasking is True:
+        if multitasking:
             self._adjust_for_multitasking()
 
-        event_log = EventLog.from_df(
-            self.log,
-            self.config.common.log_ids,
-            log_path=self.config.common.log_path,
-            csv_log_path=self._csv_log_path,
-        )
-
-        return self.config, event_log
+        return self._log
 
     def _adjust_for_multitasking(self, is_concurrent=False, verbose=False):
         print_step('Adjusting timestamps for multitasking')
 
-        processed_log_path = self.output_dir / (self.config.common.log_path.stem + '_processed.xes')
-
-        self.log = adjust_durations(self.log, self.config.common.log_ids, processed_log_path,
-                                    is_concurrent=is_concurrent, verbose=verbose)
-        self.config.log_path = processed_log_path
-        self._tmp_dirs.append(processed_log_path)
-        print_notice(f'New log path: {self.config.log_path}')
+        self._log = adjust_durations(
+            self._log,
+            self._log_ids,
+            output_path=None,
+            is_concurrent=is_concurrent,
+            verbose=verbose,
+        )
 
     def _add_start_times(self):
         print_step('Adding start times')
 
         configuration = StartTimeEstimatorConfiguration(
-            log_ids=self.config.common.log_ids,
+            log_ids=self._log_ids,
         )
 
-        assert self.log is not None, 'Log is None'
-
-        extended_event_log = StartTimeEstimator(self.log, configuration).estimate(replace_recorded_start_times=True)
-        self.log = extended_event_log
-
-    def cleanup(self):
-        for folder in self._tmp_dirs:
-            remove_asset(folder)
+        self._log = StartTimeEstimator(self._log, configuration).estimate(replace_recorded_start_times=True)

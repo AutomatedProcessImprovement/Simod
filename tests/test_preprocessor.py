@@ -4,7 +4,7 @@ import pytest
 
 from simod.configuration import Configuration
 from simod.event_log.preprocessor import Preprocessor
-from simod.utilities import get_project_dir, folder_id
+from simod.event_log.utilities import read
 
 config_yaml = """
 version: 2
@@ -72,9 +72,9 @@ def test_add_start_times(test_data, entry_point):
     settings = test_data['settings']
     settings.common.log_path = entry_point / Path(settings.common.log_path).name
 
-    output_dir = get_project_dir() / 'outputs' / folder_id()
+    log, _ = read(settings.common.log_path, settings.common.log_ids)
 
-    preprocessor = Preprocessor(settings, output_dir)
-    _ = preprocessor.run()
+    preprocessor = Preprocessor(log, settings.common.log_ids)
+    log = preprocessor.run()
 
-    assert preprocessor.log[settings.common.log_ids.start_time].isna().sum() == 0
+    assert log[settings.common.log_ids.start_time].isna().sum() == 0
