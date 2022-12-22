@@ -1,0 +1,96 @@
+---
+- name: Update the Docker image
+  hosts: main
+
+  tasks:
+    - name: Pull the latest Docker image
+      community.docker.docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+        pull:
+          platform: amd64
+      vars:
+        docker_image: nokal/simod:latest
+      tags: docker
+
+- name: Testing
+  hosts: main
+
+  tasks:
+    - set_fact:
+        base_dir: /home/ihar/simod_testing
+        experiment_name: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+      tags: testing
+
+    - name: Create the testing directory
+      file:
+        path: "{{ base_dir }}/{{ experiment_name }}"
+        state: directory
+      with_items:
+        - "{{ base_dir }}"
+        - "{{ base_dir }}/{{ experiment_name }}"
+      tags: testing
+
+    - name: Prepare Bash script for testing
+      template:
+        src: templates/docker_run_cmd.sh.j2
+        dest: "{{ base_dir }}/{{ experiment_name }}/docker_run.sh"
+        mode: 0755
+      vars:
+        command: pytest -vv --durations=0 -m "not system and not integration"
+      tags: testing
+
+    - name: Run unit tests in a container
+      community.docker.docker_container:
+        name: simod_testing
+        image: "{{ docker_image }}"
+        command: /bin/bash -c "cd /usr/src/Simod/input && ./docker_run.sh"
+        volumes:
+          - "{{ base_dir }}/{{ experiment_name }}:/usr/src/Simod/input"
+          - "{{ base_dir }}/{{ experiment_name }}/output:/usr/src/Simod/outputs"
+        state: started
+        recreate: yes
+        restart_policy: no
+        tty: yes
+        detach: no
+        cleanup: yes
+      vars:
+        docker_image: nokal/simod:latest
+      register: docker_testing
+      ignore_errors: yes
+      tags: testing
+
+- name: Set up experiments environment
+  hosts: main
+
+  tasks:
+    - set_fact:
+        experiment_name: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+
+    - name: Create experiments folder
+      ansible.builtin.file:
+        path: ~/simod_experiments/{{ experiment_name }}
+        state: directory
+        mode: 0775
+
+    - name: Copy the input folder
+      ansible.builtin.copy:
+        src: ../benchmarking/input
+        dest: ~/simod_experiments/{{ experiment_name }}
+        mode: 0775
+
+    - name: Copy the Python script
+      ansible.builtin.copy:
+        src: ../benchmarking/docker_jobs.py
+        dest: ~/simod_experiments/{{ experiment_name }}
+        mode: 0775
+
+- name: Start the experiments
+  hosts: main
+
+  tasks:
+    - name: Start the experiments
+      ansible.builtin.command: "~/miniconda3/bin/python docker_jobs.py"
+      args:
+        chdir: ~/simod_experiments/{{ experiment_name }}
+      tags: python

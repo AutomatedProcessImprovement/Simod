@@ -1,0 +1,6 @@
+all:
+  hosts:
+    main:
+      ansible_host: simodtesting.cloud.ut.ee
+    hpc:
+      ansible_host: rocket.hpc.ut.ee
