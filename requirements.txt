@@ -99,7 +99,7 @@ requests==2.27.1
 requests-toolbelt==0.9.1
 ruamel-yaml-conda==0.15.100
 scipy==1.8.0
-setuptools==58.0.4
+setuptools==65.5.1
 shellingham==1.4.0
 simod==3.1.0
 simpy==4.0.1
