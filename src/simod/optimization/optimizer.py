@@ -173,15 +173,17 @@ class Optimizer:
         return json_path, settings
 
     def run(self):
+        """
+        Runs the entire Simod optimization pipeline that consists of the structure and calendars optimization phases.
+        :return: None
+        """
+
         best_result_dir = self._output_dir / 'best_result'
         best_result_dir.mkdir(parents=True, exist_ok=True)
 
-        model_path = self._settings.common.model_path
-
-        # TODO: optimize only gateway probabilities if structure is provided
-
         print_section('Structure optimization')
-        structure_optimizer_settings, structure_pipeline_settings, model_path, gateway_probabilities = self._optimize_structure()
+        result = self._optimize_structure()
+        structure_optimizer_settings, structure_pipeline_settings, model_path, gateway_probabilities = result
         structure_miner_settings = StructureMinerSettings(
             gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
             mining_algorithm=self._settings.structure.mining_algorithm,

@@ -88,3 +88,25 @@ def test_structure_optimizer(entry_point, test_data):
         0]
     assert result.eta == optimizer.evaluation_measurements['eta'].to_list()[0]
     assert result.epsilon == optimizer.evaluation_measurements['epsilon'].to_list()[0]
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize('test_data', structure_optimizer_test_data,
+                         ids=[test_data['name'] for test_data in structure_optimizer_test_data])
+def test_structure_optimizer_with_bpmn(entry_point, test_data):
+    base_dir = get_project_dir() / 'outputs'
+    log_path = entry_point / 'LoanApp_sequential_9-5_diffres_filtered.csv'
+    model_path = entry_point / 'LoanApp_sequential_9-5_diffres_filtered.bpmn'
+
+    settings = StructureOptimizationSettings.from_stream(test_data['config_data'], base_dir=base_dir)
+    settings.project_name = os.path.splitext(os.path.basename(log_path))[0]
+
+    settings.model_path = model_path
+
+    event_log = EventLog.from_path(log_path, STANDARD_COLUMNS)
+
+    optimizer = StructureOptimizer(settings, event_log)
+    result, best_model_path, _ = optimizer.run()
+
+    assert result.model_path == best_model_path
+    assert best_model_path == model_path

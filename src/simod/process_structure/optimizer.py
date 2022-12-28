@@ -12,7 +12,7 @@ from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_default_24_7
 from simod.utilities import remove_asset, file_id, folder_id
-from .miner import StructureMiner, Settings as StructureMinerSettings
+from .miner import StructureMiner
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..configuration import StructureMiningAlgorithm, Metric
@@ -85,6 +85,7 @@ class StructureOptimizer(HyperoptPipeline):
                                            trial_stage_settings, self._train_log_path, self._settings.mining_algorithm)
             else:
                 if self._settings.model_path is not None:
+                    # We copy the model mostly for debugging purposes, so we have the model always in the output folder
                     shutil.copy(self._settings.model_path, model_path)
                 else:
                     raise ValueError('Model path is not provided')
@@ -123,11 +124,14 @@ class StructureOptimizer(HyperoptPipeline):
         # saving results
         self._process_measurements(trial_stage_settings, status, evaluation_measurements)
 
-        # self._reset_log_buckets()
-
         return response
 
     def run(self) -> Tuple[PipelineSettings, Path, list]:
+        """
+        Runs the structure optimization pipeline.
+        :return: Tuple of the best settings, the path to the best model and the list of evaluation measurements.
+        """
+
         self._event_log.train_to_xes(self._train_log_path)
 
         space = self._define_search_space(self._settings)

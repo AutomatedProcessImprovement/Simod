@@ -10,14 +10,18 @@ from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDi
 
 @dataclass
 class StructureOptimizationSettings:
-    """Settings for the structure optimizer."""
+    """
+    Settings for the structure optimizer.
+    """
+
     project_name: Optional[str]
     base_dir: Optional[Path]
     model_path: Optional[Path]
 
     optimization_metric: Metric
-    gateway_probabilities_method: Optional[Union[GatewayProbabilitiesDiscoveryMethod, List[
-        GatewayProbabilitiesDiscoveryMethod]]] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
+    gateway_probabilities_method: Optional[
+        Union[GatewayProbabilitiesDiscoveryMethod, List[GatewayProbabilitiesDiscoveryMethod]]
+    ] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
     max_evaluations: int = 1
     simulation_repetitions: int = 1
     pdef_method: Optional[PDFMethod] = None  # TODO: rename to distribution_discovery_method
@@ -202,27 +206,36 @@ class PipelineSettings:
         assert gateway_probabilities_index is not None
         gateway_probabilities_method = initial_settings.gateway_probabilities_method[gateway_probabilities_index]
 
-        epsilon = data.get('epsilon')
-        eta = data.get('eta')
-        concurrency = data.get('concurrency')
-        prioritize_parallelism_index = data.get('prioritize_parallelism')
+        epsilon = None
+        eta = None
+        concurrency = None
         prioritize_parallelism = None
-        replace_or_joins_index = data.get('replace_or_joins')
         replace_or_joins = None
 
-        if initial_settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-                                                 StructureMiningAlgorithm.SPLIT_MINER_3]:
-            assert epsilon is not None
-            assert eta is not None
+        # If the model was not provided by the user,
+        # then we have all the Split Miner parameters in hyperopt's response
+        if initial_settings.model_path is None:
+            epsilon = data.get('epsilon')
+            eta = data.get('eta')
+            concurrency = data.get('concurrency')
+            prioritize_parallelism_index = data.get('prioritize_parallelism')
+            prioritize_parallelism = None
+            replace_or_joins_index = data.get('replace_or_joins')
+            replace_or_joins = None
 
-            if initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
-                assert prioritize_parallelism_index is not None
-                assert replace_or_joins_index is not None
+            if initial_settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
+                                                     StructureMiningAlgorithm.SPLIT_MINER_3]:
+                assert epsilon is not None
+                assert eta is not None
 
-                prioritize_parallelism = initial_settings.prioritize_parallelism[prioritize_parallelism_index]
-                replace_or_joins = initial_settings.replace_or_joins[replace_or_joins_index]
-        elif initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-            assert concurrency is not None
+                if initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
+                    assert prioritize_parallelism_index is not None
+                    assert replace_or_joins_index is not None
+
+                    prioritize_parallelism = initial_settings.prioritize_parallelism[prioritize_parallelism_index]
+                    replace_or_joins = initial_settings.replace_or_joins[replace_or_joins_index]
+            elif initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+                assert concurrency is not None
 
         output_dir = model_path.parent
 
