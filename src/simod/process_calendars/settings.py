@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, PDFMethod, CalendarSettings, \
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, CalendarSettings, \
     Configuration, Metric
 
 
@@ -18,7 +18,6 @@ class CalendarOptimizationSettings:
     resource_profiles: CalendarSettings
 
     simulation_repetitions: int = 1
-    pdef_method: Optional[PDFMethod] = PDFMethod.AUTOMATIC
 
     @staticmethod
     def from_configuration(config: Configuration, base_dir: Path) -> 'CalendarOptimizationSettings':
@@ -26,7 +25,6 @@ class CalendarOptimizationSettings:
             base_dir=base_dir,
             optimization_metric=config.calendars.optimization_metric,
             simulation_repetitions=config.common.repetitions,
-            pdef_method=config.structure.distribution_discovery_type,
             max_evaluations=config.calendars.max_evaluations,
             case_arrival=config.calendars.case_arrival,
             resource_profiles=config.calendars.resource_profiles)
@@ -39,7 +37,6 @@ class CalendarOptimizationSettings:
             'case_arrival': self.case_arrival.to_dict(),
             'resource_profiles': self.resource_profiles.to_dict(),
             'simulation_repetitions': self.simulation_repetitions,
-            'pdef_method': self.pdef_method.name,
         }
 
 

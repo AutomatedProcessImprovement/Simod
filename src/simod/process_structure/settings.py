@@ -4,8 +4,7 @@ from typing import Optional, Union, List, Dict, Any
 
 import yaml
 
-from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod, PDFMethod, Configuration, \
-    Metric
+from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod, Configuration, Metric
 
 
 @dataclass
@@ -24,7 +23,6 @@ class StructureOptimizationSettings:
     ] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
     max_evaluations: int = 1
     simulation_repetitions: int = 1
-    pdef_method: Optional[PDFMethod] = None  # TODO: rename to distribution_discovery_method
 
     # Structure Miner Settings can be arrays of values, in that case different values are used for different repetition.
     # Structure Miner accepts only singular values for the following settings:
@@ -81,12 +79,6 @@ class StructureOptimizationSettings:
 
         simulation_repetitions = settings.get('simulation_repetitions', 1)
 
-        pdef_method = settings.get('pdef_method', None)
-        if pdef_method is not None:
-            pdef_method = PDFMethod.from_str(pdef_method)
-        else:
-            pdef_method = PDFMethod.AUTOMATIC
-
         epsilon = settings.get('epsilon', None)
 
         eta = settings.get('eta', None)
@@ -123,7 +115,6 @@ class StructureOptimizationSettings:
             gateway_probabilities_method=gateway_probabilities_method,
             max_evaluations=max_evaluations,
             simulation_repetitions=simulation_repetitions,
-            pdef_method=pdef_method,
             epsilon=epsilon,
             eta=eta,
             concurrency=concurrency,
@@ -144,7 +135,6 @@ class StructureOptimizationSettings:
             gateway_probabilities_method=config.structure.gateway_probabilities,
             max_evaluations=config.structure.max_evaluations,
             simulation_repetitions=config.common.repetitions,
-            pdef_method=config.structure.distribution_discovery_type,
             epsilon=config.structure.epsilon,
             eta=config.structure.eta,
             concurrency=config.structure.concurrency,

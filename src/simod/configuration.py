@@ -162,26 +162,6 @@ class Metric(Enum):
         return f'Unknown Metric {str(self)}'
 
 
-class PDFMethod(Enum):
-    AUTOMATIC = auto()
-    SEMIAUTOMATIC = auto()
-    MANUAL = auto()
-    DEFAULT = auto()
-
-    @classmethod
-    def from_str(cls, value: str) -> 'PDFMethod':
-        if value.lower() == 'automatic':
-            return cls.AUTOMATIC
-        elif value.lower() == 'semiautomatic':
-            return cls.SEMIAUTOMATIC
-        elif value.lower() == 'manual':
-            return cls.MANUAL
-        elif value.lower() == 'default':
-            return cls.DEFAULT
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-
 class ExecutionMode(Enum):
     SINGLE = auto()
     OPTIMIZER = auto()
@@ -314,7 +294,6 @@ class StructureSettings:
         Union[GatewayProbabilitiesDiscoveryMethod, List[GatewayProbabilitiesDiscoveryMethod]]] = None
     replace_or_joins: Optional[Union[bool, List[bool]]] = None  # should replace non-trivial OR joins
     prioritize_parallelism: Optional[Union[bool, List[bool]]] = None  # should prioritize parallelism on loops
-    distribution_discovery_type: Optional[PDFMethod] = None
 
     @staticmethod
     def default() -> 'StructureSettings':
@@ -328,21 +307,16 @@ class StructureSettings:
             gateway_probabilities=GatewayProbabilitiesDiscoveryMethod.DISCOVERY,
             replace_or_joins=False,
             prioritize_parallelism=False,
-            distribution_discovery_type=PDFMethod.AUTOMATIC,
         )
 
     @staticmethod
     def from_dict(config: dict) -> 'StructureSettings':
         mining_algorithm = StructureMiningAlgorithm.from_str(config['mining_algorithm'])
 
-        gateway_probabilities = [GatewayProbabilitiesDiscoveryMethod.from_str(g) for g in
-                                 config['gateway_probabilities']]
-
-        dst = config.get('distribution_discovery_type')
-        if dst is not None:
-            distribution_discovery_type = PDFMethod.from_str(dst)
-        else:
-            distribution_discovery_type = PDFMethod.AUTOMATIC
+        gateway_probabilities = [
+            GatewayProbabilitiesDiscoveryMethod.from_str(g)
+            for g in config['gateway_probabilities']
+        ]
 
         optimization_metric = config.get('optimization_metric')
         if optimization_metric is not None:
@@ -360,7 +334,6 @@ class StructureSettings:
             gateway_probabilities=gateway_probabilities,
             replace_or_joins=config['replace_or_joins'],
             prioritize_parallelism=config['prioritize_parallelism'],
-            distribution_discovery_type=distribution_discovery_type
         )
 
     def to_dict(self) -> dict:
@@ -374,7 +347,6 @@ class StructureSettings:
             'gateway_probabilities': [str(g) for g in self.gateway_probabilities],
             'replace_or_joins': self.replace_or_joins,
             'prioritize_parallelism': self.prioritize_parallelism,
-            'distribution_discovery_type': str(self.distribution_discovery_type)
         }
 
 
