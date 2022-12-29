@@ -227,18 +227,19 @@ class Optimizer:
         parameters_path, calendars_settings = self._mine_calendars(
             calendar_pipeline_settings, model_path, best_result_dir)
 
-        print_section('Mining extraneous delay timers')
-        with parameters_path.open() as f:
-            parameters = json.load(f)
-        _, model_path, parameters_path = discover_extraneous_delay_timers(
-            self._event_log.train_partition,
-            self._event_log.log_ids,
-            model_path,
-            parameters,
-            base_dir=best_result_dir,
-            num_iterations=50,
-            max_alpha=50,
-        )
+        if self._settings.common.extraneous_activity_delays:
+            print_section('Mining extraneous delay timers')
+            with parameters_path.open() as f:
+                parameters = json.load(f)
+            _, model_path, parameters_path = discover_extraneous_delay_timers(
+                self._event_log.train_partition,
+                self._event_log.log_ids,
+                model_path,
+                parameters,
+                base_dir=best_result_dir,
+                num_iterations=50,
+                max_alpha=50,
+            )
 
         print_section('Evaluation')
         simulation_dir = best_result_dir / 'simulation'

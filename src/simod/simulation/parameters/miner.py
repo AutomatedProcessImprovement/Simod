@@ -111,7 +111,10 @@ def mine_default_24_7(
         bpmn_path: Path,
         process_graph: DiGraph,
         gateways_probability_type: GatewayProbabilitiesDiscoveryMethod) -> SimulationParameters:
-    """Simulation parameters with default calendar 24/7."""
+    """
+    Simulation parameters with default calendar 24/7.
+    """
+    assert gateways_probability_type is not None, "Gateway probabilities method discovery must be provided."
 
     calendar_24_7 = Calendar.all_day_long()
 

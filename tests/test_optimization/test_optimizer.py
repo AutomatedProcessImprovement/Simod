@@ -109,7 +109,7 @@ calendars:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 1
   resource_profiles:
-    discovery_type: differentiated
+    discovery_type: undifferentiated
     granularity: 
       - 15
       - 60
@@ -175,6 +175,59 @@ calendars:
     participation: 0.4
 """
 
+config_yaml_D = """
+version: 2
+common:
+  log_path: tests/assets/LoanApp_sequential_9-5_diffres_filtered.csv
+  exec_mode: optimizer
+  repetitions: 1
+  evaluation_metrics: 
+    - dl
+    - absolute_hourly_emd
+    - cycle_time_emd
+    - circadian_emd
+  extraneous_activity_delays: true
+preprocessing:
+  multitasking: false
+structure:
+  optimization_metric: dl
+  max_evaluations: 1
+  mining_algorithm: sm3
+  concurrency:
+    - 0.0
+    - 1.0
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
+  gateway_probabilities:
+    - equiprobable
+    - discovery
+  replace_or_joins:
+    - true
+    - false
+  prioritize_parallelism:
+    - true
+    - false
+calendars:
+  optimization_metric: absolute_hourly_emd
+  max_evaluations: 1
+  resource_profiles:
+    discovery_type: differentiated
+    granularity: 
+      - 15
+      - 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01 
+      - 0.3
+    participation: 0.4
+"""
+
 test_cases = [
     {
         'name': 'loan_app_undifferentiated',
@@ -187,7 +240,11 @@ test_cases = [
     {
         'name': 'loan_app_differentiated_with_model',
         'settings': Configuration.from_stream(config_yaml_C),
-    }
+    },
+    {
+        'name': 'loan_app_differentiated_with_extraneous_delays',
+        'settings': Configuration.from_stream(config_yaml_D),
+    },
 ]
 
 

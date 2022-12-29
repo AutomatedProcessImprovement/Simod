@@ -7,6 +7,7 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
 
+from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_subsection
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs
@@ -61,6 +62,10 @@ class CalendarOptimizer(HyperoptPipeline):
             columns=['value', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
 
         self._bayes_trials = Trials()
+
+        if self._process_graph is None:
+            bpmn_reader = BPMNReaderWriter(train_model_path)
+            self._process_graph = bpmn_reader.as_graph()
 
     def _optimization_objective(self, trial_stg: Union[dict, PipelineSettings]):
         print_subsection('Calendar Optimization Trial')

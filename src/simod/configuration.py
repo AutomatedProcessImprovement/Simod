@@ -188,6 +188,7 @@ class CommonSettings:
     repetitions: int
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool
+    extraneous_activity_delays: bool
 
     @staticmethod
     def default() -> 'CommonSettings':
@@ -199,7 +200,8 @@ class CommonSettings:
             exec_mode=ExecutionMode.OPTIMIZER,
             repetitions=1,
             evaluation_metrics=[Metric.DL, Metric.ABSOLUTE_HOURLY_EMD, Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
-            clean_intermediate_files=False
+            clean_intermediate_files=False,
+            extraneous_activity_delays=False,
         )
 
     @staticmethod
@@ -232,6 +234,8 @@ class CommonSettings:
             if not model_path.is_absolute():
                 model_path = PROJECT_DIR / model_path
 
+        extraneous_activity_delays = config.get('extraneous_activity_delays', False)
+
         return CommonSettings(
             log_path=log_path,
             test_log_path=test_log_path,
@@ -240,7 +244,8 @@ class CommonSettings:
             exec_mode=exec_mode,
             repetitions=config['repetitions'],
             evaluation_metrics=metrics,
-            clean_intermediate_files=clean_up
+            clean_intermediate_files=clean_up,
+            extraneous_activity_delays=extraneous_activity_delays,
         )
 
     def to_dict(self) -> dict:
@@ -252,7 +257,8 @@ class CommonSettings:
             'exec_mode': str(self.exec_mode),
             'repetitions': self.repetitions,
             'evaluation_metrics': [str(metric) for metric in self.evaluation_metrics],
-            'clean_intermediate_files': self.clean_intermediate_files
+            'clean_intermediate_files': self.clean_intermediate_files,
+            'extraneous_activity_delays': self.extraneous_activity_delays,
         }
 
 
