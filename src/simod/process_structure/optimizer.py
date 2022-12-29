@@ -132,7 +132,7 @@ class StructureOptimizer(HyperoptPipeline):
 
         return response
 
-    def run(self) -> Tuple[PipelineSettings, Path, list]:
+    def run(self) -> Tuple[PipelineSettings, Path, list, Path]:
         """
         Runs the structure optimization pipeline.
         :return: Tuple of the best settings, the path to the best model and the list of evaluation measurements.
@@ -154,7 +154,6 @@ class StructureOptimizer(HyperoptPipeline):
 
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
         results_ok = results[results.status == STATUS_OK]
-        self.best_output = results_ok.iloc[0].output_dir
 
         best_model_path = results_ok.iloc[0].model_path
         assert best_model_path.exists(), f'Best model path {best_model_path} does not exist'
@@ -164,7 +163,6 @@ class StructureOptimizer(HyperoptPipeline):
             model_path=best_model_path,
             project_name=self._settings.project_name,
         )
-        self.best_parameters = best_settings
 
         best_parameters_path = best_model_path.parent / 'simulation_parameters.json'
         best_gateway_probabilities = json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
@@ -173,7 +171,7 @@ class StructureOptimizer(HyperoptPipeline):
         self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
         self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
 
-        return best_settings, best_model_path, best_gateway_probabilities
+        return best_settings, best_model_path, best_gateway_probabilities, best_parameters_path
 
     def cleanup(self):
         remove_asset(self._output_dir)

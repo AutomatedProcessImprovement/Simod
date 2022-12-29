@@ -63,13 +63,13 @@ class Optimizer:
         else:
             self._process_graph = None
 
-    def _optimize_structure(self) -> Tuple[StructureOptimizationSettings, StructurePipelineSettings, Path, list]:
+    def _optimize_structure(self) -> Tuple[StructureOptimizationSettings, StructurePipelineSettings, Path, list, Path]:
         settings = StructureOptimizationSettings.from_configuration(self._settings, self._output_dir)
         optimizer = StructureOptimizer(settings, self._event_log, process_graph=self._process_graph)
         self._structure_optimizer = optimizer
-        best_pipeline_settings, model_path, gateway_probabilities = optimizer.run()
+        best_pipeline_settings, model_path, gateway_probabilities, parameters_path = optimizer.run()
 
-        return settings, best_pipeline_settings, model_path, gateway_probabilities
+        return settings, best_pipeline_settings, model_path, gateway_probabilities, parameters_path
 
     def _optimize_calendars(
             self,
@@ -198,10 +198,24 @@ class Optimizer:
 
         print_section('Structure optimization')
         result = self._optimize_structure()
-        structure_optimizer_settings, structure_pipeline_settings, model_path, gateway_probabilities = result
+        structure_optimizer_settings, structure_pipeline_settings, model_path, gateway_probabilities, parameters_path = result
 
         if not self._process_graph:
             self._process_graph = BPMNReaderWriter(model_path).as_graph()
+
+        if self._settings.common.extraneous_activity_delays:
+            print_section('Mining extraneous delay timers')
+            with parameters_path.open() as f:
+                parameters = json.load(f)
+            _, model_path, parameters_path = discover_extraneous_delay_timers(
+                self._event_log.train_partition,
+                self._event_log.log_ids,
+                model_path,
+                parameters,
+                base_dir=best_result_dir,
+                num_iterations=50,
+                max_alpha=50,
+            )
 
         structure_miner_settings = StructureMinerSettings(
             gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
@@ -221,25 +235,14 @@ class Optimizer:
             print_section('Mining structure using the best hyperparameters')
             model_path, structure_miner_settings = self._mine_structure(structure_miner_settings, best_result_dir)
         else:
-            shutil.copy(model_path, best_result_dir)
+            try:
+                shutil.copy(model_path, best_result_dir)
+            except shutil.SameFileError:
+                pass
 
         print_section('Mining calendars using the best hyperparameters')
         parameters_path, calendars_settings = self._mine_calendars(
             calendar_pipeline_settings, model_path, best_result_dir)
-
-        if self._settings.common.extraneous_activity_delays:
-            print_section('Mining extraneous delay timers')
-            with parameters_path.open() as f:
-                parameters = json.load(f)
-            _, model_path, parameters_path = discover_extraneous_delay_timers(
-                self._event_log.train_partition,
-                self._event_log.log_ids,
-                model_path,
-                parameters,
-                base_dir=best_result_dir,
-                num_iterations=50,
-                max_alpha=50,
-            )
 
         print_section('Evaluation')
         simulation_dir = best_result_dir / 'simulation'

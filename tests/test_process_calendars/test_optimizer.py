@@ -47,7 +47,12 @@ def test_optimizer(entry_point, test_case):
 
     event_log = EventLog.from_path(log_path, log_ids)
 
-    optimizer = CalendarOptimizer(calendar_settings, event_log, train_model_path=model_path)
+    optimizer = CalendarOptimizer(
+        calendar_settings,
+        event_log,
+        train_model_path=model_path,
+        gateway_probabilities_method=settings.structure.gateway_probabilities
+    )
     result = optimizer.run()
 
     assert type(result) is PipelineSettings

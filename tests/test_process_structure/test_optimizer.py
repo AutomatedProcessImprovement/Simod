@@ -70,7 +70,7 @@ def test_structure_optimizer(entry_point, test_data):
     event_log = EventLog.from_path(log_path, STANDARD_COLUMNS)
 
     optimizer = StructureOptimizer(settings, event_log)
-    result, _, _ = optimizer.run()
+    result, _, _, _ = optimizer.run()
 
     assert type(result) is PipelineSettings
     assert result.output_dir is not None
@@ -106,7 +106,7 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
     event_log = EventLog.from_path(log_path, STANDARD_COLUMNS)
 
     optimizer = StructureOptimizer(settings, event_log)
-    result, best_model_path, _ = optimizer.run()
+    result, best_model_path, _, _ = optimizer.run()
 
     assert result.model_path == best_model_path
     assert best_model_path == model_path
