@@ -29,6 +29,7 @@ def mine_parameters(
         model_path: Path,
         gateways_probability_method: Optional[GatewayProbabilitiesDiscoveryMethod] = None,
         gateway_probabilities: Optional[list] = None,
+        process_graph: Optional[DiGraph] = None,
 ) -> SimulationParameters:
     """
     Mine simulation parameters given the settings for resources and case arrival.
@@ -37,6 +38,10 @@ def mine_parameters(
         assert gateways_probability_method is not None, \
             "Either gateway probabilities or a method to mine them must be provided."
         gateway_probabilities = mine_gateway_probabilities(log, log_ids, model_path, gateways_probability_method)
+
+    if not process_graph:
+        bpmn_reader = BPMNReaderWriter(model_path)
+        process_graph = bpmn_reader.as_graph()
 
     # Case arrival parameters
 
@@ -59,9 +64,6 @@ def mine_parameters(
         )
     else:
         raise ValueError(f'Unknown calendar discovery type: {case_arrival_discovery_type}')
-
-    bpmn_reader = BPMNReaderWriter(model_path)
-    process_graph = bpmn_reader.as_graph()
 
     arrival_distribution = inter_arrival_distribution.discover(log, log_ids)
 

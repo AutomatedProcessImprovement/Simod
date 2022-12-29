@@ -5,14 +5,14 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from networkx import DiGraph
 
-from simod.cli_formatter import print_subsection, print_message
+from simod.cli_formatter import print_subsection
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.event_log import EventLog
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
-from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import remove_asset, folder_id, file_id
@@ -27,6 +27,8 @@ class CalendarOptimizer(HyperoptPipeline):
     _gateway_probabilities: Optional[dict]
     _train_model_path: Path
     _output_dir: Path
+    _bayes_trials: Trials
+    _process_graph: Optional[DiGraph]
 
     evaluation_measurements: pd.DataFrame
 
@@ -34,15 +36,19 @@ class CalendarOptimizer(HyperoptPipeline):
             self,
             calendar_optimizer_settings: CalendarOptimizationSettings,
             event_log: EventLog,
-            structure_settings: Optional[StructureMinerSettings] = None,
-            train_model_path: Optional[Path] = None,
-            gateway_probabilities: Optional[list] = None):
+            train_model_path: Path,
+            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod,
+            gateway_probabilities: Optional[list] = None,
+            process_graph: Optional[DiGraph] = None,
+    ):
 
         self._calendar_optimizer_settings = calendar_optimizer_settings
         self._event_log = event_log
         self._log_ids = event_log.log_ids
+        self._train_model_path = train_model_path
+        self._gateway_probabilities_method = gateway_probabilities_method
         self._gateway_probabilities = gateway_probabilities
-        self._gateway_probabilities_method = structure_settings.gateway_probabilities_method
+        self._process_graph = process_graph
 
         self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
         self._log_validation = event_log.validation_partition.sort_values(event_log.log_ids.start_time, ascending=True)
@@ -51,37 +57,10 @@ class CalendarOptimizer(HyperoptPipeline):
         self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
-        if train_model_path is not None:
-            self._train_model_path = train_model_path
-        else:
-            assert structure_settings is not None, 'Structure settings must be provided if model path is not provided'
-            self._train_model_path = self._mine_structure(structure_settings, self._output_dir)
-
         self.evaluation_measurements = pd.DataFrame(
             columns=['value', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
 
         self._bayes_trials = Trials()
-
-    def _mine_structure(self, settings: StructureMinerSettings, output_dir: Path) -> Path:
-        print_message(f'Mining structure with settings {settings.to_dict()}')
-
-        log_path = output_dir / 'train_log.xes'
-        self._event_log.train_to_xes(log_path)
-
-        model_path = output_dir / 'train.bpmn'
-
-        StructureMiner(
-            settings.mining_algorithm,
-            log_path,
-            model_path,
-            concurrency=settings.concurrency,
-            eta=settings.eta,
-            epsilon=settings.epsilon,
-            prioritize_parallelism=settings.prioritize_parallelism,
-            replace_or_joins=settings.replace_or_joins,
-        )
-
-        return model_path
 
     def _optimization_objective(self, trial_stg: Union[dict, PipelineSettings]):
         print_subsection('Calendar Optimization Trial')
@@ -241,7 +220,9 @@ class CalendarOptimizer(HyperoptPipeline):
             self._log_ids,
             settings.model_path,
             gateways_probability_method=self._gateway_probabilities_method,
-            gateway_probabilities=self._gateway_probabilities)
+            gateway_probabilities=self._gateway_probabilities,
+            process_graph=self._process_graph,
+        )
 
         json_path = settings.output_dir / 'simulation_parameters.json'
 

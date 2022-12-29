@@ -1,12 +1,13 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from networkx import DiGraph
 
 from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.hyperopt_pipeline import HyperoptPipeline
@@ -28,6 +29,7 @@ class StructureOptimizer(HyperoptPipeline):
     _log_ids: EventLogIDs
     _train_log_path: Path
     _output_dir: Path
+    _process_graph: Optional[DiGraph]
 
     evaluation_measurements: pd.DataFrame
 
@@ -35,9 +37,11 @@ class StructureOptimizer(HyperoptPipeline):
             self,
             settings: StructureOptimizationSettings,
             event_log: EventLog,
+            process_graph: Optional[DiGraph] = None,
     ):
         self._event_log = event_log
         self._settings = settings
+        self._process_graph = process_graph
         self._log_ids = event_log.log_ids
 
         self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
@@ -83,17 +87,19 @@ class StructureOptimizer(HyperoptPipeline):
                 print_step('Executing SplitMiner')
                 status, result = self.step(status, self._mine_structure,
                                            trial_stage_settings, self._train_log_path, self._settings.mining_algorithm)
+
+                bpmn_reader = BPMNReaderWriter(trial_stage_settings.model_path)
+                process_graph = bpmn_reader.as_graph()
             else:
+                print_step('Model is provided, skipping SplitMiner execution')
+
+                process_graph = self._process_graph
+
                 if self._settings.model_path is not None:
                     # We copy the model mostly for debugging purposes, so we have the model always in the output folder
                     shutil.copy(self._settings.model_path, model_path)
                 else:
                     raise ValueError('Model path is not provided')
-
-                print_step('Model is provided, skipping SplitMiner execution')
-
-            bpmn_reader = BPMNReaderWriter(trial_stage_settings.model_path)
-            process_graph = bpmn_reader.as_graph()
         except Exception as e:
             print_message(f'Mining failed: {e}')
             status = STATUS_FAIL

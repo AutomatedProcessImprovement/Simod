@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import pandas as pd
+from networkx import DiGraph
 
+from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
@@ -28,6 +30,7 @@ class Optimizer:
     _settings: Configuration
     _event_log: EventLog
     _output_dir: Path
+    _process_graph: Optional[DiGraph]
 
     _structure_optimizer: Optional[StructureOptimizer]
     _calendar_optimizer: Optional[CalendarOptimizer]
@@ -55,9 +58,14 @@ class Optimizer:
         else:
             self._output_dir = output_dir
 
+        if self._settings.common.model_path:
+            self._process_graph = BPMNReaderWriter(self._settings.common.model_path).as_graph()
+        else:
+            self._process_graph = None
+
     def _optimize_structure(self) -> Tuple[StructureOptimizationSettings, StructurePipelineSettings, Path, list]:
         settings = StructureOptimizationSettings.from_configuration(self._settings, self._output_dir)
-        optimizer = StructureOptimizer(settings, self._event_log)
+        optimizer = StructureOptimizer(settings, self._event_log, process_graph=self._process_graph)
         self._structure_optimizer = optimizer
         best_pipeline_settings, model_path, gateway_probabilities = optimizer.run()
 
@@ -74,9 +82,11 @@ class Optimizer:
         optimizer = CalendarOptimizer(
             calendar_settings,
             self._event_log,
-            structure_settings=structure_settings,
             train_model_path=model_path,
-            gateway_probabilities=gateway_probabilities)
+            gateway_probabilities=gateway_probabilities,
+            gateway_probabilities_method=structure_settings.gateway_probabilities_method,
+            process_graph=self._process_graph,
+        )
 
         best_pipeline_settings = optimizer.run()
 
@@ -163,8 +173,13 @@ class Optimizer:
         print_message(f'Mining calendars with settings {settings.to_dict()}')
 
         parameters = mine_parameters(
-            settings.case_arrival, settings.resource_profiles, self._event_log.train_partition, self._event_log.log_ids,
-            model_path, settings.gateway_probabilities_method)
+            settings.case_arrival,
+            settings.resource_profiles,
+            self._event_log.train_partition,
+            self._event_log.log_ids,
+            model_path, settings.gateway_probabilities_method,
+            process_graph=self._process_graph,
+        )
 
         json_path = settings.output_dir / 'simulation_parameters.json'
 
@@ -184,6 +199,10 @@ class Optimizer:
         print_section('Structure optimization')
         result = self._optimize_structure()
         structure_optimizer_settings, structure_pipeline_settings, model_path, gateway_probabilities = result
+
+        if not self._process_graph:
+            self._process_graph = BPMNReaderWriter(model_path).as_graph()
+
         structure_miner_settings = StructureMinerSettings(
             gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
             mining_algorithm=self._settings.structure.mining_algorithm,
