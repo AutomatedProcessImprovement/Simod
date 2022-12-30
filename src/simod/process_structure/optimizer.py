@@ -58,6 +58,9 @@ class StructureOptimizer(HyperoptPipeline):
 
         self._bayes_trials = Trials()
 
+        if self._settings.model_path is not None and self._process_graph is None:
+            self._process_graph = BPMNReaderWriter(self._settings.model_path).as_graph()
+
     def _optimization_objective(self, trial_stage_settings: Union[PipelineSettings, dict]):
         print_subsection("Structure Optimization Trial")
 
