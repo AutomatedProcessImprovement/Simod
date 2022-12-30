@@ -173,11 +173,12 @@ class Optimizer:
         print_message(f'Mining calendars with settings {settings.to_dict()}')
 
         parameters = mine_parameters(
-            settings.case_arrival,
-            settings.resource_profiles,
-            self._event_log.train_partition,
-            self._event_log.log_ids,
-            model_path, settings.gateway_probabilities_method,
+            case_arrival_settings=settings.case_arrival,
+            resource_profiles_settings=settings.resource_profiles,
+            log=self._event_log.train_partition,
+            log_ids=self._event_log.log_ids,
+            model_path=model_path,
+            gateways_probability_method=settings.gateway_probabilities_method,
             process_graph=self._process_graph,
         )
 
@@ -202,20 +203,6 @@ class Optimizer:
 
         if not self._process_graph:
             self._process_graph = BPMNReaderWriter(model_path).as_graph()
-
-        if self._settings.common.extraneous_activity_delays:
-            print_section('Mining extraneous delay timers')
-            with parameters_path.open() as f:
-                parameters = json.load(f)
-            _, model_path, parameters_path = discover_extraneous_delay_timers(
-                self._event_log.train_partition,
-                self._event_log.log_ids,
-                model_path,
-                parameters,
-                base_dir=best_result_dir,
-                num_iterations=50,
-                max_alpha=50,
-            )
 
         structure_miner_settings = StructureMinerSettings(
             gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
@@ -243,6 +230,20 @@ class Optimizer:
         print_section('Mining calendars using the best hyperparameters')
         parameters_path, calendars_settings = self._mine_calendars(
             calendar_pipeline_settings, model_path, best_result_dir)
+
+        if self._settings.common.extraneous_activity_delays:
+            print_section('Mining extraneous delay timers')
+            with parameters_path.open() as f:
+                parameters = json.load(f)
+            _, model_path, parameters_path = discover_extraneous_delay_timers(
+                self._event_log.train_partition,
+                self._event_log.log_ids,
+                model_path,
+                parameters,
+                base_dir=best_result_dir,
+                num_iterations=50,
+                max_alpha=50,
+            )
 
         print_section('Evaluation')
         simulation_dir = best_result_dir / 'simulation'

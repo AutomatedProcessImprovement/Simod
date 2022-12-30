@@ -23,6 +23,7 @@ common:
     - absolute_hourly_emd
     - cycle_time_emd
     - circadian_emd
+  extraneous_activity_delays: true
 preprocessing:
   multitasking: false
 structure:
@@ -180,7 +181,7 @@ version: 2
 common:
   log_path: tests/assets/LoanApp_sequential_9-5_diffres_filtered.csv
   exec_mode: optimizer
-  repetitions: 1
+  repetitions: 2
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
@@ -191,7 +192,7 @@ preprocessing:
   multitasking: false
 structure:
   optimization_metric: dl
-  max_evaluations: 1
+  max_evaluations: 2
   mining_algorithm: sm3
   concurrency:
     - 0.0
@@ -213,7 +214,7 @@ structure:
     - false
 calendars:
   optimization_metric: absolute_hourly_emd
-  max_evaluations: 1
+  max_evaluations: 2
   resource_profiles:
     discovery_type: differentiated
     granularity: 
@@ -233,10 +234,10 @@ test_cases = [
         'name': 'loan_app_undifferentiated',
         'settings': Configuration.from_stream(config_yaml_B),
     },
-    # {
-    #     'name': 'Production_train',
-    #     'settings': Configuration.from_stream(config_yaml_A),
-    # },
+    {
+        'name': 'Production_train',
+        'settings': Configuration.from_stream(config_yaml_A),
+    },
     {
         'name': 'loan_app_differentiated_with_model',
         'settings': Configuration.from_stream(config_yaml_C),
