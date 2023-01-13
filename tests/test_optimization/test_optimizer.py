@@ -23,7 +23,6 @@ common:
     - absolute_hourly_emd
     - cycle_time_emd
     - circadian_emd
-  extraneous_activity_delays: true
 preprocessing:
   multitasking: false
 structure:
@@ -63,6 +62,8 @@ calendars:
       - 0.01 
       - 0.3
     participation: 0.4
+extraneous_activity_delays:
+  optimization_metric: absolute_emd
 """
 
 config_yaml_B = """
@@ -187,7 +188,6 @@ common:
     - absolute_hourly_emd
     - cycle_time_emd
     - circadian_emd
-  extraneous_activity_delays: true
 preprocessing:
   multitasking: false
 structure:
@@ -227,6 +227,8 @@ calendars:
       - 0.01 
       - 0.3
     participation: 0.4
+extraneous_activity_delays:
+  optimization_metric: absolute_emd    
 """
 
 test_cases = [

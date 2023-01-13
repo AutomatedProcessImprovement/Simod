@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from lxml import etree
 
-from extraneous_activity_delays.config import Configuration, SimulationEngine, SimulationModel
+from extraneous_activity_delays.config import Configuration, SimulationEngine, SimulationModel, OptimizationMetric
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from simod.configuration import CalendarSettings, GatewayProbabilitiesDiscoveryMethod, CalendarType
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
@@ -100,7 +100,7 @@ def test_discover_extraneous_delay_timers(test_data, entry_point):
         GatewayProbabilitiesDiscoveryMethod.DISCOVERY)
 
     _, out_model_path, out_parameters_path = discover_extraneous_delay_timers(
-        event_log, log_ids, model_path, parameters, num_iterations=1)
+        event_log, log_ids, model_path, parameters, OptimizationMetric.ABSOLUTE_EMD, num_iterations=1)
 
     assert out_model_path.exists()
     assert out_parameters_path.exists()

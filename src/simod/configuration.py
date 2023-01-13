@@ -6,6 +6,7 @@ from typing import Union, List, Optional, Tuple
 import yaml
 from hyperopt import hp
 
+from extraneous_activity_delays.config import OptimizationMetric as ExtraneousActivityDelaysOptimizationMetric
 from .cli_formatter import print_notice
 from .event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from .utilities import get_project_dir
@@ -188,7 +189,6 @@ class CommonSettings:
     repetitions: int
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool
-    extraneous_activity_delays: bool
 
     @staticmethod
     def default() -> 'CommonSettings':
@@ -201,7 +201,6 @@ class CommonSettings:
             repetitions=1,
             evaluation_metrics=[Metric.DL, Metric.ABSOLUTE_HOURLY_EMD, Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
             clean_intermediate_files=False,
-            extraneous_activity_delays=False,
         )
 
     @staticmethod
@@ -234,8 +233,6 @@ class CommonSettings:
             if not model_path.is_absolute():
                 model_path = PROJECT_DIR / model_path
 
-        extraneous_activity_delays = config.get('extraneous_activity_delays', False)
-
         return CommonSettings(
             log_path=log_path,
             test_log_path=test_log_path,
@@ -245,7 +242,6 @@ class CommonSettings:
             repetitions=config['repetitions'],
             evaluation_metrics=metrics,
             clean_intermediate_files=clean_up,
-            extraneous_activity_delays=extraneous_activity_delays,
         )
 
     def to_dict(self) -> dict:
@@ -258,7 +254,6 @@ class CommonSettings:
             'repetitions': self.repetitions,
             'evaluation_metrics': [str(metric) for metric in self.evaluation_metrics],
             'clean_intermediate_files': self.clean_intermediate_files,
-            'extraneous_activity_delays': self.extraneous_activity_delays,
         }
 
 
@@ -498,6 +493,50 @@ class CalendarsSettings:
 
 
 @dataclass
+class ExtraneousActivityDelaysSettings:
+    optimization_metric: ExtraneousActivityDelaysOptimizationMetric
+
+    @staticmethod
+    def default() -> 'ExtraneousActivityDelaysSettings':
+        return ExtraneousActivityDelaysSettings(
+            optimization_metric=ExtraneousActivityDelaysOptimizationMetric.ABSOLUTE_EMD
+        )
+
+    @staticmethod
+    def from_dict(config: Union[dict, None]) -> Union['ExtraneousActivityDelaysSettings', None]:
+        if config is None:
+            return None
+
+        optimization_metric = config.get('optimization_metric')
+        if optimization_metric is not None:
+            optimization_metric = ExtraneousActivityDelaysSettings._match_metric(optimization_metric)
+        else:
+            optimization_metric = ExtraneousActivityDelaysOptimizationMetric.ABSOLUTE_EMD
+
+        return ExtraneousActivityDelaysSettings(
+            optimization_metric=optimization_metric
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            'optimization_metric': str(self.optimization_metric.name)
+        }
+
+    @staticmethod
+    def _match_metric(metric: str) -> ExtraneousActivityDelaysOptimizationMetric:
+        metric = metric.lower()
+
+        if metric == 'absolute_emd':
+            return ExtraneousActivityDelaysOptimizationMetric.ABSOLUTE_EMD
+        elif metric == 'cycle_time':
+            return ExtraneousActivityDelaysOptimizationMetric.CYCLE_TIME
+        elif metric == 'circadian_emd':
+            return ExtraneousActivityDelaysOptimizationMetric.CIRCADIAN_EMD
+        else:
+            raise ValueError(f'Unknown metric {metric}')
+
+
+@dataclass
 class Configuration:
     """
     Simod configuration containing all the settings for structure and calendars optimizations.
@@ -507,6 +546,7 @@ class Configuration:
     preprocessing: PreprocessingSettings
     structure: StructureSettings
     calendars: CalendarsSettings
+    extraneous_activity_delays: Union[ExtraneousActivityDelaysSettings, None] = None
 
     @staticmethod
     def default() -> 'Configuration':
@@ -519,7 +559,8 @@ class Configuration:
             common=CommonSettings.default(),
             preprocessing=PreprocessingSettings.default(),
             structure=StructureSettings.default(),
-            calendars=CalendarsSettings.default()
+            calendars=CalendarsSettings.default(),
+            extraneous_activity_delays=ExtraneousActivityDelaysSettings.default()
         )
 
     @staticmethod
@@ -530,6 +571,8 @@ class Configuration:
         preprocessing_settings = PreprocessingSettings.from_dict(config['preprocessing'])
         structure_settings = StructureSettings.from_dict(config['structure'])
         calendars_settings = CalendarsSettings.from_dict(config['calendars'])
+        extraneous_activity_delays_settings = ExtraneousActivityDelaysSettings.from_dict(
+            config.get('extraneous_activity_delays'))
 
         # If the model is provided, we don't execute SplitMiner. Then, ignore the mining_algorithm setting
         if common_settings.model_path is not None:
@@ -547,6 +590,7 @@ class Configuration:
             preprocessing=preprocessing_settings,
             structure=structure_settings,
             calendars=calendars_settings,
+            extraneous_activity_delays=extraneous_activity_delays_settings
         )
 
     @staticmethod
