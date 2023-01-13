@@ -5,6 +5,7 @@ from logging import Logger
 from pathlib import Path
 from typing import Union
 
+import pandas as pd
 from pydantic import BaseModel, BaseSettings
 
 from simod.configuration import Configuration
@@ -12,6 +13,15 @@ from simod.configuration import Configuration
 
 class Exceptions:
     class InvalidConfig(Exception):
+        pass
+
+    class NotFound(Exception):
+        pass
+
+    class BadMultipartRequest(Exception):
+        pass
+
+    class UnsupportedMediaType(Exception):
         pass
 
     class InvalidCallbackUrl(Exception):
@@ -55,14 +65,41 @@ class Settings(BaseSettings):
 
 class Request(BaseModel):
     id: str
-    configuration: Configuration
-    callback_endpoint: Union[str, None]
+    request_dir: Path
+    configuration: Union[Configuration, None] = None
+    event_log: Union[pd.DataFrame, None] = None
+    event_log_csv_path: Union[Path, None] = None
+    callback_endpoint: Union[str, None] = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
     @staticmethod
-    def from_configuration(configuration: Configuration, callback_endpoint: Union[str, None] = None) -> 'Request':
+    def empty(storage_path: Path) -> 'Request':
+        request_id = str(uuid.uuid4())
+
+        request_dir = storage_path / 'requests' / request_id
+        request_dir.mkdir(parents=True, exist_ok=True)
+
+        return Request(id=request_id, request_dir=request_dir)
+
+    @staticmethod
+    def make(
+            storage_path: Path,
+            configuration: Configuration,
+            event_log: pd.DataFrame,
+            callback_endpoint: Union[str, None] = None
+    ) -> 'Request':
+        request_id = str(uuid.uuid4())
+
+        request_dir = storage_path / 'requests' / request_id
+        request_dir.mkdir(parents=True, exist_ok=True)
+
         return Request(
-            id=uuid.uuid4().hex,
+            id=request_id,
+            request_dir=request_dir,
             configuration=configuration,
+            event_log=event_log,
             callback_endpoint=callback_endpoint,
         )
 
@@ -86,3 +123,4 @@ class Response(BaseModel):
 
 
 settings = Settings()
+settings.storage_path = Path(settings.storage_path)

@@ -2,6 +2,8 @@ import tempfile
 import traceback
 from pathlib import Path
 
+import pandas as pd
+
 from simod.configuration import Configuration
 from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
@@ -32,7 +34,12 @@ class Executor:
                 f'with the temporary directory: {output_dir}')
 
             try:
-                result_dir = optimize_with_simod(self.request.configuration, Path(output_dir))
+                result_dir = optimize_with_simod(
+                    self.request.configuration,
+                    self.request.event_log,
+                    self.request.event_log_csv_path,
+                    Path(output_dir),
+                )
                 archive_url = Archiver(self.settings, self.request, result_dir).as_tar_gz()
                 # TODO: use internal host and port
 
@@ -48,13 +55,13 @@ class Executor:
                 Notifier().callback(self.request.callback_endpoint, error=e)
 
 
-def optimize_with_simod(settings: Configuration, output_dir: Path) -> Path:
-    # NOTE: EventLog requires start_time column to be present for split_log() to work.
-    #   So, we do pre-processing before creating the EventLog object.
-
-    log, csv_path = read(settings.common.log_path, settings.common.log_ids)
-
-    preprocessor = Preprocessor(log, settings.common.log_ids)
+def optimize_with_simod(
+        settings: Configuration,
+        event_log: pd.DataFrame,
+        event_log_csv_path: Path,
+        output_dir: Path
+) -> Path:
+    preprocessor = Preprocessor(event_log, settings.common.log_ids)
     processed_log = preprocessor.run(
         multitasking=settings.preprocessing.multitasking,
     )
@@ -69,7 +76,7 @@ def optimize_with_simod(settings: Configuration, output_dir: Path) -> Path:
         process_name=settings.common.log_path.stem,
         test_log=test_log,
         log_path=settings.common.log_path,
-        csv_log_path=csv_path,
+        csv_log_path=event_log_csv_path,
     )
 
     if output_dir is None:

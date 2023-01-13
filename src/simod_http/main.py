@@ -1,13 +1,17 @@
 import logging
-from typing import Callable
+from pathlib import Path
+from typing import Callable, Union
 
-from fastapi import FastAPI, BackgroundTasks, Request, Body
+import pandas as pd
+from fastapi import FastAPI, BackgroundTasks, Request, Response, Body
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 
 from simod.configuration import Configuration
-from simod_http.app import Response, RequestStatus, settings
+from simod.event_log.utilities import read as read_event_log
+from simod_http.app import Response as AppResponse, RequestStatus, settings, Request as AppRequest, Exceptions
+from simod_http.background_tasks import run_simod_discovery
 
 app = FastAPI()
 logger = settings.logger
@@ -61,66 +65,104 @@ async def http_exception_handler(request, exc):
 
 
 @app.get('/discoveries/{request_id}',
-         response_model=Response,
+         response_model=AppResponse,
          response_model_exclude_unset=True,
          response_model_exclude_none=True)
-def read_discoveries(request_id: str):
+def read_discoveries(request_id: str) -> AppResponse:
     """
     Get the status of the request.
     """
-    return Response(
+    return AppResponse(
         request_id=request_id,
         status=RequestStatus.ACCEPTED,  # TODO: determine the actual status
     )
 
 
 @app.post('/discoveries',
-          response_model=Response,
+          response_model=AppResponse,
           response_model_exclude_none=True,
           response_model_exclude_unset=True)
 async def create_discovery(
-        # configuration: Configuration,
         background_tasks: BackgroundTasks,
         files: list[bytes] = Body(),
 ) -> JSONResponse:
     global logger
 
-    # request = Request.from_configuration(configuration)
+    request = AppRequest.empty(settings.storage_path)
 
-    # response = Response(request_id=request.id, status=RequestStatus.ACCEPTED)
-
-    # logger.debug(f'Discovery request accepted: {request}')
-
-    # background_tasks.add_task(test, request)
-    # background_tasks.add_task(run_simod_discovery, request)
-
-    print(f'Length of files: {len(files)}')
-    print(f'Files: {files}')
-
-    if len(files) != 2:
-        return JSONResponse(status_code=400, content={'message': 'Invalid number of files'})
-
-    yaml_content_types = [b'application/x-yaml', b'text/yaml', b'text/x-yaml', b'text/vnd.yaml']
-
-    configuration = None
-    event_log = None
-
-    for content in files:
-        header, body = content.split(b'\n\n')
-
-        for content_type in yaml_content_types:
-            if content_type in header:
-                configuration = Configuration.parse_raw(body.decode())
-                break
-
-        if configuration is None:
-            event_log = body
-
-    if configuration is None:
-        return JSONResponse(status_code=400, content={'message': 'No configuration file found'})
+    configuration, event_log, event_log_csv_path = parse_files_from_request(files, request.request_dir)
 
     if event_log is None:
-        return JSONResponse(status_code=400, content={'message': 'No event log file found'})
+        raise Exceptions.NotFound('No event log file found')
 
-    # return JSONResponse(content=response.dict(), status_code=202)
-    return JSONResponse(content={}, status_code=202)
+    request.configuration = configuration
+    request.event_log = event_log
+    request.event_log_csv_path = event_log_csv_path
+
+    response = AppResponse(request_id=request.id, status=RequestStatus.ACCEPTED)
+
+    background_tasks.add_task(run_simod_discovery, request)
+
+    return JSONResponse(status_code=202, content=response.dict())
+
+
+def parse_files_from_request(
+        files: list[bytes],
+        output_dir: Path,
+) -> tuple[Configuration, Union[pd.DataFrame, None], Union[Path, None]]:
+    configuration = None
+    event_log = None
+    event_log_file_extension = None
+
+    for content in files:
+        parts = content.split(b'\n\n')
+        if len(parts) >= 2:
+            header = parts[0]
+            body = parts[1]
+        else:
+            raise Exceptions.BadMultipartRequest('Each part of the multipart request must have a header and a body')
+
+        if is_header_yaml(header):
+            configuration = Configuration.from_stream(body)
+            continue
+
+        event_log = body
+        event_log_file_extension = infer_event_log_file_extension_from_header(header)
+
+    if configuration is None:
+        configuration = Configuration.default()
+
+    # TODO: add BPMN file support
+
+    # TODO: update model_path
+
+    csv_path = None
+
+    if event_log is not None:
+        event_log_path = output_dir / f'event_log{event_log_file_extension}'
+        with event_log_path.open('wb') as f:
+            f.write(event_log)
+
+        configuration.common.log_path = event_log_path
+        configuration.common.test_log_path = None
+
+        event_log, csv_path = read_event_log(configuration.common.log_path, configuration.common.log_ids)
+
+    return configuration, event_log, csv_path
+
+
+def is_header_yaml(header: bytes) -> bool:
+    return b'application/x-yaml' in header or \
+        b'application/yaml' in header or \
+        b'text/yaml' in header or \
+        b'text/x-yaml' in header or \
+        b'text/vnd.yaml' in header
+
+
+def infer_event_log_file_extension_from_header(header: bytes) -> str:
+    if b'text/csv' in header:
+        return '.csv'
+    elif b'application/xml' in header or b'text/xml' in header:
+        return '.xml'
+    else:
+        raise Exceptions.UnsupportedMediaType(f'Unsupported media type: {header}')

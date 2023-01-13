@@ -16,9 +16,6 @@ class Archiver:
         self.request = request
         self.results_dir = results_dir
 
-        self.output_dir = Path(settings.storage_path) / 'results'
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-
     def _make_url_for(self, path: Path) -> str:
         if self.settings.external_port == 80:
             port = ''
@@ -30,7 +27,7 @@ class Archiver:
         """
         Compresses the directory into a tar.gz file and returns the URL to fetch it.
         """
-        tar_path = self.output_dir / f'{self.request.id}.tar.gz'
+        tar_path = self.request.request_dir / f'{self.request.id}.tar.gz'
 
         with tarfile.open(tar_path, 'w:gz') as tar:
             tar.add(self.results_dir, arcname=self.results_dir.name)
