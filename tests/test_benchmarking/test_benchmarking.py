@@ -7,7 +7,6 @@ config_str = """
 version: 2
 common:
   log_path: logs/confidential_1000_processed.xes
-  exec_mode: optimizer
   repetitions: 1
   evaluation_metrics: 
     - dl

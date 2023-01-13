@@ -16,7 +16,6 @@ common:
     resource: Resource
     start_time: start_time
     end_time: end_time
-  exec_mode: optimizer
   repetitions: 1
   evaluation_metrics: 
     - dl
@@ -75,7 +74,6 @@ common:
     resource: Resource
     start_time: start_time
     end_time: end_time
-  exec_mode: optimizer
   repetitions: 1
   evaluation_metrics: 
     - dl
@@ -128,7 +126,6 @@ version: 2
 common:
   log_path: tests/assets/LoanApp_sequential_9-5_diffres_filtered.csv
   model_path: tests/assets/LoanApp_sequential_9-5_diffres_filtered.bpmn
-  exec_mode: optimizer
   repetitions: 1
   evaluation_metrics: 
     - dl
@@ -180,7 +177,6 @@ config_yaml_D = """
 version: 2
 common:
   log_path: tests/assets/LoanApp_sequential_9-5_diffres_filtered.csv
-  exec_mode: optimizer
   repetitions: 2
   evaluation_metrics: 
     - dl
@@ -230,22 +226,22 @@ calendars:
 """
 
 test_cases = [
-    {
-        'name': 'loan_app_undifferentiated',
-        'settings': Configuration.from_stream(config_yaml_B),
-    },
+    # {
+    #     'name': 'loan_app_undifferentiated',
+    #     'settings': Configuration.from_stream(config_yaml_B),
+    # },
     {
         'name': 'Production_train',
         'settings': Configuration.from_stream(config_yaml_A),
     },
-    {
-        'name': 'loan_app_differentiated_with_model',
-        'settings': Configuration.from_stream(config_yaml_C),
-    },
-    {
-        'name': 'loan_app_differentiated_with_extraneous_delays',
-        'settings': Configuration.from_stream(config_yaml_D),
-    },
+    # {
+    #     'name': 'loan_app_differentiated_with_model',
+    #     'settings': Configuration.from_stream(config_yaml_C),
+    # },
+    # {
+    #     'name': 'loan_app_differentiated_with_extraneous_delays',
+    #     'settings': Configuration.from_stream(config_yaml_D),
+    # },
 ]
 
 

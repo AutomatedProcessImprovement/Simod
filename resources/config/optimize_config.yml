@@ -1,7 +1,6 @@
 version: 2
 common:
   log_path: resources/event_logs/PurchasingExample.xes
-  exec_mode: optimizer
   repetitions: 1
   simulation: true
   evaluation_metrics:

@@ -8,7 +8,6 @@ version: 2
 common:
   log_path: assets/train_Production.xes
   test_log_path: assets/test_Production.xes
-  exec_mode: optimizer
   log_ids:
     case: case_id
     activity: Activity
@@ -22,6 +21,7 @@ common:
     - circadian_emd
     - absolute_hourly_emd
     - cycle_time_emd
+  extraneous_activity_delays: true
 preprocessing:
   multitasking: false
 structure:

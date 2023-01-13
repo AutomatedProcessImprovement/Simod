@@ -7,7 +7,6 @@ version: 2
 common:
   log_path: assets/train_Production.xes
   test_log_path: assets/test_Production.xes
-  exec_mode: optimizer
   log_ids:
     case: case_id
     activity: Activity

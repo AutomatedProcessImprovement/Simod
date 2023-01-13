@@ -12,7 +12,6 @@ structure_config_sm3 = """
 version: 2
 common:
   log_path: assets/PurchasingExample.xes
-  exec_mode: optimizer
   repetitions: 1
   evaluation_metrics: 
     - dl

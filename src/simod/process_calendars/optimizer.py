@@ -16,7 +16,7 @@ from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
-from simod.utilities import remove_asset, folder_id, file_id
+from simod.utilities import remove_asset, folder_id, file_id, nearest_divisor_for_granularity
 
 
 class CalendarOptimizer(HyperoptPipeline):
@@ -79,6 +79,14 @@ class CalendarOptimizer(HyperoptPipeline):
                 gateway_probabilities_method=self._gateway_probabilities_method
             )
 
+        # update granularity
+        if 1440 % trial_stg.case_arrival.granularity != 0:
+            trial_stg.case_arrival.granularity = nearest_divisor_for_granularity(
+                trial_stg.case_arrival.granularity)
+        if 1440 % trial_stg.resource_profiles.granularity != 0:
+            trial_stg.resource_profiles.granularity = nearest_divisor_for_granularity(
+                trial_stg.resource_profiles.granularity)
+
         # initializing status
         status = STATUS_OK
 
@@ -100,7 +108,11 @@ class CalendarOptimizer(HyperoptPipeline):
         evaluation_measurements = result if status == STATUS_OK else []
 
         # response for hyperopt
-        response, status = self._define_response(trial_stg, status, evaluation_measurements)
+        response, status = self._define_response(
+            trial_stg,
+            status,
+            evaluation_measurements,
+        )
 
         # recording measurements internally
         self._process_measurements(trial_stg, status, evaluation_measurements)

@@ -3,6 +3,7 @@ from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 
 from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.parameters.calendars import Calendar, Timetable
+from simod.utilities import nearest_divisor_for_granularity
 
 UNDIFFERENTIATED_RESOURCE_POOL_KEY = "undifferentiated_resource_pool"
 
@@ -37,6 +38,9 @@ def discover_undifferentiated(
         min_confidence=0.1,
         desired_support=0.7,
         min_participation=0.4) -> Calendar:
+    if 1440 % granularity != 0:
+        granularity = nearest_divisor_for_granularity(granularity)
+
     timetables = _discover_undifferentiated(
         log, log_ids, granularity, min_confidence, desired_support, min_participation)
     timetables = timetables[UNDIFFERENTIATED_RESOURCE_POOL_KEY]

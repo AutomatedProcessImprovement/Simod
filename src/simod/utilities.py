@@ -1,9 +1,11 @@
 import csv
 import datetime
 import json
+import math
 import os
 import platform as pl
 import shutil
+import time
 import uuid
 from pathlib import Path
 from sys import stdout
@@ -147,3 +149,31 @@ def remove_asset(location: Path):
         shutil.rmtree(location)
     elif location.is_file():
         location.unlink()
+
+
+# decorator to time functions
+def timeit(method):
+    def timed(*args, **kw):
+        start = time.time()
+        result = method(*args, **kw)
+        end = time.time()
+        print('%r  %2.2f sec' % (method.__name__, end - start))
+        return result
+
+    return timed
+
+
+def nearest_divisor_for_granularity(granularity: int) -> int:
+    closest = 1440
+    closest_diff = abs(granularity - closest)
+    for i in range(1, int(math.sqrt(1440)) + 1):
+        if 1440 % i == 0:
+            divisor1 = i
+            divisor2 = 1440 // i
+            for divisor in [divisor1, divisor2]:
+                if divisor <= granularity:
+                    diff = granularity - divisor
+                    if diff < closest_diff:
+                        closest = divisor
+                        closest_diff = diff
+    return closest

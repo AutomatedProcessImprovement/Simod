@@ -26,7 +26,11 @@ setup(
         'pre-commit',
         'invoke',
         'setuptools',
-        'pendulum'
+        'pendulum',
+        'pydantic',
+        'fastapi',
+        'uvicorn',
+        'python-dotenv',
     ],
     entry_points={
         'console_scripts': [

@@ -58,7 +58,7 @@ class Optimizer:
         else:
             self._output_dir = output_dir
 
-        if self._settings.common.model_path:
+        if self._settings.common.model_path is not None:
             self._process_graph = BPMNReaderWriter(self._settings.common.model_path).as_graph()
         else:
             self._process_graph = None

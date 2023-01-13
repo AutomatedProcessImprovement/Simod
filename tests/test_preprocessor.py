@@ -10,7 +10,6 @@ config_yaml = """
 version: 2
 common:
   log_path: assets/LoanApp_sequential_9-5_diffres_filtered_no_start_times.csv
-  exec_mode: optimizer
   repetitions: 1
   evaluation_metrics: 
     - dl

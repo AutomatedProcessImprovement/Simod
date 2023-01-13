@@ -94,7 +94,6 @@ version: 2
 common:
   log_path: resources/event_logs/PurchasingExample.xes  # Path to the event log in XES or CSV format
   test_log_path: resources/event_logs/PurchasingExampleTest.xes  # Optional: Path to the test event log in XES or CSV format
-  exec_mode: optimizer  # Execution mode: optimizer or single (not used)
   repetitions: 1  # Number of simulations of the final model to obtain more accurate evaluations. Values between 1 and 50
   evaluation_metrics: # A list of evaluation metrics to use on the final model
     - dl

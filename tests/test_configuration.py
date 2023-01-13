@@ -7,7 +7,6 @@ config_yaml_C = """
 version: 2
 common:
   log_path: assets/Production.xes
-  exec_mode: optimizer
   repetitions: 1
   evaluation_metrics: 
     - dl

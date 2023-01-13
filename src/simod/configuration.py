@@ -5,6 +5,7 @@ from typing import Union, List, Optional, Tuple
 
 import yaml
 from hyperopt import hp
+from pydantic import BaseModel
 
 from .cli_formatter import print_notice
 from .event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
@@ -17,10 +18,10 @@ PROJECT_DIR = get_project_dir()
 
 # Helper classes
 
-class StructureMiningAlgorithm(Enum):
-    SPLIT_MINER_1 = auto()
-    SPLIT_MINER_2 = auto()
-    SPLIT_MINER_3 = auto()
+class StructureMiningAlgorithm(str, Enum):
+    SPLIT_MINER_1 = 'sm1'
+    SPLIT_MINER_2 = 'sm2'
+    SPLIT_MINER_3 = 'sm3'
 
     @classmethod
     def from_str(cls, value: str) -> 'StructureMiningAlgorithm':
@@ -43,10 +44,10 @@ class StructureMiningAlgorithm(Enum):
         return f'Unknown StructureMiningAlgorithm {str(self)}'
 
 
-class GatewayProbabilitiesDiscoveryMethod(Enum):
-    DISCOVERY = auto()
-    EQUIPROBABLE = auto()
-    RANDOM = auto()
+class GatewayProbabilitiesDiscoveryMethod(str, Enum):
+    DISCOVERY = 'discovery'
+    EQUIPROBABLE = 'equiprobable'
+    RANDOM = 'random'
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[GatewayProbabilitiesDiscoveryMethod, ' \
@@ -77,12 +78,12 @@ class GatewayProbabilitiesDiscoveryMethod(Enum):
         return f'Unknown GateManagement {str(self)}'
 
 
-class CalendarType(Enum):
-    DEFAULT_24_7 = auto()  # 24/7 work day
-    DEFAULT_9_5 = auto()  # 9 to 5 work day
-    UNDIFFERENTIATED = auto()
-    DIFFERENTIATED_BY_POOL = auto()
-    DIFFERENTIATED_BY_RESOURCE = auto()
+class CalendarType(str, Enum):
+    DEFAULT_24_7 = '24/7'  # 24/7 work day
+    DEFAULT_9_5 = '9/5'  # 9 to 5 work day
+    UNDIFFERENTIATED = 'undifferentiated'
+    DIFFERENTIATED_BY_POOL = 'differentiated_by_pool'
+    DIFFERENTIATED_BY_RESOURCE = 'differentiated_by_resource'
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[CalendarType, List[CalendarType]]':
@@ -124,11 +125,11 @@ class CalendarType(Enum):
         return f'Unknown CalendarType {str(self)}'
 
 
-class Metric(Enum):
-    DL = auto()
-    CIRCADIAN_EMD = auto()
-    ABSOLUTE_HOURLY_EMD = auto()
-    CYCLE_TIME_EMD = auto()
+class Metric(str, Enum):
+    DL = 'dl'
+    CIRCADIAN_EMD = 'circadian_emd'
+    ABSOLUTE_HOURLY_EMD = 'absolute_hourly_emd'
+    CYCLE_TIME_EMD = 'cycle_time_emd'
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[Metric, List[Metric]]':
@@ -162,9 +163,9 @@ class Metric(Enum):
         return f'Unknown Metric {str(self)}'
 
 
-class ExecutionMode(Enum):
-    SINGLE = auto()
-    OPTIMIZER = auto()
+class ExecutionMode(str, Enum):
+    SINGLE = 'single'
+    OPTIMIZER = 'optimizer'
 
     @classmethod
     def from_str(cls, value: str) -> 'ExecutionMode':
@@ -178,16 +179,14 @@ class ExecutionMode(Enum):
 
 # Settings classes
 
-@dataclass
-class CommonSettings:
+class CommonSettings(BaseModel):
     log_path: Path
-    test_log_path: Optional[Path]
-    log_ids: Optional[EventLogIDs]
-    model_path: Optional[Path]
-    exec_mode: ExecutionMode
+    test_log_path: Union[Path, None]
+    log_ids: Union[EventLogIDs, None]
+    model_path: Union[Path, None]
     repetitions: int
     evaluation_metrics: Union[Metric, List[Metric]]
-    clean_intermediate_files: bool
+    clean_intermediate_files: Union[bool, None]
     extraneous_activity_delays: bool
 
     @staticmethod
@@ -197,7 +196,6 @@ class CommonSettings:
             test_log_path=None,
             log_ids=STANDARD_COLUMNS,
             model_path=None,
-            exec_mode=ExecutionMode.OPTIMIZER,
             repetitions=1,
             evaluation_metrics=[Metric.DL, Metric.ABSOLUTE_HOURLY_EMD, Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
             clean_intermediate_files=False,
@@ -216,8 +214,6 @@ class CommonSettings:
             if not test_log_path.is_absolute():
                 test_log_path = PROJECT_DIR / test_log_path
 
-        exec_mode = ExecutionMode.from_str(config['exec_mode'])
-
         metrics = [Metric.from_str(metric) for metric in config['evaluation_metrics']]
 
         mapping = config.get('log_ids', None)
@@ -229,7 +225,7 @@ class CommonSettings:
         clean_up = config.get('clean_intermediate_files', False)
 
         model_path = config.get('model_path', None)
-        if model_path is not None:
+        if model_path is not None and model_path != 'None':
             model_path = Path(model_path)
             if not model_path.is_absolute():
                 model_path = PROJECT_DIR / model_path
@@ -241,7 +237,6 @@ class CommonSettings:
             test_log_path=test_log_path,
             log_ids=log_ids,
             model_path=model_path,
-            exec_mode=exec_mode,
             repetitions=config['repetitions'],
             evaluation_metrics=metrics,
             clean_intermediate_files=clean_up,
@@ -254,7 +249,6 @@ class CommonSettings:
             'test_log_path': str(self.test_log_path),
             'log_ids': self.log_ids.to_dict(),
             'model_path': str(self.model_path),
-            'exec_mode': str(self.exec_mode),
             'repetitions': self.repetitions,
             'evaluation_metrics': [str(metric) for metric in self.evaluation_metrics],
             'clean_intermediate_files': self.clean_intermediate_files,
@@ -262,8 +256,7 @@ class CommonSettings:
         }
 
 
-@dataclass
-class PreprocessingSettings:
+class PreprocessingSettings(BaseModel):
     multitasking: bool
 
     @staticmethod
@@ -284,8 +277,7 @@ class PreprocessingSettings:
         }
 
 
-@dataclass
-class StructureSettings:
+class StructureSettings(BaseModel):
     """
     Structure discovery settings.
     """
@@ -356,8 +348,7 @@ class StructureSettings:
         }
 
 
-@dataclass
-class CalendarSettings:
+class CalendarSettings(BaseModel):
     discovery_type: Union[CalendarType, List[CalendarType]]
     granularity: Optional[Union[int, List[int]]] = None  # minutes per granule
     confidence: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
@@ -445,12 +436,11 @@ class CalendarSettings:
         }
 
 
-@dataclass
-class CalendarsSettings:
+class CalendarsSettings(BaseModel):
     optimization_metric: Metric
     max_evaluations: int
-    case_arrival: CalendarSettings
-    resource_profiles: CalendarSettings
+    case_arrival: Union[CalendarSettings, None]
+    resource_profiles: Union[CalendarSettings, None]
 
     @staticmethod
     def default() -> 'CalendarsSettings':
@@ -497,8 +487,7 @@ class CalendarsSettings:
         }
 
 
-@dataclass
-class Configuration:
+class Configuration(BaseModel):
     """
     Simod configuration containing all the settings for structure and calendars optimizations.
     """
@@ -538,7 +527,6 @@ class Configuration:
             structure_settings.epsilon = None
             structure_settings.eta = None
             structure_settings.prioritize_parallelism = None
-            structure_settings.or_prior = None
             structure_settings.replace_or_joins = None
             structure_settings.concurrency = None
 
@@ -569,7 +557,7 @@ class Configuration:
             'calendars': self.calendars.to_dict(),
         }
 
-    def to_yaml(self, output_dir: Path):
+    def to_yaml(self, output_dir: Path) -> Path:
         """
         Saves the configuration to a YAML file in the provided output directory.
         :param output_dir: Output directory.
@@ -579,3 +567,4 @@ class Configuration:
         output_path = output_dir / 'configuration.yaml'
         with output_path.open('w') as f:
             f.write(data)
+        return output_path

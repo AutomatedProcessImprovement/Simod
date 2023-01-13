@@ -33,8 +33,8 @@ def main():
 
 @main.command()
 @click.option('--config_path', default=None, required=True, type=Path)
-@click.pass_context
-def optimize(ctx, config_path):
+@click.option('--output_dir', default=None, required=False, type=Path)
+def optimize(config_path: Path, output_dir: Path) -> Path:
     repository_dir = get_project_dir()
     config_path = repository_dir / config_path
     settings = Configuration.from_path(config_path)
@@ -62,9 +62,12 @@ def optimize(ctx, config_path):
         csv_log_path=csv_path,
     )
 
-    output_dir = get_project_dir() / 'outputs' / folder_id()
+    if output_dir is None:
+        output_dir = get_project_dir() / 'outputs' / folder_id()
 
     Optimizer(settings, event_log=event_log, output_dir=output_dir).run()
+
+    return output_dir
 
 
 if __name__ == "__main__":
