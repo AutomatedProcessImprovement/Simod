@@ -224,7 +224,7 @@ calendars:
       - 0.3
     participation: 0.4
 extraneous_activity_delays:
-  optimization_metric: absolute_emd    
+  optimization_metric: absolute_emd
 """
 
 test_cases = [
