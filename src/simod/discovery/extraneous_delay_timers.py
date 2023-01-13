@@ -6,7 +6,7 @@ import pandas as pd
 from lxml import etree
 
 from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration, \
-    SimulationEngine, SimulationModel
+    SimulationEngine, SimulationModel, OptimizationMetric
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.prosimos import SimulationParameters
@@ -17,6 +17,7 @@ def discover_extraneous_delay_timers(
         log_ids: EventLogIDs,
         model_path: Path,
         simulation_parameters: Union[SimulationParameters, dict],
+        optimization_metric: OptimizationMetric,
         base_dir: Optional[Path] = None,
         num_iterations: int = 50,
         max_alpha: float = 50,
@@ -31,6 +32,7 @@ def discover_extraneous_delay_timers(
     :param log_ids: Event log IDs.
     :param model_path: BPMN model path.
     :param simulation_parameters: Prosimos simulation parameters.
+    :param optimization_metric: Optimization metric.
     :param base_dir: Base directory for the new model and simulation parameters files.
     :param num_iterations: Number of iterations for the hyperparameter optimization.
     :param max_alpha: Maximum scale factor to multiply the discovered timers in the hyper-optimization.
@@ -45,6 +47,7 @@ def discover_extraneous_delay_timers(
         max_alpha=max_alpha,
         num_iterations=num_iterations,
         simulation_engine=SimulationEngine.PROSIMOS,
+        optimization_metric=optimization_metric,
     )
 
     parser = etree.XMLParser(remove_blank_text=True)

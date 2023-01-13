@@ -231,7 +231,7 @@ class Optimizer:
         parameters_path, calendars_settings = self._mine_calendars(
             calendar_pipeline_settings, model_path, best_result_dir)
 
-        if self._settings.common.extraneous_activity_delays:
+        if self._settings.extraneous_activity_delays is not None:
             print_section('Mining extraneous delay timers')
             with parameters_path.open() as f:
                 parameters = json.load(f)
@@ -240,6 +240,7 @@ class Optimizer:
                 self._event_log.log_ids,
                 model_path,
                 parameters,
+                self._settings.extraneous_activity_delays.optimization_metric,
                 base_dir=best_result_dir,
                 num_iterations=50,
                 max_alpha=50,
