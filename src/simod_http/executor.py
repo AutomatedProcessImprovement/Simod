@@ -10,7 +10,7 @@ from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
 from simod.optimization.optimizer import Optimizer
-from simod_http.app import Settings, Request, Exceptions, RequestStatus
+from simod_http.app import Settings, Request, RequestStatus, InternalServerError
 from simod_http.archiver import Archiver
 from simod_http.notifier import Notifier
 
@@ -33,6 +33,8 @@ class Executor:
 
             try:
                 result_dir = optimize_with_simod(
+                    self.request.id,
+                    self.request.status,
                     self.request.configuration,
                     self.request.event_log,
                     self.request.event_log_csv_path,
@@ -42,6 +44,7 @@ class Executor:
                 archive_url = Archiver(self.settings, self.request, result_dir).as_tar_gz()
                 self.request.archive_url = archive_url
                 self.request.status = RequestStatus.SUCCESS
+                self.request.timestamp = pd.Timestamp.now()
                 self.request.save()
 
                 logging.debug(f'Archive URL: {archive_url}')
@@ -51,6 +54,7 @@ class Executor:
 
             except Exception as e:
                 self.request.status = RequestStatus.FAILURE
+                self.request.timestamp = pd.Timestamp.now()
                 self.request.save()
 
                 logging.exception(e)
@@ -60,13 +64,20 @@ class Executor:
 
 
 def optimize_with_simod(
+        request_id: str,
+        request_status: RequestStatus,
         configuration: Configuration,
         event_log: pd.DataFrame,
         event_log_csv_path: Path,
         output_dir: Path
 ) -> Path:
     if output_dir is None:
-        raise Exceptions.InternalServerError('Output directory is not specified')
+        raise InternalServerError(
+            request_id=request_id,
+            status=request_status,
+            archive_url=None,
+            message='Output directory is not specified',
+        )
 
     try:
         preprocessor = Preprocessor(event_log, configuration.common.log_ids)
@@ -93,6 +104,11 @@ def optimize_with_simod(
     except Exception as e:
         logging.exception(e)
         traceback.print_exc()
-        raise Exceptions.InternalServerError('Simod has failed')
+        raise InternalServerError(
+            request_id=request_id,
+            status=request_status,
+            archive_url=None,
+            message=str(e),
+        )
 
     return output_dir

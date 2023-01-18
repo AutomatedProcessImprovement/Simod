@@ -242,7 +242,7 @@ class Optimizer:
                 parameters,
                 self._settings.extraneous_activity_delays.optimization_metric,
                 base_dir=best_result_dir,
-                num_iterations=50,
+                num_iterations=self._settings.extraneous_activity_delays.num_iterations,
                 max_alpha=50,
             )
 

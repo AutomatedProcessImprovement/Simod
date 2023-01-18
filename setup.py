@@ -32,6 +32,8 @@ setup(
         'uvicorn',
         'python-dotenv',
         'python-multipart',
+        'fastapi-utils',
+        'uvicorn',
     ],
     entry_points={
         'console_scripts': [

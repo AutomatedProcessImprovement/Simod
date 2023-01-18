@@ -5,6 +5,14 @@ from pathlib import Path
 from simod_http.app import Settings, Request
 
 
+def make_url_for(request_id: str, path: Path, settings: Settings) -> str:
+    if settings.simod_http_port == 80:
+        port = ''
+    else:
+        port = f':{settings.simod_http_port}'
+    return f'{settings.simod_http_scheme}://{settings.simod_http_host}{port}/discoveries/{request_id}/{path.name}'
+
+
 class Archiver:
     """
     Compresses a directory of results.
@@ -14,13 +22,6 @@ class Archiver:
         self.settings = settings
         self.request = request
         self.results_dir = results_dir
-
-    def _make_url_for(self, path: Path) -> str:
-        if self.settings.simod_http_port == 80:
-            port = ''
-        else:
-            port = f':{self.settings.simod_http_port}'
-        return f'{self.settings.simod_http_scheme}://{self.settings.simod_http_host}{port}/{path.name}'
 
     def as_tar_gz(self) -> str:
         """
@@ -33,4 +34,4 @@ class Archiver:
 
         logging.debug(f'Archive: {tar_path}')
 
-        return self._make_url_for(tar_path)
+        return make_url_for(self.request.id, tar_path, self.settings)
