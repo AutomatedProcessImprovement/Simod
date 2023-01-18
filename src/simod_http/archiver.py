@@ -1,9 +1,8 @@
+import logging
 import tarfile
 from pathlib import Path
 
-from simod_http.app import Settings, Request, settings
-
-logger = settings.logger
+from simod_http.app import Settings, Request
 
 
 class Archiver:
@@ -17,21 +16,21 @@ class Archiver:
         self.results_dir = results_dir
 
     def _make_url_for(self, path: Path) -> str:
-        if self.settings.external_port == 80:
+        if self.settings.simod_http_port == 80:
             port = ''
         else:
-            port = f':{self.settings.external_port}'
-        return f'{self.settings.external_scheme}://{self.settings.external_host}{port}/{path.name}'
+            port = f':{self.settings.simod_http_port}'
+        return f'{self.settings.simod_http_scheme}://{self.settings.simod_http_host}{port}/{path.name}'
 
     def as_tar_gz(self) -> str:
         """
         Compresses the directory into a tar.gz file and returns the URL to fetch it.
         """
-        tar_path = self.request.request_dir / f'{self.request.id}.tar.gz'
+        tar_path = self.request.output_dir / f'{self.request.id}.tar.gz'
 
         with tarfile.open(tar_path, 'w:gz') as tar:
             tar.add(self.results_dir, arcname=self.results_dir.name)
 
-        logger.debug(f'Archive: {tar_path}')
+        logging.debug(f'Archive: {tar_path}')
 
         return self._make_url_for(tar_path)

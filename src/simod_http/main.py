@@ -14,7 +14,6 @@ from simod_http.app import Response as AppResponse, RequestStatus, settings, Req
 from simod_http.background_tasks import run_simod_discovery
 
 app = FastAPI()
-logger = settings.logger
 
 
 class MultiPartRequest(Request):
@@ -46,21 +45,21 @@ app.router.route_class = MultiPartRoute
 @app.on_event('startup')
 async def startup():
     logging_handlers = []
-    if settings.log_path is not None:
-        logging_handlers.append(logging.FileHandler(settings.log_path))
+    if settings.simod_http_log_path is not None:
+        logging_handlers.append(logging.FileHandler(settings.simod_http_log_path, mode='w'))
 
-    if settings.logging_level is not None:
-        logging.basicConfig(
-            level=settings.logging_level.upper(),
-            handlers=logging_handlers,
-        )
+    logging.basicConfig(
+        level=settings.simod_http_logging_level.upper(),
+        handlers=logging_handlers,
+        format=settings.simod_http_logging_format,
+    )
 
-    logger.debug(f'Application settings: {settings}')
+    logging.debug(f'Application settings: {settings}')
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
-    logger.error(f'HTTP exception: {exc}')
+    logging.error(f'HTTP exception: {exc}')
     return HTTPException(status_code=exc.status_code, detail=exc.detail)
 
 
@@ -72,9 +71,12 @@ def read_discoveries(request_id: str) -> AppResponse:
     """
     Get the status of the request.
     """
+    request = AppRequest.load(request_id, settings)
+
     return AppResponse(
         request_id=request_id,
-        status=RequestStatus.ACCEPTED,  # TODO: determine the actual status
+        status=request.status,
+        result_url=request.archive_url,
     )
 
 
@@ -86,11 +88,12 @@ async def create_discovery(
         background_tasks: BackgroundTasks,
         files: list[bytes] = Body(),
 ) -> JSONResponse:
-    global logger
+    """
+    Create a new business process model discovery and optimization request.
+    """
+    request = AppRequest.empty(settings.simod_http_storage_path)
 
-    request = AppRequest.empty(settings.storage_path)
-
-    configuration, event_log, event_log_csv_path = parse_files_from_request(files, request.request_dir)
+    configuration, event_log, event_log_csv_path = _parse_files_from_request(files, request.output_dir)
 
     if event_log is None:
         raise Exceptions.NotFound('No event log file found')
@@ -98,15 +101,17 @@ async def create_discovery(
     request.configuration = configuration
     request.event_log = event_log
     request.event_log_csv_path = event_log_csv_path
+    request.status = RequestStatus.ACCEPTED
+    request.save()
 
-    response = AppResponse(request_id=request.id, status=RequestStatus.ACCEPTED)
+    response = AppResponse(request_id=request.id, status=request.status)
 
     background_tasks.add_task(run_simod_discovery, request)
 
     return JSONResponse(status_code=202, content=response.dict())
 
 
-def parse_files_from_request(
+def _parse_files_from_request(
         files: list[bytes],
         output_dir: Path,
 ) -> tuple[Configuration, Union[pd.DataFrame, None], Union[Path, None]]:
@@ -122,12 +127,12 @@ def parse_files_from_request(
         else:
             raise Exceptions.BadMultipartRequest('Each part of the multipart request must have a header and a body')
 
-        if is_header_yaml(header):
+        if _is_header_yaml(header):
             configuration = Configuration.from_stream(body)
             continue
 
         event_log = body
-        event_log_file_extension = infer_event_log_file_extension_from_header(header)
+        event_log_file_extension = _infer_event_log_file_extension_from_header(header)
 
     if configuration is None:
         configuration = Configuration.default()
@@ -151,7 +156,7 @@ def parse_files_from_request(
     return configuration, event_log, csv_path
 
 
-def is_header_yaml(header: bytes) -> bool:
+def _is_header_yaml(header: bytes) -> bool:
     return b'application/x-yaml' in header or \
         b'application/yaml' in header or \
         b'text/yaml' in header or \
@@ -159,7 +164,7 @@ def is_header_yaml(header: bytes) -> bool:
         b'text/vnd.yaml' in header
 
 
-def infer_event_log_file_extension_from_header(header: bytes) -> str:
+def _infer_event_log_file_extension_from_header(header: bytes) -> str:
     if b'text/csv' in header:
         return '.csv'
     elif b'application/xml' in header or b'text/xml' in header:
