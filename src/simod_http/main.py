@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi_utils.tasks import repeat_every
 from pydantic import ValidationError
+from uvicorn.config import LOGGING_CONFIG
 
 from simod.configuration import Configuration
 from simod.event_log.utilities import read as read_event_log
@@ -83,11 +84,17 @@ async def application_startup():
     if settings.simod_http_log_path is not None:
         logging_handlers.append(logging.FileHandler(settings.simod_http_log_path, mode='w'))
 
-    logging.basicConfig(
-        level=settings.simod_http_logging_level.upper(),
-        handlers=logging_handlers,
-        format=settings.simod_http_logging_format,
-    )
+    if len(logging_handlers) > 0:
+        logging.basicConfig(
+            level=settings.simod_http_logging_level.upper(),
+            handlers=logging_handlers,
+            format=settings.simod_http_logging_format,
+        )
+    else:
+        logging.basicConfig(
+            level=settings.simod_http_logging_level.upper(),
+            format=settings.simod_http_logging_format,
+        )
 
     logging.debug(f'Application settings: {settings}')
 
@@ -413,10 +420,16 @@ async def _infer_media_type_from_extension(file_name) -> str:
     return media_type
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    logging_config = LOGGING_CONFIG
+    logging_config['formatters']['default']['fmt'] = settings.simod_http_logging_format
+    logging_config['formatters']['access']['fmt'] = settings.simod_http_logging_format.replace(
+        '%(message)s', '%(client_addr)s - "%(request_line)s" %(status_code)s')
+
     uvicorn.run(
-        "main:app",
+        'main:app',
         host=settings.simod_http_host,
         port=settings.simod_http_port,
-        log_level="info",
+        log_level='info',
+        log_config=logging_config,
     )

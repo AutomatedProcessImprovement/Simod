@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     # Logging levels: CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
     simod_http_logging_level: str = "debug"
-    simod_http_logging_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    simod_http_logging_format = "%(asctime)s \t %(name)s \t %(levelname)s \t %(message)s"
     simod_http_log_path: Union[str, None] = None
 
     class Config:
