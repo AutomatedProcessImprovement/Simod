@@ -74,7 +74,7 @@ def optimize_with_simod(
     if output_dir is None:
         raise InternalServerError(
             request_id=request_id,
-            status=request_status,
+            request_status=request_status,
             archive_url=None,
             message='Output directory is not specified',
         )
@@ -106,7 +106,7 @@ def optimize_with_simod(
         traceback.print_exc()
         raise InternalServerError(
             request_id=request_id,
-            status=request_status,
+            request_status=request_status,
             archive_url=None,
             message=str(e),
         )

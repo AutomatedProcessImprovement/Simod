@@ -1,16 +1,18 @@
 import uuid
 from enum import Enum
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 import pandas as pd
 from pydantic import BaseModel, BaseSettings
+from fastapi.responses import JSONResponse
 
 from simod.configuration import Configuration
 
 
 class Error(BaseModel):
     message: str
+    details: Union[Any, None] = None
 
 
 class RequestStatus(str, Enum):
@@ -23,9 +25,15 @@ class RequestStatus(str, Enum):
 
 class Response(BaseModel):
     request_id: str
-    status: RequestStatus
+    request_status: RequestStatus
     error: Union[Error, None]
     archive_url: Union[str, None]
+
+    def make_json_response(self, status_code: int) -> JSONResponse:
+        return JSONResponse(
+            status_code=status_code,
+            content=self.dict(),
+        )
 
 
 class Settings(BaseSettings):
@@ -92,9 +100,9 @@ class Request(BaseModel):
         if not request_dir.exists():
             raise NotFound(
                 request_id=request_id,
-                status=RequestStatus.UNKNOWN,
+                request_status=RequestStatus.UNKNOWN,
                 archive_url=None,
-                message=f'Request {request_id} not found on the server',
+                message='Request is not found on the server',
             )
 
         try:
@@ -105,7 +113,7 @@ class Request(BaseModel):
         except Exception as e:
             raise InternalServerError(
                 request_id=request_id,
-                status=RequestStatus.UNKNOWN,
+                request_status=RequestStatus.UNKNOWN,
                 archive_url=None,
                 message=f'Failed to load request {request_id}: {e}',
             )
@@ -131,33 +139,45 @@ class Request(BaseModel):
 
 
 class BaseRequestException(Exception):
+    _status_code = 500
 
-    def __init__(self, request_id: str, message: str, status: RequestStatus, archive_url: Union[str, None] = None):
+    def __init__(self, request_id: str, message: str, request_status: RequestStatus,
+                 archive_url: Union[str, None] = None):
         self.request_id = request_id
-        self.status = status
+        self.request_status = request_status
         self.archive_url = archive_url
         self.message = message
+
+    @property
+    def status_code(self) -> int:
+        return self._status_code
 
     def make_response(self) -> Response:
         return Response(
             request_id=self.request_id,
-            status=self.status,
+            request_status=self.request_status,
             archive_url=self.archive_url,
             error=Error(message=self.message),
         )
 
+    def make_json_response(self) -> JSONResponse:
+        return JSONResponse(
+            status_code=self.status_code,
+            content=self.make_response().dict(),
+        )
+
 
 class NotFound(BaseRequestException):
-    pass
+    _status_code = 404
 
 
 class BadMultipartRequest(BaseRequestException):
-    pass
+    _status_code = 400
 
 
 class UnsupportedMediaType(BaseRequestException):
-    pass
+    _status_code = 415
 
 
 class InternalServerError(BaseRequestException):
-    pass
+    _status_code = 500
