@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Union, Any
 
 import pandas as pd
-from pydantic import BaseModel, BaseSettings
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, BaseSettings
 
 from simod.configuration import Configuration
 
@@ -29,7 +29,7 @@ class Response(BaseModel):
     error: Union[Error, None]
     archive_url: Union[str, None]
 
-    def make_json_response(self, status_code: int) -> JSONResponse:
+    def json_response(self, status_code: int) -> JSONResponse:
         return JSONResponse(
             status_code=status_code,
             content=self.dict(),
@@ -141,8 +141,13 @@ class Request(BaseModel):
 class BaseRequestException(Exception):
     _status_code = 500
 
-    def __init__(self, request_id: str, message: str, request_status: RequestStatus,
-                 archive_url: Union[str, None] = None):
+    def __init__(
+            self,
+            request_id: str,
+            message: str,
+            request_status: RequestStatus,
+            archive_url: Union[str, None] = None,
+    ):
         self.request_id = request_id
         self.request_status = request_status
         self.archive_url = archive_url
@@ -160,7 +165,7 @@ class BaseRequestException(Exception):
             error=Error(message=self.message),
         )
 
-    def make_json_response(self) -> JSONResponse:
+    def json_response(self) -> JSONResponse:
         return JSONResponse(
             status_code=self.status_code,
             content=self.make_response().dict(),

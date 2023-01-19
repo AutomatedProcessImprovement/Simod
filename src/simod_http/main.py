@@ -38,8 +38,9 @@ class CustomRequest(Request):
             body = await super().body()
 
             # If the request multipart, then the body is a list of bytes split by the boundary specified in the header
-            if "multipart/mixed" in self.headers.get("content-type", ""):
-                boundary = self.headers["content-type"].split("boundary=")[1]
+            content_type = self.headers.get('content-type', '')
+            if 'multipart/mixed' in content_type or 'multipart/form-data' in content_type:
+                boundary = self.headers['content-type'].split('boundary=')[1]
                 boundary = boundary.strip('"')
                 body = body.split(f'--{boundary}\n'.encode())[1:]
 
@@ -58,7 +59,7 @@ class CustomRouteMatcher(APIRoute):
                 return await original_route_handler(request)
             except Exception as e:
                 if isinstance(e, BaseRequestException):
-                    return e.make_json_response()
+                    return e.json_response()
                 elif isinstance(e, ValidationError):
                     err = Error(message=str(e), details=e.errors())
                 elif isinstance(e, HTTPException):
@@ -68,7 +69,7 @@ class CustomRouteMatcher(APIRoute):
 
                 response = AppResponse.construct()
                 response.error = err
-                return response.make_json_response(status_code=500)
+                return response.json_response(status_code=500)
 
         return custom_route_handler
 
@@ -91,6 +92,23 @@ async def application_startup():
     logging.debug(f'Application settings: {settings}')
 
 
+@app.on_event('shutdown')
+async def application_shutdown():
+    requests_dir = Path(settings.simod_http_storage_path) / 'requests'
+    for request_dir in requests_dir.iterdir():
+        try:
+            request = AppRequest.load(request_dir.name, settings)
+        except Exception as e:
+            logging.error(f'Failed to load request: {request_dir.name}, {str(e)}')
+            continue
+
+        # Sets 'running' requests to 'failure'
+        if request.status == RequestStatus.RUNNING:
+            request.status = RequestStatus.FAILURE
+            request.timestamp = pd.Timestamp.now()
+            request.save()
+
+
 @app.on_event('startup')
 @repeat_every(seconds=settings.simod_http_storage_cleaning_timedelta)
 async def clean_up():
@@ -100,10 +118,21 @@ async def clean_up():
     for request_dir in requests_dir.iterdir():
         if request_dir.is_dir():
             logging.info(f'Checking request directory for expired data: {request_dir}')
+
+            # Removes empty directories
+            if len(list(request_dir.iterdir())) == 0:
+                logging.info(f'Removing empty directory: {request_dir}')
+                shutil.rmtree(request_dir, ignore_errors=True)
+
+            # Removes orphaned request directories
+            if not (request_dir / 'request.json').exists():
+                logging.info(f'Removing request folder for {request_dir.name}, no request.json file')
+                shutil.rmtree(request_dir, ignore_errors=True)
+
             try:
                 request = AppRequest.load(request_dir.name, settings)
             except Exception as e:
-                logging.error(f'Failed to load request: {e}')
+                logging.error(f'Failed to load request: {request_dir.name}, {str(e)}')
                 continue
 
             # Removes expired requests
@@ -112,16 +141,16 @@ async def clean_up():
                 logging.info(f'Removing request folder for {request_dir.name}, expired at {expired_at}')
                 shutil.rmtree(request_dir, ignore_errors=True)
 
-            # Removes orphaned request directories
-            if not (request_dir / 'request.json').exists():
-                logging.info(f'Removing request folder for {request_dir.name}, no request.json file')
+            # Removes requests without timestamp that are not running
+            if request.timestamp is None and request.status != RequestStatus.RUNNING:
+                logging.info(f'Removing request folder for {request_dir.name}, no timestamp and not running')
                 shutil.rmtree(request_dir, ignore_errors=True)
 
 
 @app.exception_handler(BaseRequestException)
 async def request_exception_handler(_, exc: BaseRequestException) -> JSONResponse:
     logging.error(f'Request exception occurred: {exc}')
-    return exc.make_json_response()
+    return exc.json_response()
 
 
 @app.get('/discoveries/{request_id}/{file_name}')
@@ -166,7 +195,7 @@ async def read_discovery(request_id: str) -> AppResponse:
 @app.post('/discoveries')
 async def create_discovery(
         background_tasks: BackgroundTasks,
-        files: list[bytes] = Body(),
+        bodies: list[bytes] = Body(),
 ) -> JSONResponse:
     """
     Create a new business process model discovery and optimization request.
@@ -175,10 +204,10 @@ async def create_discovery(
 
     request = AppRequest.empty(Path(settings.simod_http_storage_path))
 
-    configuration, event_log, event_log_csv_path = _parse_files_from_request(
+    configuration, event_log, event_log_csv_path = _parse_bodies_from_request(
         request.id,
         request.status,
-        files,
+        bodies,
         request.output_dir,
     )
 
@@ -200,7 +229,7 @@ async def create_discovery(
 
     background_tasks.add_task(run_simod_discovery, request, settings)
 
-    return response.make_json_response(status_code=202)
+    return response.json_response(status_code=202)
 
 
 @app.get('/{any_str}')
@@ -212,7 +241,7 @@ async def root() -> JSONResponse:
     )
 
 
-def _parse_files_from_request(
+def _parse_bodies_from_request(
         request_id: str,
         request_status: RequestStatus,
         files: list[bytes],
@@ -221,42 +250,55 @@ def _parse_files_from_request(
     configuration = None
     event_log = None
     event_log_file_extension = None
+    bpmn_model = None
 
     for content in files:
         parts = content.split(b'\n\n')
         if len(parts) >= 2:
-            header = parts[0]
+            header = _parse_headers(parts[0])
             body = parts[1]
         else:
             raise BadMultipartRequest(
                 request_id=request_id,
                 request_status=request_status,
-                archive_url=None,
                 message='Each part of the multipart request must have a header and a body',
             )
 
-        if _is_header_yaml(header):
+        filename = _get_multipart_filename_from_header(header)
+
+        if _is_header_yaml(header.get('content-type')) \
+                or '.yaml' in filename \
+                or '.yml' in filename:
             configuration = Configuration.from_stream(body)
             continue
 
+        if '.bpmn' in filename:
+            bpmn_model = body
+            continue
+
         event_log = body
-        event_log_file_extension = _infer_event_log_file_extension_from_header(request_id, request_status, header)
+        event_log_file_extension = _infer_event_log_file_extension_from_header(
+            request_id,
+            request_status,
+            header.get('content-type')
+        )
 
     if configuration is None:
         configuration = Configuration.default()
 
-    # TODO: add BPMN file support
+    if bpmn_model is not None:
+        bpmn_path = output_dir / f'model.bpmn'
+        bpmn_path.write_bytes(bpmn_model)
 
-    # TODO: update model_path
+        configuration.common.model_path = bpmn_path.absolute()
 
     csv_path = None
 
     if event_log is not None:
         event_log_path = output_dir / f'event_log{event_log_file_extension}'
-        with event_log_path.open('wb') as f:
-            f.write(event_log)
+        event_log_path.write_bytes(event_log)
 
-        configuration.common.log_path = event_log_path
+        configuration.common.log_path = event_log_path.absolute()
         configuration.common.test_log_path = None
 
         event_log, csv_path = read_event_log(configuration.common.log_path, configuration.common.log_ids)
@@ -264,22 +306,68 @@ def _parse_files_from_request(
     return configuration, event_log, csv_path
 
 
-def _is_header_yaml(header: bytes) -> bool:
-    return b'application/x-yaml' in header or \
-        b'application/yaml' in header or \
-        b'text/yaml' in header or \
-        b'text/x-yaml' in header or \
-        b'text/vnd.yaml' in header
+def _parse_headers(header: bytes) -> dict[str, str]:
+    headers = {}
+    for line in header.split(b'\n'):
+        if line:
+            key, value = line.split(b':')
+            key = key.decode('utf-8').strip().lower()
+            value = value.decode('utf-8').strip().rstrip(';').lower()
+            if ';' in value:
+                value_parts = value.split(';')
+                value = []
+                for value_part in value_parts:
+                    if '=' in value_part:
+                        value_part_key, value_part_value = value_part.split('=')
+                        value_part_key = value_part_key.strip()
+                        value_part_value = value_part_value.strip().strip('"')
+                        value.append({value_part_key: value_part_value})
+                    else:
+                        value.append({'value': value_part})
+            headers[key] = value
+    return headers
+
+
+def _get_multipart_filename_from_header(header: dict[str, str]) -> str:
+    content = header.get('content-disposition', [])
+
+    if len(content) == 0:
+        return ''
+
+    names = list(
+        map(lambda x: x.get('filename', ''),
+            filter(lambda x: 'filename' in x, content))
+    )
+
+    if len(names) == 0:
+        return ''
+
+    return names[0]
+
+
+def _is_header_yaml(header: str) -> bool:
+    return 'application/x-yaml' in header or \
+        'application/yaml' in header or \
+        'text/yaml' in header or \
+        'text/x-yaml' in header or \
+        'text/vnd.yaml' in header
+
+
+def _is_header_xml(header: str) -> bool:
+    return 'application/xml' in header or \
+        'text/xml' in header or \
+        'text/x-xml' in header or \
+        'text/vnd.xml' in header
 
 
 def _infer_event_log_file_extension_from_header(
         request_id: str,
         request_status: RequestStatus,
-        header: bytes,
+        content_type: str,
 ) -> str:
-    if b'text/csv' in header:
+    if 'text/csv' in content_type:
         return '.csv'
-    elif b'application/xml' in header or b'text/xml' in header:
+    elif 'application/xml' in content_type or 'text/xml' in content_type:
         return '.xml'
     else:
         raise UnsupportedMediaType(
