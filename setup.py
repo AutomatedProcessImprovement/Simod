@@ -34,6 +34,7 @@ setup(
         'python-multipart',
         'fastapi-utils',
         'uvicorn',
+        'requests',
     ],
     entry_points={
         'console_scripts': [

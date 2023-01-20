@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Union, Optional
 
 import pandas as pd
 import uvicorn
@@ -16,7 +16,8 @@ from uvicorn.config import LOGGING_CONFIG
 from simod.configuration import Configuration
 from simod.event_log.utilities import read as read_event_log
 from simod_http.app import Response as AppResponse, RequestStatus, Request as AppRequest, Settings, NotFound, \
-    BadMultipartRequest, UnsupportedMediaType, BaseRequestException, Error
+    BadMultipartRequest, UnsupportedMediaType, BaseRequestException, Error, NotificationSettings, NotificationMethod, \
+    NotSupported
 from simod_http.archiver import make_url_for
 from simod_http.executor import Executor
 
@@ -227,14 +228,42 @@ async def read_discovery(request_id: str) -> AppResponse:
 async def create_discovery(
         background_tasks: BackgroundTasks,
         bodies: list[bytes] = Body(),
+        callback_url: Optional[str] = None,
+        email: Optional[str] = None,
 ) -> JSONResponse:
     """
     Create a new business process model discovery and optimization request.
     """
     global settings
 
-    request = AppRequest.empty(Path(settings.simod_http_storage_path))
+    request = await _empty_request_from_params(settings.simod_http_storage_path, callback_url, email)
 
+    if email is not None:
+        raise NotSupported(
+            request_id=request.id,
+            request_status=RequestStatus.FAILURE,
+            message='Email notifications are not supported',
+        )
+
+    request = await _parse_post_body(bodies, request)
+
+    response = AppResponse(request_id=request.id, request_status=request.status)
+
+    background_tasks.add_task(run_simod_discovery, request, settings)
+
+    return response.json_response(status_code=202)
+
+
+@app.get('/{any_str}')
+async def root() -> JSONResponse:
+    raise NotFound(
+        request_id='N/A',
+        request_status=RequestStatus.UNKNOWN,
+        message='Not found',
+    )
+
+
+async def _parse_post_body(bodies: list[bytes], request: AppRequest) -> AppRequest:
     configuration, event_log, event_log_csv_path = _parse_bodies_from_request(
         request.id,
         request.status,
@@ -256,20 +285,32 @@ async def create_discovery(
     request.status = RequestStatus.ACCEPTED
     request.save()
 
-    response = AppResponse(request_id=request.id, request_status=request.status)
-
-    background_tasks.add_task(run_simod_discovery, request, settings)
-
-    return response.json_response(status_code=202)
+    return request
 
 
-@app.get('/{any_str}')
-async def root() -> JSONResponse:
-    raise NotFound(
-        request_id='N/A',
-        request_status=RequestStatus.UNKNOWN,
-        message='Not found',
-    )
+async def _empty_request_from_params(
+        storage_path: str,
+        callback_url: Optional[str] = None,
+        email: Optional[str] = None
+) -> AppRequest:
+    request = AppRequest.empty(Path(storage_path))
+
+    if callback_url is not None:
+        notification_settings = NotificationSettings(
+            method=NotificationMethod.HTTP,
+            callback_url=callback_url,
+        )
+    elif email is not None:
+        notification_settings = NotificationSettings(
+            method=NotificationMethod.EMAIL,
+            email=email,
+        )
+    else:
+        notification_settings = None
+
+    request.notification_settings = notification_settings
+
+    return request
 
 
 def _parse_bodies_from_request(

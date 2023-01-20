@@ -23,6 +23,17 @@ class RequestStatus(str, Enum):
     FAILURE = 'failure'
 
 
+class NotificationMethod(str, Enum):
+    HTTP = 'callback'
+    EMAIL = 'email'
+
+
+class NotificationSettings(BaseModel):
+    method: Union[NotificationMethod, None] = None
+    callback_url: Union[str, None] = None
+    email: Union[str, None] = None
+
+
 class Response(BaseModel):
     request_id: str
     request_status: RequestStatus
@@ -56,6 +67,10 @@ class Settings(BaseSettings):
     simod_http_logging_format = "%(asctime)s \t %(name)s \t %(levelname)s \t %(message)s"
     simod_http_log_path: Union[str, None] = None
 
+    # SMTP server settings
+    simod_http_smtp_server: str = "localhost"
+    simod_http_smtp_port: int = 25
+
     class Config:
         env_file = ".env"
 
@@ -73,9 +88,10 @@ class Request(BaseModel):
     configuration: Union[Configuration, None] = None
     event_log: Union[pd.DataFrame, None] = None  # NOTE: this field isn't present in request.json
     event_log_csv_path: Union[Path, None] = None
-    callback_endpoint: Union[str, None] = None
     archive_url: Union[str, None] = None
     timestamp: Union[pd.Timestamp, None] = None
+    notification_settings: Union[NotificationSettings, None] = None
+    notified: bool = False
 
     class Config:
         arbitrary_types_allowed = True
@@ -88,7 +104,8 @@ class Request(BaseModel):
                f'event_log_csv_path={self.event_log_csv_path}, ' \
                f'archive_url={self.archive_url}, ' \
                f'timestamp={self.timestamp}, ' \
-               f'callback_endpoint={self.callback_endpoint})'
+               f'notification_settings={self.notification_settings}, ' \
+               f'notified={self.notified})'
 
     def save(self):
         request_info_path = self.output_dir / 'request.json'
@@ -186,3 +203,7 @@ class UnsupportedMediaType(BaseRequestException):
 
 class InternalServerError(BaseRequestException):
     _status_code = 500
+
+
+class NotSupported(BaseRequestException):
+    _status_code = 501

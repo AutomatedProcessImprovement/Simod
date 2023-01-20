@@ -2,6 +2,7 @@ import logging
 import tempfile
 import traceback
 from pathlib import Path
+from typing import Union
 
 import pandas as pd
 
@@ -10,9 +11,9 @@ from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
 from simod.optimization.optimizer import Optimizer
-from simod_http.app import Settings, Request, RequestStatus, InternalServerError
+from simod_http.app import Settings, Request, RequestStatus, InternalServerError, NotificationMethod
 from simod_http.archiver import Archiver
-from simod_http.notifier import Notifier
+from simod_http.notifiers import Notifier, EmailNotifier
 
 
 class Executor:
@@ -49,8 +50,7 @@ class Executor:
 
                 logging.debug(f'Archive URL: {archive_url}')
 
-                if self.request.callback_endpoint is not None:
-                    Notifier(archive_url).callback(self.request.callback_endpoint)
+                _notify_with_settings(self.settings, self.request)
 
             except Exception as e:
                 self.request.status = RequestStatus.FAILURE
@@ -60,7 +60,7 @@ class Executor:
                 logging.exception(e)
                 traceback.print_exc()
 
-                Notifier().callback(self.request.callback_endpoint, error=e)
+                _notify_with_settings(self.settings, self.request, e)
 
 
 def optimize_with_simod(
@@ -112,3 +112,28 @@ def optimize_with_simod(
         )
 
     return output_dir
+
+
+def _notify_with_settings(settings: Settings, request: Request, error: Union[Exception, None] = None):
+    if request.notification_settings is None:
+        logging.debug('No notification settings provided')
+        return
+
+    if request.notification_settings.method == NotificationMethod.HTTP:
+        ok = Notifier(
+            archive_url=request.archive_url,
+        ).callback(request.notification_settings.callback_url, request.status, error=error)
+
+    elif request.notification_settings.method == NotificationMethod.EMAIL:
+        ok = EmailNotifier(
+            archive_url=request.archive_url,
+            smtp_server=settings.simod_http_smtp_server,
+            smtp_port=settings.simod_http_smtp_port,
+        ).email(request.notification_settings.email, request.status, error=error)
+
+    else:
+        logging.debug(f'Unknown notification method: {request.notification_settings.method}')
+        return
+
+    request.notified = ok
+    request.save()
