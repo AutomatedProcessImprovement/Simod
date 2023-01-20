@@ -151,7 +151,6 @@ def remove_asset(location: Path):
         location.unlink()
 
 
-# decorator to time functions
 def timeit(method):
     def timed(*args, **kw):
         start = time.time()
@@ -177,3 +176,10 @@ def nearest_divisor_for_granularity(granularity: int) -> int:
                         closest = divisor
                         closest_diff = diff
     return closest
+
+
+def run_shell_with_venv(args: list):
+    venv_path = os.environ.get('VIRTUAL_ENV', Path.cwd() / '../../venv')
+    args[0] = str(venv_path / 'bin' / args[0])
+    print_step(f'Executing shell command: {args}')
+    os.system(' '.join(args))
