@@ -1,11 +1,17 @@
-name: CI
+name: Simod
 
 on:
   workflow_dispatch:
   push:
     branches: [ master ]
+    paths:
+      - 'src/simod/**'
+      - 'src/simod_http/**'
   pull_request:
     branches: [ master ]
+    paths:
+      - 'src/simod/**'
+      - 'src/simod_http/**'
 
 env:
   DOCKERHUB_USERNAME: nokal

@@ -38,6 +38,7 @@ setup(
     entry_points={
         'console_scripts': [
             'simod = simod.cli:main',
+            'simod-http = simod_http.main:app',
         ]
     }
 )
