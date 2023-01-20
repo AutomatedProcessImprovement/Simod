@@ -12,4 +12,8 @@ ADD build_from_git.bash .
 RUN bash build_from_git.bash
 
 ENV DISPLAY=:99
-CMD ["/bin/bash"]
+ENV SIMOD_HTTP_DEBUG=false
+
+WORKDIR /usr/src/Simod/src/simod_http
+
+CMD ["uvicorn", "simod_http.main:app", "--host", "0.0.0.0", "--port", "80"]
