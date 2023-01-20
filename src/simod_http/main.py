@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 from pathlib import Path
 from typing import Callable, Union
@@ -19,7 +20,13 @@ from simod_http.app import Response as AppResponse, RequestStatus, Request as Ap
 from simod_http.archiver import make_url_for
 from simod_http.executor import Executor
 
-settings = Settings()
+debug = os.environ.get('SIMOD_HTTP_DEBUG', 'false').lower() == 'true'
+
+if debug:
+    settings = Settings()
+else:
+    settings = Settings(_env_file='.env.production')
+
 settings.simod_http_storage_path = Path(settings.simod_http_storage_path)
 
 app = FastAPI()
@@ -102,6 +109,10 @@ async def application_startup():
 @app.on_event('shutdown')
 async def application_shutdown():
     requests_dir = Path(settings.simod_http_storage_path) / 'requests'
+
+    if not requests_dir.exists():
+        return
+
     for request_dir in requests_dir.iterdir():
         logging.info(f'Checking request directory before shutting down: {request_dir}')
 
@@ -124,8 +135,13 @@ async def application_shutdown():
 @repeat_every(seconds=settings.simod_http_storage_cleaning_timedelta)
 async def clean_up():
     requests_dir = Path(settings.simod_http_storage_path) / 'requests'
+
+    if not requests_dir.exists():
+        return
+
     current_timestamp = pd.Timestamp.now()
     expire_after_delta = pd.Timedelta(seconds=settings.simod_http_request_expiration_timedelta)
+
     for request_dir in requests_dir.iterdir():
         if request_dir.is_dir():
             logging.info(f'Checking request directory for expired data: {request_dir}')
