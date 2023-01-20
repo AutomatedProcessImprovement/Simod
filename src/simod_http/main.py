@@ -103,14 +103,18 @@ async def application_startup():
 async def application_shutdown():
     requests_dir = Path(settings.simod_http_storage_path) / 'requests'
     for request_dir in requests_dir.iterdir():
+        logging.info(f'Checking request directory before shutting down: {request_dir}')
+
+        await _remove_empty_or_orphaned_request_dir(request_dir)
+
         try:
             request = AppRequest.load(request_dir.name, settings)
         except Exception as e:
             logging.error(f'Failed to load request: {request_dir.name}, {str(e)}')
             continue
 
-        # Sets 'running' requests to 'failure'
-        if request.status == RequestStatus.RUNNING:
+        # At the end, there are only 'failed' or 'succeeded' requests
+        if request.status not in [RequestStatus.SUCCESS, RequestStatus.FAILURE]:
             request.status = RequestStatus.FAILURE
             request.timestamp = pd.Timestamp.now()
             request.save()
@@ -126,15 +130,7 @@ async def clean_up():
         if request_dir.is_dir():
             logging.info(f'Checking request directory for expired data: {request_dir}')
 
-            # Removes empty directories
-            if len(list(request_dir.iterdir())) == 0:
-                logging.info(f'Removing empty directory: {request_dir}')
-                shutil.rmtree(request_dir, ignore_errors=True)
-
-            # Removes orphaned request directories
-            if not (request_dir / 'request.json').exists():
-                logging.info(f'Removing request folder for {request_dir.name}, no request.json file')
-                shutil.rmtree(request_dir, ignore_errors=True)
+            await _remove_empty_or_orphaned_request_dir(request_dir)
 
             try:
                 request = AppRequest.load(request_dir.name, settings)
@@ -152,6 +148,18 @@ async def clean_up():
             if request.timestamp is None and request.status != RequestStatus.RUNNING:
                 logging.info(f'Removing request folder for {request_dir.name}, no timestamp and not running')
                 shutil.rmtree(request_dir, ignore_errors=True)
+
+
+async def _remove_empty_or_orphaned_request_dir(request_dir):
+    # Removes empty directories
+    if len(list(request_dir.iterdir())) == 0:
+        logging.info(f'Removing empty directory: {request_dir}')
+        shutil.rmtree(request_dir, ignore_errors=True)
+
+    # Removes orphaned request directories
+    if not (request_dir / 'request.json').exists():
+        logging.info(f'Removing request folder for {request_dir.name}, no request.json file')
+        shutil.rmtree(request_dir, ignore_errors=True)
 
 
 @app.exception_handler(BaseRequestException)
