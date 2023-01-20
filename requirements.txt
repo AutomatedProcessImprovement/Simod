@@ -29,7 +29,7 @@ distlib==0.3.4
 executing==0.8.3
 filelock==3.6.0
 fonttools==4.31.2
-future==0.18.2
+future==0.18.3
 graphviz==0.19.1
 html5lib==1.1
 hyperopt~=0.2.7
