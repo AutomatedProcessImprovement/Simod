@@ -179,7 +179,7 @@ def nearest_divisor_for_granularity(granularity: int) -> int:
 
 
 def run_shell_with_venv(args: list):
-    venv_path = os.environ.get('VIRTUAL_ENV', Path.cwd() / '../../venv')
-    args[0] = str(venv_path / 'bin' / args[0])
+    venv_path = os.environ.get('VIRTUAL_ENV', str(Path.cwd() / '../../venv'))
+    args[0] = os.path.join(venv_path, 'bin', args[0])
     print_step(f'Executing shell command: {args}')
     os.system(' '.join(args))
