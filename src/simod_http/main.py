@@ -220,7 +220,8 @@ async def read_discovery(request_id: str) -> AppResponse:
     return AppResponse(
         request_id=request_id,
         request_status=request.status,
-        archive_url=make_url_for(request.id, Path(f'{request.id}.tar.gz'), settings),
+        archive_url=make_url_for(request.id, Path(f'{request.id}.tar.gz'),
+                                 settings) if request.status == RequestStatus.SUCCESS else None,
     )
 
 
@@ -238,12 +239,12 @@ async def create_discovery(
 
     request = await _empty_request_from_params(settings.simod_http_storage_path, callback_url, email)
 
-    if email is not None:
-        raise NotSupported(
-            request_id=request.id,
-            request_status=RequestStatus.FAILURE,
-            message='Email notifications are not supported',
-        )
+    # if email is not None:
+    #     raise NotSupported(
+    #         request_id=request.id,
+    #         request_status=RequestStatus.FAILURE,
+    #         message='Email notifications are not supported',
+    #     )
 
     request = await _parse_post_body(bodies, request)
 

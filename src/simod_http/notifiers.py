@@ -62,18 +62,16 @@ class EmailNotifier:
         Sends an email to the user.
         """
         try:
-            context = ssl.create_default_context()
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.ehlo()
-                server.starttls(context=context)
-                server.ehlo()
-
                 error_message = f'Error: {error}\n' if error else ''
-
+                from_addr = 'http@simod.pix.cloud.ut.ee'
                 server.sendmail(
-                    from_addr='simod_http@localhost',
+                    from_addr=from_addr,
                     to_addrs=email,
-                    msg=f'Your Simod discovery request has finished with status: {request_status}.\n'
+                    msg=f'From: {from_addr}\r\n'
+                        f'To: {email}\r\n\r\n'
+                        f'Subject: Simod discovery request: {request_status}\r\n\r\n'
+                        f'Your Simod discovery request has finished with status: {request_status}.\n'
                         f'Archive URL: {self.archive_url}\n'
                         + error_message
                 )

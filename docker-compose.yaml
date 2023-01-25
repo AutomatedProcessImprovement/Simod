@@ -1,0 +1,28 @@
+services:
+  simod_http:
+    build: docker/simod_http.dockerfile
+    container_name: simod_http
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./simod-http-data:/usr/src/Simod/src/simod_http/data
+    depends_on:
+      - mailserver
+    restart: unless-stopped
+
+  mailserver:
+    image: mailserver/docker-mailserver:11
+    container_name: mailserver
+    hostname: mailserver
+    ports:
+      - "25:25"
+      - "143:143"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - ./mailserver-data/dms/mail-data/:/var/mail/
+      - ./mailserver-data/dms/mail-state/:/var/mail-state/
+      - ./mailserver-data/dms/mail-logs/:/var/log/mail/
+      - ./mailserver-data/dms/config/:/tmp/docker-mailserver/
+    restart: unless-stopped
