@@ -52,12 +52,12 @@ def mine_gateway_probabilities(
             key=itemgetter(order_key))
         traces.append(trace)
 
-    sequences = __discover_with_gateway_management(traces, log_ids, bpmn_graph, gateways_probability_type)
+    sequences = _discover_with_gateway_management(traces, log_ids, bpmn_graph, gateways_probability_type)
 
-    return __prosimos_gateways_probabilities(bpmn_path, sequences)
+    return _prosimos_gateways_probabilities(bpmn_path, sequences)
 
 
-def __discover_with_gateway_management(
+def _discover_with_gateway_management(
         log_traces: list,
         log_ids: EventLogIDs,
         bpmn_graph: BPMNGraph,
@@ -71,7 +71,7 @@ def __discover_with_gateway_management(
     if gate_management is GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE:
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_equiprobable()
     elif gate_management is GatewayProbabilitiesDiscoveryMethod.DISCOVERY:
-        arcs_frequencies = __compute_sequence_flow_frequencies(log_traces, log_ids, bpmn_graph)
+        arcs_frequencies = _compute_sequence_flow_frequencies(log_traces, log_ids, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:
         raise ValueError(
@@ -87,7 +87,7 @@ def __discover_with_gateway_management(
     return sequences
 
 
-def __compute_sequence_flow_frequencies(log_traces: list, log_ids: EventLogIDs, bpmn_graph: BPMNGraph):
+def _compute_sequence_flow_frequencies(log_traces: list, log_ids: EventLogIDs, bpmn_graph: BPMNGraph):
     flow_arcs_frequency = dict()
     for trace in log_traces:
         task_sequence = [event[log_ids.activity] for event in trace]
@@ -95,7 +95,7 @@ def __compute_sequence_flow_frequencies(log_traces: list, log_ids: EventLogIDs, 
     return flow_arcs_frequency
 
 
-def __prosimos_gateways_probabilities(bpmn_path, sequences) -> List[GatewayProbabilities]:
+def _prosimos_gateways_probabilities(bpmn_path, sequences) -> List[GatewayProbabilities]:
     gateways_branching = {}
     reverse_map = {}
 

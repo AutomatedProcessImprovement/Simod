@@ -2,10 +2,10 @@ import datetime
 
 import pandas as pd
 
-from log_similarity_metrics.absolute_timestamps import absolute_timestamps_emd, discretize_to_hour
-from log_similarity_metrics.circadian_timestamps import circadian_timestamps_emd
+from log_similarity_metrics.absolute_event_distribution import absolute_event_distribution_distance, discretize_to_hour
+from log_similarity_metrics.circadian_event_distribution import circadian_event_distribution_distance
 from log_similarity_metrics.config import AbsoluteTimestampType
-from log_similarity_metrics.cycle_times import cycle_time_emd
+from log_similarity_metrics.cycle_time_distribution import cycle_time_distribution_distance
 from simod.configuration import Metric
 from simod.event_log.column_mapping import EventLogIDs
 from simod.metrics.tsd_evaluator import TimedStringDistanceEvaluator
@@ -56,7 +56,7 @@ def get_absolute_hourly_emd(
     :return: The absolute timestamps EMD.
     """
 
-    emd = absolute_timestamps_emd(
+    emd = absolute_event_distribution_distance(
         event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, AbsoluteTimestampType.BOTH, discretize_to_hour)
     return emd
 
@@ -74,7 +74,8 @@ def get_cycle_time_emd(
     :param event_log_2_ids: Column names of the second event log.
     :return: The cycle time EMD.
     """
-    emd = cycle_time_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, datetime.timedelta(hours=1))
+    emd = cycle_time_distribution_distance(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids,
+                                           datetime.timedelta(hours=1))
     return emd
 
 
@@ -92,7 +93,7 @@ def get_circadian_emd(
     :param event_log_2_ids:
     :return: The circadian EMD.
     """
-    emd = circadian_timestamps_emd(
+    emd = circadian_event_distribution_distance(
         event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, AbsoluteTimestampType.BOTH)
     return emd
 

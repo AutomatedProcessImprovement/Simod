@@ -528,6 +528,8 @@ class ExtraneousActivityDelaysSettings:
             return ExtraneousActivityDelaysOptimizationMetric.CYCLE_TIME
         elif metric == 'circadian_emd':
             return ExtraneousActivityDelaysOptimizationMetric.CIRCADIAN_EMD
+        elif metric == 'relative_emd':
+            return ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD
         else:
             raise ValueError(f'Unknown metric {metric}')
 

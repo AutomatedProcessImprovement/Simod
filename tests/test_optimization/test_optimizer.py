@@ -38,7 +38,6 @@ structure:
     - 0.0
     - 1.0
   gateway_probabilities:
-    - equiprobable
     - discovery
   replace_or_joins:
     - true
