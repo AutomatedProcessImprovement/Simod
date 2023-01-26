@@ -20,7 +20,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     outputs:
       version: ${{ steps.versioning.outputs.version }}
       docker_image: ${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
@@ -58,7 +58,7 @@ jobs:
           tags: ${{ env.DOCKERHUB_REPO }}:latest,${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
           file: docker/simod_build.dockerfile
           context: docker/
-          platforms: linux/amd64 #,linux/arm64
+          platforms: linux/amd64,linux/arm64
 
       - name: Create a release
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}

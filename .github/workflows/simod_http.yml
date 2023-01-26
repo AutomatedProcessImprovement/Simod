@@ -50,7 +50,7 @@ jobs:
         with:
           push: true
           tags: ${{ env.DOCKERHUB_REPO }}:latest,${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
-          file: docker/simod_build.dockerfile
+          file: docker/simod_http.dockerfile
           context: docker/
           platforms: linux/amd64,linux/arm64
 
