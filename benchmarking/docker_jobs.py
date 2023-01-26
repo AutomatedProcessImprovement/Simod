@@ -21,7 +21,6 @@ common:
     - circadian_emd
     - absolute_hourly_emd
     - cycle_time_emd
-  extraneous_activity_delays: true
 preprocessing:
   multitasking: false
 structure:
