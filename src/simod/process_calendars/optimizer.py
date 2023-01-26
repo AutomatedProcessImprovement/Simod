@@ -41,8 +41,8 @@ class CalendarOptimizer(HyperoptPipeline):
             gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod,
             gateway_probabilities: Optional[list] = None,
             process_graph: Optional[DiGraph] = None,
+            event_distribution: Optional[list[dict]] = None,
     ):
-
         self._calendar_optimizer_settings = calendar_optimizer_settings
         self._event_log = event_log
         self._log_ids = event_log.log_ids
@@ -50,6 +50,7 @@ class CalendarOptimizer(HyperoptPipeline):
         self._gateway_probabilities_method = gateway_probabilities_method
         self._gateway_probabilities = gateway_probabilities
         self._process_graph = process_graph
+        self._event_distribution = event_distribution
 
         self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
         self._log_validation = event_log.validation_partition.sort_values(event_log.log_ids.start_time, ascending=True)
@@ -242,6 +243,9 @@ class CalendarOptimizer(HyperoptPipeline):
         )
 
         json_path = settings.output_dir / 'simulation_parameters.json'
+
+        if self._event_distribution is not None:
+            parameters.event_distribution = self._event_distribution
 
         parameters.to_json_file(json_path)
 

@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 import pandas as pd
 from networkx import DiGraph
 
+from extraneous_activity_delays.config import SimulationModel
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
@@ -76,8 +77,13 @@ class Optimizer:
             structure_settings: StructureMinerSettings,
             model_path: Optional[Path],
             gateway_probabilities: list,
+            simulation_model: Optional[SimulationModel] = None,
     ) -> Tuple[CalendarOptimizationSettings, CalendarPipelineSettings]:
         calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)
+
+        event_distribution = simulation_model.simulation_parameters.get('event_distribution', None) \
+            if simulation_model is not None \
+            else None
 
         optimizer = CalendarOptimizer(
             calendar_settings,
@@ -86,6 +92,7 @@ class Optimizer:
             gateway_probabilities=gateway_probabilities,
             gateway_probabilities_method=structure_settings.gateway_probabilities_method,
             process_graph=self._process_graph,
+            event_distribution=event_distribution,
         )
 
         best_pipeline_settings = optimizer.run()
@@ -161,7 +168,9 @@ class Optimizer:
             self,
             best_settings: CalendarPipelineSettings,
             model_path: Path,
-            output_dir: Path) -> Tuple[Path, CalendarPipelineSettings]:
+            output_dir: Path,
+            simulation_model: Optional[SimulationModel] = None,
+    ) -> Tuple[Path, CalendarPipelineSettings]:
         settings = CalendarPipelineSettings(
             output_dir=output_dir,
             model_path=model_path,
@@ -182,6 +191,9 @@ class Optimizer:
             process_graph=self._process_graph,
         )
 
+        if simulation_model is not None:
+            parameters.event_distribution = simulation_model.simulation_parameters.get('event_distribution', None)
+
         json_path = settings.output_dir / 'simulation_parameters.json'
 
         parameters.to_json_file(json_path)
@@ -201,6 +213,22 @@ class Optimizer:
         result = self._optimize_structure()
         structure_optimizer_settings, structure_pipeline_settings, model_path, gateway_probabilities, parameters_path = result
 
+        simulation_model = None
+        if self._settings.extraneous_activity_delays is not None:
+            print_section('Mining extraneous delay timers')
+            with parameters_path.open() as f:
+                parameters = json.load(f)
+            simulation_model, model_path, parameters_path = discover_extraneous_delay_timers(
+                self._event_log.train_partition,
+                self._event_log.log_ids,
+                model_path,
+                parameters,
+                self._settings.extraneous_activity_delays.optimization_metric,
+                base_dir=best_result_dir,
+                num_iterations=self._settings.extraneous_activity_delays.num_iterations,
+                max_alpha=50,
+            )
+
         if not self._process_graph:
             self._process_graph = BPMNReaderWriter(model_path).as_graph()
 
@@ -216,7 +244,7 @@ class Optimizer:
 
         print_section('Calendars optimization')
         calendar_optimizer_settings, calendar_pipeline_settings = self._optimize_calendars(
-            structure_miner_settings, model_path, gateway_probabilities)
+            structure_miner_settings, model_path, gateway_probabilities, simulation_model)
 
         if model_path is None:
             print_section('Mining structure using the best hyperparameters')
@@ -229,22 +257,22 @@ class Optimizer:
 
         print_section('Mining calendars using the best hyperparameters')
         parameters_path, calendars_settings = self._mine_calendars(
-            calendar_pipeline_settings, model_path, best_result_dir)
+            calendar_pipeline_settings, model_path, best_result_dir, simulation_model)
 
-        if self._settings.extraneous_activity_delays is not None:
-            print_section('Mining extraneous delay timers')
-            with parameters_path.open() as f:
-                parameters = json.load(f)
-            _, model_path, parameters_path = discover_extraneous_delay_timers(
-                self._event_log.train_partition,
-                self._event_log.log_ids,
-                model_path,
-                parameters,
-                self._settings.extraneous_activity_delays.optimization_metric,
-                base_dir=best_result_dir,
-                num_iterations=self._settings.extraneous_activity_delays.num_iterations,
-                max_alpha=50,
-            )
+        # if self._settings.extraneous_activity_delays is not None:
+        #     print_section('Mining extraneous delay timers')
+        #     with parameters_path.open() as f:
+        #         parameters = json.load(f)
+        #     _, model_path, parameters_path = discover_extraneous_delay_timers(
+        #         self._event_log.train_partition,
+        #         self._event_log.log_ids,
+        #         model_path,
+        #         parameters,
+        #         self._settings.extraneous_activity_delays.optimization_metric,
+        #         base_dir=best_result_dir,
+        #         num_iterations=self._settings.extraneous_activity_delays.num_iterations,
+        #         max_alpha=50,
+        #     )
 
         print_section('Evaluation')
         simulation_dir = best_result_dir / 'simulation'

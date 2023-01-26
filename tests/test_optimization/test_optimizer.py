@@ -63,6 +63,7 @@ calendars:
     participation: 0.4
 extraneous_activity_delays:
   optimization_metric: absolute_emd
+  num_iterations: 1
 """
 
 config_yaml_B = """
