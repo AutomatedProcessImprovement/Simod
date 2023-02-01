@@ -82,10 +82,7 @@ jobs:
         shell: bash
         run: |
           Xvfb :99 &>/dev/null & disown
-          cd /usr/src/Simod
-          source $(poetry env info --path)/bin/activate
-          pip install pytest pytest-cov
-          pytest --cov=. --cov-report=xml --durations=0 -v -x
+          poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x
 
       - name: Upload Simod output
         uses: actions/upload-artifact@v3
