@@ -1,0 +1,54 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "simod"
+version = "3.2.0"
+authors = ["Manuel Camargo", "Ihar Suvorau", "David Chapela"]
+description = "Simod is a Python package for automated discovery of business process simulation models from event logs."
+
+[tool.poetry.dependencies]
+python = "^3.9"
+click = "^8.1.3"
+fastapi = "^0.89.1"
+fastapi-utils = "^0.2.1"
+hyperopt = "^0.2.7"
+invoke = "^1.7.3"
+jellyfish = "^0.9.0"
+lxml = "^4.9.1"
+matplotlib = "^3.6.0"
+networkx = "^2.8.7"
+numpy = "^1.23.4"
+pandas = "^1.5.2"
+pendulum = "^2.1.2"
+pydantic = "^1.10.3"
+python-dotenv = "^0.21.0"
+python-multipart = "^0.0.5"
+pytz = "^2022.4"
+PyYAML = "^6.0"
+requests = "^2.28.2"
+scipy = "^1.9.2"
+statistics = "^1.0.3.5"
+tqdm = "^4.64.1"
+uvicorn = "^0.20.0"
+xmltodict = "^0.13.0"
+pix_utils = { git = "https://github.com/AutomatedProcessImprovement/pix-utils.git", branch = "main" }
+log-similarity-metrics = { git = "https://github.com/AutomatedProcessImprovement/log-similarity-metrics.git", branch = "main" }
+estimate-start-times = { git = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git", branch = "main" }
+extraneous-activity-delays = { git = "https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.git", branch = "main" }
+DiffResBP-Simulator = { git = "https://github.com/AutomatedProcessImprovement/Prosimos.git", branch = "main", tag = "nov2022" }
+pm4py-wrapper = { git = "https://github.com/AutomatedProcessImprovement/pm4py-wrapper.git", branch = "main" }
+
+[tool.poetry.dev-dependencies]
+pre-commit = "^2.20.0"
+pytest = "^7.1.3"
+pytest-cov = "^3.0.0"
+
+[virtualenvs]
+in-project = true
+path = "venv"
+
+[tool.poetry.scripts]
+simod = "simod.cli:main"
+simod-http = "simod_http.main:app"

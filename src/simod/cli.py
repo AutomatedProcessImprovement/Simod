@@ -32,12 +32,14 @@ def main():
 
 
 @main.command()
-@click.option('--config_path', default=None, required=True, type=Path)
-@click.option('--output_dir', default=None, required=False, type=Path)
-def optimize(config_path: Path, output_dir: Path) -> Path:
+@click.option('--config_path', default=None, required=True, type=str)
+@click.option('--output_dir', default=None, required=False, type=str)
+def optimize(config_path: str, output_dir: str) -> Path:
     repository_dir = get_project_dir()
     config_path = repository_dir / config_path
     settings = Configuration.from_path(config_path)
+
+    output_dir = Path(output_dir) if output_dir is not None else None
 
     # NOTE: EventLog requires start_time column to be present for split_log() to work.
     #   So, we do pre-processing before creating the EventLog object.
