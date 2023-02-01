@@ -14,13 +14,11 @@ This repository contains 2 projects:
 
 ### Requirements
 
-- **Python 3.8**+
-- **PIP 21.2.3**+ (upgrade with `python -m pip install --upgrade pip`)
-- For Python dependencies, see `requirements.txt`
-- For external tools: **Java 1.8**
-- Java dependencies alongside with others are located at `external_tools` folder
+- Python 3.9
+- Java 1.8 is required by Split Miner which is used for process model discovery
+- Use [Poetry](https://python-poetry.org/) for building, installing, and managing Python dependencies
 
-### Installation via Docker
+### Getting Started
 
 ```shell
 $ docker pull nokal/simod:latest
@@ -29,26 +27,21 @@ $ docker pull nokal/simod:latest
 To start a container:
 
 ```shell
-$ docker run -it nokal/simod:latest bash
+$ docker run -it -v /path/to/resources/:/usr/src/Simod/resources -v /path/to/output:/usr/src/Simod/outputs nokal/simod bash
 ```
 
-In the container, you need to activate the Python environment pre-installed during Docker building:
+Use the `resources` directory to store event logs and configuration files. The `outputs` directory will contain the results of Simod. 
+
+To start using Simod, you need to activate the Python environment in the container and start `Xvfb`:
 
 ```shell
 $ cd /usr/src/Simod
-$ source venv/bin/activate
-$ Xvfb :99 &>/dev/null & disown  # start Xvfb for Java dependencies that require an X11 server
-$ simod --help
-```
-Different Simod versions are available at https://hub.docker.com/r/nokal/simod/tags.
-
-### Getting started
-
-```shell
+$ poetry shell  # opens a shell with the virtual environment
+$ Xvfb :99 &>/dev/null & disown  # starts Xvfb (Split Miner requires an X11 server to be available)
 $ simod optimize --config_path <path-to-config>
 ```
 
-The optimizer finds optimal parameters for a model and saves them in `outputs/<id>/<event-log-name>_canon.json`.
+Different Simod versions are available at https://hub.docker.com/r/nokal/simod/tags.
 
 ### Configuration
 
@@ -104,13 +97,16 @@ calendars:
       - 0.01
       - 0.3
     participation: 0.4  # Resource participation threshold. Values between 0.0 and 1.0
+extraneous_activity_delays: # Settings for extraneous activity timers discovery
+  num_iterations: 1  # Number of optimization iterations over the search space. Values between 1 and 50
+  optimization_metric: relative_emd # Optimization metric for the extraneous activity timers. Options: relative_emd, absolute_emd, circadian_emd, cycle_time
 ```
+
+**NB!** Split Miner 1 is not supported anymore. Split Miner 3 will be executed instead.
 
 ### Testing
 
-#### Using a local development environment
-
-We use `pytest` to run tests on the package:
+Use `pytest` to run tests on the package:
 
 ```shell
 $ pytest
