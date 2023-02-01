@@ -6,7 +6,7 @@ CVXOPT_DIR=/usr/src/cvxopt
 pip install -U pip
 pip install poetry
 
-poetry shell
+source $(poetry env info --path)/bin/activate
 pip install -U pip
 
 cd $CVXOPT_DIR

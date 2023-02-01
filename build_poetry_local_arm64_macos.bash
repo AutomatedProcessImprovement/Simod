@@ -17,7 +17,7 @@ CVXOPT_DIR=$(pwd)/external_tools/cvxopt
 cd $PROJECT_DIR
 pip install -U pip
 pip install poetry
-poetry shell
+source $(poetry env info --path)/bin/activate
 pip install -U pip
 
 cd $PROJECT_DIR
