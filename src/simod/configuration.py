@@ -485,13 +485,13 @@ class CalendarsSettings(BaseModel):
 @dataclass
 class ExtraneousActivityDelaysSettings:
     optimization_metric: ExtraneousActivityDelaysOptimizationMetric
-    num_iterations: int = 50
+    num_iterations: int = 10
 
     @staticmethod
     def default() -> 'ExtraneousActivityDelaysSettings':
         return ExtraneousActivityDelaysSettings(
-            optimization_metric=ExtraneousActivityDelaysOptimizationMetric.ABSOLUTE_EMD,
-            num_iterations=50,
+            optimization_metric=ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD,
+            num_iterations=10,
         )
 
     @staticmethod
@@ -503,9 +503,9 @@ class ExtraneousActivityDelaysSettings:
         if optimization_metric is not None:
             optimization_metric = ExtraneousActivityDelaysSettings._match_metric(optimization_metric)
         else:
-            optimization_metric = ExtraneousActivityDelaysOptimizationMetric.ABSOLUTE_EMD
+            optimization_metric = ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD
 
-        num_iterations = config.get('num_iterations', 50)
+        num_iterations = config.get('num_iterations', 10)
 
         return ExtraneousActivityDelaysSettings(
             optimization_metric=optimization_metric,
