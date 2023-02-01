@@ -1,0 +1,12 @@
+*
+!src
+!external_tools/splitminer2
+!external_tools/splitminer3
+!tests
+!*.bash
+!*.sh
+!LICENSE
+!*.toml
+!*.ini
+!*.md
+!*.txt

@@ -47,7 +47,7 @@ structure:
     - false
 calendars:
   max_evaluations: 40
-  optimization_metric: absolute_hourly_emd
+  optimization_metric: circadian_emd
   resource_profiles:
     discovery_type: differentiated
     granularity: 
@@ -61,7 +61,7 @@ calendars:
       - 0.3
     participation: 0.4
 extraneous_activity_delays:
-  optimization_metric: absolute_emd
+  optimization_metric: relative_emd
   num_iterations: 50
 """
 
@@ -160,7 +160,7 @@ simod optimize --config_path {container_base_path}/configs/{config_path.name}
 
 
 def main():
-    prefix = '_differentiated_calendars-abs-hourly-emd_timers-abs-emd'
+    prefix = '_differentiated_timers-relemd_cal-circadianemd'
 
     container_input_dir = Path('/usr/src/Simod/input')
 
@@ -174,8 +174,8 @@ def main():
     log_paths = [
         # (Path('logs/Production_train.csv'), Path('logs/Production_test.csv')),
         # (Path('logs/ConsultaDataMining201618_train.csv'), Path('logs/ConsultaDataMining201618_test.csv')),
-        (Path('logs/BPIC_2012_W_contained_train.csv'), Path('logs/BPIC_2012_W_contained_test.csv')),
-        # (Path('logs/BPIC_2017_W_contained_train.csv'), Path('logs/BPIC_2017_W_contained_test.csv')),
+        # (Path('logs/BPIC_2012_W_contained_train.csv'), Path('logs/BPIC_2012_W_contained_test.csv')),
+        (Path('logs/BPIC_2017_W_contained_train.csv'), Path('logs/BPIC_2017_W_contained_test.csv')),
         # (Path('logs/poc_processmining_train.csv'), Path('logs/poc_processmining_test.csv')),
         # (Path('logs/Governmental_Agency_train.csv'), Path('logs/Governmental_Agency_test.csv')),
     ]

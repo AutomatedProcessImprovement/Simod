@@ -56,8 +56,8 @@ jobs:
         with:
           push: true
           tags: ${{ env.DOCKERHUB_REPO }}:latest,${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
-          file: docker/simod_build.dockerfile
-          context: docker/
+          file: Dockerfile
+          context: .
           platforms: linux/amd64,linux/arm64
 
       - name: Create a release
@@ -83,9 +83,9 @@ jobs:
         run: |
           Xvfb :99 &>/dev/null & disown
           cd /usr/src/Simod
-          source venv/bin/activate
-          pip3.10 install pytest pytest-cov
-          pytest -m "not benchmark" --cov=. --cov-report=xml --durations=0 -v -x
+          poetry shell
+          pip install pytest pytest-cov
+          pytest --cov=. --cov-report=xml --durations=0 -v -x
 
       - name: Upload Simod output
         uses: actions/upload-artifact@v3
