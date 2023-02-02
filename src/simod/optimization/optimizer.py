@@ -226,6 +226,7 @@ class Optimizer:
                 self._settings.extraneous_activity_delays.optimization_metric,
                 base_dir=best_result_dir,
                 num_iterations=self._settings.extraneous_activity_delays.num_iterations,
+                num_evaluation_simulations=self._settings.common.repetitions,
                 max_alpha=50,
             )
 
