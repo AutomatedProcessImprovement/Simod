@@ -59,7 +59,10 @@ common:
     - cycle_time_emd
     - circadian_emd
 preprocessing: # Event log preprocessing settings
-  multitasking: false
+  multitasking: false # If true, remove the multitasking by adjusting the timestamps (start/end) of those activities being executed at the same time by the same resource.
+  concurrency_df: 0.9 # Directly-Follows threshold for the concurrency oracle.
+  concurrency_l2l: 0.9 # Length 2 loops threshold for the concurrency oracle.
+  concurrency_l1l: 0.9 # Length 1 loops threshold for the concurrency oracle.
 structure: # Structure settings
   optimization_metric: dl  # Optimization metric for the structure. Only DL is supported
   max_evaluations: 1  # Number of optimization iterations over the search space. Values between 1 and 50
