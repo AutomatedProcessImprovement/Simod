@@ -52,7 +52,7 @@ version: 2
 common:
   log_path: resources/event_logs/PurchasingExample.xes  # Path to the event log in XES or CSV format
   test_log_path: resources/event_logs/PurchasingExampleTest.xes  # Optional: Path to the test event log in XES or CSV format
-  repetitions: 1  # Number of simulations of the final model to obtain more accurate evaluations. Values between 1 and 50
+  repetitions: 1  # Number of times that the evaluation of each candidate is run (included the final model) during the optimization. The evaluation metric of the candidate is the average of it's repetitions evaluations.
   evaluation_metrics: # A list of evaluation metrics to use on the final model
     - dl
     - absolute_hourly_emd
