@@ -83,6 +83,7 @@ jobs:
         run: |
           Xvfb :99 &>/dev/null & disown
           cd /usr/src/Simod
+          poetry run pip install pytest pytest-cov
           poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x
 
       - name: Upload Simod output
