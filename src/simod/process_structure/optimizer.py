@@ -44,8 +44,8 @@ class StructureOptimizer(HyperoptPipeline):
         self._process_graph = process_graph
         self._log_ids = event_log.log_ids
 
-        self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
-        self._log_validation = event_log.validation_partition.sort_values(event_log.log_ids.start_time, ascending=True)
+        self._log_train = event_log.train_partition
+        self._log_validation = event_log.validation_partition
 
         self._output_dir = self._settings.base_dir / folder_id(prefix='structure_')
         self._output_dir.mkdir(parents=True, exist_ok=True)

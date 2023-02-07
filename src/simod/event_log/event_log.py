@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from extraneous_activity_delays.utils.log_split import split_log_training_validation_event_wise as split_log
+from pix_utils.log_split.log_split import split_log_training_validation_trace_wise as split_log
 from typing import Optional
 
 from .column_mapping import EventLogIDs, STANDARD_COLUMNS
@@ -109,10 +109,10 @@ class EventLog:
             log_ids=log_ids,
             log_path=path,
             csv_log_path=csv_path,
-            log_train=train_df.sort_values(by=log_ids.start_time),
-            log_validation=validation_df.sort_values(by=log_ids.start_time),
-            log_train_validation=train_validation_df.sort_values(by=log_ids.start_time),
-            log_test=test_df.sort_values(by=log_ids.start_time),
+            log_train=train_df,
+            log_validation=validation_df,
+            log_train_validation=train_validation_df,
+            log_test=test_df,
             process_name=process_name,
         )
 

@@ -52,8 +52,8 @@ class CalendarOptimizer(HyperoptPipeline):
         self._process_graph = process_graph
         self._event_distribution = event_distribution
 
-        self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
-        self._log_validation = event_log.validation_partition.sort_values(event_log.log_ids.start_time, ascending=True)
+        self._log_train = event_log.train_partition
+        self._log_validation = event_log.validation_partition
 
         # Calendar optimization base folder
         self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')

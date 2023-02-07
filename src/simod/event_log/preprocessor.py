@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 from typing import Optional
 
+from estimate_start_times.concurrency_oracle import OverlappingConcurrencyOracle
 from estimate_start_times.config import Configuration as StartTimeEstimatorConfiguration, HeuristicsThresholds
 from estimate_start_times.estimator import StartTimeEstimator
 from simod.cli_formatter import print_step, print_section
@@ -33,7 +34,8 @@ class Preprocessor:
     _log_ids: EventLogIDs
 
     def __init__(self, log: pd.DataFrame, log_ids: EventLogIDs):
-        self._log = log.copy()
+        keys = [log_ids.start_time, log_ids.end_time] if log_ids.start_time in log.columns else [log_ids.end_time]
+        self._log = log.sort_values(by=keys).reset_index(drop=True)
         self._log_ids = log_ids
 
     def run(self, multitasking: bool = False, concurrency_thresholds: HeuristicsThresholds = HeuristicsThresholds()) -> pd.DataFrame:
@@ -55,6 +57,8 @@ class Preprocessor:
             self._adjust_for_multitasking()
 
         if self._log_ids.enabled_time not in self._log.columns:
+            # The start times were not estimated (otherwise enabled times would
+            # be present), and the enabled times are not in the original log
             self._add_enabled_times(concurrency_thresholds)
 
         return self._log
@@ -78,7 +82,12 @@ class Preprocessor:
             heuristics_thresholds=concurrency_thresholds,
         )
 
-        self._log = StartTimeEstimator(self._log, configuration).estimate(replace_recorded_start_times=True)
+        self._log = StartTimeEstimator(
+            self._log,
+            configuration
+        ).estimate(
+            replace_recorded_start_times=True
+        )
 
     def _add_enabled_times(self, concurrency_thresholds: HeuristicsThresholds):
         print_step('Adding enabled times')
@@ -88,5 +97,5 @@ class Preprocessor:
             heuristics_thresholds=concurrency_thresholds,
             consider_start_times=True,
         )
-
-        self._log = StartTimeEstimator(self._log, configuration).concurrency_oracle.add_enabled_times(self._log)
+        # The start times are the original ones, so use overlapping concurrency oracle
+        OverlappingConcurrencyOracle(self._log, configuration).add_enabled_times(self._log)
