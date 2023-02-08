@@ -1,12 +1,10 @@
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
-
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_subsection
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
@@ -17,6 +15,7 @@ from simod.process_calendars.settings import CalendarOptimizationSettings, Pipel
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import remove_asset, folder_id, file_id, nearest_divisor_for_granularity
+from typing import Optional, Tuple, Union
 
 
 class CalendarOptimizer(HyperoptPipeline):
@@ -100,12 +99,12 @@ class CalendarOptimizer(HyperoptPipeline):
         status, result = self.step(status, self._extract_parameters, trial_stg)
         if result is None:
             status = STATUS_FAIL
-            json_path, simulation_cases = None, None
+            json_path = None
         else:
-            json_path, simulation_cases = result
+            json_path = result
 
         # simulation and evaluation
-        status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path, simulation_cases)
+        status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path)
         evaluation_measurements = result if status == STATUS_OK else []
 
         # response for hyperopt
@@ -230,7 +229,7 @@ class CalendarOptimizer(HyperoptPipeline):
 
         return response, status
 
-    def _extract_parameters(self, settings: PipelineSettings) -> Tuple:
+    def _extract_parameters(self, settings: PipelineSettings) -> Path:
         parameters = mine_parameters(
             settings.case_arrival,
             settings.resource_profiles,
@@ -249,11 +248,9 @@ class CalendarOptimizer(HyperoptPipeline):
 
         parameters.to_json_file(json_path)
 
-        simulation_cases = self._log_train[self._log_ids.case].nunique()
+        return json_path
 
-        return json_path, simulation_cases
-
-    def _simulate_with_prosimos(self, settings: PipelineSettings, json_path: Path, simulation_cases: int):
+    def _simulate_with_prosimos(self, settings: PipelineSettings, json_path: Path):
         num_simulations = self._calendar_optimizer_settings.simulation_repetitions
         bpmn_path = settings.model_path
 
@@ -261,7 +258,7 @@ class CalendarOptimizer(HyperoptPipeline):
             model_path=bpmn_path,
             parameters_path=json_path,
             output_dir=settings.output_dir,
-            simulation_cases=simulation_cases,
+            simulation_cases=self._log_validation[self._log_ids.case].nunique(),
             simulation_start_time=self._log_validation[self._log_ids.start_time].min(),
             validation_log=self._log_validation,
             validation_log_ids=self._log_ids,
