@@ -132,6 +132,7 @@ class Metric(str, Enum):
     CIRCADIAN_EMD = 'circadian_emd'
     ABSOLUTE_HOURLY_EMD = 'absolute_hourly_emd'
     CYCLE_TIME_EMD = 'cycle_time_emd'
+    N_GRAM_DISTANCE = 'n_gram_distance'
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[Metric, List[Metric]]':
@@ -144,6 +145,8 @@ class Metric(str, Enum):
     def _from_str(cls, value: str) -> 'Metric':
         if value.lower() == 'dl':
             return cls.DL
+        elif value.lower() == 'n_gram_distance':
+            return cls.N_GRAM_DISTANCE
         elif value.lower() == 'circadian_emd':
             return cls.CIRCADIAN_EMD
         elif value.lower() in ('absolute_hourly_emd', 'absolute_hour_emd', 'abs_hourly_emd', 'abs_hour_emd'):
@@ -156,6 +159,8 @@ class Metric(str, Enum):
     def __str__(self):
         if self == Metric.DL:
             return 'DL'
+        elif self == Metric.N_GRAM_DISTANCE:
+            return 'N_GRAM_DISTANCE'
         elif self == Metric.CIRCADIAN_EMD:
             return 'CIRCADIAN_EMD'
         elif self == Metric.ABSOLUTE_HOURLY_EMD:
@@ -198,7 +203,8 @@ class CommonSettings(BaseModel):
             log_ids=STANDARD_COLUMNS,
             model_path=None,
             repetitions=1,
-            evaluation_metrics=[Metric.DL, Metric.ABSOLUTE_HOURLY_EMD, Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
+            evaluation_metrics=[Metric.DL, Metric.N_GRAM_DISTANCE, Metric.ABSOLUTE_HOURLY_EMD,
+                                Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
             clean_intermediate_files=False,
         )
 

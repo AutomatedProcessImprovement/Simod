@@ -219,12 +219,11 @@ class StructureOptimizer(HyperoptPipeline):
             evaluation_measurements: list,
             pipeline_settings: PipelineSettings,
     ) -> Tuple[dict, str]:
-        similarity = np.mean([x['value'] for x in evaluation_measurements])
-        loss = 1 - similarity
-        status = status if loss > 0 else STATUS_FAIL
+        distance = np.mean([x['value'] for x in evaluation_measurements])
+        status = status if distance > 0 else STATUS_FAIL
 
         response = {
-            'loss': loss,
+            'loss': distance,
             'status': status,
             'output_dir': pipeline_settings.output_dir,
             'model_path': pipeline_settings.model_path,

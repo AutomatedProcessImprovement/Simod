@@ -64,7 +64,7 @@ preprocessing: # Event log preprocessing settings
   concurrency_l2l: 0.9 # Length 2 loops threshold for the concurrency oracle.
   concurrency_l1l: 0.9 # Length 1 loops threshold for the concurrency oracle.
 structure: # Structure settings
-  optimization_metric: dl  # Optimization metric for the structure. Only DL is supported
+  optimization_metric: dl  # Optimization metric for the structure. DL or N_GRAM_DISTANCE
   max_evaluations: 1  # Number of optimization iterations over the search space. Values between 1 and 50
   mining_algorithm: sm3  # Process model discovery algorithm. Options: sm1, sm2, sm3 (recommended)
   concurrency: # Split Miner 2 (sm2) parameter for the number of concurrent relations between events to be captured. Values between 0.0 and 1.0

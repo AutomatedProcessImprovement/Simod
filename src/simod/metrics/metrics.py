@@ -10,6 +10,8 @@ from simod.configuration import Metric
 from simod.event_log.column_mapping import EventLogIDs
 from simod.metrics.tsd_evaluator import TimedStringDistanceEvaluator
 
+from log_similarity_metrics.n_gram_distribution import n_gram_distribution_distance
+
 
 def compute_metric(
         metric: Metric,
@@ -29,6 +31,8 @@ def compute_metric(
 
     if metric is Metric.DL:
         result = get_dl(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
+    elif metric is Metric.N_GRAM_DISTANCE:
+        result = get_n_grams_distribution_distance(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     elif metric is Metric.CIRCADIAN_EMD:
         result = get_circadian_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     elif metric is Metric.ABSOLUTE_HOURLY_EMD:
@@ -96,6 +100,25 @@ def get_circadian_emd(
     emd = circadian_event_distribution_distance(
         event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, AbsoluteTimestampType.BOTH)
     return emd
+
+
+def get_n_grams_distribution_distance(
+        event_log_1: pd.DataFrame,
+        event_log_1_ids: EventLogIDs,
+        event_log_2: pd.DataFrame,
+        event_log_2_ids: EventLogIDs) -> float:
+    """
+    Distance measure between two event logs computing the difference in the frequencies of the n-grams observed in
+    the event logs (being the n-grams of an event log all the groups of n consecutive elements observed in it).
+
+    :param event_log_1: first event log.
+    :param event_log_1_ids: IDs of the first event log.
+    :param event_log_2: second event log.
+    :param event_log_2_ids: IDs of the second event log.
+    :return: The MAE between the frequency of trigrams occurring in one log vs the other.
+    """
+    mae = n_gram_distribution_distance(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, 3)
+    return mae
 
 
 def get_dl(

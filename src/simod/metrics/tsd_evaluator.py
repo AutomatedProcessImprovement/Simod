@@ -61,9 +61,9 @@ class TimedStringDistanceEvaluator:
                                  np.random.randint(0, len(self.log_data), len(self.simulation_data))))
 
     def measure_distance(self) -> float:
-        distance = self._evaluate_seq_distance(self.log_data, self.simulation_data)
-        value = np.mean([x['sim_score'] for x in distance])
-        return value
+        distances = self._evaluate_seq_distance(self.log_data, self.simulation_data)
+        distance = np.mean([x['distance'] for x in distances])
+        return distance
 
     def _evaluate_seq_distance(self, log_data, simulation_data):
         """
@@ -101,13 +101,13 @@ class TimedStringDistanceEvaluator:
         row_ind, col_ind = linear_sum_assignment(np.array(cost_matrix))
 
         # Create response
-        similarity = []
+        distances = []
         for idx, idy in zip(row_ind, col_ind):
-            similarity.append(dict(caseid=simulation_data[idx][self.log_ids.case],
+            distances.append(dict(caseid=simulation_data[idx][self.log_ids.case],
                                    sim_order=simulation_data[idx]['profile'],
                                    log_order=log_data[idy]['profile'],
-                                   sim_score=(1 - (cost_matrix[idx][idy]))))
-        return similarity
+                                   distance=cost_matrix[idx][idy]))
+        return distances
 
     def _compare_traces(self, args):
         def gen(serie1, serie2, r):
