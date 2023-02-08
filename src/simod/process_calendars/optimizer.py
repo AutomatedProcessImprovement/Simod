@@ -245,6 +245,8 @@ class CalendarOptimizer(HyperoptPipeline):
 
         if self._event_distribution is not None:
             parameters.event_distribution = self._event_distribution
+        else:
+            parameters.event_distribution = []
 
         parameters.to_json_file(json_path)
 
