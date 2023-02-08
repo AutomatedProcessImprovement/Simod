@@ -39,17 +39,11 @@ class TimedStringDistanceEvaluator:
 
         # renaming simulation log columns
         renaming_dict = self.simulation_log_ids.renaming_dict(self.log_ids)
-        simulation_log_renamed = self.simulation_data.rename(columns=renaming_dict)
+        self.simulation_data = self.simulation_data.rename(columns=renaming_dict)
 
-        data = pd.concat([self.log_data, simulation_log_renamed], axis=0, ignore_index=True)
-        if ('processing_time' not in data.columns) or ('waiting_time' not in data.columns):
-            data = self.calculate_times(data)
-
-        data = self.scaling_data(data)
+        data = pd.concat([self.log_data, self.simulation_data], axis=0, ignore_index=True)
 
         # save data
-        self.log_data = data[data.source == 'log']
-        self.simulation_data = data[data.source == 'simulation']
         self.alias = self.create_task_alias(data, self.log_ids.activity)
 
         # reformat and sampling data
@@ -198,7 +192,7 @@ class TimedStringDistanceEvaluator:
         temp_data = list()
         # define ordering keys and columns
         sort_key = self.log_ids.start_time
-        columns = ['alias', 'processing_time', 'proc_act_norm', 'waiting_time', 'wait_act_norm']
+        columns = ['alias']
         data = sorted(data, key=lambda x: (x[self.log_ids.case], x[sort_key]))
         for key, group in itertools.groupby(data, key=lambda x: x[self.log_ids.case]):
             trace = list(group)
