@@ -219,13 +219,14 @@ class Optimizer:
             with parameters_path.open() as f:
                 parameters = json.load(f)
             simulation_model, model_path, parameters_path = discover_extraneous_delay_timers(
-                self._event_log.train_partition,
+                self._event_log.train_validation_partition,
                 self._event_log.log_ids,
                 model_path,
                 parameters,
                 self._settings.extraneous_activity_delays.optimization_metric,
                 base_dir=best_result_dir,
                 num_iterations=self._settings.extraneous_activity_delays.num_iterations,
+                num_evaluation_simulations=self._settings.common.repetitions,
                 max_alpha=50,
             )
 

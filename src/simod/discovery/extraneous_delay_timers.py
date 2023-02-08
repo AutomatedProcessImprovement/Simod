@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from typing import Optional, Union
 
 import pandas as pd
 from lxml import etree
+from typing import Optional, Union
 
 from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration, \
     SimulationEngine, SimulationModel, OptimizationMetric
@@ -20,6 +20,7 @@ def discover_extraneous_delay_timers(
         optimization_metric: OptimizationMetric,
         base_dir: Optional[Path] = None,
         num_iterations: int = 50,
+        num_evaluation_simulations: int = 3,
         max_alpha: float = 50,
 ) -> [SimulationModel, Path, Path]:
     """
@@ -35,6 +36,7 @@ def discover_extraneous_delay_timers(
     :param optimization_metric: Optimization metric.
     :param base_dir: Base directory for the new model and simulation parameters files.
     :param num_iterations: Number of iterations for the hyperparameter optimization.
+    :param num_evaluation_simulations: Number of simulations performed with each enhanced BPMN model to evaluate its quality.
     :param max_alpha: Maximum scale factor to multiply the discovered timers in the hyper-optimization.
     :return: Enhanced simulation model and paths to the BPMN model with extraneous delay timers and simulation parameters.
     """
@@ -46,6 +48,7 @@ def discover_extraneous_delay_timers(
         process_name=model_path.stem,
         max_alpha=max_alpha,
         num_iterations=num_iterations,
+        num_evaluation_simulations=num_evaluation_simulations,
         simulation_engine=SimulationEngine.PROSIMOS,
         optimization_metric=optimization_metric,
     )

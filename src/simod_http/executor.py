@@ -2,9 +2,9 @@ import logging
 import tempfile
 import traceback
 from pathlib import Path
-from typing import Union
 
 import pandas as pd
+from typing import Union
 
 from simod.configuration import Configuration
 from simod.event_log.event_log import EventLog
@@ -83,6 +83,7 @@ def optimize_with_simod(
         preprocessor = Preprocessor(event_log, configuration.common.log_ids)
         processed_log = preprocessor.run(
             multitasking=configuration.preprocessing.multitasking,
+            concurrency_thresholds=configuration.preprocessing.concurrency_thresholds,
         )
 
         test_log = None

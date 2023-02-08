@@ -39,17 +39,11 @@ class TimedStringDistanceEvaluator:
 
         # renaming simulation log columns
         renaming_dict = self.simulation_log_ids.renaming_dict(self.log_ids)
-        simulation_log_renamed = self.simulation_data.rename(columns=renaming_dict)
+        self.simulation_data = self.simulation_data.rename(columns=renaming_dict)
 
-        data = pd.concat([self.log_data, simulation_log_renamed], axis=0, ignore_index=True)
-        if ('processing_time' not in data.columns) or ('waiting_time' not in data.columns):
-            data = self.calculate_times(data)
-
-        data = self.scaling_data(data)
+        data = pd.concat([self.log_data, self.simulation_data], axis=0, ignore_index=True)
 
         # save data
-        self.log_data = data[data.source == 'log']
-        self.simulation_data = data[data.source == 'simulation']
         self.alias = self.create_task_alias(data, self.log_ids.activity)
 
         # reformat and sampling data
@@ -61,9 +55,9 @@ class TimedStringDistanceEvaluator:
                                  np.random.randint(0, len(self.log_data), len(self.simulation_data))))
 
     def measure_distance(self) -> float:
-        distance = self._evaluate_seq_distance(self.log_data, self.simulation_data)
-        value = np.mean([x['sim_score'] for x in distance])
-        return value
+        distances = self._evaluate_seq_distance(self.log_data, self.simulation_data)
+        distance = np.mean([x['distance'] for x in distances])
+        return distance
 
     def _evaluate_seq_distance(self, log_data, simulation_data):
         """
@@ -101,13 +95,13 @@ class TimedStringDistanceEvaluator:
         row_ind, col_ind = linear_sum_assignment(np.array(cost_matrix))
 
         # Create response
-        similarity = []
+        distances = []
         for idx, idy in zip(row_ind, col_ind):
-            similarity.append(dict(caseid=simulation_data[idx][self.log_ids.case],
+            distances.append(dict(caseid=simulation_data[idx][self.log_ids.case],
                                    sim_order=simulation_data[idx]['profile'],
                                    log_order=log_data[idy]['profile'],
-                                   sim_score=(1 - (cost_matrix[idx][idy]))))
-        return similarity
+                                   distance=cost_matrix[idx][idy]))
+        return distances
 
     def _compare_traces(self, args):
         def gen(serie1, serie2, r):
@@ -198,7 +192,7 @@ class TimedStringDistanceEvaluator:
         temp_data = list()
         # define ordering keys and columns
         sort_key = self.log_ids.start_time
-        columns = ['alias', 'processing_time', 'proc_act_norm', 'waiting_time', 'wait_act_norm']
+        columns = ['alias']
         data = sorted(data, key=lambda x: (x[self.log_ids.case], x[sort_key]))
         for key, group in itertools.groupby(data, key=lambda x: x[self.log_ids.case]):
             trace = list(group)

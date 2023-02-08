@@ -49,6 +49,7 @@ def optimize(config_path: str, output_dir: str) -> Path:
     preprocessor = Preprocessor(log, settings.common.log_ids)
     processed_log = preprocessor.run(
         multitasking=settings.preprocessing.multitasking,
+        concurrency_thresholds=settings.preprocessing.concurrency_thresholds,
     )
 
     test_log = None

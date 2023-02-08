@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from pathlib import Path
-from typing import Union, List, Optional, Tuple
 
 import yaml
 from hyperopt import hp
 from pydantic import BaseModel
+from typing import Union, List, Optional, Tuple
 
+from estimate_start_times.config import HeuristicsThresholds
 from extraneous_activity_delays.config import OptimizationMetric as ExtraneousActivityDelaysOptimizationMetric
 from .cli_formatter import print_notice
 from .event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
@@ -131,6 +132,7 @@ class Metric(str, Enum):
     CIRCADIAN_EMD = 'circadian_emd'
     ABSOLUTE_HOURLY_EMD = 'absolute_hourly_emd'
     CYCLE_TIME_EMD = 'cycle_time_emd'
+    N_GRAM_DISTANCE = 'n_gram_distance'
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[Metric, List[Metric]]':
@@ -143,6 +145,8 @@ class Metric(str, Enum):
     def _from_str(cls, value: str) -> 'Metric':
         if value.lower() == 'dl':
             return cls.DL
+        elif value.lower() == 'n_gram_distance':
+            return cls.N_GRAM_DISTANCE
         elif value.lower() == 'circadian_emd':
             return cls.CIRCADIAN_EMD
         elif value.lower() in ('absolute_hourly_emd', 'absolute_hour_emd', 'abs_hourly_emd', 'abs_hour_emd'):
@@ -155,6 +159,8 @@ class Metric(str, Enum):
     def __str__(self):
         if self == Metric.DL:
             return 'DL'
+        elif self == Metric.N_GRAM_DISTANCE:
+            return 'N_GRAM_DISTANCE'
         elif self == Metric.CIRCADIAN_EMD:
             return 'CIRCADIAN_EMD'
         elif self == Metric.ABSOLUTE_HOURLY_EMD:
@@ -197,7 +203,8 @@ class CommonSettings(BaseModel):
             log_ids=STANDARD_COLUMNS,
             model_path=None,
             repetitions=1,
-            evaluation_metrics=[Metric.DL, Metric.ABSOLUTE_HOURLY_EMD, Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
+            evaluation_metrics=[Metric.DL, Metric.N_GRAM_DISTANCE, Metric.ABSOLUTE_HOURLY_EMD,
+                                Metric.CIRCADIAN_EMD, Metric.CYCLE_TIME_EMD],
             clean_intermediate_files=False,
         )
 
@@ -253,22 +260,32 @@ class CommonSettings(BaseModel):
 
 class PreprocessingSettings(BaseModel):
     multitasking: bool
+    concurrency_thresholds: HeuristicsThresholds
 
     @staticmethod
     def default() -> 'PreprocessingSettings':
         return PreprocessingSettings(
-            multitasking=False
+            multitasking=False,
+            concurrency_thresholds=HeuristicsThresholds()
         )
 
     @staticmethod
     def from_dict(config: dict) -> 'PreprocessingSettings':
         return PreprocessingSettings(
             multitasking=config.get('multitasking', False),
+            concurrency_thresholds=HeuristicsThresholds(
+                df=config.get('concurrency_df', 0.9),
+                l2l=config.get('concurrency_l2l', 0.9),
+                l1l=config.get('concurrency_l1l', 0.9),
+            )
         )
 
     def to_dict(self) -> dict:
         return {
-            'multitasking': self.multitasking
+            'multitasking': self.multitasking,
+            'concurrency_df': self.concurrency_thresholds.df,
+            'concurrency_l2l': self.concurrency_thresholds.l2l,
+            'concurrency_l1l': self.concurrency_thresholds.l1l,
         }
 
 
