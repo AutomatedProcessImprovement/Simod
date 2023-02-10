@@ -43,7 +43,7 @@ python-versions = ">=3.6"
 name = "cfgv"
 version = "3.3.1"
 description = "Validate configuration and produce human readable error messages."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6.1"
 
@@ -164,7 +164,7 @@ resolved_reference = "db0e1f05bcea2924e2e2853d6ea7326f6b2ea614"
 name = "distlib"
 version = "0.3.6"
 description = "Distribution utilities"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -190,7 +190,7 @@ scipy = "*"
 
 [[package]]
 name = "estimate_start_times"
-version = "1.5.0"
+version = "1.7.1"
 description = ""
 category = "main"
 optional = false
@@ -206,7 +206,7 @@ statistics = "*"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git"
 reference = "main"
-resolved_reference = "e83104820ac29e473de43c67d63a677b08860645"
+resolved_reference = "cf4b30622fe0c7745d74564b6d5f2547b4a4a3a2"
 
 [[package]]
 name = "exceptiongroup"
@@ -239,7 +239,7 @@ scipy = "*"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.git"
 reference = "main"
-resolved_reference = "20ca322a12cf4e9744943b594e8d03c04b62dc81"
+resolved_reference = "1fd924c9fe47f9cf3cf994f4179bd281bfbfe149"
 
 [[package]]
 name = "fastapi"
@@ -276,7 +276,7 @@ sqlalchemy = ">=1.3.12,<2.0.0"
 name = "filelock"
 version = "3.9.0"
 description = "A platform independent file lock."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -375,7 +375,7 @@ dev = ["black", "pre-commit", "nose", "pytest"]
 name = "identify"
 version = "2.5.15"
 description = "File identification library for Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -508,7 +508,7 @@ test = ["pytest (>=7.2)", "pytest-cov (>=4.0)", "codecov (>=2.1)"]
 name = "nodeenv"
 version = "1.7.0"
 description = "Node.js virtual environment builder"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*"
 
@@ -574,7 +574,7 @@ tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "pa
 
 [[package]]
 name = "pix_utils"
-version = "0.3.0"
+version = "0.4.0"
 description = ""
 category = "main"
 optional = false
@@ -590,13 +590,13 @@ scipy = "*"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/pix-utils.git"
 reference = "main"
-resolved_reference = "5e38ed4b381e2b174481bc5463f0edeb9272532a"
+resolved_reference = "f252cab86f9d4cf14ff4a5a0831f07dde3d24133"
 
 [[package]]
 name = "platformdirs"
 version = "2.6.2"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -668,7 +668,7 @@ resolved_reference = "6e3ef05dcb2e21f85279752355f9e582d9bf3efe"
 name = "pre-commit"
 version = "2.21.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1030,7 +1030,7 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 name = "virtualenv"
 version = "20.17.1"
 description = "Virtual Python Environment builder"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -1054,7 +1054,7 @@ python-versions = ">=3.4"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "7f1e97a401dfdcd53027f310fd3b3447a604ba7b75aea9a1794b274e6279a654"
+content-hash = "aebb44a3bc2b24917a6f226332e558c9519393713ba11eecb19d19b7fddf3871"
 
 [metadata.files]
 anyio = []

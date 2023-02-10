@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
+from pix_utils.log_split.log_split import split_log_training_validation_trace_wise as split_log
+from typing import Optional
 
-from extraneous_activity_delays.utils.log_split import split_log_training_validation_event_wise as split_log
 from .column_mapping import EventLogIDs, STANDARD_COLUMNS
 from .utilities import read, convert_df_to_xes
 
@@ -21,6 +21,7 @@ class EventLog:
     log_csv_path: Optional[Path]  # XES is converted to CSV and stored by Simod
     train_partition: pd.DataFrame
     validation_partition: pd.DataFrame
+    train_validation_partition: pd.DataFrame
     test_partition: pd.DataFrame
 
     def __init__(
@@ -28,6 +29,7 @@ class EventLog:
             log_ids: EventLogIDs,
             log_train: pd.DataFrame,
             log_validation: pd.DataFrame,
+            log_train_validation: pd.DataFrame,
             log_test: pd.DataFrame,
             process_name: Optional[str] = None,
             log_path: Optional[Path] = None,
@@ -38,6 +40,7 @@ class EventLog:
         self.log_csv_path = csv_log_path
         self.train_partition = log_train
         self.validation_partition = log_validation
+        self.train_validation_partition = log_train_validation
         self.test_partition = log_test
 
         if process_name is not None:
@@ -65,6 +68,7 @@ class EventLog:
             train_validation_df, test_df = split_log(log, log_ids, training_percentage=split_ratio)
             train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
         else:
+            train_validation_df = log
             train_df, validation_df = split_log(log, log_ids, training_percentage=split_ratio)
             test_df = test_log
 
@@ -72,6 +76,7 @@ class EventLog:
             log_ids=log_ids,
             log_train=train_df,
             log_validation=validation_df,
+            log_train_validation=train_validation_df,
             log_test=test_df,
             process_name=process_name,
             log_path=log_path,
@@ -96,6 +101,7 @@ class EventLog:
             train_validation_df, test_df = split_log(df, log_ids, training_percentage=split_ratio)
             train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
         else:
+            train_validation_df = df
             train_df, validation_df = split_log(df, log_ids, training_percentage=split_ratio)
             test_df, _ = read(test_path, log_ids)
 
@@ -103,9 +109,10 @@ class EventLog:
             log_ids=log_ids,
             log_path=path,
             csv_log_path=csv_path,
-            log_train=train_df.sort_values(by=log_ids.start_time),
-            log_validation=validation_df.sort_values(by=log_ids.start_time),
-            log_test=test_df.sort_values(by=log_ids.start_time),
+            log_train=train_df,
+            log_validation=validation_df,
+            log_train_validation=train_validation_df,
+            log_test=test_df,
             process_name=process_name,
         )
 
@@ -120,6 +127,12 @@ class EventLog:
         Saves the validation log to a XES file.
         """
         write_xes(self.validation_partition, self.log_ids, path)
+
+    def train_validation_to_xes(self, path: Path):
+        """
+        Saves the validation log to a XES file.
+        """
+        write_xes(self.train_validation_partition, self.log_ids, path)
 
     def test_to_xes(self, path: Path):
         """

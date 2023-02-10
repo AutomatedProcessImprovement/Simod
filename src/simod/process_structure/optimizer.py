@@ -1,18 +1,18 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Union, Tuple, Optional
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
-
 from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_default_24_7
 from simod.utilities import remove_asset, file_id, folder_id
+from typing import Union, Tuple, Optional
+
 from .miner import StructureMiner
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
@@ -44,8 +44,8 @@ class StructureOptimizer(HyperoptPipeline):
         self._process_graph = process_graph
         self._log_ids = event_log.log_ids
 
-        self._log_train = event_log.train_partition.sort_values(by=event_log.log_ids.start_time)
-        self._log_validation = event_log.validation_partition.sort_values(event_log.log_ids.start_time, ascending=True)
+        self._log_train = event_log.train_partition
+        self._log_validation = event_log.validation_partition
 
         self._output_dir = self._settings.base_dir / folder_id(prefix='structure_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
@@ -114,16 +114,15 @@ class StructureOptimizer(HyperoptPipeline):
             trial_stage_settings,
             process_graph)
         if status == STATUS_FAIL:
-            json_path, simulation_cases = None, None
+            json_path = None
         else:
-            json_path, simulation_cases = result
+            json_path = result
 
         # simulation
         status, result = self.step(status, self._simulate_undifferentiated,
                                    trial_stage_settings,
                                    self._settings.simulation_repetitions,
-                                   json_path,
-                                   simulation_cases)
+                                   json_path)
         evaluation_measurements = result if status == STATUS_OK else []
 
         # loss
@@ -220,12 +219,11 @@ class StructureOptimizer(HyperoptPipeline):
             evaluation_measurements: list,
             pipeline_settings: PipelineSettings,
     ) -> Tuple[dict, str]:
-        similarity = np.mean([x['value'] for x in evaluation_measurements])
-        loss = 1 - similarity
-        status = status if loss > 0 else STATUS_FAIL
+        distance = np.mean([x['value'] for x in evaluation_measurements])
+        status = status if distance > 0 else STATUS_FAIL
 
         response = {
-            'loss': loss,
+            'loss': distance,
             'status': status,
             'output_dir': pipeline_settings.output_dir,
             'model_path': pipeline_settings.model_path,
@@ -273,7 +271,7 @@ class StructureOptimizer(HyperoptPipeline):
             replace_or_joins=settings.replace_or_joins,
         ).run()
 
-    def _extract_parameters_undifferentiated(self, settings: PipelineSettings, process_graph) -> Tuple:
+    def _extract_parameters_undifferentiated(self, settings: PipelineSettings, process_graph) -> Path:
         # Below, we mine simulation parameters with undifferentiated resources, because we optimize the structure,
         # not calendars. So, we do not need to differentiate resources.
         simulation_parameters = mine_default_24_7(
@@ -286,16 +284,13 @@ class StructureOptimizer(HyperoptPipeline):
         json_path = settings.model_path.parent / 'simulation_parameters.json'
         simulation_parameters.to_json_file(json_path)
 
-        simulation_cases = self._log_train[self._log_ids.case].nunique()
-
-        return json_path, simulation_cases
+        return json_path
 
     def _simulate_undifferentiated(
             self,
             settings: PipelineSettings,
             simulation_repetitions: int,
-            json_path: Path,
-            simulation_cases: int):
+            json_path: Path):
         self._log_validation['source'] = 'log'
         self._log_validation['run_num'] = 0
         self._log_validation['role'] = 'SYSTEM'
@@ -304,7 +299,7 @@ class StructureOptimizer(HyperoptPipeline):
             model_path=settings.model_path,
             parameters_path=json_path,
             output_dir=settings.output_dir,
-            simulation_cases=simulation_cases,
+            simulation_cases=self._log_validation[self._log_ids.case].nunique(),
             simulation_start_time=self._log_validation[self._log_ids.start_time].min(),
             validation_log=self._log_validation,
             validation_log_ids=self._log_ids,
