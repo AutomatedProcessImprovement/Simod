@@ -190,7 +190,7 @@ scipy = "*"
 
 [[package]]
 name = "estimate_start_times"
-version = "1.7.0"
+version = "1.7.1"
 description = ""
 category = "main"
 optional = false
@@ -206,7 +206,7 @@ statistics = "*"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git"
 reference = "main"
-resolved_reference = "1dca5463b6496f2af1c316a517c792dff0c4d724"
+resolved_reference = "cf4b30622fe0c7745d74564b6d5f2547b4a4a3a2"
 
 [[package]]
 name = "exceptiongroup"
@@ -239,7 +239,7 @@ scipy = "*"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.git"
 reference = "main"
-resolved_reference = "20ca322a12cf4e9744943b594e8d03c04b62dc81"
+resolved_reference = "1fd924c9fe47f9cf3cf994f4179bd281bfbfe149"
 
 [[package]]
 name = "fastapi"
