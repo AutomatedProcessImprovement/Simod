@@ -47,7 +47,6 @@ pytest-cov = "^3.0.0"
 
 [virtualenvs]
 in-project = true
-path = "venv"
 
 [tool.poetry.scripts]
 simod = "simod.cli:main"

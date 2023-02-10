@@ -52,16 +52,19 @@ version: 2
 common:
   log_path: resources/event_logs/PurchasingExample.xes  # Path to the event log in XES or CSV format
   test_log_path: resources/event_logs/PurchasingExampleTest.xes  # Optional: Path to the test event log in XES or CSV format
-  repetitions: 1  # Number of simulations of the final model to obtain more accurate evaluations. Values between 1 and 50
+  repetitions: 1  # Number of times that the evaluation of each candidate is run (included the final model) during the optimization. The evaluation metric of the candidate is the average of it's repetitions evaluations.
   evaluation_metrics: # A list of evaluation metrics to use on the final model
     - dl
     - absolute_hourly_emd
     - cycle_time_emd
     - circadian_emd
 preprocessing: # Event log preprocessing settings
-  multitasking: false
+  multitasking: false # If true, remove the multitasking by adjusting the timestamps (start/end) of those activities being executed at the same time by the same resource.
+  concurrency_df: 0.9 # Directly-Follows threshold for the concurrency oracle.
+  concurrency_l2l: 0.9 # Length 2 loops threshold for the concurrency oracle.
+  concurrency_l1l: 0.9 # Length 1 loops threshold for the concurrency oracle.
 structure: # Structure settings
-  optimization_metric: dl  # Optimization metric for the structure. Only DL is supported
+  optimization_metric: dl  # Optimization metric for the structure. DL or N_GRAM_DISTANCE
   max_evaluations: 1  # Number of optimization iterations over the search space. Values between 1 and 50
   mining_algorithm: sm3  # Process model discovery algorithm. Options: sm1, sm2, sm3 (recommended)
   concurrency: # Split Miner 2 (sm2) parameter for the number of concurrent relations between events to be captured. Values between 0.0 and 1.0
