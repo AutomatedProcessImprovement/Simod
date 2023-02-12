@@ -136,7 +136,7 @@ Simod HTTP already includes an installed version of Simod in its Docker image.
 To start with the web service, run:
 
 ```shell
-$ docker run -it -p 8080:80 nokal/simod_http
+$ docker run -it -p 8080:80 nokal/simod-http
 ```
 
 This gives you access to the web service at `http://localhost:8080`. The OpenAPI specification is available at `http://localhost:8080/docs`.
