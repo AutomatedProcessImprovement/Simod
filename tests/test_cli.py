@@ -6,6 +6,7 @@ from simod import cli
 
 optimize_config_files = [
     'optimize_config_no_start_times.yml',
+    # 'optimize_config_with_timers.yml',
 ]
 
 
