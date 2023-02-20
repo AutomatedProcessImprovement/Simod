@@ -1,7 +1,8 @@
+import os
 import uuid
 from enum import Enum
 from pathlib import Path
-from typing import Union, Any
+from typing import Union, Any, Optional
 
 import pandas as pd
 from fastapi.responses import JSONResponse
@@ -47,40 +48,6 @@ class Response(BaseModel):
         )
 
 
-class Settings(BaseSettings):
-    """
-    Application settings.
-    """
-
-    # These host and port are used to compose a link to the resulting archive.
-    simod_http_host: str = "localhost"
-    simod_http_port: int = 8000
-    simod_http_scheme: str = "http"
-
-    # Path on the file system to store results until the user fetches them, or they expire.
-    simod_http_storage_path: str = "/tmp/simod"
-    simod_http_request_expiration_timedelta: int = 60 * 60 * 24 * 7  # 7 days
-    simod_http_storage_cleaning_timedelta: int = 60
-
-    # Logging levels: CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
-    simod_http_logging_level: str = "debug"
-    simod_http_logging_format = "%(asctime)s \t %(name)s \t %(levelname)s \t %(message)s"
-    simod_http_log_path: Union[str, None] = None
-
-    # SMTP server settings
-    simod_http_smtp_server: str = "localhost"
-    simod_http_smtp_port: int = 25
-
-    class Config:
-        env_file = ".env"
-
-    def __init__(self, **data):
-        super().__init__(**data)
-
-        storage_path = Path(self.simod_http_storage_path)
-        storage_path.mkdir(parents=True, exist_ok=True)
-
-
 class Request(BaseModel):
     id: str
     output_dir: Path
@@ -112,30 +79,6 @@ class Request(BaseModel):
         request_info_path.write_text(self.json(exclude={'event_log': True}))
 
     @staticmethod
-    def load(request_id: str, settings: Settings) -> 'Request':
-        request_dir = Path(settings.simod_http_storage_path) / 'requests' / request_id
-        if not request_dir.exists():
-            raise NotFound(
-                request_id=request_id,
-                request_status=RequestStatus.UNKNOWN,
-                archive_url=None,
-                message='Request is not found on the server',
-            )
-
-        try:
-            request_info_path = request_dir / 'request.json'
-            request_info = Request.parse_raw(request_info_path.read_text())
-            return request_info
-
-        except Exception as e:
-            raise InternalServerError(
-                request_id=request_id,
-                request_status=RequestStatus.UNKNOWN,
-                archive_url=None,
-                message=f'Failed to load request {request_id}: {e}',
-            )
-
-    @staticmethod
     def empty(storage_path: Path) -> 'Request':
         request_id = str(uuid.uuid4())
 
@@ -153,6 +96,108 @@ class Request(BaseModel):
             archive_url=None,
             timestamp=None,
         )
+
+
+class Application(BaseSettings):
+    """
+    Simod application that stores main settings and provides access to internal API.
+    """
+
+    # These host and port are used to compose a link to the resulting archive.
+    simod_http_host: str = 'localhost'
+    simod_http_port: int = 8000
+    simod_http_scheme: str = 'http'
+
+    # Path on the file system to store results until the user fetches them, or they expire.
+    simod_http_storage_path: str = '/tmp/simod'
+    simod_http_request_expiration_timedelta: int = 60 * 60 * 24 * 7  # 7 days
+    simod_http_storage_cleaning_timedelta: int = 60
+
+    # Logging levels: CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
+    simod_http_logging_level: str = 'debug'
+    simod_http_logging_format = '%(asctime)s \t %(name)s \t %(levelname)s \t %(message)s'
+    simod_http_log_path: Union[str, None] = None
+
+    # SMTP server settings
+    simod_http_smtp_server: str = 'localhost'
+    simod_http_smtp_port: int = 25
+
+    class Config:
+        env_file = ".env"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+        storage_path = Path(self.simod_http_storage_path)
+        storage_path.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def init() -> 'Application':
+        debug = os.environ.get('SIMOD_HTTP_DEBUG', 'false').lower() == 'true'
+
+        if debug:
+            settings = Application()
+        else:
+            settings = Application(_env_file='.env.production')
+
+        settings.simod_http_storage_path = Path(settings.simod_http_storage_path)
+
+        return settings
+
+    def load_request(self, request_id: str) -> Request:
+        request_dir = Path(self.simod_http_storage_path) / 'requests' / request_id
+        if not request_dir.exists():
+            raise NotFound(
+                request_id=request_id,
+                request_status=RequestStatus.UNKNOWN,
+                archive_url=None,
+                message='Request is not found on the server',
+            )
+
+        try:
+            request_info_path = request_dir / 'request.json'
+            request = Request.parse_raw(request_info_path.read_text())
+            return request
+
+        except Exception as e:
+            raise InternalServerError(
+                request_id=request_id,
+                request_status=RequestStatus.UNKNOWN,
+                archive_url=None,
+                message=f'Failed to load request {request_id}: {e}',
+            )
+
+    def new_request_from_params(self, callback_url: Optional[str] = None, email: Optional[str] = None) -> 'Request':
+        request = Request.empty(Path(self.simod_http_storage_path))
+
+        if callback_url is not None:
+            notification_settings = NotificationSettings(
+                method=NotificationMethod.HTTP,
+                callback_url=callback_url,
+            )
+        elif email is not None:
+            notification_settings = NotificationSettings(
+                method=NotificationMethod.EMAIL,
+                email=email,
+            )
+        else:
+            notification_settings = None
+
+        request.notification_settings = notification_settings
+
+        return request
+
+    def make_results_url_for(self, request: Request) -> Union[str, None]:
+        if request.status == RequestStatus.SUCCESS:
+            if self.simod_http_port == 80:
+                port = ''
+            else:
+                port = f':{self.simod_http_port}'
+            return f'{self.simod_http_scheme}://{self.simod_http_host}{port}' \
+                   f'/discoveries' \
+                   f'/{request.id}' \
+                   f'/{request.id}.tar.gz'
+        return None
 
 
 class BaseRequestException(Exception):
@@ -207,3 +252,6 @@ class InternalServerError(BaseRequestException):
 
 class NotSupported(BaseRequestException):
     _status_code = 501
+
+
+app = Application.init()

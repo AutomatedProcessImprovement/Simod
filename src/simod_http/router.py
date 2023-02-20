@@ -1,29 +1,12 @@
-from pathlib import Path
 from typing import Union, Optional
 
-from fastapi import BackgroundTasks, Request, Response, Form, APIRouter
+from fastapi import BackgroundTasks, Response, Form, APIRouter
 from fastapi.responses import JSONResponse
 
 from simod.configuration import Configuration
 from simod.event_log.utilities import read as read_event_log
-from simod_http.app import Response as AppResponse, RequestStatus, Request as AppRequest, Settings, NotFound, \
-    UnsupportedMediaType, NotificationSettings, NotificationMethod, \
-    NotSupported
-from simod_http.archiver import make_url_for
-from simod_http.executor import Executor
-
-
-# Background tasks
-
-def run_simod_discovery(request: Request, settings: Settings):
-    """
-    Run Simod with the user's configuration.
-    """
-    executor = Executor(app_settings=settings, request=request)
-    executor.run()
-
-
-# Routes
+from simod_http.app import Response as AppResponse, RequestStatus, NotFound, UnsupportedMediaType, NotSupported, app
+from simod_http.background_tasks import run_simod_discovery
 
 router = APIRouter()
 
@@ -33,10 +16,7 @@ async def read_discovery_file(request_id: str, file_name: str):
     """
     Get a file from a discovery request.
     """
-    request = AppRequest.load(request_id, settings)
-
-    if not request.output_dir.exists():
-        raise NotFound(request_id=request_id, request_status=request.status, message='Request not found on the server')
+    request = app.load_request(request_id)
 
     file_path = request.output_dir / file_name
     if not file_path.exists():
@@ -58,13 +38,12 @@ async def read_discovery(request_id: str) -> AppResponse:
     """
     Get the status of the request.
     """
-    request = AppRequest.load(request_id, settings)
+    request = app.load_request(request_id)
 
     return AppResponse(
         request_id=request_id,
         request_status=request.status,
-        archive_url=make_url_for(request.id, Path(f'{request.id}.tar.gz'),
-                                 settings) if request.status == RequestStatus.SUCCESS else None,
+        archive_url=app.make_results_url_for(request),
     )
 
 
@@ -79,9 +58,7 @@ async def create_discovery(
     """
     Create a new business process model discovery and optimization request.
     """
-    global settings
-
-    request = await _empty_request_from_params(settings.simod_http_storage_path, callback_url, email)
+    request = app.new_request_from_params(callback_url, email)
 
     if email is not None:
         request.status = RequestStatus.FAILURE
@@ -126,37 +103,12 @@ async def create_discovery(
 
     response = AppResponse(request_id=request.id, request_status=request.status)
 
-    background_tasks.add_task(run_simod_discovery, request, settings)
+    background_tasks.add_task(run_simod_discovery, request, app)
 
     return response.json_response(status_code=202)
 
 
 # Helpers
-
-async def _empty_request_from_params(
-        storage_path: str,
-        callback_url: Optional[str] = None,
-        email: Optional[str] = None
-) -> AppRequest:
-    request = AppRequest.empty(Path(storage_path))
-
-    if callback_url is not None:
-        notification_settings = NotificationSettings(
-            method=NotificationMethod.HTTP,
-            callback_url=callback_url,
-        )
-    elif email is not None:
-        notification_settings = NotificationSettings(
-            method=NotificationMethod.EMAIL,
-            email=email,
-        )
-    else:
-        notification_settings = None
-
-    request.notification_settings = notification_settings
-
-    return request
-
 
 def _infer_event_log_file_extension_from_header(
         content_type: str,

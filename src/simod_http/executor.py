@@ -11,7 +11,7 @@ from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
 from simod.optimization.optimizer import Optimizer
-from simod_http.app import Settings, Request, RequestStatus, InternalServerError, NotificationMethod
+from simod_http.app import Application, Request, RequestStatus, InternalServerError, NotificationMethod
 from simod_http.archiver import Archiver
 from simod_http.notifiers import Notifier, EmailNotifier
 
@@ -21,7 +21,7 @@ class Executor:
     Job executor that runs Simod with the user's configuration.
     """
 
-    def __init__(self, app_settings: Settings, request: Request):
+    def __init__(self, app_settings: Application, request: Request):
         self.settings = app_settings
         self.request = request
 
@@ -115,7 +115,7 @@ def optimize_with_simod(
     return output_dir
 
 
-def _notify_with_settings(settings: Settings, request: Request, error: Union[Exception, None] = None):
+def _notify_with_settings(settings: Application, request: Request, error: Union[Exception, None] = None):
     if request.notification_settings is None:
         logging.debug('No notification settings provided')
         return

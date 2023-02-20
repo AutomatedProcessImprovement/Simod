@@ -1,5 +1,4 @@
 import logging
-import os
 import shutil
 from pathlib import Path
 
@@ -10,48 +9,37 @@ from fastapi.responses import JSONResponse
 from fastapi_utils.tasks import repeat_every
 from uvicorn.config import LOGGING_CONFIG
 
-from simod_http.app import RequestStatus, Request as AppRequest, Settings, BaseRequestException, NotFound
+from simod_http.app import RequestStatus, BaseRequestException, NotFound, app
 from simod_http.router import router
 
-debug = os.environ.get('SIMOD_HTTP_DEBUG', 'false').lower() == 'true'
-
-if debug:
-    settings = Settings()
-else:
-    settings = Settings(_env_file='.env.production')
-
-settings.simod_http_storage_path = Path(settings.simod_http_storage_path)
-
-app = FastAPI()
-app.include_router(router)
+api = FastAPI()
+api.include_router(router)
 
 
-# Hooks
-
-@app.on_event('startup')
+@api.on_event('startup')
 async def application_startup():
     logging_handlers = []
-    if settings.simod_http_log_path is not None:
-        logging_handlers.append(logging.FileHandler(settings.simod_http_log_path, mode='w'))
+    if app.simod_http_log_path is not None:
+        logging_handlers.append(logging.FileHandler(app.simod_http_log_path, mode='w'))
 
     if len(logging_handlers) > 0:
         logging.basicConfig(
-            level=settings.simod_http_logging_level.upper(),
+            level=app.simod_http_logging_level.upper(),
             handlers=logging_handlers,
-            format=settings.simod_http_logging_format,
+            format=app.simod_http_logging_format,
         )
     else:
         logging.basicConfig(
-            level=settings.simod_http_logging_level.upper(),
-            format=settings.simod_http_logging_format,
+            level=app.simod_http_logging_level.upper(),
+            format=app.simod_http_logging_format,
         )
 
-    logging.debug(f'Application settings: {settings}')
+    logging.debug(f'Application settings: {app}')
 
 
-@app.on_event('shutdown')
+@api.on_event('shutdown')
 async def application_shutdown():
-    requests_dir = Path(settings.simod_http_storage_path) / 'requests'
+    requests_dir = Path(app.simod_http_storage_path) / 'requests'
 
     if not requests_dir.exists():
         return
@@ -62,7 +50,7 @@ async def application_shutdown():
         await _remove_empty_or_orphaned_request_dir(request_dir)
 
         try:
-            request = AppRequest.load(request_dir.name, settings)
+            request = app.load_request(request_dir.name)
         except Exception as e:
             logging.error(f'Failed to load request: {request_dir.name}, {str(e)}')
             continue
@@ -74,16 +62,16 @@ async def application_shutdown():
             request.save()
 
 
-@app.on_event('startup')
-@repeat_every(seconds=settings.simod_http_storage_cleaning_timedelta)
+@api.on_event('startup')
+@repeat_every(seconds=app.simod_http_storage_cleaning_timedelta)
 async def clean_up():
-    requests_dir = Path(settings.simod_http_storage_path) / 'requests'
+    requests_dir = Path(app.simod_http_storage_path) / 'requests'
 
     if not requests_dir.exists():
         return
 
     current_timestamp = pd.Timestamp.now()
-    expire_after_delta = pd.Timedelta(seconds=settings.simod_http_request_expiration_timedelta)
+    expire_after_delta = pd.Timedelta(seconds=app.simod_http_request_expiration_timedelta)
 
     for request_dir in requests_dir.iterdir():
         if request_dir.is_dir():
@@ -92,7 +80,7 @@ async def clean_up():
             await _remove_empty_or_orphaned_request_dir(request_dir)
 
             try:
-                request = AppRequest.load(request_dir.name, settings)
+                request = app.load_request(request_dir.name)
             except Exception as e:
                 logging.error(f'Failed to load request: {request_dir.name}, {str(e)}')
                 continue
@@ -121,13 +109,13 @@ async def _remove_empty_or_orphaned_request_dir(request_dir):
         shutil.rmtree(request_dir, ignore_errors=True)
 
 
-@app.exception_handler(BaseRequestException)
+@api.exception_handler(BaseRequestException)
 async def request_exception_handler(_, exc: BaseRequestException) -> JSONResponse:
     logging.error(f'Request exception occurred: {exc}')
     return exc.json_response()
 
 
-@app.get('/{any_str}')
+@api.get('/{any_str}')
 async def root() -> JSONResponse:
     raise NotFound(
         request_id='N/A',
@@ -138,14 +126,14 @@ async def root() -> JSONResponse:
 
 if __name__ == '__main__':
     logging_config = LOGGING_CONFIG
-    logging_config['formatters']['default']['fmt'] = settings.simod_http_logging_format
-    logging_config['formatters']['access']['fmt'] = settings.simod_http_logging_format.replace(
+    logging_config['formatters']['default']['fmt'] = app.simod_http_logging_format
+    logging_config['formatters']['access']['fmt'] = app.simod_http_logging_format.replace(
         '%(message)s', '%(client_addr)s - "%(request_line)s" %(status_code)s')
 
     uvicorn.run(
-        'main:app',
-        host=settings.simod_http_host,
-        port=settings.simod_http_port,
+        'main:api',
+        host=app.simod_http_host,
+        port=app.simod_http_port,
         log_level='info',
         log_config=logging_config,
     )
