@@ -27,7 +27,7 @@ docker pull nokal/simod:v3.2.1
 To start a container:
 
 ```shell
-docker run -it -v /path/to/resources/:/usr/src/Simod/resources -v /path/to/output:/usr/src/Simod/outputs nokal/simod bash
+docker run -it -v /path/to/resources/:/usr/src/Simod/resources -v /path/to/output:/usr/src/Simod/outputs nokal/simod:v3.2.1 bash
 ```
 
 Use the `resources` directory to store event logs and configuration files. The `outputs` directory will contain the results of Simod. 
@@ -39,6 +39,12 @@ cd /usr/src/Simod
 poetry shell  # opens a shell with the virtual environment
 Xvfb :99 &>/dev/null & disown  # starts Xvfb (Split Miner requires an X11 server to be available)
 simod optimize --config_path <path-to-config>
+```
+
+Starting from v3.2.1, the above command can be simplified to:
+
+```shell
+bash run.sh <path-to-config> <optional-path-to-output-dir>
 ```
 
 Different Simod versions are available at https://hub.docker.com/r/nokal/simod/tags.
