@@ -36,9 +36,8 @@ To start using Simod, you need to activate the Python environment in the contain
 
 ```shell
 cd /usr/src/Simod
-poetry shell  # opens a shell with the virtual environment
 Xvfb :99 &>/dev/null & disown  # starts Xvfb (Split Miner requires an X11 server to be available)
-simod optimize --config_path <path-to-config>
+poetry run simod optimize --config_path <path-to-config>
 ```
 
 Starting from v3.2.1, the above command can be simplified to:
