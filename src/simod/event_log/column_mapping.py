@@ -10,6 +10,7 @@ class EventLogIDs:
     start_time: str = 'start_timestamp'
     end_time: str = 'end_timestamp'
     enabled_time: str = 'enabled_timestamp'
+    enabling_activity: str = 'enabling_activity'
     processing_time: str = 'processing_time'
     available_time: str = 'available_time'
     estimated_start_time: str = 'estimated_start_time'
