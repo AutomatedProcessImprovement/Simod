@@ -21,7 +21,7 @@ This repository contains 2 projects:
 ### Getting Started
 
 ```shell
-docker pull nokal/simod:latest
+docker pull nokal/simod:v3.2.1
 ```
 
 To start a container:
@@ -136,7 +136,7 @@ Simod HTTP already includes an installed version of Simod in its Docker image.
 To start with the web service, run:
 
 ```shell
-docker run -it -p 8080:80 nokal/simod-http
+docker run -it -p 8080:80 nokal/simod-http:v3.2.0
 ```
 
 This gives you access to the web service at `http://localhost:8080`. The OpenAPI specification is available at `http://localhost:8080/docs`.
