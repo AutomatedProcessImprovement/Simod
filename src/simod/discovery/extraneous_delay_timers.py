@@ -6,7 +6,7 @@ from lxml import etree
 from typing import Optional, Union
 
 from extraneous_activity_delays.config import Configuration as ExtraneousActivityDelaysConfiguration, \
-    SimulationEngine, SimulationModel, OptimizationMetric
+    SimulationEngine, SimulationModel, OptimizationMetric, TimerPlacement
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.prosimos import SimulationParameters
@@ -51,6 +51,7 @@ def discover_extraneous_delay_timers(
         num_evaluation_simulations=num_evaluation_simulations,
         simulation_engine=SimulationEngine.PROSIMOS,
         optimization_metric=optimization_metric,
+        timer_placement=TimerPlacement.AFTER
     )
 
     parser = etree.XMLParser(remove_blank_text=True)
