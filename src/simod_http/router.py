@@ -1,3 +1,4 @@
+import logging
 from typing import Union, Optional
 
 from fastapi import BackgroundTasks, Response, Form, APIRouter
@@ -6,7 +7,6 @@ from fastapi.responses import JSONResponse
 from simod.configuration import Configuration
 from simod.event_log.utilities import convert_xes_to_csv_if_needed
 from simod_http.app import Response as AppResponse, RequestStatus, NotFound, UnsupportedMediaType, NotSupported, app
-from simod_http.background_tasks import run_simod_discovery
 
 router = APIRouter()
 
@@ -77,9 +77,14 @@ async def create_discovery(
 
     request.configuration_path = configuration_path.absolute()
     request.status = RequestStatus.ACCEPTED
-    request.save()
 
-    background_tasks.add_task(run_simod_discovery, request, app)
+    try:
+        app.publish_request(request)
+    except Exception as e:
+        request.status = RequestStatus.FAILURE
+        logging.error(e)
+    finally:
+        request.save()
 
     response = AppResponse(request_id=request.id, request_status=request.status)
     return response.json_response(status_code=202)

@@ -86,13 +86,14 @@ async def clean_up():
                 continue
 
             # Removes expired requests
-            expired_at = request.timestamp + expire_after_delta
-            if expired_at <= current_timestamp:
-                logging.info(f'Removing request folder for {request_dir.name}, expired at {expired_at}')
-                shutil.rmtree(request_dir, ignore_errors=True)
+            if request.status in [RequestStatus.UNKNOWN, RequestStatus.SUCCESS, RequestStatus.FAILURE]:
+                expired_at = request.timestamp + expire_after_delta
+                if expired_at <= current_timestamp:
+                    logging.info(f'Removing request folder for {request_dir.name}, expired at {expired_at}')
+                    shutil.rmtree(request_dir, ignore_errors=True)
 
             # Removes requests without timestamp that are not running
-            if request.timestamp is None and request.status != RequestStatus.RUNNING:
+            if request.timestamp is None and request.status not in [RequestStatus.ACCEPTED, RequestStatus.RUNNING]:
                 logging.info(f'Removing request folder for {request_dir.name}, no timestamp and not running')
                 shutil.rmtree(request_dir, ignore_errors=True)
 

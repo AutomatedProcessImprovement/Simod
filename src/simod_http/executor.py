@@ -43,7 +43,6 @@ class Executor:
                 archive_url = Archiver(self.app, self.request, result_dir).as_tar_gz()
                 self.request.archive_url = archive_url
                 self.request.status = RequestStatus.SUCCESS
-                self.request.timestamp = pd.Timestamp.now()
                 self.request.save()
 
                 logging.debug(f'Archive URL: {archive_url}')
@@ -52,7 +51,6 @@ class Executor:
 
             except Exception as e:
                 self.request.status = RequestStatus.FAILURE
-                self.request.timestamp = pd.Timestamp.now()
                 self.request.save()
 
                 logging.exception(e)

@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from enum import Enum
@@ -5,7 +6,9 @@ from pathlib import Path
 from typing import Union, Any, Optional
 
 import pandas as pd
+import pika
 from fastapi.responses import JSONResponse
+from pika.spec import PERSISTENT_DELIVERY_MODE
 from pydantic import BaseModel, BaseSettings
 
 
@@ -88,7 +91,7 @@ class Request(BaseModel):
             configuration_path=None,
             callback_endpoint=None,
             archive_url=None,
-            timestamp=None,
+            timestamp=pd.Timestamp.now(),
         )
 
 
@@ -115,6 +118,11 @@ class Application(BaseSettings):
     # SMTP server settings
     simod_http_smtp_server: str = 'localhost'
     simod_http_smtp_port: int = 25
+
+    # Queue settings
+    simod_http_requests_queue_name: str = 'requests'
+    simod_http_results_queue_name: str = 'results'
+    rabbitmq_url: str = 'amqp://guest:guest@localhost:5672/'
 
     class Config:
         env_file = ".env"
@@ -183,6 +191,23 @@ class Application(BaseSettings):
                    f'/{request.id}' \
                    f'/{request.id}.tar.gz'
         return None
+
+    def publish_request(self, request: Request):
+        parameters = pika.URLParameters(self.rabbitmq_url)
+        connection = pika.BlockingConnection(parameters)
+        channel = connection.channel()
+        channel.queue_declare(queue=self.simod_http_requests_queue_name, durable=True)
+        channel.basic_publish(
+            exchange='',
+            routing_key=self.simod_http_requests_queue_name,
+            body=request.id.encode(),
+            properties=pika.BasicProperties(
+                delivery_mode=PERSISTENT_DELIVERY_MODE,
+                content_type='text/plain',
+            ),
+        )
+        connection.close()
+        logging.info(f'Published request {request.id} to the {self.simod_http_requests_queue_name} queue')
 
 
 class BaseRequestException(Exception):

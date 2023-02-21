@@ -1272,6 +1272,20 @@ tornado = ["tornado"]
 twisted = ["twisted"]
 
 [[package]]
+name = "pika-stubs"
+version = "0.1.3"
+description = "Mypy plugin and stubs for Pika"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pika-stubs-0.1.3.tar.gz", hash = "sha256:aaa78fa9f52eb3591b6073fbbe2607567405d1857be268d447bea252e22dd6cf"},
+]
+
+[package.extras]
+dev = ["flake8 (>=3.8.3,<3.9.0)", "mypy (>=0.780,<1.0)"]
+
+[[package]]
 name = "pillow"
 version = "9.4.0"
 description = "Python Imaging Library (Fork)"
@@ -2104,4 +2118,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "ca3ddb47fd0ee513a9710b91d9ad9cd080e53cb45843151a62c0c62ec144ddc6"
+content-hash = "3b663d23ce7ab99962bb0ffed741163d4a55862b964541a2708970882a87b270"
