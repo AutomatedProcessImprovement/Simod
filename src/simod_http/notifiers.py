@@ -1,6 +1,5 @@
 import logging
 import smtplib
-import ssl
 from typing import Union
 
 import requests
