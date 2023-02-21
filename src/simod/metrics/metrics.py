@@ -1,16 +1,15 @@
 import datetime
 
 import pandas as pd
-
 from log_similarity_metrics.absolute_event_distribution import absolute_event_distribution_distance, discretize_to_hour
 from log_similarity_metrics.circadian_event_distribution import circadian_event_distribution_distance
 from log_similarity_metrics.config import AbsoluteTimestampType
+from log_similarity_metrics.control_flow_log_distance import control_flow_log_distance
 from log_similarity_metrics.cycle_time_distribution import cycle_time_distribution_distance
+from log_similarity_metrics.n_gram_distribution import n_gram_distribution_distance
+
 from simod.configuration import Metric
 from simod.event_log.column_mapping import EventLogIDs
-from simod.metrics.tsd_evaluator import TimedStringDistanceEvaluator
-
-from log_similarity_metrics.n_gram_distribution import n_gram_distribution_distance
 
 
 def compute_metric(
@@ -126,5 +125,5 @@ def get_dl(
         event_log_1_ids: EventLogIDs,
         event_log_2: pd.DataFrame,
         event_log_2_ids: EventLogIDs) -> float:
-    evaluator = TimedStringDistanceEvaluator(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
-    return evaluator.measure_distance()
+    cfld = control_flow_log_distance(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, True)
+    return cfld

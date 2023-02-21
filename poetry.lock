@@ -909,8 +909,8 @@ files = [
 ]
 
 [[package]]
-name = "log_similarity_metrics"
-version = "0.8.0"
+name = "log-similarity-metrics"
+version = "0.9.2"
 description = ""
 category = "main"
 optional = false
@@ -929,7 +929,7 @@ scipy = "*"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/log-similarity-metrics.git"
 reference = "main"
-resolved_reference = "a86603f9736ba624cb535da2efcef56796e236e2"
+resolved_reference = "b636c0e4ecc8adb8c8399014379983d871a3d339"
 
 [[package]]
 name = "lxml"
