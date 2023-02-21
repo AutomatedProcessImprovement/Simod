@@ -20,6 +20,7 @@ class BPMNNodeType(Enum):
     EXCLUSIVE_GATEWAY = 'EXCLUSIVE-GATEWAY'
     INCLUSIVE_GATEWAY = 'INCLUSIVE-GATEWAY'
     PARALLEL_GATEWAY = 'PARALLEL-GATEWAY'
+    INTERMEDIATE_EVENT = 'INTERMEDIATE-EVENT'
     UNDEFINED = 'UNDEFINED'
 
 
@@ -38,8 +39,11 @@ class ElementInfo:
         return len(self.incoming_flows) > 1
 
     def is_gateway(self):
-        return self.type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.PARALLEL_GATEWAY,
-                             BPMNNodeType.INCLUSIVE_GATEWAY]
+        return self.type in [
+            BPMNNodeType.EXCLUSIVE_GATEWAY,
+            BPMNNodeType.PARALLEL_GATEWAY,
+            BPMNNodeType.INCLUSIVE_GATEWAY,
+        ]
 
 
 class ProcessState:
@@ -99,6 +103,7 @@ class BPMNGraph:
                       'xmlns:startEvent': BPMNNodeType.START_EVENT,
                       'xmlns:endEvent': BPMNNodeType.END_EVENT,
                       'xmlns:exclusiveGateway': BPMNNodeType.EXCLUSIVE_GATEWAY,
+                      'xmlns:intermediateCatchEvent': BPMNNodeType.INTERMEDIATE_EVENT,
                       # NOTE: no parallel gateways in current Simod models
                       'xmlns:parallelGateway': BPMNNodeType.PARALLEL_GATEWAY,
                       'xmlns:inclusiveGateway': BPMNNodeType.INCLUSIVE_GATEWAY}
