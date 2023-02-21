@@ -108,7 +108,7 @@ class Optimizer:
             simulation_dir: Path):
         assert parameters_path.exists(), f'Best calendar simulation parameters file does not exist'
 
-        num_simulations = self._settings.common.repetitions
+        num_simulations = 10
         simulation_cases = self._event_log.test_partition[self._settings.common.log_ids.case].nunique()
         simulation_start_time = self._event_log.test_partition[self._settings.common.log_ids.start_time].min()
 
