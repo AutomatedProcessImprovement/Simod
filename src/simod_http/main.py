@@ -98,6 +98,9 @@ async def clean_up():
 
 
 async def _remove_empty_or_orphaned_request_dir(request_dir):
+    if request_dir.is_file():
+        return
+
     # Removes empty directories
     if len(list(request_dir.iterdir())) == 0:
         logging.info(f'Removing empty directory: {request_dir}')

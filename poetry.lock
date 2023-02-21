@@ -1255,6 +1255,23 @@ python-dateutil = ">=2.6,<3.0"
 pytzdata = ">=2020.1"
 
 [[package]]
+name = "pika"
+version = "1.3.1"
+description = "Pika Python AMQP Client Library"
+category = "main"
+optional = false
+python-versions = ">=3.4"
+files = [
+    {file = "pika-1.3.1-py3-none-any.whl", hash = "sha256:89f5e606646caebe3c00cbdbc4c2c609834adde45d7507311807b5775edac8e0"},
+    {file = "pika-1.3.1.tar.gz", hash = "sha256:beb19ff6dd1547f99a29acc2c6987ebb2ba7c44bf44a3f8e305877c5ef7d2fdc"},
+]
+
+[package.extras]
+gevent = ["gevent"]
+tornado = ["tornado"]
+twisted = ["twisted"]
+
+[[package]]
 name = "pillow"
 version = "9.4.0"
 description = "Python Imaging Library (Fork)"
@@ -2087,4 +2104,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "aebb44a3bc2b24917a6f226332e558c9519393713ba11eecb19d19b7fddf3871"
+content-hash = "ca3ddb47fd0ee513a9710b91d9ad9cd080e53cb45843151a62c0c62ec144ddc6"
