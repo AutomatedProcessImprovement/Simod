@@ -20,6 +20,7 @@ class BPMNNodeType(Enum):
     EXCLUSIVE_GATEWAY = 'EXCLUSIVE-GATEWAY'
     INCLUSIVE_GATEWAY = 'INCLUSIVE-GATEWAY'
     PARALLEL_GATEWAY = 'PARALLEL-GATEWAY'
+    INTERMEDIATE_EVENT = 'INTERMEDIATE-EVENT'
     UNDEFINED = 'UNDEFINED'
 
 
@@ -38,8 +39,11 @@ class ElementInfo:
         return len(self.incoming_flows) > 1
 
     def is_gateway(self):
-        return self.type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.PARALLEL_GATEWAY,
-                             BPMNNodeType.INCLUSIVE_GATEWAY]
+        return self.type in [
+            BPMNNodeType.EXCLUSIVE_GATEWAY,
+            BPMNNodeType.PARALLEL_GATEWAY,
+            BPMNNodeType.INCLUSIVE_GATEWAY,
+        ]
 
 
 class ProcessState:
@@ -99,6 +103,7 @@ class BPMNGraph:
                       'xmlns:startEvent': BPMNNodeType.START_EVENT,
                       'xmlns:endEvent': BPMNNodeType.END_EVENT,
                       'xmlns:exclusiveGateway': BPMNNodeType.EXCLUSIVE_GATEWAY,
+                      'xmlns:intermediateCatchEvent': BPMNNodeType.INTERMEDIATE_EVENT,
                       # NOTE: no parallel gateways in current Simod models
                       'xmlns:parallelGateway': BPMNNodeType.PARALLEL_GATEWAY,
                       'xmlns:inclusiveGateway': BPMNNodeType.INCLUSIVE_GATEWAY}
@@ -585,7 +590,7 @@ class BPMNGraph:
     def compute_branching_probability(self, flow_arcs_frequency):
         gateways_branching = dict()
         for e_id in self.element_info:
-            if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
+            if self.element_info[e_id].type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and len(
                     self.element_info[e_id].outgoing_flows) > 1:
                 total_frequency = 0
                 for flow_id in self.element_info[e_id].outgoing_flows:
@@ -602,7 +607,7 @@ class BPMNGraph:
     def compute_branching_probability_alternative_discovery(self, flow_arcs_frequency):
         gateways_branching = dict()
         for e_id in self.element_info:
-            if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
+            if self.element_info[e_id].type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and len(
                     self.element_info[e_id].outgoing_flows) > 1:
                 flow_arcs_probability, total_frequency = self._calculate_arcs_probabilities(e_id, flow_arcs_frequency)
                 # recalculate not only pure zeros, but also low probabilities
@@ -615,7 +620,7 @@ class BPMNGraph:
     def compute_branching_probability_alternative_equiprobable(self):
         gateways_branching = dict()
         for e_id in self.element_info:
-            if self.element_info[e_id].type == BPMNNodeType.EXCLUSIVE_GATEWAY and len(
+            if self.element_info[e_id].type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and len(
                     self.element_info[e_id].outgoing_flows) > 1:
                 average_probability = 1.0 / len(self.element_info[e_id].outgoing_flows)
                 probabilities = dict()
