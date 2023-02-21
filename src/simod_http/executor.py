@@ -21,8 +21,8 @@ class Executor:
     Job executor that runs Simod with the user's configuration.
     """
 
-    def __init__(self, app_settings: Application, request: Request):
-        self.settings = app_settings
+    def __init__(self, app: Application, request: Request):
+        self.app = app
         self.request = request
 
     def run(self):
@@ -36,13 +36,11 @@ class Executor:
                 result_dir = optimize_with_simod(
                     self.request.id,
                     self.request.status,
-                    self.request.configuration,
-                    self.request.event_log,
-                    self.request.event_log_csv_path,
+                    self.request.configuration_path,
                     Path(output_dir),
                 )
 
-                archive_url = Archiver(self.settings, self.request, result_dir).as_tar_gz()
+                archive_url = Archiver(self.app, self.request, result_dir).as_tar_gz()
                 self.request.archive_url = archive_url
                 self.request.status = RequestStatus.SUCCESS
                 self.request.timestamp = pd.Timestamp.now()
@@ -50,7 +48,7 @@ class Executor:
 
                 logging.debug(f'Archive URL: {archive_url}')
 
-                _notify_with_settings(self.settings, self.request)
+                _notify_with_settings(self.app, self.request)
 
             except Exception as e:
                 self.request.status = RequestStatus.FAILURE
@@ -60,15 +58,13 @@ class Executor:
                 logging.exception(e)
                 traceback.print_exc()
 
-                _notify_with_settings(self.settings, self.request, e)
+                _notify_with_settings(self.app, self.request, e)
 
 
 def optimize_with_simod(
         request_id: str,
         request_status: RequestStatus,
-        configuration: Configuration,
-        event_log: pd.DataFrame,
-        event_log_csv_path: Path,
+        configuration_path: Path,
         output_dir: Path
 ) -> Path:
     if output_dir is None:
@@ -78,6 +74,11 @@ def optimize_with_simod(
             archive_url=None,
             message='Output directory is not specified',
         )
+
+    with configuration_path.open() as f:
+        configuration = Configuration.from_stream(f)
+
+    event_log, _ = read(configuration.common.log_path, configuration.common.log_ids)
 
     try:
         preprocessor = Preprocessor(event_log, configuration.common.log_ids)
@@ -97,7 +98,7 @@ def optimize_with_simod(
             process_name=configuration.common.log_path.stem,
             test_log=test_log,
             log_path=configuration.common.log_path,
-            csv_log_path=event_log_csv_path,
+            csv_log_path=configuration.common.log_path,
         )
 
         Optimizer(configuration, event_log=event_log, output_dir=output_dir).run()

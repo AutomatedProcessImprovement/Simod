@@ -8,5 +8,5 @@ def run_simod_discovery(request: Request, settings: Application):
     """
     Run Simod with the user's configuration.
     """
-    executor = Executor(app_settings=settings, request=request)
+    executor = Executor(app=settings, request=request)
     executor.run()

@@ -4,7 +4,7 @@ from fastapi import BackgroundTasks, Response, Form, APIRouter
 from fastapi.responses import JSONResponse
 
 from simod.configuration import Configuration
-from simod.event_log.utilities import read as read_event_log
+from simod.event_log.utilities import convert_xes_to_csv_if_needed
 from simod_http.app import Response as AppResponse, RequestStatus, NotFound, UnsupportedMediaType, NotSupported, app
 from simod_http.background_tasks import run_simod_discovery
 
@@ -22,7 +22,7 @@ async def read_discovery_file(request_id: str, file_name: str):
     if not file_path.exists():
         raise NotFound(request_id=request_id, request_status=request.status, message=f'File not found: {file_name}')
 
-    media_type = await _infer_media_type_from_extension(file_name)
+    media_type = _infer_media_type_from_extension(file_name)
 
     return Response(
         content=file_path.read_bytes(),
@@ -56,7 +56,7 @@ async def create_discovery(
         email: Optional[str] = None,
 ) -> JSONResponse:
     """
-    Create a new business process model discovery and optimization request.
+    Create a new business process simulation model discovery request.
     """
     request = app.new_request_from_params(callback_url, email)
 
@@ -70,12 +70,30 @@ async def create_discovery(
             message='Email notifications are not supported',
         )
 
-    # Configuration
+    event_log_path = _save_event_log(event_log, request)
+    event_log_csv_path = convert_xes_to_csv_if_needed(event_log_path)
 
+    configuration_path = _update_config_and_save(configuration, event_log_csv_path, request)
+
+    request.configuration_path = configuration_path.absolute()
+    request.status = RequestStatus.ACCEPTED
+    request.save()
+
+    background_tasks.add_task(run_simod_discovery, request, app)
+
+    response = AppResponse(request_id=request.id, request_status=request.status)
+    return response.json_response(status_code=202)
+
+
+def _update_config_and_save(configuration, event_log_csv_path, request):
     configuration = Configuration.from_stream(configuration.file)
+    configuration.common.log_path = event_log_csv_path.absolute()
+    configuration.common.test_log_path = None  # TODO: test log is not supported in request params
+    configuration_path = configuration.to_yaml(request.output_dir)
+    return configuration_path
 
-    # Event log
 
+def _save_event_log(event_log, request):
     event_log_file_extension = _infer_event_log_file_extension_from_header(event_log.content_type)
     if event_log_file_extension is None:
         raise UnsupportedMediaType(
@@ -84,35 +102,12 @@ async def create_discovery(
             archive_url=None,
             message='Unsupported event log file type',
         )
-
     event_log_path = request.output_dir / f'event_log{event_log_file_extension}'
     event_log_path.write_bytes(event_log.file.read())
-
-    configuration.common.log_path = event_log_path.absolute()
-    configuration.common.test_log_path = None
-
-    event_log, event_log_csv_path = read_event_log(configuration.common.log_path, configuration.common.log_ids)
-
-    request.configuration = configuration
-    request.event_log = event_log
-    request.event_log_csv_path = event_log_csv_path
-    request.status = RequestStatus.ACCEPTED
-    request.save()
-
-    # Response
-
-    response = AppResponse(request_id=request.id, request_status=request.status)
-
-    background_tasks.add_task(run_simod_discovery, request, app)
-
-    return response.json_response(status_code=202)
+    return event_log_path
 
 
-# Helpers
-
-def _infer_event_log_file_extension_from_header(
-        content_type: str,
-) -> Union[str, None]:
+def _infer_event_log_file_extension_from_header(content_type: str) -> Union[str, None]:
     if 'text/csv' in content_type:
         return '.csv'
     elif 'application/xml' in content_type or 'text/xml' in content_type:
@@ -121,7 +116,7 @@ def _infer_event_log_file_extension_from_header(
         return None
 
 
-async def _infer_media_type_from_extension(file_name) -> str:
+def _infer_media_type_from_extension(file_name) -> str:
     if file_name.endswith('.csv'):
         media_type = 'text/csv'
     elif file_name.endswith('.xml'):

@@ -8,8 +8,6 @@ import pandas as pd
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, BaseSettings
 
-from simod.configuration import Configuration
-
 
 class Error(BaseModel):
     message: str
@@ -52,9 +50,7 @@ class Request(BaseModel):
     id: str
     output_dir: Path
     status: Union[RequestStatus, None] = None
-    configuration: Union[Configuration, None] = None
-    event_log: Union[pd.DataFrame, None] = None  # NOTE: this field isn't present in request.json
-    event_log_csv_path: Union[Path, None] = None
+    configuration_path: Union[Path, None] = None
     archive_url: Union[str, None] = None
     timestamp: Union[pd.Timestamp, None] = None
     notification_settings: Union[NotificationSettings, None] = None
@@ -67,8 +63,8 @@ class Request(BaseModel):
         return f'Request(' \
                f'id={self.id}, ' \
                f'output_dir={self.output_dir}, ' \
-               f'configuration={self.configuration}, ' \
-               f'event_log_csv_path={self.event_log_csv_path}, ' \
+               f'status={self.status}, ' \
+               f'configuration_path={self.configuration_path}, ' \
                f'archive_url={self.archive_url}, ' \
                f'timestamp={self.timestamp}, ' \
                f'notification_settings={self.notification_settings}, ' \
@@ -87,11 +83,9 @@ class Request(BaseModel):
 
         return Request(
             id=request_id,
-            output_dir=output_dir,
+            output_dir=output_dir.absolute(),
             status=RequestStatus.UNKNOWN,
-            configuration=None,
-            event_log=None,
-            event_log_csv_path=None,
+            configuration_path=None,
             callback_endpoint=None,
             archive_url=None,
             timestamp=None,
@@ -136,13 +130,13 @@ class Application(BaseSettings):
         debug = os.environ.get('SIMOD_HTTP_DEBUG', 'false').lower() == 'true'
 
         if debug:
-            settings = Application()
+            app = Application()
         else:
-            settings = Application(_env_file='.env.production')
+            app = Application(_env_file='.env.production')
 
-        settings.simod_http_storage_path = Path(settings.simod_http_storage_path)
+        app.simod_http_storage_path = Path(app.simod_http_storage_path)
 
-        return settings
+        return app
 
     def load_request(self, request_id: str) -> Request:
         request_dir = Path(self.simod_http_storage_path) / 'requests' / request_id
@@ -154,18 +148,9 @@ class Application(BaseSettings):
                 message='Request is not found on the server',
             )
 
-        try:
-            request_info_path = request_dir / 'request.json'
-            request = Request.parse_raw(request_info_path.read_text())
-            return request
-
-        except Exception as e:
-            raise InternalServerError(
-                request_id=request_id,
-                request_status=RequestStatus.UNKNOWN,
-                archive_url=None,
-                message=f'Failed to load request {request_id}: {e}',
-            )
+        request_info_path = request_dir / 'request.json'
+        request = Request.parse_raw(request_info_path.read_text())
+        return request
 
     def new_request_from_params(self, callback_url: Optional[str] = None, email: Optional[str] = None) -> 'Request':
         request = Request.empty(Path(self.simod_http_storage_path))
