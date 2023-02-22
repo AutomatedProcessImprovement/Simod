@@ -4,17 +4,14 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "simod"
-version = "3.2.0"
+version = "3.3.0"
 authors = ["Manuel Camargo", "Ihar Suvorau", "David Chapela"]
-description = "Simod is a Python package for automated discovery of business process simulation models from event logs."
+description = "Simod is a Python tool for automated discovery of business process simulation models from event logs."
 
 [tool.poetry.dependencies]
 python = "^3.9"
 click = "^8.1.3"
-fastapi = "^0.89.1"
-fastapi-utils = "^0.2.1"
 hyperopt = "^0.2.7"
-invoke = "^1.7.3"
 jellyfish = "^0.9.0"
 lxml = "^4.9.1"
 matplotlib = "^3.6.0"
@@ -31,7 +28,6 @@ requests = "^2.28.2"
 scipy = "^1.9.2"
 statistics = "^1.0.3.5"
 tqdm = "^4.64.1"
-uvicorn = "^0.20.0"
 xmltodict = "^0.13.0"
 pix_utils = { git = "https://github.com/AutomatedProcessImprovement/pix-utils.git", branch = "main" }
 log-similarity-metrics = { git = "https://github.com/AutomatedProcessImprovement/log-similarity-metrics.git", branch = "main" }
@@ -50,4 +46,3 @@ in-project = true
 
 [tool.poetry.scripts]
 simod = "simod.cli:main"
-simod-http = "simod_http.main:app"

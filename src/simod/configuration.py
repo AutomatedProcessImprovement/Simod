@@ -249,9 +249,9 @@ class CommonSettings(BaseModel):
     def to_dict(self) -> dict:
         return {
             'log_path': str(self.log_path),
-            'test_log_path': str(self.test_log_path),
+            'test_log_path': str(self.test_log_path) if self.test_log_path is not None else None,
             'log_ids': self.log_ids.to_dict(),
-            'model_path': str(self.model_path),
+            'model_path': str(self.model_path) if self.model_path is not None else None,
             'repetitions': self.repetitions,
             'evaluation_metrics': [str(metric) for metric in self.evaluation_metrics],
             'clean_intermediate_files': self.clean_intermediate_files,
