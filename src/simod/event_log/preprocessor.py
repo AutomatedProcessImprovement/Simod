@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from pathlib import Path
-
-import pandas as pd
 from typing import Optional
 
+import pandas as pd
 from estimate_start_times.concurrency_oracle import OverlappingConcurrencyOracle
 from estimate_start_times.config import Configuration as StartTimeEstimatorConfiguration, HeuristicsThresholds
 from estimate_start_times.estimator import StartTimeEstimator
+
 from simod.cli_formatter import print_step, print_section
 from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.multitasking import adjust_durations
@@ -38,7 +38,12 @@ class Preprocessor:
         self._log = log.sort_values(by=keys).reset_index(drop=True)
         self._log_ids = log_ids
 
-    def run(self, multitasking: bool = False, concurrency_thresholds: HeuristicsThresholds = HeuristicsThresholds()) -> pd.DataFrame:
+    def run(
+            self,
+            multitasking: bool = False,
+            concurrency_thresholds: HeuristicsThresholds = HeuristicsThresholds(),
+            enable_time_concurrency_threshold: float = 0.75
+    ) -> pd.DataFrame:
         """
         Executes all pre-processing steps and updates the configuration if necessary.
 
@@ -59,7 +64,7 @@ class Preprocessor:
         if self._log_ids.enabled_time not in self._log.columns:
             # The start times were not estimated (otherwise enabled times would
             # be present), and the enabled times are not in the original log
-            self._add_enabled_times(concurrency_thresholds)
+            self._add_enabled_times(enable_time_concurrency_threshold)
 
         return self._log
 
@@ -89,12 +94,12 @@ class Preprocessor:
             replace_recorded_start_times=True
         )
 
-    def _add_enabled_times(self, concurrency_thresholds: HeuristicsThresholds):
+    def _add_enabled_times(self, enable_time_concurrency_threshold: float):
         print_step('Adding enabled times')
 
         configuration = StartTimeEstimatorConfiguration(
             log_ids=self._log_ids,
-            heuristics_thresholds=concurrency_thresholds,
+            heuristics_thresholds=HeuristicsThresholds(df=enable_time_concurrency_threshold),
             consider_start_times=True,
         )
         # The start times are the original ones, so use overlapping concurrency oracle
