@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ET
+from xml.etree import ElementTree
 from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
@@ -99,7 +99,7 @@ def _prosimos_gateways_probabilities(bpmn_path, sequences) -> List[GatewayProbab
     gateways_branching = {}
     reverse_map = {}
 
-    tree = ET.parse(bpmn_path)
+    tree = ElementTree.parse(bpmn_path)
     root = tree.getroot()
     bpmn_element_ns = {'xmlns': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
     for process in root.findall('xmlns:process', bpmn_element_ns):

@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Union, List, Optional, Tuple
 
 import yaml
-from estimate_start_times.config import HeuristicsThresholds
 from extraneous_activity_delays.config import OptimizationMetric as ExtraneousActivityDelaysOptimizationMetric
 from hyperopt import hp
 from pydantic import BaseModel
+from start_time_estimator.config import ConcurrencyThresholds
 
 from .cli_formatter import print_notice
 from .event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
@@ -261,14 +261,14 @@ class CommonSettings(BaseModel):
 class PreprocessingSettings(BaseModel):
     multitasking: bool
     enable_time_concurrency_threshold: float
-    concurrency_thresholds: HeuristicsThresholds
+    concurrency_thresholds: ConcurrencyThresholds
 
     @staticmethod
     def default() -> 'PreprocessingSettings':
         return PreprocessingSettings(
             multitasking=False,
             enable_time_concurrency_threshold=0.75,
-            concurrency_thresholds=HeuristicsThresholds()
+            concurrency_thresholds=ConcurrencyThresholds()
         )
 
     @staticmethod
@@ -276,7 +276,7 @@ class PreprocessingSettings(BaseModel):
         return PreprocessingSettings(
             multitasking=config.get('multitasking', False),
             enable_time_concurrency_threshold=config.get('enable_time_concurrency_threshold', 0.75),
-            concurrency_thresholds=HeuristicsThresholds(
+            concurrency_thresholds=ConcurrencyThresholds(
                 df=config.get('concurrency_df', 0.9),
                 l2l=config.get('concurrency_l2l', 0.9),
                 l1l=config.get('concurrency_l1l', 0.9),

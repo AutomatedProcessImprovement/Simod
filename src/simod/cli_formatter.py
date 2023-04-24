@@ -12,7 +12,7 @@ def print_subsection(message: str):
 
 
 def print_asset(message: str):
-    click.secho(f'\n▶︎ {message}', bold=True)
+    click.secho(f'\n︎ {message}', bold=True)
 
 
 def print_message(message: str, capitalize: bool = True):
@@ -22,12 +22,12 @@ def print_message(message: str, capitalize: bool = True):
 
 
 def print_notice(message: str):
-    click.secho(f'\n● {message}', bold=True)
+    click.secho(f'\n {message}', bold=True)
 
 
 def print_warning(message: str):
-    click.secho(f'\n▲ {message}', bold=True)
+    click.secho(f'\n {message}', bold=True)
 
 
 def print_step(message: str):
-    click.echo(f'\n➜ {message}')
+    click.echo(f'\n {message}')

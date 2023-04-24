@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from estimate_start_times.concurrency_oracle import OverlappingConcurrencyOracle
-from estimate_start_times.config import Configuration as StartTimeEstimatorConfiguration, HeuristicsThresholds
-from estimate_start_times.estimator import StartTimeEstimator
+from start_time_estimator.concurrency_oracle import OverlappingConcurrencyOracle
+from start_time_estimator.config import Configuration as StartTimeEstimatorConfiguration, ConcurrencyThresholds
+from start_time_estimator.estimator import StartTimeEstimator
 
 from simod.cli_formatter import print_step, print_section
 from simod.event_log.column_mapping import EventLogIDs
@@ -41,7 +41,7 @@ class Preprocessor:
     def run(
             self,
             multitasking: bool = False,
-            concurrency_thresholds: HeuristicsThresholds = HeuristicsThresholds(),
+            concurrency_thresholds: ConcurrencyThresholds = ConcurrencyThresholds(),
             enable_time_concurrency_threshold: float = 0.75
     ) -> pd.DataFrame:
         """
@@ -79,12 +79,12 @@ class Preprocessor:
             verbose=verbose,
         )
 
-    def _add_start_times(self, concurrency_thresholds: HeuristicsThresholds):
+    def _add_start_times(self, concurrency_thresholds: ConcurrencyThresholds):
         print_step('Adding start times')
 
         configuration = StartTimeEstimatorConfiguration(
             log_ids=self._log_ids,
-            heuristics_thresholds=concurrency_thresholds,
+            concurrency_thresholds=concurrency_thresholds,
         )
 
         self._log = StartTimeEstimator(
@@ -99,7 +99,7 @@ class Preprocessor:
 
         configuration = StartTimeEstimatorConfiguration(
             log_ids=self._log_ids,
-            heuristics_thresholds=HeuristicsThresholds(df=enable_time_concurrency_threshold),
+            concurrency_thresholds=ConcurrencyThresholds(df=enable_time_concurrency_threshold),
             consider_start_times=True,
         )
         # The start times are the original ones, so use overlapping concurrency oracle

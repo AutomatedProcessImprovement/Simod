@@ -1,11 +1,11 @@
 import copy
 import random
 import sys
-import xml.etree.ElementTree as ET
 from collections import deque
 from enum import Enum
 from pathlib import Path
 from typing import List
+from xml.etree import ElementTree
 
 import numpy as np
 
@@ -97,7 +97,7 @@ class BPMNGraph:
     @staticmethod
     def from_bpmn_path(model_path: Path):
         bpmn_element_ns = {'xmlns': BPMN_NAMESPACE_URI}
-        tree = ET.parse(model_path.absolute())
+        tree = ElementTree.parse(model_path.absolute())
         root = tree.getroot()
         to_extract = {'xmlns:task': BPMNNodeType.TASK,
                       'xmlns:startEvent': BPMNNodeType.START_EVENT,

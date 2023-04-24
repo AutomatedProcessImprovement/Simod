@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
 from typing import Optional, Tuple
-from xml.etree import ElementTree as ET
+from xml.etree import ElementTree
 
 import pandas as pd
 import pendulum
 
-from simod.cli_formatter import print_step
 from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from simod.utilities import run_shell_with_venv
 
@@ -80,8 +79,8 @@ def convert_timestamps(log: pd.DataFrame, log_ids: EventLogIDs):
 
 
 def convert_xes_to_csv(xes_path: Path, csv_path: Path):
-    args = ['pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv']
-    run_shell_with_venv(args)
+    args = ['poetry', 'run', 'pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv']
+    os.system(' '.join(args))
 
 
 def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path):
@@ -100,8 +99,8 @@ def reformat_timestamps(xes_path: Path, output_path: Path):
     ns = 'http://www.xes-standard.org/'
     date_tag = f'{{{ns}}}date'
 
-    ET.register_namespace('', ns)
-    tree = ET.parse(xes_path)
+    ElementTree.register_namespace('', ns)
+    tree = ElementTree.parse(xes_path)
     root = tree.getroot()
     xpaths = [
         ".//*[@key='time:timestamp']",
