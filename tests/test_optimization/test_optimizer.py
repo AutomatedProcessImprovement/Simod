@@ -8,12 +8,12 @@ from simod.optimization.optimizer import Optimizer
 config_yaml_A = """
 version: 2
 common:
-  log_path: tests/assets/Production_train.csv
-  test_log_path: tests/assets/Production_test.csv
+  log_path: tests/assets/Insurance_Claims_train.csv
+  test_log_path: tests/assets/Insurance_Claims_test.csv
   log_ids:
     case: case_id
-    activity: Activity
-    resource: Resource
+    activity: activity
+    resource: resource
     start_time: start_time
     end_time: end_time
   repetitions: 1
@@ -233,7 +233,7 @@ test_cases = [
     #     'settings': Configuration.from_stream(config_yaml_B),
     # },
     {
-        'name': 'Production_train',
+        'name': 'Insurance_Claims',
         'settings': Configuration.from_stream(config_yaml_A),
     },
     # {

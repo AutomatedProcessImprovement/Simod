@@ -1,4 +1,5 @@
-from simod.event_log.column_mapping import EventLogIDs
+from pix_utils.log_ids import DEFAULT_CSV_IDS
+
 from simod.event_log.utilities import read
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 
@@ -7,13 +8,7 @@ def test_resource_profiles_undifferentiated(entry_point):
     log_path = entry_point / 'LoanApp_sequential_9-5_diffres_timers.csv'
     bpmn_path = entry_point / 'LoanApp_sequential_9-5_timers.bpmn'
 
-    log_ids = EventLogIDs(
-        case='case_id',
-        activity='Activity',
-        resource='Resource',
-        start_time='start_time',
-        end_time='end_time',
-    )
+    log_ids = DEFAULT_CSV_IDS
 
     log, _ = read(log_path, log_ids)
 

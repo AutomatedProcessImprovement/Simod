@@ -1,7 +1,7 @@
 import pytest
+from pix_utils.input import read_csv_log
+from pix_utils.log_ids import DEFAULT_CSV_IDS, APROMORE_LOG_IDS
 
-from simod.event_log.column_mapping import EventLogIDs
-from simod.event_log.utilities import read
 from simod.metrics.metrics import get_absolute_hourly_emd
 
 test_cases = [
@@ -9,24 +9,11 @@ test_cases = [
         'name': 'A',
         'event_log_1': {
             'log_name': 'LoanApp_sequential_9-5_diffres_timers.csv',
-            'log_ids': EventLogIDs(
-                resource='Resource',
-                activity='Activity',
-                start_time='start_time',
-                end_time='end_time',
-                case='case_id',
-            )
+            'log_ids': DEFAULT_CSV_IDS
         },
         'event_log_2': {
             'log_name': 'simulated_log_0.csv',
-            'log_ids': EventLogIDs(
-                resource='resource',
-                activity='activity',
-                start_time='start_time',
-                end_time='end_time',
-                case='case_id',
-                enabled_time='enabled_time',
-            )
+            'log_ids': APROMORE_LOG_IDS
         },
     }
 ]
@@ -41,8 +28,8 @@ def test_absolute_timestamp_emd(entry_point, test_data):
     event_log_1_log_ids = test_data['event_log_1']['log_ids']
     event_log_2_log_ids = test_data['event_log_2']['log_ids']
 
-    event_log_1, _ = read(event_log_1_path, event_log_1_log_ids)
-    event_log_2, _ = read(event_log_2_path, event_log_2_log_ids)
+    event_log_1 = read_csv_log(event_log_1_path, event_log_1_log_ids)
+    event_log_2 = read_csv_log(event_log_2_path, event_log_2_log_ids)
 
     emd = get_absolute_hourly_emd(event_log_1, event_log_1_log_ids, event_log_2, event_log_2_log_ids)
 

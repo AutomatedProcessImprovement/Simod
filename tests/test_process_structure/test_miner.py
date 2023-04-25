@@ -11,15 +11,9 @@ max_eval_s: 2
 concurrency: 0.0
 epsilon: 0.0
 eta: 1.0
-gate_management:
-- equiprobable
-- discovery
-replace_or_joins:
-- true
-- false
-prioritize_parallelism:
-- true
-- false
+gate_management: discovery
+replace_or_joins: True
+prioritize_parallelism: True
 """
 
 structure_config_sm2 = """
@@ -28,15 +22,9 @@ max_eval_s: 2
 concurrency: 0.0
 epsilon: 0.0
 eta: 1.0
-gate_management:
-- equiprobable
-- discovery
-replace_or_joins:
-- true
-- false
-prioritize_parallelism:
-- true
-- false
+gate_management: discovery
+replace_or_joins: True
+prioritize_parallelism: True
 """
 
 structure_config_sm3 = """
@@ -45,15 +33,9 @@ max_eval_s: 2
 concurrency: 0.0
 epsilon: 0.0
 eta: 1.0
-gate_management:
-- equiprobable
-- discovery
-replace_or_joins:
-- true
-- false
-prioritize_parallelism:
-- true
-- false
+gate_management: discovery
+replace_or_joins: True
+prioritize_parallelism: True
 """
 
 structure_optimizer_test_data = [

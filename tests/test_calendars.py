@@ -3,10 +3,11 @@ import uuid
 import pandas as pd
 import pytest
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
-
+from pix_utils.input import read_csv_log
+from pix_utils.log_ids import APROMORE_LOG_IDS
 from pm4py_wrapper.wrapper import convert_xes_to_csv
+
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
-from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.utilities import read
 from simod.simulation.calendar_discovery import case_arrival
 
@@ -52,17 +53,13 @@ def test_resource_pool_analyzer(entry_point):
     log_path_csv.unlink()
 
 
-@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.xes'])
+@pytest.mark.parametrize('log_name', ['DifferentiatedCalendars.csv'])
 def test_calendar_case_arrival_discover(entry_point, log_name):
     log_path = entry_point / log_name
-    log, log_path_csv = read(log_path)
-    log_ids = EventLogIDs(
-        case='case:concept:name',
-        activity='concept:name',
-        resource='org:resource',
-        start_time='start_timestamp',
-        end_time='time:timestamp'
-    )
+    log_ids = APROMORE_LOG_IDS
+    # Read event log
+    log = read_csv_log(log_path, log_ids)
+    # Discover arrival calendar
     result = case_arrival._discover_undifferentiated(log, log_ids)
+    # Assert it exists...
     assert result
-    log_path_csv.unlink()

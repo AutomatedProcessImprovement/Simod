@@ -1,12 +1,13 @@
 import pandas as pd
 import pytest
-from lxml import etree
-
 from extraneous_activity_delays.config import Configuration, SimulationEngine, SimulationModel, OptimizationMetric
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
+from lxml import etree
+from pix_utils.log_ids import DEFAULT_CSV_IDS
+
 from simod.configuration import CalendarSettings, GatewayProbabilitiesDiscoveryMethod, CalendarType
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
-from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
+from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.simulation.parameters.miner import mine_parameters
 
 test_cases = [
@@ -20,13 +21,7 @@ test_cases = [
     {
         'name': 'B',
         'log_name': 'LoanApp_sequential_9-5_diffres_timers.csv',
-        'log_ids': EventLogIDs(
-            start_time='start_time',
-            end_time='end_time',
-            activity='Activity',
-            resource='Resource',
-            case='case_id',
-        ),
+        'log_ids': DEFAULT_CSV_IDS,
         'model_name': 'LoanApp_sequential_9-5_timers.bpmn',
         'should_have_delays': True,
     },
