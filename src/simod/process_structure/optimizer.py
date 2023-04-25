@@ -1,18 +1,18 @@
 import json
 import shutil
 from pathlib import Path
+from typing import Union, Tuple, Optional
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
+from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
+
 from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.simulation.parameters.miner import mine_default_24_7
-from simod.utilities import remove_asset, file_id, folder_id
-from typing import Union, Tuple, Optional
-
 from .miner import StructureMiner
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
@@ -47,7 +47,7 @@ class StructureOptimizer(HyperoptPipeline):
         self._log_train = event_log.train_partition
         self._log_validation = event_log.validation_partition
 
-        self._output_dir = self._settings.base_dir / folder_id(prefix='structure_')
+        self._output_dir = self._settings.base_dir / get_random_folder_id(prefix='structure_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self._train_log_path = self._output_dir / (event_log.process_name + '.xes')
@@ -77,7 +77,7 @@ class StructureOptimizer(HyperoptPipeline):
         status = STATUS_OK
 
         # current trial folder
-        output_dir = self._output_dir / folder_id(prefix='structure_trial_')
+        output_dir = self._output_dir / get_random_folder_id(prefix='structure_trial_')
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # structure mining
@@ -171,7 +171,7 @@ class StructureOptimizer(HyperoptPipeline):
 
         # Save evaluation measurements
         self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
-        self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
+        self.evaluation_measurements.to_csv(self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
 
         return best_settings, best_model_path, best_gateway_probabilities, best_parameters_path
 

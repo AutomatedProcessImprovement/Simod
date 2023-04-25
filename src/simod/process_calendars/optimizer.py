@@ -1,12 +1,15 @@
 from pathlib import Path
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
+from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
+
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.cli_formatter import print_subsection
+from simod.cli_formatter import print_subsection, print_step
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.event_log import EventLog
@@ -14,8 +17,7 @@ from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
-from simod.utilities import remove_asset, folder_id, file_id, nearest_divisor_for_granularity
-from typing import Optional, Tuple, Union
+from simod.utilities import nearest_divisor_for_granularity
 
 
 class CalendarOptimizer(HyperoptPipeline):
@@ -55,7 +57,7 @@ class CalendarOptimizer(HyperoptPipeline):
         self._log_validation = event_log.validation_partition
 
         # Calendar optimization base folder
-        self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')
+        self._output_dir = self._calendar_optimizer_settings.base_dir / get_random_folder_id(prefix='calendars_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluation_measurements = pd.DataFrame(
@@ -91,7 +93,7 @@ class CalendarOptimizer(HyperoptPipeline):
         status = STATUS_OK
 
         # creating and defining folders and paths
-        output_dir = self._output_dir / folder_id(prefix='calendars_trial_')
+        output_dir = self._output_dir / get_random_folder_id(prefix='calendars_trial_')
         output_dir.mkdir(parents=True, exist_ok=True)
         trial_stg.output_dir = output_dir
 
@@ -147,11 +149,12 @@ class CalendarOptimizer(HyperoptPipeline):
         # Save evaluation measurements
         assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
         self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
-        self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
+        self.evaluation_measurements.to_csv(self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
 
         return best_settings
 
     def cleanup(self):
+        print_step(f'Removing {self._output_dir}')
         remove_asset(self._output_dir)
 
     @staticmethod

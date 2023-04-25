@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import pandas as pd
-from networkx import DiGraph
-
 from extraneous_activity_delays.config import SimulationModel
+from networkx import DiGraph
+from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id
+
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
 from simod.configuration import Configuration
@@ -20,7 +21,7 @@ from simod.process_structure.settings import PipelineSettings as StructurePipeli
     StructureOptimizationSettings
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
-from simod.utilities import file_id, get_project_dir, folder_id
+from simod.utilities import get_project_dir
 
 
 class Optimizer:
@@ -55,7 +56,7 @@ class Optimizer:
             self._event_log = event_log
 
         if output_dir is None:
-            self._output_dir = get_project_dir() / 'outputs' / folder_id()
+            self._output_dir = get_project_dir() / 'outputs' / get_random_folder_id()
         else:
             self._output_dir = output_dir
 
@@ -130,7 +131,7 @@ class Optimizer:
             metrics=metrics,
         )
 
-        measurements_path = simulation_dir.parent / file_id(prefix='evaluation_')
+        measurements_path = simulation_dir.parent / get_random_file_id(extension="csv", prefix="evaluation_")
         measurements_df = pd.DataFrame.from_records(measurements)
         measurements_df.to_csv(measurements_path, index=False)
 

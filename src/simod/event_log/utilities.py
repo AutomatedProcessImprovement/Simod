@@ -10,33 +10,6 @@ from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from simod.utilities import run_shell_with_venv
 
 
-def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFrame:
-    if not isinstance(event_log, pd.DataFrame):
-        raise TypeError('Event log must be a pandas DataFrame')
-
-    case_duration_key = 'duration_seconds'
-
-    # calculating case durations
-    cases_durations = list()
-    for case_id, trace in event_log.groupby(log_ids.case):
-        duration = (trace[log_ids.end_time].max() - trace[log_ids.start_time].min()).total_seconds()
-        cases_durations.append({log_ids.case: case_id, case_duration_key: duration})
-    cases_durations = pd.DataFrame(cases_durations)
-
-    # merging data
-    event_log = event_log.merge(cases_durations, how='left', on=log_ids.case)
-
-    # filtering rare events
-    unique_cases_durations = event_log[[log_ids.case, case_duration_key]].drop_duplicates()
-    first_quantile = unique_cases_durations.quantile(0.1)
-    last_quantile = unique_cases_durations.quantile(0.9)
-    event_log = event_log[(event_log[case_duration_key] <= last_quantile.duration_seconds) & (
-            event_log.duration_seconds >= first_quantile.duration_seconds)]
-    event_log = event_log.drop(columns=[case_duration_key])
-
-    return event_log
-
-
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
     _, ext = os.path.splitext(log_path)
     if ext == '.xes':
