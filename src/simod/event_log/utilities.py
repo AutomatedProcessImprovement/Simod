@@ -39,7 +39,7 @@ def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFra
 
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
     _, ext = os.path.splitext(log_path)
-    if ext != '.csv':
+    if ext == '.xes':
         if output_path:
             log_path_csv = output_path
         else:
