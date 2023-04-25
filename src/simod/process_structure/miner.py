@@ -83,22 +83,26 @@ class Settings:
         prioritize_parallelism = None
         parallelism = settings.get('prioritize_parallelism', None)
         if parallelism is not None:
-            if isinstance(parallelism, str):
+            if isinstance(parallelism, bool):
+                prioritize_parallelism = parallelism
+            elif isinstance(parallelism, str):
                 prioritize_parallelism = [parallelism.lower() == 'true']
             elif isinstance(parallelism, list):
                 prioritize_parallelism = parallelism
             else:
-                raise ValueError('prioritize_parallelism must be a list or a string.')
+                raise ValueError('prioritize_parallelism must be a bool, list or a string.')
 
         replace_or_joins = None
         or_joins = settings.get('replace_or_joins', None)
         if or_joins is not None:
-            if isinstance(or_joins, str):
+            if isinstance(or_joins, bool):
+                replace_or_joins = or_joins
+            elif isinstance(or_joins, str):
                 replace_or_joins = [or_joins.lower() == 'true']
             elif isinstance(or_joins, list):
                 replace_or_joins = or_joins
             else:
-                raise ValueError('replace_or_joins must be a list or a string.')
+                raise ValueError('replace_or_joins must be a bool, list or a string.')
 
         return Settings(
             gateway_probabilities_method=gateway_probabilities_method,
