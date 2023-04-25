@@ -54,7 +54,7 @@ class SimulationParameters:
                     gateway_probabilities.to_dict()
                     for gateway_probabilities in self.gateway_branching_probabilities
                 ]
-                if isinstance(self.gateway_branching_probabilities[0], GatewayProbabilities)
+                if len(self.gateway_branching_probabilities) > 0 and isinstance(self.gateway_branching_probabilities[0], GatewayProbabilities)
                 else self.gateway_branching_probabilities,
         }
 
