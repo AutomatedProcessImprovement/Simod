@@ -44,7 +44,6 @@ class StructureMiningAlgorithm(str, Enum):
 class GatewayProbabilitiesDiscoveryMethod(str, Enum):
     DISCOVERY = 'discovery'
     EQUIPROBABLE = 'equiprobable'
-    RANDOM = 'random'
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> 'Union[GatewayProbabilitiesDiscoveryMethod, ' \
@@ -60,8 +59,6 @@ class GatewayProbabilitiesDiscoveryMethod(str, Enum):
             return cls.DISCOVERY
         elif value.lower() == 'equiprobable':
             return cls.EQUIPROBABLE
-        elif value.lower() == 'random':
-            return cls.RANDOM
         else:
             raise ValueError(f'Unknown value {value}')
 
@@ -70,8 +67,6 @@ class GatewayProbabilitiesDiscoveryMethod(str, Enum):
             return 'discovery'
         elif self == GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE:
             return 'equiprobable'
-        elif self == GatewayProbabilitiesDiscoveryMethod.RANDOM:
-            raise NotImplementedError('Random gateway probabilities are not supported')
         return f'Unknown GateManagement {str(self)}'
 
 
