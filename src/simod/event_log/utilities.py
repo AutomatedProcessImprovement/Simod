@@ -7,7 +7,6 @@ import pandas as pd
 import pendulum
 
 from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
-from simod.utilities import run_shell_with_venv
 
 
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
@@ -52,19 +51,28 @@ def convert_timestamps(log: pd.DataFrame, log_ids: EventLogIDs):
 
 
 def convert_xes_to_csv(xes_path: Path, csv_path: Path):
+    # Prepare args
     args = ['poetry', 'run', 'pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv']
+    # Run command
     os.system(' '.join(args))
 
 
 def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path):
+    # Format timestamp events
     xes_datetime_format = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
     df[log_ids.start_time] = df[log_ids.start_time].apply(
         lambda x: pendulum.parse(x.isoformat()).format(xes_datetime_format))
     df[log_ids.end_time] = df[log_ids.end_time].apply(
         lambda x: pendulum.parse(x.isoformat()).format(xes_datetime_format))
-    df.to_csv(output_path, index=False)
-    args = ['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes']
-    run_shell_with_venv(args)
+    # Export CSV file
+    csv_path = Path(str(output_path).replace(".xes", ".csv"))
+    df.to_csv(csv_path, index=False)
+    # Prepare args
+    args = ["poetry", "run", "pm4py_wrapper", "-i", "\"" + str(csv_path) + "\"", "-o", "\"" + str(output_path.parent) + "\"", "csv-to-xes"]
+    # Run command
+    os.system(' '.join(args))
+    # Remove tmp CSV file
+    csv_path.unlink()
 
 
 def reformat_timestamps(xes_path: Path, output_path: Path):
