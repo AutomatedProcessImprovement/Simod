@@ -1,9 +1,9 @@
 import os.path
 
 import pytest
+from pix_utils.log_ids import DEFAULT_XES_IDS
 
 from simod.configuration import PROJECT_DIR
-from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.event_log.event_log import EventLog
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import StructureOptimizationSettings, PipelineSettings
@@ -66,7 +66,7 @@ def test_structure_optimizer(entry_point, test_data):
     log_path = entry_point / 'PurchasingExample.xes'
     settings.project_name = os.path.splitext(os.path.basename(log_path))[0]
 
-    event_log = EventLog.from_path(log_path, STANDARD_COLUMNS)
+    event_log = EventLog.from_path(log_path, DEFAULT_XES_IDS)
 
     optimizer = StructureOptimizer(settings, event_log)
     result, _, _, _ = optimizer.run()
@@ -102,7 +102,7 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
 
     settings.model_path = model_path
 
-    event_log = EventLog.from_path(log_path, STANDARD_COLUMNS)
+    event_log = EventLog.from_path(log_path, DEFAULT_XES_IDS)
 
     optimizer = StructureOptimizer(settings, event_log)
     result, best_model_path, _, _ = optimizer.run()

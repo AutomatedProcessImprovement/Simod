@@ -1,7 +1,7 @@
 import pandas as pd
+from pix_utils.log_ids import EventLogIDs
 
 from simod.discovery.distribution import get_best_distribution
-from simod.event_log.column_mapping import EventLogIDs
 
 
 def discover(log: pd.DataFrame, log_ids: EventLogIDs) -> dict:

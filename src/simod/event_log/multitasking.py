@@ -7,9 +7,8 @@ from itertools import groupby
 from typing import List, Dict, Optional
 
 import pandas as pd
+from pix_utils.log_ids import EventLogIDs
 from tqdm import tqdm
-
-from simod.event_log.column_mapping import EventLogIDs
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'

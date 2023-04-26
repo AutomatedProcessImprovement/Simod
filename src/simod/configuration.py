@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from start_time_estimator.config import ConcurrencyThresholds
 
 from .cli_formatter import print_notice
-from .event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
+from pix_utils.log_ids import EventLogIDs, DEFAULT_XES_IDS
 from .utilities import get_project_dir
 
 QBP_NAMESPACE_URI = 'http://www.qbp-simulator.com/Schema201212'
@@ -190,7 +190,7 @@ class CommonSettings(BaseModel):
         return CommonSettings(
             log_path=Path('example_log.csv'),
             test_log_path=None,
-            log_ids=STANDARD_COLUMNS,
+            log_ids=DEFAULT_XES_IDS,
             model_path=None,
             repetitions=1,
             evaluation_metrics=[Metric.DL, Metric.N_GRAM_DISTANCE, Metric.ABSOLUTE_HOURLY_EMD,
@@ -216,7 +216,7 @@ class CommonSettings(BaseModel):
         if mapping is not None:
             log_ids = EventLogIDs.from_dict(mapping)
         else:
-            log_ids = STANDARD_COLUMNS
+            log_ids = DEFAULT_XES_IDS
 
         clean_up = config.get('clean_intermediate_files', False)
 

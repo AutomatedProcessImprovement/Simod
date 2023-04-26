@@ -1,14 +1,14 @@
-from xml.etree import ElementTree
 from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
 from typing import List
+from xml.etree import ElementTree
 
 import pandas as pd
+from pix_utils.log_ids import EventLogIDs
 
 from simod.cli_formatter import print_notice, print_step
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
-from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 

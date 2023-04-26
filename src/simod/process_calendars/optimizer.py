@@ -7,11 +7,11 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
 from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
+from pix_utils.log_ids import EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_subsection, print_step
 from simod.configuration import GatewayProbabilitiesDiscoveryMethod
-from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.event_log import EventLog
 from simod.hyperopt_pipeline import HyperoptPipeline
 from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings

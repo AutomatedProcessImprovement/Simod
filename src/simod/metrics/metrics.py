@@ -7,9 +7,9 @@ from log_distance_measures.config import AbsoluteTimestampType
 from log_distance_measures.control_flow_log_distance import control_flow_log_distance
 from log_distance_measures.cycle_time_distribution import cycle_time_distribution_distance
 from log_distance_measures.n_gram_distribution import n_gram_distribution_distance
+from pix_utils.log_ids import EventLogIDs
 
 from simod.configuration import Metric
-from simod.event_log.column_mapping import EventLogIDs
 
 
 def compute_metric(

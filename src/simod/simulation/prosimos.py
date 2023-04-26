@@ -8,6 +8,7 @@ from typing import List, Tuple, Optional, Union
 
 import pandas as pd
 from bpdfr_simulation_engine.simulation_engine import run_simulation
+from pix_utils.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 
 from simod.cli_formatter import print_notice, print_step
 from .parameters.activity_resources import ActivityResourceDistribution
@@ -15,7 +16,6 @@ from .parameters.calendars import Calendar
 from .parameters.gateway_probabilities import GatewayProbabilities
 from .parameters.resource_profiles import ResourceProfile
 from ..configuration import Metric
-from ..event_log.column_mapping import PROSIMOS_COLUMNS, EventLogIDs
 from ..event_log.utilities import read
 from ..metrics.metrics import compute_metric
 
@@ -54,7 +54,8 @@ class SimulationParameters:
                     gateway_probabilities.to_dict()
                     for gateway_probabilities in self.gateway_branching_probabilities
                 ]
-                if len(self.gateway_branching_probabilities) > 0 and isinstance(self.gateway_branching_probabilities[0], GatewayProbabilities)
+                if len(self.gateway_branching_probabilities) > 0 and isinstance(self.gateway_branching_probabilities[0],
+                                                                                GatewayProbabilities)
                 else self.gateway_branching_probabilities,
         }
 
@@ -193,7 +194,7 @@ def evaluate_logs(
     # Read simulated logs
 
     read_arguments = [
-        (simulation_log_paths[index], PROSIMOS_COLUMNS, index)
+        (simulation_log_paths[index], PROSIMOS_LOG_IDS, index)
         for index in range(len(simulation_log_paths))
     ]
 
@@ -205,7 +206,7 @@ def evaluate_logs(
     # Evaluate
 
     evaluation_arguments = [
-        (validation_log, validation_log_ids, log, PROSIMOS_COLUMNS, metrics)
+        (validation_log, validation_log_ids, log, PROSIMOS_LOG_IDS, metrics)
         for log in simulated_logs
     ]
 

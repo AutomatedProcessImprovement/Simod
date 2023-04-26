@@ -1,12 +1,12 @@
 import pytest
+from pix_utils.log_ids import DEFAULT_XES_IDS, EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.event_log.column_mapping import STANDARD_COLUMNS, EventLogIDs
 
 arguments = [
     {
         'log_path': 'Production.xes',
-        'column_names': STANDARD_COLUMNS
+        'column_names': DEFAULT_XES_IDS
     },
     {
         'log_path': 'PurchasingExampleCustomSim.csv',

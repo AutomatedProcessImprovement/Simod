@@ -5,8 +5,8 @@ from xml.etree import ElementTree
 
 import pandas as pd
 import pendulum
+from pix_utils.log_ids import EventLogIDs, DEFAULT_XES_IDS
 
-from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from simod.utilities import execute_external_command
 
 
@@ -23,7 +23,7 @@ def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = N
         return log_path
 
 
-def read(log_path: Path, log_ids: EventLogIDs = STANDARD_COLUMNS) -> Tuple[pd.DataFrame, Path]:
+def read(log_path: Path, log_ids: EventLogIDs = DEFAULT_XES_IDS) -> Tuple[pd.DataFrame, Path]:
     """Reads an event log from XES or CSV and converts timestamp to UTC.
 
     :param log_path: Path to the event log.

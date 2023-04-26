@@ -9,6 +9,7 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
 from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
+from pix_utils.log_ids import EventLogIDs
 
 from simod.cli_formatter import print_message, print_subsection, print_step
 from simod.hyperopt_pipeline import HyperoptPipeline
@@ -17,7 +18,6 @@ from .miner import StructureMiner
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..configuration import StructureMiningAlgorithm, Metric
-from ..event_log.column_mapping import EventLogIDs
 from ..event_log.event_log import EventLog
 from ..simulation.prosimos import simulate_and_evaluate
 
