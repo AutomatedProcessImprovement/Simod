@@ -7,6 +7,7 @@ import pandas as pd
 import pendulum
 
 from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
+from simod.utilities import execute_external_command
 
 
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
@@ -54,7 +55,7 @@ def convert_xes_to_csv(xes_path: Path, csv_path: Path):
     # Prepare args
     args = ['poetry', 'run', 'pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv']
     # Run command
-    os.system(' '.join(args))
+    execute_external_command(args)
 
 
 def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path):
@@ -70,7 +71,7 @@ def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path)
     # Prepare args
     args = ["poetry", "run", "pm4py_wrapper", "-i", "\"" + str(csv_path) + "\"", "-o", "\"" + str(output_path.parent) + "\"", "csv-to-xes"]
     # Run command
-    os.system(' '.join(args))
+    execute_external_command(args)
     # Remove tmp CSV file
     csv_path.unlink()
 

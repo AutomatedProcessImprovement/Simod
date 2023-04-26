@@ -170,14 +170,13 @@ class PipelineSettings:
             'output_dir': self.output_dir,
         }
 
-        if mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-                                StructureMiningAlgorithm.SPLIT_MINER_3]:
+        if mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+            optimization_parameters['concurrency'] = self.concurrency
+        elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
             optimization_parameters['epsilon'] = self.epsilon
             optimization_parameters['eta'] = self.eta
             optimization_parameters['prioritize_parallelism'] = self.prioritize_parallelism
             optimization_parameters['replace_or_joins'] = self.replace_or_joins
-        elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-            optimization_parameters['concurrency'] = self.concurrency
 
         return optimization_parameters
 
@@ -213,19 +212,15 @@ class PipelineSettings:
             replace_or_joins_index = data.get('replace_or_joins')
             replace_or_joins = None
 
-            if initial_settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-                                                     StructureMiningAlgorithm.SPLIT_MINER_3]:
+            if initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+                assert concurrency is not None
+            elif initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
                 assert epsilon is not None
                 assert eta is not None
-
-                if initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
-                    assert prioritize_parallelism_index is not None
-                    assert replace_or_joins_index is not None
-
-                    prioritize_parallelism = initial_settings.prioritize_parallelism[prioritize_parallelism_index]
-                    replace_or_joins = initial_settings.replace_or_joins[replace_or_joins_index]
-            elif initial_settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-                assert concurrency is not None
+                assert prioritize_parallelism_index is not None
+                assert replace_or_joins_index is not None
+                prioritize_parallelism = initial_settings.prioritize_parallelism[prioritize_parallelism_index]
+                replace_or_joins = initial_settings.replace_or_joins[replace_or_joins_index]
 
         output_dir = model_path.parent
 

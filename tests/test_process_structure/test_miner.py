@@ -5,23 +5,12 @@ import pytest
 
 from simod.process_structure.miner import Settings, StructureMiner
 
-structure_config_sm1 = """
-mining_algorithm: sm1
-max_eval_s: 2
-concurrency: 0.0
-epsilon: 0.0
-eta: 1.0
-gate_management: discovery
-replace_or_joins: True
-prioritize_parallelism: True
-"""
-
 structure_config_sm2 = """
 mining_algorithm: sm2
 max_eval_s: 2
-concurrency: 0.0
-epsilon: 0.0
-eta: 1.0
+concurrency: 0.5
+epsilon: 0.15
+eta: 0.87
 gate_management: discovery
 replace_or_joins: True
 prioritize_parallelism: True
@@ -30,9 +19,9 @@ prioritize_parallelism: True
 structure_config_sm3 = """
 mining_algorithm: sm3
 max_eval_s: 2
-concurrency: 0.0
-epsilon: 0.0
-eta: 1.0
+concurrency: 0.5
+epsilon: 0.15
+eta: 0.87
 gate_management: discovery
 replace_or_joins: True
 prioritize_parallelism: True

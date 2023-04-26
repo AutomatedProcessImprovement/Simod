@@ -1,14 +1,24 @@
 import math
 import os
+import platform
 import subprocess
 from pathlib import Path
 from sys import stdout
 
-from simod.cli_formatter import print_step
-
 
 def get_project_dir() -> Path:
     return Path(os.path.dirname(__file__)).parent.parent
+
+
+def is_windows() -> bool:
+    return platform.system().lower() == "windows"
+
+
+def execute_external_command(args):
+    if is_windows():
+        subprocess.call(" ".join(args))
+    else:
+        subprocess.call(args)
 
 
 def print_progress(percentage, text):
@@ -37,10 +47,3 @@ def nearest_divisor_for_granularity(granularity: int) -> int:
                         closest = divisor
                         closest_diff = diff
     return closest
-
-
-def run_shell_with_venv(args: list):
-    venv_path = os.environ.get('VIRTUAL_ENV', str(Path.cwd() / '../../venv'))
-    args[0] = os.path.join(venv_path, 'bin', args[0])
-    print_step(f'Executing shell command: {args}')
-    os.system(' '.join(args))

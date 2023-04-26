@@ -190,25 +190,20 @@ class StructureOptimizer(HyperoptPipeline):
 
         # When a BPMN model is not provided, we call SplitMiner and optimize the SplitMiner input parameters
         if settings.model_path is None:
-            if settings.mining_algorithm in [StructureMiningAlgorithm.SPLIT_MINER_1,
-                                             StructureMiningAlgorithm.SPLIT_MINER_3]:
+            if settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+                space |= {
+                    'concurrency': hp.uniform('concurrency', *settings.concurrency)
+                }
+            elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
                 space |= {
                     'epsilon': hp.uniform('epsilon', *settings.epsilon),
                     'eta': hp.uniform('eta', *settings.eta),
-                }
-
-                if settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
-                    space |= {
-                        'prioritize_parallelism':
-                            hp.choice('prioritize_parallelism',
-                                      list(map(lambda v: str(v).lower(), settings.prioritize_parallelism))),
-                        'replace_or_joins':
-                            hp.choice('replace_or_joins',
-                                      list(map(lambda v: str(v).lower(), settings.replace_or_joins))),
-                    }
-            elif settings.mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
-                space |= {
-                    'concurrency': hp.uniform('concurrency', *settings.concurrency)
+                    'prioritize_parallelism':
+                        hp.choice('prioritize_parallelism',
+                                  list(map(lambda v: str(v).lower(), settings.prioritize_parallelism))),
+                    'replace_or_joins':
+                        hp.choice('replace_or_joins',
+                                  list(map(lambda v: str(v).lower(), settings.replace_or_joins))),
                 }
 
         return space

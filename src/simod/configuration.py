@@ -21,15 +21,12 @@ PROJECT_DIR = get_project_dir()
 # Helper classes
 
 class StructureMiningAlgorithm(str, Enum):
-    SPLIT_MINER_1 = 'sm1'
     SPLIT_MINER_2 = 'sm2'
     SPLIT_MINER_3 = 'sm3'
 
     @classmethod
     def from_str(cls, value: str) -> 'StructureMiningAlgorithm':
-        if value.lower() in ['sm1', 'splitminer1', 'split miner 1', 'split_miner_1', 'split-miner-1']:
-            return cls.SPLIT_MINER_1
-        elif value.lower() in ['sm2', 'splitminer2', 'split miner 2', 'split_miner_2', 'split-miner-2']:
+        if value.lower() in ['sm2', 'splitminer2', 'split miner 2', 'split_miner_2', 'split-miner-2']:
             return cls.SPLIT_MINER_2
         elif value.lower() in ['sm3', 'splitminer3', 'split miner 3', 'split_miner_3', 'split-miner-3']:
             return cls.SPLIT_MINER_3
@@ -37,9 +34,7 @@ class StructureMiningAlgorithm(str, Enum):
             raise ValueError(f'Unknown structure mining algorithm: {value}')
 
     def __str__(self):
-        if self == StructureMiningAlgorithm.SPLIT_MINER_1:
-            return 'Split Miner 1'
-        elif self == StructureMiningAlgorithm.SPLIT_MINER_2:
+        if self == StructureMiningAlgorithm.SPLIT_MINER_2:
             return 'Split Miner 2'
         elif self == StructureMiningAlgorithm.SPLIT_MINER_3:
             return 'Split Miner 3'
