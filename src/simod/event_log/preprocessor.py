@@ -74,7 +74,6 @@ class Preprocessor:
         self._log = adjust_durations(
             self._log,
             self._log_ids,
-            output_path=None,
             is_concurrent=is_concurrent,
             verbose=verbose,
         )
