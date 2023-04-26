@@ -1,8 +1,7 @@
 import pytest
 
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod
+from simod.configuration import GatewayProbabilitiesDiscoveryMethod, PROJECT_DIR
 from simod.process_structure.settings import StructureOptimizationSettings
-from simod.utilities import get_project_dir
 
 settings_a = """
 structure:
@@ -48,19 +47,19 @@ test_cases = [
         'name': 'A',
         'config_data': settings_a,
         'expected_miner_settings': None,
-        'structure_output_dir': get_project_dir() / 'outputs'
+        'structure_output_dir': PROJECT_DIR / 'outputs'
     },
     {
         'name': 'Old Gate Management',
         'config_data': settings_old_gate_management,
         'expected_miner_settings': None,
-        'structure_output_dir': get_project_dir() / 'outputs'
+        'structure_output_dir': PROJECT_DIR / 'outputs'
     },
     {
         'name': 'With Miner Settings',
         'config_data': settings_with_miner_settings,
         'expected_miner_settings': True,
-        'structure_output_dir': get_project_dir() / 'outputs'
+        'structure_output_dir': PROJECT_DIR / 'outputs'
     }
 ]
 

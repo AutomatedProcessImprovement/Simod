@@ -2,11 +2,11 @@ import os.path
 
 import pytest
 
+from simod.configuration import PROJECT_DIR
 from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.event_log.event_log import EventLog
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import StructureOptimizationSettings, PipelineSettings
-from simod.utilities import get_project_dir
 
 structure_config_sm3 = """
 version: 2
@@ -61,7 +61,7 @@ structure_optimizer_test_data = [
 @pytest.mark.parametrize('test_data', structure_optimizer_test_data,
                          ids=[test_data['name'] for test_data in structure_optimizer_test_data])
 def test_structure_optimizer(entry_point, test_data):
-    base_dir = get_project_dir() / 'outputs'
+    base_dir = PROJECT_DIR / 'outputs'
     settings = StructureOptimizationSettings.from_stream(test_data['config_data'], base_dir=base_dir)
     log_path = entry_point / 'PurchasingExample.xes'
     settings.project_name = os.path.splitext(os.path.basename(log_path))[0]
@@ -93,7 +93,7 @@ def test_structure_optimizer(entry_point, test_data):
 @pytest.mark.parametrize('test_data', structure_optimizer_test_data,
                          ids=[test_data['name'] for test_data in structure_optimizer_test_data])
 def test_structure_optimizer_with_bpmn(entry_point, test_data):
-    base_dir = get_project_dir() / 'outputs'
+    base_dir = PROJECT_DIR / 'outputs'
     log_path = entry_point / 'LoanApp_sequential_9-5_diffres_filtered.csv'
     model_path = entry_point / 'LoanApp_sequential_9-5_diffres_filtered.bpmn'
 

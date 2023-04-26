@@ -3,12 +3,11 @@ from pathlib import Path
 import click
 from pix_utils.filesystem.file_manager import get_random_folder_id
 
-from simod.configuration import Configuration
+from simod.configuration import Configuration, PROJECT_DIR
 from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
 from simod.optimization.optimizer import Optimizer
-from simod.utilities import get_project_dir
 
 
 @click.group()
@@ -36,8 +35,7 @@ def main():
 @click.option('--config_path', default=None, required=True, type=str)
 @click.option('--output_dir', default=None, required=False, type=str)
 def optimize(config_path: str, output_dir: str) -> Path:
-    repository_dir = get_project_dir()
-    config_path = repository_dir / config_path
+    config_path = PROJECT_DIR / config_path
     settings = Configuration.from_path(config_path)
 
     output_dir = Path(output_dir) if output_dir is not None else None
@@ -68,7 +66,7 @@ def optimize(config_path: str, output_dir: str) -> Path:
     )
 
     if output_dir is None:
-        output_dir = get_project_dir() / 'outputs' / get_random_folder_id()
+        output_dir = PROJECT_DIR / 'outputs' / get_random_folder_id()
 
     Optimizer(settings, event_log=event_log, output_dir=output_dir).run()
 

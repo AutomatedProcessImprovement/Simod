@@ -10,7 +10,7 @@ from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_f
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
-from simod.configuration import Configuration
+from simod.configuration import Configuration, PROJECT_DIR
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
 from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
@@ -21,7 +21,6 @@ from simod.process_structure.settings import PipelineSettings as StructurePipeli
     StructureOptimizationSettings
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
-from simod.utilities import get_project_dir
 
 
 class Optimizer:
@@ -56,7 +55,7 @@ class Optimizer:
             self._event_log = event_log
 
         if output_dir is None:
-            self._output_dir = get_project_dir() / 'outputs' / get_random_folder_id()
+            self._output_dir = PROJECT_DIR / 'outputs' / get_random_folder_id()
         else:
             self._output_dir = output_dir
 

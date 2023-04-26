@@ -1,11 +1,10 @@
 import pytest
 from pix_utils.log_ids import DEFAULT_CSV_IDS
 
-from simod.configuration import Configuration, CalendarType
+from simod.configuration import Configuration, CalendarType, PROJECT_DIR
 from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings, CalendarOptimizationSettings
-from simod.utilities import get_project_dir
 
 test_cases = [
     {
@@ -26,7 +25,7 @@ test_cases = [
 @pytest.mark.integration
 @pytest.mark.parametrize('test_case', test_cases, ids=[case['name'] for case in test_cases])
 def test_optimizer(entry_point, test_case):
-    base_dir = get_project_dir() / 'outputs'
+    base_dir = PROJECT_DIR / 'outputs'
 
     log_ids = DEFAULT_CSV_IDS
 
