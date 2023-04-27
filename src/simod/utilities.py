@@ -2,7 +2,11 @@ import math
 import os
 import platform
 import subprocess
+import traceback
 from pathlib import Path
+from typing import Tuple
+
+from hyperopt import STATUS_OK, STATUS_FAIL
 
 
 def get_project_dir() -> Path:
@@ -18,6 +22,19 @@ def execute_external_command(args):
         subprocess.call(" ".join(args))
     else:
         subprocess.call(args)
+
+
+def hyperopt_step(status: str, fn, *args) -> Tuple[str, object]:
+    """Function executes the provided function with arguments in hyperopt safe way."""
+    if status == STATUS_OK:
+        try:
+            return STATUS_OK, fn(*args)
+        except Exception as error:
+            print(error)
+            traceback.print_exc()
+            return STATUS_FAIL, None
+    else:
+        return status, None
 
 
 def nearest_divisor_for_granularity(granularity: int) -> int:

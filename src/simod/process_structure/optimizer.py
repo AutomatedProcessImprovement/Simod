@@ -11,18 +11,18 @@ from networkx import DiGraph
 from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
 from pix_utils.log_ids import EventLogIDs
 
-from simod.cli_formatter import print_message, print_subsection, print_step
-from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.simulation.parameters.miner import mine_default_24_7
 from .miner import StructureMiner
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
+from ..cli_formatter import print_message, print_subsection, print_step
 from ..configuration import StructureMiningAlgorithm, Metric
 from ..event_log.event_log import EventLog
+from ..simulation.parameters.miner import mine_default_24_7
 from ..simulation.prosimos import simulate_and_evaluate
+from ..utilities import hyperopt_step
 
 
-class StructureOptimizer(HyperoptPipeline):
+class StructureOptimizer:
     _event_log: EventLog
     _log_train: pd.DataFrame
     _log_validation: pd.DataFrame
@@ -88,8 +88,8 @@ class StructureOptimizer(HyperoptPipeline):
             if trial_stage_settings.model_path is None:
                 trial_stage_settings.model_path = model_path
                 print_step('Executing SplitMiner')
-                status, result = self.step(status, self._mine_structure,
-                                           trial_stage_settings, self._train_log_path, self._settings.mining_algorithm)
+                status, result = hyperopt_step(status, self._mine_structure,
+                                               trial_stage_settings, self._train_log_path, self._settings.mining_algorithm)
 
                 bpmn_reader = BPMNReaderWriter(trial_stage_settings.model_path)
                 process_graph = bpmn_reader.as_graph()
@@ -108,7 +108,7 @@ class StructureOptimizer(HyperoptPipeline):
             status = STATUS_FAIL
 
         # simulation parameters mining
-        status, result = self.step(
+        status, result = hyperopt_step(
             status,
             self._extract_parameters_undifferentiated,
             trial_stage_settings,
@@ -119,10 +119,10 @@ class StructureOptimizer(HyperoptPipeline):
             json_path = result
 
         # simulation
-        status, result = self.step(status, self._simulate_undifferentiated,
-                                   trial_stage_settings,
-                                   self._settings.simulation_repetitions,
-                                   json_path)
+        status, result = hyperopt_step(status, self._simulate_undifferentiated,
+                                       trial_stage_settings,
+                                       self._settings.simulation_repetitions,
+                                       json_path)
         evaluation_measurements = result if status == STATUS_OK else []
 
         # loss

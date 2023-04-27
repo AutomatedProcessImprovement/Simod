@@ -9,18 +9,17 @@ from networkx import DiGraph
 from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
 from pix_utils.log_ids import EventLogIDs
 
-from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.cli_formatter import print_subsection, print_step
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod
-from simod.event_log.event_log import EventLog
-from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
-from simod.simulation.parameters.miner import mine_parameters
-from simod.simulation.prosimos import simulate_and_evaluate
-from simod.utilities import nearest_divisor_for_granularity
+from ..bpm.reader_writer import BPMNReaderWriter
+from ..cli_formatter import print_subsection, print_step
+from ..configuration import GatewayProbabilitiesDiscoveryMethod
+from ..event_log.event_log import EventLog
+from ..process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
+from ..simulation.parameters.miner import mine_parameters
+from ..simulation.prosimos import simulate_and_evaluate
+from ..utilities import nearest_divisor_for_granularity, hyperopt_step
 
 
-class CalendarOptimizer(HyperoptPipeline):
+class CalendarOptimizer:
     _event_log: EventLog
     _log_train: pd.DataFrame
     _log_validation: pd.DataFrame
@@ -98,7 +97,7 @@ class CalendarOptimizer(HyperoptPipeline):
         trial_stg.output_dir = output_dir
 
         # simulation parameters extraction
-        status, result = self.step(status, self._extract_parameters, trial_stg)
+        status, result = hyperopt_step(status, self._extract_parameters, trial_stg)
         if result is None:
             status = STATUS_FAIL
             json_path = None
@@ -106,7 +105,7 @@ class CalendarOptimizer(HyperoptPipeline):
             json_path = result
 
         # simulation and evaluation
-        status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path)
+        status, result = hyperopt_step(status, self._simulate_with_prosimos, trial_stg, json_path)
         evaluation_measurements = result if status == STATUS_OK else []
 
         # response for hyperopt
