@@ -1,16 +1,13 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from .. import utilities as sup
-
 
 def from_bpmn_reader(bpmn, drawing=False, verbose=True) -> nx.DiGraph:
     """Creates a process graph from a BPMNReader instance."""
     g = _load_process_structure(bpmn, verbose)
     if drawing:
         _graph_network_x(g)
-    if verbose:
-        sup.print_done_task()
+    # sup.print_done_task()
     return g
 
 
@@ -33,8 +30,7 @@ def _find_node_num(g, id):
 def _create_nodes(g, total_elements, index, array, node_type, node_name, node_id, verbose):
     i = 0
     while i < len(array):
-        if verbose:
-            sup.print_progress(((index / (total_elements - 1)) * 100), 'Loading of bpmn structure from file ')
+        # sup.print_progress(((index / (total_elements - 1)) * 100), 'Loading of bpmn structure from file ')
         g.add_node(index, type=node_type, name=array[i][node_name], id=array[i][node_id],
                    executions=0, processing_times=list(), waiting_times=list(), multi_tasking=list(),
                    temp_enable=None, temp_start=None, temp_end=None, tsk_act=False,

@@ -3,7 +3,6 @@ import os
 import platform
 import subprocess
 from pathlib import Path
-from sys import stdout
 
 
 def get_project_dir() -> Path:
@@ -19,18 +18,6 @@ def execute_external_command(args):
         subprocess.call(" ".join(args))
     else:
         subprocess.call(args)
-
-
-def print_progress(percentage, text):
-    # printing process functions
-    stdout.write("\r%s" % text + str(percentage)[0:5] + chr(37) + "...      ")
-    stdout.flush()
-
-
-def print_done_task():
-    stdout.write("[DONE]")
-    stdout.flush()
-    stdout.write("\n")
 
 
 def nearest_divisor_for_granularity(granularity: int) -> int:
