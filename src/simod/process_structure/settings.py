@@ -4,7 +4,9 @@ from typing import Optional, Union, List, Dict, Any
 
 import yaml
 
-from simod.configuration import StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod, Configuration, Metric
+from ..settings.common_settings import Metric
+from ..settings.control_flow_settings import StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod
+from ..settings.simod_settings import SimodSettings
 
 
 @dataclass
@@ -124,7 +126,7 @@ class StructureOptimizationSettings:
         )
 
     @staticmethod
-    def from_configuration(config: Configuration, base_dir: Path) -> 'StructureOptimizationSettings':
+    def from_configuration(config: SimodSettings, base_dir: Path) -> 'StructureOptimizationSettings':
         project_name = config.common.log_path.stem
 
         return StructureOptimizationSettings(

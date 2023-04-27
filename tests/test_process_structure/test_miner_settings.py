@@ -1,7 +1,7 @@
 import pytest
 
-from simod.configuration import StructureMiningAlgorithm
 from simod.process_structure.miner import Settings
+from simod.settings.control_flow_settings import StructureMiningAlgorithm
 
 settings_a = """
 structure_optimizer:

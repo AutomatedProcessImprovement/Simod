@@ -3,10 +3,10 @@ import os.path
 import pytest
 from pix_utils.log_ids import DEFAULT_XES_IDS
 
-from simod.configuration import PROJECT_DIR
 from simod.event_log.event_log import EventLog
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import StructureOptimizationSettings, PipelineSettings
+from simod.settings.simod_settings import PROJECT_DIR
 
 structure_config_sm3 = """
 version: 2

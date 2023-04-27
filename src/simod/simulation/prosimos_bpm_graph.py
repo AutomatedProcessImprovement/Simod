@@ -10,7 +10,7 @@ from xml.etree import ElementTree
 import numpy as np
 
 from simod.cli_formatter import print_warning
-from simod.configuration import BPMN_NAMESPACE_URI
+from simod.settings.simod_settings import BPMN_NAMESPACE_URI
 
 
 class BPMNNodeType(Enum):

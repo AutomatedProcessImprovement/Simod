@@ -15,9 +15,9 @@ from .parameters.activity_resources import ActivityResourceDistribution
 from .parameters.calendars import Calendar
 from .parameters.gateway_probabilities import GatewayProbabilities
 from .parameters.resource_profiles import ResourceProfile
-from ..configuration import Metric
 from ..event_log.utilities import read
 from ..metrics.metrics import compute_metric
+from ..settings.common_settings import Metric
 
 cpu_count = multiprocessing.cpu_count()
 

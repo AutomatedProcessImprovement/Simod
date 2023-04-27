@@ -6,8 +6,9 @@ from lxml import etree
 from pix_utils.log_ids import DEFAULT_CSV_IDS
 from pix_utils.log_ids import DEFAULT_XES_IDS
 
-from simod.configuration import CalendarSettings, GatewayProbabilitiesDiscoveryMethod, CalendarType
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
+from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.parameters.miner import mine_parameters
 
 test_cases = [

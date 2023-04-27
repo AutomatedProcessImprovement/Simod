@@ -7,9 +7,10 @@ from pix_utils.log_ids import EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, CalendarSettings
 from simod.discovery import inter_arrival_distribution
 from simod.discovery.distribution import get_best_distribution
+from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import case_arrival, resource as resource_calendar
 from simod.simulation.parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
 from simod.simulation.parameters.calendars import Calendar

@@ -10,15 +10,14 @@ from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_f
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
-from simod.configuration import Configuration, PROJECT_DIR
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
 from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings, CalendarOptimizationSettings
 from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
 from simod.process_structure.optimizer import StructureOptimizer
-from simod.process_structure.settings import PipelineSettings as StructurePipelineSettings, \
-    StructureOptimizationSettings
+from simod.process_structure.settings import PipelineSettings as StructurePipelineSettings, StructureOptimizationSettings
+from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
 
@@ -28,7 +27,7 @@ class Optimizer:
     Structure and calendars optimization.
     """
 
-    _settings: Configuration
+    _settings: SimodSettings
     _event_log: EventLog
     _output_dir: Path
     _process_graph: Optional[DiGraph]
@@ -38,7 +37,7 @@ class Optimizer:
 
     def __init__(
             self,
-            settings: Configuration,
+            settings: SimodSettings,
             event_log: Optional[EventLog] = None,
             output_dir: Optional[Path] = None
     ):

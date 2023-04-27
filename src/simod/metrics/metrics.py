@@ -9,7 +9,7 @@ from log_distance_measures.cycle_time_distribution import cycle_time_distributio
 from log_distance_measures.n_gram_distribution import n_gram_distribution_distance
 from pix_utils.log_ids import EventLogIDs
 
-from simod.configuration import Metric
+from simod.settings.common_settings import Metric
 
 
 def compute_metric(

@@ -6,7 +6,8 @@ from typing import Optional, Union
 import yaml
 
 from simod.cli_formatter import print_warning, print_step
-from simod.configuration import PROJECT_DIR, StructureMiningAlgorithm, GatewayProbabilitiesDiscoveryMethod
+from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod, StructureMiningAlgorithm
+from simod.settings.simod_settings import PROJECT_DIR
 from simod.utilities import is_windows, execute_external_command
 
 sm2_path: Path = PROJECT_DIR / "external_tools/splitminer2/sm2.jar"

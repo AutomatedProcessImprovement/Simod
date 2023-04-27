@@ -3,8 +3,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod, CalendarType, CalendarSettings, \
-    Configuration, Metric
+from simod.settings.common_settings import Metric
+from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.simod_settings import SimodSettings
+from simod.settings.temporal_settings import CalendarSettings, CalendarType
 
 
 @dataclass
@@ -20,7 +22,7 @@ class CalendarOptimizationSettings:
     simulation_repetitions: int = 1
 
     @staticmethod
-    def from_configuration(config: Configuration, base_dir: Path) -> 'CalendarOptimizationSettings':
+    def from_configuration(config: SimodSettings, base_dir: Path) -> 'CalendarOptimizationSettings':
         return CalendarOptimizationSettings(
             base_dir=base_dir,
             optimization_metric=config.calendars.optimization_metric,

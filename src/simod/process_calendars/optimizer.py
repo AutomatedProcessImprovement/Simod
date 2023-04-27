@@ -11,9 +11,9 @@ from pix_utils.log_ids import EventLogIDs
 
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_subsection, print_step
-from ..configuration import GatewayProbabilitiesDiscoveryMethod
 from ..event_log.event_log import EventLog
 from ..process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
+from ..settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
 from ..simulation.parameters.miner import mine_parameters
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import nearest_divisor_for_granularity, hyperopt_step

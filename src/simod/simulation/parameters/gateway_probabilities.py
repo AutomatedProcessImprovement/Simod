@@ -8,7 +8,7 @@ import pandas as pd
 from pix_utils.log_ids import EventLogIDs
 
 from simod.cli_formatter import print_notice, print_step
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 

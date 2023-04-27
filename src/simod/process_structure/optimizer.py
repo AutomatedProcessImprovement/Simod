@@ -15,8 +15,9 @@ from .miner import StructureMiner
 from .settings import StructureOptimizationSettings, PipelineSettings
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_message, print_subsection, print_step
-from ..configuration import StructureMiningAlgorithm, Metric
 from ..event_log.event_log import EventLog
+from ..settings.common_settings import Metric
+from ..settings.control_flow_settings import StructureMiningAlgorithm
 from ..simulation.parameters.miner import mine_default_24_7
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step

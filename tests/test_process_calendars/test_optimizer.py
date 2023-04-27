@@ -1,10 +1,11 @@
 import pytest
 from pix_utils.log_ids import DEFAULT_CSV_IDS
 
-from simod.configuration import Configuration, CalendarType, PROJECT_DIR
 from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings, CalendarOptimizationSettings
+from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
+from simod.settings.temporal_settings import CalendarType
 
 test_cases = [
     {
@@ -29,7 +30,7 @@ def test_optimizer(entry_point, test_case):
 
     log_ids = DEFAULT_CSV_IDS
 
-    settings = Configuration.default()
+    settings = SimodSettings.default()
     settings.calendars.resource_profiles.discovery_type = test_case['resource_discovery_method']
     settings.common.log_ids = log_ids
 

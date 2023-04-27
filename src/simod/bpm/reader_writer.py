@@ -7,7 +7,7 @@ import networkx as nx
 import xmltodict as xtd
 
 from simod.bpm import graph
-from simod.configuration import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
+from simod.settings.simod_settings import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
 
 
 class BPMNReaderWriter:

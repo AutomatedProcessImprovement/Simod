@@ -2,8 +2,8 @@ import pytest
 from pix_utils.log_ids import EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod
 from simod.event_log.utilities import read
+from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
 from simod.simulation.parameters.calendars import Calendar
 from simod.simulation.parameters.miner import mine_default_24_7
 

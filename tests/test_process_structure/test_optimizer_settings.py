@@ -1,7 +1,8 @@
 import pytest
 
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod, PROJECT_DIR
 from simod.process_structure.settings import StructureOptimizationSettings
+from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.simod_settings import PROJECT_DIR
 
 settings_a = """
 structure:
