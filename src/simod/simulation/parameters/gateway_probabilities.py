@@ -8,7 +8,7 @@ import pandas as pd
 from pix_utils.log_ids import EventLogIDs
 
 from simod.cli_formatter import print_notice, print_step
-from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 
@@ -37,7 +37,7 @@ def mine_gateway_probabilities(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         bpmn_path: Path,
-        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod) -> List[GatewayProbabilities]:
+        gateways_probability_type: GatewayProbabilitiesMethod) -> List[GatewayProbabilities]:
     bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
 
     # downstream functions work on list of traces instead of dataframe
@@ -61,16 +61,16 @@ def _discover_with_gateway_management(
         log_traces: list,
         log_ids: EventLogIDs,
         bpmn_graph: BPMNGraph,
-        gate_management: GatewayProbabilitiesDiscoveryMethod) -> list:
+        gate_management: GatewayProbabilitiesMethod) -> list:
     if isinstance(gate_management, list) and len(gate_management) >= 1:
         print_notice(
             f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
         gate_management = gate_management[0]
 
     print_step(f'Mining gateway probabilities with {gate_management}')
-    if gate_management is GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE:
+    if gate_management is GatewayProbabilitiesMethod.EQUIPROBABLE:
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_equiprobable()
-    elif gate_management is GatewayProbabilitiesDiscoveryMethod.DISCOVERY:
+    elif gate_management is GatewayProbabilitiesMethod.DISCOVERY:
         arcs_frequencies = _compute_sequence_flow_frequencies(log_traces, log_ids, bpmn_graph)
         gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
     else:

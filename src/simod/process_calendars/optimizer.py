@@ -13,7 +13,7 @@ from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
-from ..settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from ..settings.control_flow_settings import GatewayProbabilitiesMethod
 from ..simulation.parameters.miner import mine_parameters
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import nearest_divisor_for_granularity, hyperopt_step
@@ -24,7 +24,7 @@ class CalendarOptimizer:
     _log_train: pd.DataFrame
     _log_validation: pd.DataFrame
     _log_ids: EventLogIDs
-    _gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
+    _gateway_probabilities_method: GatewayProbabilitiesMethod
     _gateway_probabilities: Optional[dict]
     _train_model_path: Path
     _output_dir: Path
@@ -38,7 +38,7 @@ class CalendarOptimizer:
             calendar_optimizer_settings: CalendarOptimizationSettings,
             event_log: EventLog,
             train_model_path: Path,
-            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod,
+            gateway_probabilities_method: GatewayProbabilitiesMethod,
             gateway_probabilities: Optional[list] = None,
             process_graph: Optional[DiGraph] = None,
             event_distribution: Optional[list[dict]] = None,

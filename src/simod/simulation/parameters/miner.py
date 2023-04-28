@@ -9,7 +9,7 @@ from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
 from simod.discovery import inter_arrival_distribution
 from simod.discovery.distribution import get_best_distribution
-from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import case_arrival, resource as resource_calendar
 from simod.simulation.parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
@@ -28,7 +28,7 @@ def mine_parameters(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         model_path: Path,
-        gateways_probability_method: Optional[GatewayProbabilitiesDiscoveryMethod] = None,
+        gateways_probability_method: Optional[GatewayProbabilitiesMethod] = None,
         gateway_probabilities: Optional[list] = None,
         process_graph: Optional[DiGraph] = None,
 ) -> SimulationParameters:
@@ -111,11 +111,11 @@ def mine_default_24_7(
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph,
-        gateways_probability_type: GatewayProbabilitiesDiscoveryMethod) -> SimulationParameters:
+        gateways_probabilities_method: GatewayProbabilitiesMethod) -> SimulationParameters:
     """
     Simulation parameters with default calendar 24/7.
     """
-    assert gateways_probability_type is not None, "Gateway probabilities method discovery must be provided."
+    assert gateways_probabilities_method is not None, "Gateway probabilities method discovery must be provided."
 
     calendar_24_7 = Calendar.all_day_long()
 
@@ -128,7 +128,7 @@ def mine_default_24_7(
 
     arrival_calendar = calendar_24_7
 
-    gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probability_type)
+    gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probabilities_method)
 
     activity_duration_distributions = _activity_duration_distributions_undifferentiated(
         log, log_ids, process_graph, calendar_24_7)

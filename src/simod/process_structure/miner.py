@@ -6,7 +6,7 @@ from typing import Optional, Union
 import yaml
 
 from simod.cli_formatter import print_warning, print_step
-from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod, StructureMiningAlgorithm
+from simod.settings.control_flow_settings import GatewayProbabilitiesMethod, ProcessModelDiscoveryAlgorithm
 from simod.settings.simod_settings import PROJECT_DIR
 from simod.utilities import is_windows, execute_external_command
 
@@ -20,8 +20,8 @@ class Settings:
     Settings for the structure miner.
     """
 
-    gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
-    mining_algorithm: StructureMiningAlgorithm = StructureMiningAlgorithm.SPLIT_MINER_3
+    gateway_probabilities_method: GatewayProbabilitiesMethod
+    mining_algorithm: ProcessModelDiscoveryAlgorithm = ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3
 
     # Split Miner 1 and 3
     epsilon: Optional[float] = None
@@ -37,8 +37,8 @@ class Settings:
     @staticmethod
     def default() -> 'Settings':
         return Settings(
-            gateway_probabilities_method=GatewayProbabilitiesDiscoveryMethod.DISCOVERY,
-            mining_algorithm=StructureMiningAlgorithm.SPLIT_MINER_3,
+            gateway_probabilities_method=GatewayProbabilitiesMethod.DISCOVERY,
+            mining_algorithm=ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3,
             prioritize_parallelism=False,
             replace_or_joins=False,
             epsilon=0.5,
@@ -54,13 +54,13 @@ class Settings:
 
         gateway_probabilities_method = settings.get('gateway_probabilities_method', None)
         if gateway_probabilities_method is not None:
-            gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.from_str(gateway_probabilities_method)
+            gateway_probabilities_method = GatewayProbabilitiesMethod.from_str(gateway_probabilities_method)
 
         mining_algorithm = settings.get('mining_algorithm', None)
         if mining_algorithm is None:
             mining_algorithm = settings.get('mining_alg', None)  # legacy key support
         if mining_algorithm is not None:
-            mining_algorithm = StructureMiningAlgorithm.from_str(mining_algorithm)
+            mining_algorithm = ProcessModelDiscoveryAlgorithm.from_str(mining_algorithm)
         if mining_algorithm is None:
             print_warning("No mining algorithm specified.")
             return None
@@ -127,7 +127,7 @@ class StructureMiner:
 
     def __init__(
             self,
-            mining_algorithm: StructureMiningAlgorithm,
+            mining_algorithm: ProcessModelDiscoveryAlgorithm,
             xes_path: Path,
             output_model_path: Path,
             concurrency: Optional[float] = None,
@@ -140,9 +140,9 @@ class StructureMiner:
         self.output_model_path = output_model_path
         self.mining_algorithm = mining_algorithm
 
-        if mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_2:
+        if mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
             self.concurrency = concurrency
-        elif mining_algorithm is StructureMiningAlgorithm.SPLIT_MINER_3:
+        elif mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
             self.eta = eta
             self.epsilon = epsilon
             self.prioritize_parallelism = prioritize_parallelism
@@ -153,9 +153,9 @@ class StructureMiner:
     def run(self):
         miner = self.mining_algorithm
 
-        if miner is StructureMiningAlgorithm.SPLIT_MINER_2:
+        if miner is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
             self._sm2_miner(self.xes_path, self.concurrency)
-        elif miner is StructureMiningAlgorithm.SPLIT_MINER_3:
+        elif miner is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
             self._sm3_miner(self.xes_path, self.eta, self.epsilon, self.prioritize_parallelism,
                             self.replace_or_joins)
         else:

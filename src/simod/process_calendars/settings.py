@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from simod.settings.common_settings import Metric
-from simod.settings.control_flow_settings import GatewayProbabilitiesDiscoveryMethod
+from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.simod_settings import SimodSettings
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 
@@ -113,7 +113,7 @@ class PipelineSettings:
 
     # This one is taken from the structure settings, because it's not relevant to calendars
     # but is required for parameters extraction
-    gateway_probabilities_method: Optional[GatewayProbabilitiesDiscoveryMethod]
+    gateway_probabilities_method: Optional[GatewayProbabilitiesMethod]
 
     case_arrival: CalendarSettings
     resource_profiles: CalendarSettings
@@ -124,7 +124,7 @@ class PipelineSettings:
             initial_settings: CalendarOptimizationSettings,
             output_dir: Path,
             model_path: Path,
-            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
+            gateway_probabilities_method: GatewayProbabilitiesMethod
     ) -> 'PipelineSettings':
         # Case arrival
 
@@ -208,7 +208,7 @@ class PipelineSettings:
             data: dict,
             output_dir: Path,
             model_path: Path,
-            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod) -> 'PipelineSettings':
+            gateway_probabilities_method: GatewayProbabilitiesMethod) -> 'PipelineSettings':
         case_arrival_settings = CalendarSettings.from_hyperopt_option(data['case_arrival'])
 
         resource_profiles_settings = CalendarSettings.from_hyperopt_option(data['resource_profiles'])

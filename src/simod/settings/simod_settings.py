@@ -5,7 +5,7 @@ import yaml
 from pydantic import BaseModel
 
 from .common_settings import CommonSettings
-from .control_flow_settings import StructureSettings
+from .control_flow_settings import ControlFlowSettings
 from .extraneous_delays_settings import ExtraneousDelaysSettings
 from .preprocessing_settings import PreprocessingSettings
 from .temporal_settings import CalendarsSettings
@@ -24,7 +24,7 @@ class SimodSettings(BaseModel):
 
     common: CommonSettings
     preprocessing: PreprocessingSettings
-    structure: StructureSettings
+    structure: ControlFlowSettings
     calendars: CalendarsSettings
     extraneous_activity_delays: Union[ExtraneousDelaysSettings, None] = None
 
@@ -38,7 +38,7 @@ class SimodSettings(BaseModel):
         return SimodSettings(
             common=CommonSettings.default(),
             preprocessing=PreprocessingSettings.default(),
-            structure=StructureSettings.default(),
+            structure=ControlFlowSettings(),
             calendars=CalendarsSettings.default(),
             extraneous_activity_delays=ExtraneousDelaysSettings.default()
         )
@@ -49,7 +49,7 @@ class SimodSettings(BaseModel):
 
         common_settings = CommonSettings.from_dict(config['common'])
         preprocessing_settings = PreprocessingSettings.from_dict(config['preprocessing'])
-        structure_settings = StructureSettings.from_dict(config['structure'])
+        structure_settings = ControlFlowSettings.from_dict(config['structure'])
         calendars_settings = CalendarsSettings.from_dict(config['calendars'])
         extraneous_activity_delays_settings = ExtraneousDelaysSettings.from_dict(
             config.get('extraneous_activity_delays'))
