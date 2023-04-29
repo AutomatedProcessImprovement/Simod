@@ -8,9 +8,7 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from networkx import DiGraph
-from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
-from pix_utils.log_ids import EventLogIDs
+from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset, create_folder
 
 from .miner import StructureMiner
 from .settings import HyperoptIterationParams
@@ -25,14 +23,17 @@ from ..utilities import hyperopt_step
 
 
 class StructureOptimizer:
-    _event_log: EventLog
-    _log_train: pd.DataFrame
-    _log_validation: pd.DataFrame
-    _log_ids: EventLogIDs
-    _train_log_path: Path
-    _output_dir: Path
-    _process_graph: Optional[DiGraph]
-
+    # Event log with train/test partitions
+    event_log: EventLog
+    # Configuration settings
+    settings: ControlFlowSettings
+    # Root directory for the output files
+    output_dir: Path
+    # Path to the discovered process model
+    model_path: Optional[Path]
+    # Gateway probabilities
+    gateway_probabilities: Optional[list]
+    # Quality measure of each hyperopt iteration
     evaluation_measurements: pd.DataFrame
 
     def __init__(
@@ -42,41 +43,41 @@ class StructureOptimizer:
             base_dir: Path,
             model_path: Optional[Path] = None,
     ):
-        self._event_log = event_log
-        self._settings = settings
-        self._model_path = model_path
+        # Save parameters
+        self.event_log = event_log
+        self.settings = settings
+        # Create and save output directoy path
+        self.output_dir = base_dir / get_random_folder_id(prefix='control-flow')
+        create_folder(self.output_dir)
+        # Save model path and read activities-IDs map if it exists
+        self.model_path = model_path
         self._process_graph = BPMNReaderWriter(model_path).as_graph() if model_path else None
-        self._log_ids = event_log.log_ids
+        # Initialize table to store quality measures
+        self.evaluation_measurements = pd.DataFrame(columns=[
+            'value', 'metric', 'status', 'gateway_probabilities', 'epsilon',
+            'eta', 'prioritize_parallelism', 'replace_or_joins', 'output_dir'
+        ])
 
-        self._log_train = event_log.train_partition
-        self._log_validation = event_log.validation_partition
-
-        self._output_dir = base_dir / get_random_folder_id(prefix='structure_')
-        self._output_dir.mkdir(parents=True, exist_ok=True)
-
-        self._train_log_path = self._output_dir / (event_log.process_name + '.xes')
-
-        self.evaluation_measurements = pd.DataFrame(
-            columns=['value', 'metric', 'status', 'gateway_probabilities', 'epsilon', 'eta', 'prioritize_parallelism',
-                     'replace_or_joins', 'output_dir'])
-
+        # If needed, create path to export training log (XES format) for SplitMiner
+        self._train_log_path = self.output_dir / (event_log.process_name + '.xes') if self.model_path is None else None
+        # Instantiate trials for hyper-optimization process
         self._bayes_trials = Trials()
 
     def _optimization_objective(self, hyperopt_iteration_dict: dict):
         print_subsection("Structure Optimization Trial")
 
         # current trial folder
-        output_dir = self._output_dir / get_random_folder_id(prefix='structure_trial_')
+        output_dir = self.output_dir / get_random_folder_id(prefix='structure_trial_')
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # casting a dictionary provided by hyperopt to PipelineSettings for convenience
         hyperopt_iteration_params = HyperoptIterationParams.from_hyperopt_dict(
             hyperopt_dict=hyperopt_iteration_dict,
-            optimization_metric=self._settings.optimization_metric,
-            mining_algorithm=self._settings.mining_algorithm,
-            model_path=self._model_path,
+            optimization_metric=self.settings.optimization_metric,
+            mining_algorithm=self.settings.mining_algorithm,
+            model_path=self.model_path,
             output_dir=output_dir,
-            project_name=self._event_log.process_name,
+            project_name=self.event_log.process_name,
         )
         print_message(f'Parameters: {hyperopt_iteration_params}', capitalize=False)
 
@@ -96,7 +97,7 @@ class StructureOptimizer:
             else:
                 print_step('Model is provided, skipping SplitMiner execution')
                 # We copy the model mostly for debugging purposes, so we have the model always in the output folder
-                shutil.copy(self._model_path, model_path)
+                shutil.copy(self.model_path, model_path)
         except Exception as e:
             print_message(f'Process Discovery failed: {e}')
             status = STATUS_FAIL
@@ -114,7 +115,7 @@ class StructureOptimizer:
         # simulation
         status, result = hyperopt_step(status, self._simulate_undifferentiated,
                                        hyperopt_iteration_params,
-                                       self._settings.num_evaluations_per_iteration,
+                                       self.settings.num_evaluations_per_iteration,
                                        json_path)
         evaluation_measurements = result if status == STATUS_OK else []
 
@@ -127,27 +128,27 @@ class StructureOptimizer:
 
         return response
 
-    def run(self) -> Tuple[HyperoptIterationParams, Path, list, Path]:
+    def run(self) -> Tuple[HyperoptIterationParams, Path]:
         """
         Run Control-Flow & Gateway Probabilities discovery
         :return: Tuple of the best settings, the path to the best model and the list of evaluation measurements.
         """
         # Check if model already provided
-        model_is_provided = self._model_path is not None
+        need_to_discover_model = self.model_path is None
         # Define search space
         search_space = self._define_search_space(
-            settings=self._settings,
-            discover_model=not model_is_provided
+            settings=self.settings,
+            discover_model=need_to_discover_model
         )
         # If needed, write training event log to xes (SplitMiner needs XES as input)
-        if not model_is_provided:
-            self._event_log.train_to_xes(self._train_log_path)
+        if need_to_discover_model:
+            self.event_log.train_to_xes(self._train_log_path)
         # Launch optimization process
         best_hyperopt_params = fmin(
             fn=self._optimization_objective,
             space=search_space,
             algo=tpe.suggest,
-            max_evals=self._settings.max_evaluations,
+            max_evals=self.settings.max_evaluations,
             trials=self._bayes_trials,
             show_progressbar=False
         )
@@ -159,24 +160,25 @@ class StructureOptimizer:
         assert best_model_path.exists(), f'Best model path {best_model_path} does not exist'
         best_settings = HyperoptIterationParams.from_hyperopt_dict(
             hyperopt_dict=best_hyperopt_params,
-            optimization_metric=self._settings.optimization_metric,
-            mining_algorithm=self._settings.mining_algorithm,
-            model_path=self._model_path if model_is_provided else None,
+            optimization_metric=self.settings.optimization_metric,
+            mining_algorithm=self.settings.mining_algorithm,
+            model_path=None if need_to_discover_model else self.model_path,
             output_dir=best_model_path.parent,
-            project_name=self._event_log.process_name,
+            project_name=self.event_log.process_name,
         )
-
+        # Save discovered gateway probabilities
         best_parameters_path = best_model_path.parent / 'simulation_parameters.json'
-        best_gateway_probabilities = json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
-
+        self.gateway_probabilities = json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
+        # Save best model path
+        self.model_path = best_model_path
         # Save evaluation measurements
         self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
-        self.evaluation_measurements.to_csv(self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
-
-        return best_settings, best_model_path, best_gateway_probabilities, best_parameters_path
+        self.evaluation_measurements.to_csv(self.output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
+        # Return settings of the best iteration and path to the best simulation parameters
+        return best_settings, best_parameters_path
 
     def cleanup(self):
-        remove_asset(self._output_dir)
+        remove_asset(self.output_dir)
 
     @staticmethod
     def _define_search_space(settings: ControlFlowSettings, discover_model: bool) -> dict:
@@ -286,8 +288,8 @@ class StructureOptimizer:
         # Below, we mine simulation parameters with undifferentiated resources, because we optimize the structure,
         # not calendars. So, we do not need to differentiate resources.
         simulation_parameters = mine_default_24_7(
-            self._log_train,
-            self._log_ids,
+            self.event_log.train_partition,
+            self.event_log.log_ids,
             settings.model_path,
             process_graph,
             settings.gateway_probabilities_method)
@@ -302,18 +304,18 @@ class StructureOptimizer:
             settings: HyperoptIterationParams,
             simulation_repetitions: int,
             json_path: Path):
-        self._log_validation['source'] = 'log'
-        self._log_validation['run_num'] = 0
-        self._log_validation['role'] = 'SYSTEM'
+        self.event_log.validation_partition['source'] = 'log'
+        self.event_log.validation_partition['run_num'] = 0
+        self.event_log.validation_partition['role'] = 'SYSTEM'
 
         return simulate_and_evaluate(
             model_path=settings.model_path,
             parameters_path=json_path,
             output_dir=settings.output_dir,
-            simulation_cases=self._log_validation[self._log_ids.case].nunique(),
-            simulation_start_time=self._log_validation[self._log_ids.start_time].min(),
-            validation_log=self._log_validation,
-            validation_log_ids=self._log_ids,
-            metrics=[self._settings.optimization_metric],
+            simulation_cases=self.event_log.validation_partition[self.event_log.log_ids.case].nunique(),
+            simulation_start_time=self.event_log.validation_partition[self.event_log.log_ids.start_time].min(),
+            validation_log=self.event_log.validation_partition,
+            validation_log_ids=self.event_log.log_ids,
+            metrics=[self.settings.optimization_metric],
             num_simulations=simulation_repetitions,
         )

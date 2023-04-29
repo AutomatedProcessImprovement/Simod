@@ -1,5 +1,3 @@
-import os.path
-
 import pytest
 from pix_utils.log_ids import DEFAULT_XES_IDS
 
@@ -43,7 +41,7 @@ def test_structure_optimizer(entry_point, test_data):
         base_dir=base_dir,
         model_path=None
     )
-    result, _, _, _ = optimizer.run()
+    result, _ = optimizer.run()
 
     assert type(result) is HyperoptIterationParams
     assert result.output_dir is not None
@@ -80,7 +78,7 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
         base_dir=base_dir,
         model_path=model_path
     )
-    result, best_model_path, _, _ = optimizer.run()
+    result, _ = optimizer.run()
 
-    assert result.model_path == best_model_path
-    assert best_model_path == model_path
+    assert result.model_path == optimizer.model_path
+    assert optimizer.model_path == model_path

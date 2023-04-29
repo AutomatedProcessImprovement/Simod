@@ -5,8 +5,7 @@ from typing import Optional, Tuple
 
 import pandas as pd
 from extraneous_activity_delays.config import SimulationModel
-from networkx import DiGraph
-from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id
+from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, create_folder
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
@@ -31,7 +30,6 @@ class Optimizer:
     _settings: SimodSettings
     _event_log: EventLog
     _output_dir: Path
-    _process_graph: Optional[DiGraph]
 
     _structure_optimizer: Optional[StructureOptimizer]
     _calendar_optimizer: Optional[CalendarOptimizer]
@@ -45,7 +43,7 @@ class Optimizer:
         # Save SIMOD settings
         self._settings = settings
         # Read event log from path if not provided
-        # TODO always read event log inside of SIMOD main pipeline
+        # TODO always receive pd.DataFrame and splitting always in SIMOD
         if event_log is None:
             self._event_log = EventLog.from_path(
                 path=settings.common.log_path,
@@ -58,33 +56,28 @@ class Optimizer:
         # Create output directory if not provided
         if output_dir is None:
             self._output_dir = PROJECT_DIR / 'outputs' / get_random_folder_id()
+            create_folder(self._output_dir)
         else:
             self._output_dir = output_dir
-        # Read process graph if model is provided
-        # TODO don't process the graph here (actually we probably don't need the graph)
-        if self._settings.common.model_path is not None:
-            self._process_graph = BPMNReaderWriter(self._settings.common.model_path).as_graph()
-        else:
-            self._process_graph = None
 
-    def _optimize_structure(self) -> Tuple[StructureHyperoptIterationParams, Path, list, Path]:
+    def _optimize_structure(self) -> Tuple[StructureHyperoptIterationParams, Path]:
         """Control-flow and Gateway Probabilities discovery."""
         # Instantiate class to perform the optimization of the control-flow discovery
         self._structure_optimizer = StructureOptimizer(
             self._event_log,
-            self._settings.structure,
+            self._settings.control_flow,
             base_dir=self._output_dir,
             model_path=self._settings.common.model_path
         )
         # Run optimization process
-        best_pipeline_settings, model_path, gateway_probabilities, parameters_path = self._structure_optimizer.run()
+        best_pipeline_settings, parameters_path = self._structure_optimizer.run()
         # Return results
-        return best_pipeline_settings, model_path, gateway_probabilities, parameters_path
+        return best_pipeline_settings, parameters_path
 
     def _optimize_calendars(
             self,
             structure_settings: StructureMinerSettings,
-            model_path: Optional[Path],
+            model_path: Path,
             gateway_probabilities: list,
             simulation_model: Optional[SimulationModel] = None,
     ) -> Tuple[CalendarOptimizationSettings, CalendarPipelineSettings]:
@@ -94,13 +87,15 @@ class Optimizer:
             if simulation_model is not None \
             else None
 
+        process_graph = BPMNReaderWriter(model_path).as_graph()
+
         optimizer = CalendarOptimizer(
             calendar_settings,
             self._event_log,
             train_model_path=model_path,
             gateway_probabilities=gateway_probabilities,
             gateway_probabilities_method=structure_settings.gateway_probabilities_method,
-            process_graph=self._process_graph,
+            process_graph=process_graph,
             event_distribution=event_distribution,
         )
 
@@ -190,6 +185,7 @@ class Optimizer:
 
         print_message(f'Mining calendars with settings {settings.to_dict()}')
 
+        process_graph = BPMNReaderWriter(model_path).as_graph()
         parameters = mine_parameters(
             case_arrival_settings=settings.case_arrival,
             resource_profiles_settings=settings.resource_profiles,
@@ -197,7 +193,7 @@ class Optimizer:
             log_ids=self._event_log.log_ids,
             model_path=model_path,
             gateways_probability_method=settings.gateway_probabilities_method,
-            process_graph=self._process_graph,
+            process_graph=process_graph,
         )
 
         if simulation_model is not None:
@@ -215,11 +211,12 @@ class Optimizer:
         """
         # Create folder for the best result
         best_result_dir = self._output_dir / 'best_result'
-        best_result_dir.mkdir(parents=True, exist_ok=True)
+        create_folder(best_result_dir)
 
         # --- Control-Flow Discovery --- #
         print_section('Structure optimization')
-        structure_pipeline_settings, model_path, gateway_probabilities, parameters_path = self._optimize_structure()
+        structure_pipeline_settings, parameters_path = self._optimize_structure()
+        model_path = self._structure_optimizer.model_path
 
         # --- Extraneous Delays Discovery --- #
         simulation_model = None
@@ -230,7 +227,7 @@ class Optimizer:
             simulation_model, model_path, parameters_path = discover_extraneous_delay_timers(
                 self._event_log.train_validation_partition,
                 self._event_log.log_ids,
-                model_path,
+                self._structure_optimizer.model_path,
                 parameters,
                 self._settings.extraneous_activity_delays.optimization_metric,
                 base_dir=best_result_dir,
@@ -239,12 +236,9 @@ class Optimizer:
                 max_alpha=50,
             )
 
-        if not self._process_graph:
-            self._process_graph = BPMNReaderWriter(model_path).as_graph()
-
         structure_miner_settings = StructureMinerSettings(
             gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
-            mining_algorithm=self._settings.structure.mining_algorithm,
+            mining_algorithm=self._settings.control_flow.mining_algorithm,
             epsilon=structure_pipeline_settings.epsilon,
             eta=structure_pipeline_settings.eta,
             concurrency=structure_pipeline_settings.concurrency,
@@ -255,9 +249,10 @@ class Optimizer:
         # --- Congestion Model Discovery --- #
         print_section('Calendars optimization')
         calendar_optimizer_settings, calendar_pipeline_settings = self._optimize_calendars(
-            structure_miner_settings, model_path, gateway_probabilities, simulation_model)
+            structure_miner_settings, model_path, self._structure_optimizer.gateway_probabilities, simulation_model)
 
-        if model_path is None:
+        # --- Final evaluation of best BPS Model --- #
+        if self._settings.common.model_path is None:
             print_section('Mining structure using the best hyperparameters')
             model_path, structure_miner_settings = self._mine_structure(structure_miner_settings, best_result_dir)
         else:
@@ -270,7 +265,6 @@ class Optimizer:
         parameters_path, calendars_settings = self._mine_calendars(
             calendar_pipeline_settings, model_path, best_result_dir, simulation_model)
 
-        # --- Final evaluation of best BPS Model --- #
         print_section('Evaluation')
         simulation_dir = best_result_dir / 'simulation'
         simulation_dir.mkdir(parents=True)
@@ -280,7 +274,7 @@ class Optimizer:
         self._clean_up()
 
         print_section('Exporting canonical model')
-        _export_canonical_model(best_result_dir, structure_miner_settings, self._settings.structure,
+        _export_canonical_model(best_result_dir, structure_miner_settings, self._settings.control_flow,
                                 calendars_settings, calendar_optimizer_settings)
 
         self._settings.to_yaml(best_result_dir)
@@ -304,7 +298,7 @@ def _export_canonical_model(
     }
 
     canon = {
-        'structure': structure,
+        'control_flow': structure,
         'calendars': calendars,
     }
 

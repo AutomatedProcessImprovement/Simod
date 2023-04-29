@@ -1,8 +1,8 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
 import yaml
-from pydantic import BaseModel
 
 from .common_settings import CommonSettings
 from .control_flow_settings import ControlFlowSettings
@@ -17,14 +17,15 @@ BPMN_NAMESPACE_URI = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
 PROJECT_DIR = get_project_dir()
 
 
-class SimodSettings(BaseModel):
+@dataclass
+class SimodSettings:
     """
-    Simod configuration containing all the settings for structure and calendars optimizations.
+    Simod configuration containing all the settings for ControlFlow and calendars optimizations.
     """
 
     common: CommonSettings
     preprocessing: PreprocessingSettings
-    structure: ControlFlowSettings
+    control_flow: ControlFlowSettings
     calendars: CalendarsSettings
     extraneous_activity_delays: Union[ExtraneousDelaysSettings, None] = None
 
@@ -38,7 +39,7 @@ class SimodSettings(BaseModel):
         return SimodSettings(
             common=CommonSettings.default(),
             preprocessing=PreprocessingSettings.default(),
-            structure=ControlFlowSettings(),
+            control_flow=ControlFlowSettings(),
             calendars=CalendarsSettings.default(),
             extraneous_activity_delays=ExtraneousDelaysSettings.default()
         )
@@ -49,25 +50,25 @@ class SimodSettings(BaseModel):
 
         common_settings = CommonSettings.from_dict(config['common'])
         preprocessing_settings = PreprocessingSettings.from_dict(config['preprocessing'])
-        structure_settings = ControlFlowSettings.from_dict(config['structure'])
+        control_flow_settings = ControlFlowSettings.from_dict(config['control_flow'])
         calendars_settings = CalendarsSettings.from_dict(config['calendars'])
         extraneous_activity_delays_settings = ExtraneousDelaysSettings.from_dict(
             config.get('extraneous_activity_delays'))
 
         # If the model is provided, we don't execute SplitMiner. Then, ignore the mining_algorithm setting
         if common_settings.model_path is not None:
-            print_notice(f'Ignoring structure settings because the model is provided')
-            structure_settings.mining_algorithm = None
-            structure_settings.epsilon = None
-            structure_settings.eta = None
-            structure_settings.prioritize_parallelism = None
-            structure_settings.replace_or_joins = None
-            structure_settings.concurrency = None
+            print_notice(f'Ignoring control-flow settings because the model is provided')
+            control_flow_settings.mining_algorithm = None
+            control_flow_settings.epsilon = None
+            control_flow_settings.eta = None
+            control_flow_settings.prioritize_parallelism = None
+            control_flow_settings.replace_or_joins = None
+            control_flow_settings.concurrency = None
 
         return SimodSettings(
             common=common_settings,
             preprocessing=preprocessing_settings,
-            structure=structure_settings,
+            control_flow=control_flow_settings,
             calendars=calendars_settings,
             extraneous_activity_delays=extraneous_activity_delays_settings
         )
@@ -88,7 +89,7 @@ class SimodSettings(BaseModel):
             'version': 2,
             'common': self.common.to_dict(),
             'preprocessing': self.preprocessing.to_dict(),
-            'structure': self.structure.to_dict(),
+            'control_flow': self.control_flow.to_dict(),
             'calendars': self.calendars.to_dict(),
         }
 

@@ -18,7 +18,7 @@ common:
     - circadian_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   optimization_metric: dl
   max_evaluations: 1
   mining_algorithm: sm3

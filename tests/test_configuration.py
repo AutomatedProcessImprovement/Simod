@@ -13,7 +13,7 @@ common:
     - absolute_hourly_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   max_evaluations: 2
   mining_algorithm: sm3
   concurrency:

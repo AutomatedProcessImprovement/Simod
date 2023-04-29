@@ -45,7 +45,7 @@ def test_optimizer(entry_point, test_case):
         calendar_settings,
         event_log,
         train_model_path=model_path,
-        gateway_probabilities_method=settings.structure.gateway_probabilities
+        gateway_probabilities_method=settings.control_flow.gateway_probabilities
     )
     result = optimizer.run()
 

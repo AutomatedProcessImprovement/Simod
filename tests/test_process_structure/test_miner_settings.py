@@ -49,26 +49,26 @@ settings_interval_values_sm3 = {
 test_cases = [
     {
         'name': "Single values SM2",
-        'control-flow': settings_single_values_sm2
+        'control_flow': settings_single_values_sm2
     },
     {
         'name': "Intervals SM2",
-        'control-flow': settings_interval_values_sm2
+        'control_flow': settings_interval_values_sm2
     },
     {
         'name': "Single values SM3",
-        'control-flow': settings_single_values_sm3
+        'control_flow': settings_single_values_sm3
     },
     {
         'name': "Intervals SM3",
-        'control-flow': settings_interval_values_sm3
+        'control_flow': settings_interval_values_sm3
     },
 ]
 
 
 @pytest.mark.parametrize('test_data', test_cases, ids=list(map(lambda x: x['name'], test_cases)))
 def test_miner_settings(test_data: dict):
-    settings = ControlFlowSettings.from_dict(test_data['control-flow'])
+    settings = ControlFlowSettings.from_dict(test_data['control_flow'])
 
     if test_data['name'] == "Single values SM2":
         assert settings.max_evaluations == settings_single_values_sm2['max_evaluations']
