@@ -62,11 +62,14 @@ class Optimizer:
 
     def _optimize_structure(self) -> Tuple[StructureHyperoptIterationParams, Path]:
         """Control-flow and Gateway Probabilities discovery."""
+        # Create folder to output control-flow optimization files
+        control_flow_dir = self._output_dir / "control-flow"
+        create_folder(control_flow_dir)
         # Instantiate class to perform the optimization of the control-flow discovery
         self._structure_optimizer = StructureOptimizer(
             self._event_log,
             self._settings.control_flow,
-            base_dir=self._output_dir,
+            base_directory=control_flow_dir,
             model_path=self._settings.common.model_path
         )
         # Run optimization process

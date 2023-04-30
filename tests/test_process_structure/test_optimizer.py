@@ -1,4 +1,5 @@
 import pytest
+from pix_utils.filesystem.file_manager import get_random_folder_id, create_folder
 from pix_utils.log_ids import DEFAULT_XES_IDS
 
 from simod.event_log.event_log import EventLog
@@ -30,7 +31,8 @@ structure_optimizer_test_data = [
 @pytest.mark.parametrize('test_data', structure_optimizer_test_data,
                          ids=[test_data['name'] for test_data in structure_optimizer_test_data])
 def test_structure_optimizer(entry_point, test_data):
-    base_dir = PROJECT_DIR / 'outputs'
+    base_dir = PROJECT_DIR / 'outputs' / get_random_folder_id(prefix='test_control_flow_optimizer_')
+    create_folder(base_dir)
     log_path = entry_point / 'PurchasingExample.xes'
     event_log = EventLog.from_path(log_path, DEFAULT_XES_IDS)
 
@@ -38,7 +40,7 @@ def test_structure_optimizer(entry_point, test_data):
     optimizer = StructureOptimizer(
         event_log=event_log,
         settings=settings,
-        base_dir=base_dir,
+        base_directory=base_dir,
         model_path=None
     )
     result, _ = optimizer.run()
@@ -75,7 +77,7 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
     optimizer = StructureOptimizer(
         event_log=event_log,
         settings=settings,
-        base_dir=base_dir,
+        base_directory=base_dir,
         model_path=model_path
     )
     result, _ = optimizer.run()
