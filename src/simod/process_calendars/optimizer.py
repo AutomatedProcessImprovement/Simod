@@ -60,7 +60,7 @@ class CalendarOptimizer:
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluation_measurements = pd.DataFrame(
-            columns=['value', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
+            columns=['distance', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
 
         self._bayes_trials = Trials()
 
@@ -147,7 +147,7 @@ class CalendarOptimizer:
 
         # Save evaluation measurements
         assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
-        self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
+        self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
         self.evaluation_measurements.to_csv(self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
 
         return best_settings
@@ -197,14 +197,14 @@ class CalendarOptimizer:
         if status == STATUS_OK:
             for measurement in evaluation_measurements:
                 values = {
-                    'value': measurement['value'],
+                    'distance': measurement['distance'],
                     'metric': measurement['metric'],
                 }
                 values = values | data
                 self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
             values = {
-                'value': 0,
+                'distance': 0,
                 'metric': self._calendar_optimizer_settings.optimization_metric,
             }
             values = values | data
@@ -222,7 +222,7 @@ class CalendarOptimizer:
         }
 
         if status == STATUS_OK:
-            distance = np.mean([x['value'] for x in evaluation_measurements])
+            distance = np.mean([x['distance'] for x in evaluation_measurements])
             loss = distance
             response['loss'] = loss
 

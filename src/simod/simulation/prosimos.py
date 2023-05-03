@@ -243,6 +243,6 @@ def _evaluate_logs_using_metrics(arguments: Tuple) -> List[dict]:
     measurements = []
     for metric in metrics:
         value = compute_metric(metric, validation_log, validation_log_ids, simulated_log, simulated_log_ids)
-        measurements.append({'run_num': rep, 'metric': metric, 'value': value})
+        measurements.append({'run_num': rep, 'metric': metric, 'distance': value})
 
     return measurements

@@ -66,7 +66,7 @@ class StructureOptimizer:
         self.gateway_probabilities = []
         # Initialize table to store quality measures
         self.evaluation_measurements = pd.DataFrame(columns=[
-            'value', 'metric', 'status', 'gateway_probabilities', 'epsilon',
+            'distance', 'metric', 'status', 'gateway_probabilities', 'epsilon',
             'eta', 'prioritize_parallelism', 'replace_or_joins', 'output_dir'
         ])
 
@@ -113,14 +113,13 @@ class StructureOptimizer:
 
         json_path = result if status is STATUS_OK else None
 
-        # Simulate model of this iteration
-        status, result = hyperopt_step(status, self._simulate_undifferentiated,
-                                       hyperopt_iteration_params,
-                                       self.settings.num_evaluations_per_iteration,
-                                       json_path)
-        evaluation_measurements = result if status == STATUS_OK else []
+        # Simulate BPS model of this iteration and evaluate its quality
+        status, evaluation_measurements = hyperopt_step(status, self._simulate_undifferentiated,
+                                                        hyperopt_iteration_params,
+                                                        self.settings.num_evaluations_per_iteration,
+                                                        json_path)
 
-        # Evaluate quality of this iteration
+        # Define the response of this iteration
         status, response = self._define_response(status, evaluation_measurements, hyperopt_iteration_params)
         print(f"Control-flow iteration response: {response}")
 
@@ -167,7 +166,7 @@ class StructureOptimizer:
         # Save best model path
         self.model_path = best_model_path
         # Save evaluation measurements
-        self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
+        self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
         self.evaluation_measurements.to_csv(self.base_directory / "evaluation_measures.csv", index=False)
         # Return settings of the best iteration and path to the best simulation parameters
         return best_settings, best_parameters_path
@@ -227,12 +226,18 @@ class StructureOptimizer:
             evaluation_measurements: list,
             pipeline_settings: HyperoptIterationParams,
     ) -> Tuple[str, dict]:
-        distance = np.mean([x['value'] for x in evaluation_measurements])
-        status = status if distance > 0 else STATUS_FAIL
-
+        # Compute mean distance if status is OK
+        if status is STATUS_OK:
+            distance = np.mean([x['distance'] for x in evaluation_measurements])
+            # Change status if distance value is negative
+            if distance < 0.0:
+                status = STATUS_FAIL
+        else:
+            distance = 1.0
+        # Define response dict
         response = {
-            'loss': distance,
-            'status': status,
+            'loss': distance,  # Loss value for the fmin function
+            'status': status,  # Status of the optimization iteration
             'output_dir': pipeline_settings.output_dir,
             'model_path': pipeline_settings.model_path,
         }
@@ -250,14 +255,14 @@ class StructureOptimizer:
         if status == STATUS_OK:
             for measurement in evaluation_measurements:
                 values = {
-                    'value': measurement['value'],
+                    'distance': measurement['distance'],
                     'metric': measurement['metric'],
                 }
                 values = values | optimization_parameters
                 self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
             values = {
-                'value': 0,
+                'distance': 0,
                 'metric': Metric.DL,
             }
             values = values | optimization_parameters
