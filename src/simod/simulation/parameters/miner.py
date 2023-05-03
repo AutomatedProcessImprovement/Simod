@@ -15,7 +15,7 @@ from simod.simulation.calendar_discovery import case_arrival, resource as resour
 from simod.simulation.parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
 from simod.simulation.parameters.calendars import Calendar
 from simod.simulation.parameters.distributions import Distribution
-from simod.simulation.parameters.gateway_probabilities import mine_gateway_probabilities
+from simod.simulation.parameters.gateway_probabilities import compute_gateway_probabilities
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
     pd_interval_to_interval
 from simod.simulation.parameters.resource_profiles import ResourceProfile
@@ -38,7 +38,7 @@ def mine_parameters(
     if gateway_probabilities is None:
         assert gateways_probability_method is not None, \
             "Either gateway probabilities or a method to mine them must be provided."
-        gateway_probabilities = mine_gateway_probabilities(log, log_ids, model_path, gateways_probability_method)
+        gateway_probabilities = compute_gateway_probabilities(log, log_ids, model_path, gateways_probability_method)
 
     if not process_graph:
         bpmn_reader = BPMNReaderWriter(model_path)
@@ -128,7 +128,7 @@ def mine_default_24_7(
 
     arrival_calendar = calendar_24_7
 
-    gateway_probabilities_ = mine_gateway_probabilities(log, log_ids, bpmn_path, gateways_probabilities_method)
+    gateway_probabilities_ = compute_gateway_probabilities(log, log_ids, bpmn_path, gateways_probabilities_method)
 
     activity_duration_distributions = _activity_duration_distributions_undifferentiated(
         log, log_ids, process_graph, calendar_24_7)

@@ -24,13 +24,17 @@ def test_mine_default_24_7(entry_point, log_name):
     process_graph = bpmn_reader.as_graph()
     gateways_probability_type = GatewayProbabilitiesMethod.EQUIPROBABLE
 
-    result = mine_default_24_7(
-        log, log_ids, model_path, process_graph, gateways_probability_type)
+    # Discover 24/7 with equiprobable paths
+    result = mine_default_24_7(log, log_ids, model_path, process_graph, gateways_probability_type)
 
     assert result is not None
     assert result.resource_calendars is not None
     assert result.task_resource_distributions is not None
     assert result.gateway_branching_probabilities is not None
+    for gateway in result.gateway_branching_probabilities:
+        total_paths = len(gateway.outgoing_paths)
+        for path in gateway.outgoing_paths:
+            assert path.probability == 1.0 / total_paths
     assert result.resource_profiles is not None
     assert result.arrival_calendar is not None
     assert result.arrival_distribution is not None
