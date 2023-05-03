@@ -604,7 +604,7 @@ class BPMNGraph:
                 gateways_branching[e_id] = flow_arc_probability
         return gateways_branching
 
-    def compute_branching_probability_alternative_discovery(self, flow_arcs_frequency):
+    def discover_gateway_probabilities(self, flow_arcs_frequency):
         gateways_branching = dict()
         for e_id in self.element_info:
             if self.element_info[e_id].type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and len(
@@ -617,7 +617,7 @@ class BPMNGraph:
                 gateways_branching[e_id] = flow_arcs_probability
         return gateways_branching
 
-    def compute_branching_probability_alternative_equiprobable(self):
+    def compute_equiprobable_gateway_probabilities(self):
         gateways_branching = dict()
         for e_id in self.element_info:
             if self.element_info[e_id].type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and len(

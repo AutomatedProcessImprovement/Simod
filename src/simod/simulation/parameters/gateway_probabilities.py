@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from operator import itemgetter
 from pathlib import Path
 from typing import List
 from xml.etree import ElementTree
@@ -7,7 +6,7 @@ from xml.etree import ElementTree
 import pandas as pd
 from pix_utils.log_ids import EventLogIDs
 
-from simod.cli_formatter import print_notice, print_step
+from simod.cli_formatter import print_step
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
@@ -34,49 +33,30 @@ class GatewayProbabilities:
 
 
 def mine_gateway_probabilities(
-        log: pd.DataFrame,
+        event_log: pd.DataFrame,
         log_ids: EventLogIDs,
         bpmn_path: Path,
         gateways_probability_type: GatewayProbabilitiesMethod) -> List[GatewayProbabilities]:
+    print_step(f'Mining gateway probabilities with {gateways_probability_type}')
+    # Read BPMN model
     bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
-
-    # downstream functions work on list of traces instead of dataframe
-    log_records = log.to_dict('records')
-    cases = list(set([x[log_ids.case] for x in log_records]))
-    traces = []
-    for case in cases:
-        order_key = log_ids.start_time
-        trace = sorted(
-            list(filter(lambda x, case_=case: (x[log_ids.case] == case_),
-                        log_records)),
-            key=itemgetter(order_key))
-        traces.append(trace)
-
-    sequences = _discover_with_gateway_management(traces, log_ids, bpmn_graph, gateways_probability_type)
-
-    return _prosimos_gateways_probabilities(bpmn_path, sequences)
-
-
-def _discover_with_gateway_management(
-        log_traces: list,
-        log_ids: EventLogIDs,
-        bpmn_graph: BPMNGraph,
-        gate_management: GatewayProbabilitiesMethod) -> list:
-    if isinstance(gate_management, list) and len(gate_management) >= 1:
-        print_notice(
-            f'A list of gateway management options was provided: {gate_management}, taking the first option: {gate_management[0]}')
-        gate_management = gate_management[0]
-
-    print_step(f'Mining gateway probabilities with {gate_management}')
-    if gate_management is GatewayProbabilitiesMethod.EQUIPROBABLE:
-        gateways_branching = bpmn_graph.compute_branching_probability_alternative_equiprobable()
-    elif gate_management is GatewayProbabilitiesMethod.DISCOVERY:
-        arcs_frequencies = _compute_sequence_flow_frequencies(log_traces, log_ids, bpmn_graph)
-        gateways_branching = bpmn_graph.compute_branching_probability_alternative_discovery(arcs_frequencies)
+    # Discover gateway probabilities depending on the type
+    if gateways_probability_type is GatewayProbabilitiesMethod.EQUIPROBABLE:
+        gateways_branching = bpmn_graph.compute_equiprobable_gateway_probabilities()
+    elif gateways_probability_type is GatewayProbabilitiesMethod.DISCOVERY:
+        # Preprocess log: transform log to list of traces (list of activities)
+        traces = []
+        for _, events in event_log.groupby(log_ids.case):
+            traces += [events.sort_values([log_ids.start_time, log_ids.end_time])[log_ids.activity].tolist()]
+        # Discover the frequency of each gateway branch with replay
+        arcs_frequencies = _compute_sequence_flow_frequencies(traces, bpmn_graph)
+        gateways_branching = bpmn_graph.discover_gateway_probabilities(arcs_frequencies)
     else:
+        # Error, wrong method
         raise ValueError(
-            f'Only GatewayManagement.DISCOVERY and .EQUIPROBABLE are supported, got {gate_management}, '
-            f'{type(gate_management)}')
+            f'Only GatewayProbabilitiesMethod.DISCOVERY and GatewayProbabilitiesMethod.EQUIPROBABLE are supported, '
+            f'got {gateways_probability_type} ({type(gateways_probability_type)}).'
+        )
 
     sequences = []
     for gateway_id in gateways_branching:
@@ -84,14 +64,13 @@ def _discover_with_gateway_management(
             probability = gateways_branching[gateway_id][seqflow_id]
             sequences.append({'elementid': seqflow_id, 'prob': probability})
 
-    return sequences
+    return _prosimos_gateways_probabilities(bpmn_path, sequences)
 
 
-def _compute_sequence_flow_frequencies(log_traces: list, log_ids: EventLogIDs, bpmn_graph: BPMNGraph):
+def _compute_sequence_flow_frequencies(log_traces: list, bpmn_graph: BPMNGraph):
     flow_arcs_frequency = dict()
     for trace in log_traces:
-        task_sequence = [event[log_ids.activity] for event in trace]
-        bpmn_graph.replay_trace(task_sequence, flow_arcs_frequency)
+        bpmn_graph.replay_trace(trace, flow_arcs_frequency)
     return flow_arcs_frequency
 
 
