@@ -4,17 +4,16 @@ from typing import List, Tuple, Optional
 import pandas as pd
 from networkx import DiGraph
 from pix_utils.log_ids import EventLogIDs
+from pix_utils.statistics.distribution import get_best_fitting_distribution
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
 from simod.discovery import inter_arrival_distribution
-from simod.discovery.distribution import get_best_distribution
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import case_arrival, resource as resource_calendar
 from simod.simulation.parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
 from simod.simulation.parameters.calendars import Calendar
-from simod.simulation.parameters.distributions import Distribution
 from simod.simulation.parameters.gateway_probabilities import compute_gateway_probabilities
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
     pd_interval_to_interval
@@ -237,7 +236,7 @@ def _activity_duration_distributions_differentiated(
 
         # Computing the distribution
 
-        distribution = get_best_distribution(durations)
+        distribution = get_best_fitting_distribution(durations).to_prosimos_distribution()
 
         if activity not in activity_duration_distributions:
             activity_duration_distributions[activity] = {resource_: distribution}
@@ -332,7 +331,7 @@ def _activity_duration_distributions_pools(
             print_notice(f"No durations for activity {activity} and pool {pool_name}. "
                          f"Setting the activity duration distribution to fixed(0).")
 
-        distribution = get_best_distribution(durations)
+        distribution = get_best_fitting_distribution(durations).to_prosimos_distribution()
 
         if activity not in activity_duration_distributions:
             activity_duration_distributions[activity] = {pool_name: distribution}
@@ -376,7 +375,7 @@ def _activity_duration_distributions_undifferentiated(
             print_notice(f"No durations for activity {activity}. "
                          f"Setting the activity duration distribution to fixed(0).")
 
-        activity_duration_distribution = get_best_distribution(durations)
+        activity_duration_distribution = get_best_fitting_distribution(durations).to_prosimos_distribution()
 
         activity_duration_distributions[activity] = activity_duration_distribution
 
@@ -397,7 +396,10 @@ def _activity_duration_distributions_undifferentiated(
                 ActivityResourceDistribution(
                     activity_id=id_,
                     activity_resources_distributions=[
-                        ResourceDistribution(resource_id=name, distribution=Distribution.fixed(0))
+                        ResourceDistribution(resource_id=name, distribution={
+                            'distribution_name': 'fix',
+                            'distribution_params': [{'value': 0}]
+                        })
                     ]
                 )
             )
