@@ -1,16 +1,16 @@
 import copy
 import random
 import sys
-import xml.etree.ElementTree as ET
 from collections import deque
 from enum import Enum
 from pathlib import Path
 from typing import List
+from xml.etree import ElementTree
 
 import numpy as np
 
 from simod.cli_formatter import print_warning
-from simod.configuration import BPMN_NAMESPACE_URI
+from simod.settings.simod_settings import BPMN_NAMESPACE_URI
 
 
 class BPMNNodeType(Enum):
@@ -97,7 +97,7 @@ class BPMNGraph:
     @staticmethod
     def from_bpmn_path(model_path: Path):
         bpmn_element_ns = {'xmlns': BPMN_NAMESPACE_URI}
-        tree = ET.parse(model_path.absolute())
+        tree = ElementTree.parse(model_path.absolute())
         root = tree.getroot()
         to_extract = {'xmlns:task': BPMNNodeType.TASK,
                       'xmlns:startEvent': BPMNNodeType.START_EVENT,
@@ -604,7 +604,7 @@ class BPMNGraph:
                 gateways_branching[e_id] = flow_arc_probability
         return gateways_branching
 
-    def compute_branching_probability_alternative_discovery(self, flow_arcs_frequency):
+    def discover_gateway_probabilities(self, flow_arcs_frequency):
         gateways_branching = dict()
         for e_id in self.element_info:
             if self.element_info[e_id].type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and len(
@@ -617,7 +617,7 @@ class BPMNGraph:
                 gateways_branching[e_id] = flow_arcs_probability
         return gateways_branching
 
-    def compute_branching_probability_alternative_equiprobable(self):
+    def compute_equiprobable_gateway_probabilities(self):
         gateways_branching = dict()
         for e_id in self.element_info:
             if self.element_info[e_id].type in [BPMNNodeType.EXCLUSIVE_GATEWAY, BPMNNodeType.INCLUSIVE_GATEWAY] and len(

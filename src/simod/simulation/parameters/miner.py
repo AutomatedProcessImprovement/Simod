@@ -3,17 +3,14 @@ from typing import List, Tuple, Optional
 
 import pandas as pd
 from networkx import DiGraph
+from pix_utils.log_ids import EventLogIDs
+from pix_utils.statistics.distribution import get_best_fitting_distribution
+from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
+from simod.settings.temporal_settings import CalendarSettings, CalendarType
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
-from simod.configuration import (
-    GatewayProbabilitiesDiscoveryMethod,
-    CalendarType,
-    CalendarSettings,
-)
 from simod.discovery import inter_arrival_distribution
-from simod.discovery.distribution import get_best_distribution
-from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.calendar_discovery import (
     case_arrival,
     resource as resource_calendar,
@@ -23,8 +20,9 @@ from simod.simulation.parameters.activity_resources import (
     ResourceDistribution,
 )
 from simod.simulation.parameters.calendars import Calendar
-from simod.simulation.parameters.distributions import Distribution
-from simod.simulation.parameters.gateway_probabilities import mine_gateway_probabilities
+from simod.simulation.parameters.gateway_probabilities import (
+    compute_gateway_probabilities,
+)
 from simod.simulation.parameters.intervals import (
     Interval,
     intersect_intervals,
@@ -41,7 +39,7 @@ def mine_parameters(
     log: pd.DataFrame,
     log_ids: EventLogIDs,
     model_path: Path,
-    gateways_probability_method: Optional[GatewayProbabilitiesDiscoveryMethod] = None,
+    gateways_probability_method: Optional[GatewayProbabilitiesMethod] = None,
     gateway_probabilities: Optional[list] = None,
     process_graph: Optional[DiGraph] = None,
 ) -> SimulationParameters:
@@ -52,7 +50,7 @@ def mine_parameters(
         assert (
             gateways_probability_method is not None
         ), "Either gateway probabilities or a method to mine them must be provided."
-        gateway_probabilities = mine_gateway_probabilities(
+        gateway_probabilities = compute_gateway_probabilities(
             log, log_ids, model_path, gateways_probability_method
         )
 
@@ -154,13 +152,13 @@ def mine_default_24_7(
     log_ids: EventLogIDs,
     bpmn_path: Path,
     process_graph: DiGraph,
-    gateways_probability_type: GatewayProbabilitiesDiscoveryMethod,
+    gateways_probabilities_method: GatewayProbabilitiesMethod,
 ) -> SimulationParameters:
     """
     Simulation parameters with default calendar 24/7.
     """
     assert (
-        gateways_probability_type is not None
+        gateways_probabilities_method is not None
     ), "Gateway probabilities method discovery must be provided."
 
     calendar_24_7 = Calendar.all_day_long()
@@ -176,8 +174,8 @@ def mine_default_24_7(
 
     arrival_calendar = calendar_24_7
 
-    gateway_probabilities_ = mine_gateway_probabilities(
-        log, log_ids, bpmn_path, gateways_probability_type
+    gateway_probabilities_ = compute_gateway_probabilities(
+        log, log_ids, bpmn_path, gateways_probabilities_method
     )
 
     activity_duration_distributions = _activity_duration_distributions_undifferentiated(
@@ -311,7 +309,9 @@ def _activity_duration_distributions_differentiated(
 
         # Computing the distribution
 
-        distribution = get_best_distribution(durations)
+        distribution = get_best_fitting_distribution(
+            durations
+        ).to_prosimos_distribution()
 
         if activity not in activity_duration_distributions:
             activity_duration_distributions[activity] = {resource_: distribution}
@@ -429,7 +429,9 @@ def _activity_duration_distributions_pools(
                 f"Setting the activity duration distribution to fixed(0)."
             )
 
-        distribution = get_best_distribution(durations)
+        distribution = get_best_fitting_distribution(
+            durations
+        ).to_prosimos_distribution()
 
         if activity not in activity_duration_distributions:
             activity_duration_distributions[activity] = {pool_name: distribution}
@@ -475,7 +477,9 @@ def _activity_duration_distributions_undifferentiated(
                 f"Setting the activity duration distribution to fixed(0)."
             )
 
-        activity_duration_distribution = get_best_distribution(durations)
+        activity_duration_distribution = get_best_fitting_distribution(
+            durations
+        ).to_prosimos_distribution()
 
         activity_duration_distributions[activity] = activity_duration_distribution
 
@@ -499,7 +503,11 @@ def _activity_duration_distributions_undifferentiated(
                     activity_id=id_,
                     activity_resources_distributions=[
                         ResourceDistribution(
-                            resource_id=name, distribution=Distribution.fixed(0)
+                            resource_id=name,
+                            distribution={
+                                "distribution_name": "fix",
+                                "distribution_params": [{"value": 0}],
+                            },
                         )
                     ],
                 )

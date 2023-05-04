@@ -1,13 +1,12 @@
 import os
 from pathlib import Path
 from typing import Optional, Tuple
-from xml.etree import ElementTree as ET
+from xml.etree import ElementTree
 
 import pandas as pd
 import pendulum
 from openxes_cli.lib import xes_to_csv, csv_to_xes
-
-from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
+from pix_utils.log_ids import DEFAULT_XES_IDS, EventLogIDs
 
 
 def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFrame:
@@ -47,7 +46,7 @@ def convert_xes_to_csv_if_needed(
     log_path: Path, output_path: Optional[Path] = None
 ) -> Path:
     _, ext = os.path.splitext(log_path)
-    if ext != ".csv":
+    if ext == ".xes":
         if output_path:
             log_path_csv = output_path
         else:
@@ -59,7 +58,7 @@ def convert_xes_to_csv_if_needed(
 
 
 def read(
-    log_path: Path, log_ids: EventLogIDs = STANDARD_COLUMNS
+    log_path: Path, log_ids: EventLogIDs = DEFAULT_XES_IDS
 ) -> Tuple[pd.DataFrame, Path]:
     """Reads an event log from XES or CSV and converts timestamp to UTC.
 
@@ -85,7 +84,7 @@ def convert_timestamps(log: pd.DataFrame, log_ids: EventLogIDs):
     ]
     for name in time_columns:
         if name in log.columns:
-            log[name] = pd.to_datetime(log[name], utc=True, format="ISO8601")
+            log[name] = pd.to_datetime(log[name], utc=True)
 
 
 def convert_xes_to_csv(xes_path: Path, csv_path: Path):
@@ -109,8 +108,8 @@ def reformat_timestamps(xes_path: Path, output_path: Path):
     ns = "http://www.xes-standard.org/"
     date_tag = f"{{{ns}}}date"
 
-    ET.register_namespace("", ns)
-    tree = ET.parse(xes_path)
+    ElementTree.register_namespace("", ns)
+    tree = ElementTree.parse(xes_path)
     root = tree.getroot()
     xpaths = [".//*[@key='time:timestamp']", ".//*[@key='start_timestamp']"]
     for xpath in xpaths:

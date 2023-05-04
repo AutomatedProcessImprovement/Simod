@@ -4,14 +4,11 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import groupby
-from pathlib import Path
 from typing import List, Dict, Optional
 
 import pandas as pd
+from pix_utils.log_ids import EventLogIDs
 from tqdm import tqdm
-
-from simod.event_log.column_mapping import EventLogIDs
-from simod.event_log.utilities import convert_df_to_xes, reformat_timestamps
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'
 _XES_RESOURCE_TAG = 'org:resource'
@@ -48,7 +45,6 @@ class _AuxiliaryLogRecord:
 def adjust_durations(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
-        output_path: Optional[Path] = None,
         verbose=False,
         is_concurrent=False,
         max_workers=multiprocessing.cpu_count()
@@ -61,7 +57,7 @@ def adjust_durations(
         metrics_before = _resource_metrics(log)
 
     # apply sweep line for each resource
-    resources = log[_XES_RESOURCE_TAG].unique()
+    resources = log[log_ids.resource].unique()
     if not is_concurrent:
         # sequential processing
         for resource in tqdm(resources, desc='processing resources'):
@@ -81,21 +77,6 @@ def adjust_durations(
         metrics = _resource_metrics(log)
         print('Utilization before equals the one after: ', metrics_before['utilization'] == metrics['utilization'])
         print("Resource events equal:", metrics_before['number_of_events'] == metrics['number_of_events'])
-
-    if output_path is not None:
-        log = log.drop(columns=[
-            '@@startevent_org:resource',
-            '@@startevent_concept:name',
-            '@@startevent_Activity',
-            '@@startevent_Resource',
-            '@@duration',
-            '@@custom_lif_id',
-            '@@origin_ev_idx'],
-            errors='ignore')
-
-        convert_df_to_xes(log, log_ids, output_path)
-
-        reformat_timestamps(output_path, output_path)
 
     return log
 

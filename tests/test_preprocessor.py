@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from simod.configuration import Configuration
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
+from simod.settings.simod_settings import SimodSettings
 
 config_yaml = """
 version: 2
@@ -18,7 +18,7 @@ common:
     - circadian_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   optimization_metric: dl
   max_evaluations: 1
   mining_algorithm: sm3
@@ -60,7 +60,7 @@ calendars:
 test_cases = [
     {
         'name': 'A',
-        'settings': Configuration.from_stream(config_yaml),
+        'settings': SimodSettings.from_stream(config_yaml),
     },
 ]
 

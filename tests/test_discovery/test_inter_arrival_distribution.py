@@ -1,7 +1,7 @@
 import pytest
+from pix_utils.log_ids import DEFAULT_XES_IDS
 
 from simod.discovery import inter_arrival_distribution
-from simod.event_log.column_mapping import STANDARD_COLUMNS
 from simod.event_log.utilities import read
 
 test_cases = [
@@ -18,7 +18,7 @@ test_cases = [
 def test_discover(test_data, entry_point):
     log_path = entry_point / test_data['log_name']
 
-    log_ids = STANDARD_COLUMNS
+    log_ids = DEFAULT_XES_IDS
     log, _ = read(log_path, log_ids)
 
     result = inter_arrival_distribution.discover(log, log_ids)

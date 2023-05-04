@@ -1,11 +1,10 @@
-from typing import NewType, Dict, List, Optional, Tuple, Union
+from typing import NewType, Dict, List, Optional, Tuple
 
 import pandas as pd
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
+from pix_utils.log_ids import EventLogIDs
 
-from simod.configuration import CalendarType
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
-from simod.event_log.column_mapping import EventLogIDs
 from simod.simulation.parameters.calendars import Calendar, Timetable
 
 UNDIFFERENTIATED_RESOURCE_POOL_KEY = "undifferentiated_resource_pool"

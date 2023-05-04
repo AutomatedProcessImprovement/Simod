@@ -1,29 +1,30 @@
 from pathlib import Path
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
-from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.cli_formatter import print_subsection
-from simod.configuration import GatewayProbabilitiesDiscoveryMethod
-from simod.event_log.column_mapping import EventLogIDs
-from simod.event_log.event_log import EventLog
-from simod.hyperopt_pipeline import HyperoptPipeline
-from simod.process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
-from simod.simulation.parameters.miner import mine_parameters
-from simod.simulation.prosimos import simulate_and_evaluate
-from simod.utilities import remove_asset, folder_id, file_id, nearest_divisor_for_granularity
-from typing import Optional, Tuple, Union
+from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
+from pix_utils.log_ids import EventLogIDs
+
+from ..bpm.reader_writer import BPMNReaderWriter
+from ..cli_formatter import print_subsection, print_step
+from ..event_log.event_log import EventLog
+from ..process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
+from ..settings.control_flow_settings import GatewayProbabilitiesMethod
+from ..simulation.parameters.miner import mine_parameters
+from ..simulation.prosimos import simulate_and_evaluate
+from ..utilities import nearest_divisor_for_granularity, hyperopt_step
 
 
-class CalendarOptimizer(HyperoptPipeline):
+class CalendarOptimizer:
     _event_log: EventLog
     _log_train: pd.DataFrame
     _log_validation: pd.DataFrame
     _log_ids: EventLogIDs
-    _gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
+    _gateway_probabilities_method: GatewayProbabilitiesMethod
     _gateway_probabilities: Optional[dict]
     _train_model_path: Path
     _output_dir: Path
@@ -37,7 +38,7 @@ class CalendarOptimizer(HyperoptPipeline):
             calendar_optimizer_settings: CalendarOptimizationSettings,
             event_log: EventLog,
             train_model_path: Path,
-            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod,
+            gateway_probabilities_method: GatewayProbabilitiesMethod,
             gateway_probabilities: Optional[list] = None,
             process_graph: Optional[DiGraph] = None,
             event_distribution: Optional[list[dict]] = None,
@@ -55,11 +56,11 @@ class CalendarOptimizer(HyperoptPipeline):
         self._log_validation = event_log.validation_partition
 
         # Calendar optimization base folder
-        self._output_dir = self._calendar_optimizer_settings.base_dir / folder_id(prefix='calendars_')
+        self._output_dir = self._calendar_optimizer_settings.base_dir / get_random_folder_id(prefix='calendars_')
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluation_measurements = pd.DataFrame(
-            columns=['value', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
+            columns=['distance', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
 
         self._bayes_trials = Trials()
 
@@ -91,12 +92,12 @@ class CalendarOptimizer(HyperoptPipeline):
         status = STATUS_OK
 
         # creating and defining folders and paths
-        output_dir = self._output_dir / folder_id(prefix='calendars_trial_')
+        output_dir = self._output_dir / get_random_folder_id(prefix='calendars_trial_')
         output_dir.mkdir(parents=True, exist_ok=True)
         trial_stg.output_dir = output_dir
 
         # simulation parameters extraction
-        status, result = self.step(status, self._extract_parameters, trial_stg)
+        status, result = hyperopt_step(status, self._extract_parameters, trial_stg)
         if result is None:
             status = STATUS_FAIL
             json_path = None
@@ -104,7 +105,7 @@ class CalendarOptimizer(HyperoptPipeline):
             json_path = result
 
         # simulation and evaluation
-        status, result = self.step(status, self._simulate_with_prosimos, trial_stg, json_path)
+        status, result = hyperopt_step(status, self._simulate_with_prosimos, trial_stg, json_path)
         evaluation_measurements = result if status == STATUS_OK else []
 
         # response for hyperopt
@@ -146,12 +147,13 @@ class CalendarOptimizer(HyperoptPipeline):
 
         # Save evaluation measurements
         assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
-        self.evaluation_measurements.sort_values('value', ascending=False, inplace=True)
-        self.evaluation_measurements.to_csv(self._output_dir / file_id(prefix='evaluation_'), index=False)
+        self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
+        self.evaluation_measurements.to_csv(self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
 
         return best_settings
 
     def cleanup(self):
+        print_step(f'Removing {self._output_dir}')
         remove_asset(self._output_dir)
 
     @staticmethod
@@ -195,14 +197,14 @@ class CalendarOptimizer(HyperoptPipeline):
         if status == STATUS_OK:
             for measurement in evaluation_measurements:
                 values = {
-                    'value': measurement['value'],
+                    'distance': measurement['distance'],
                     'metric': measurement['metric'],
                 }
                 values = values | data
                 self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
             values = {
-                'value': 0,
+                'distance': 0,
                 'metric': self._calendar_optimizer_settings.optimization_metric,
             }
             values = values | data
@@ -220,7 +222,7 @@ class CalendarOptimizer(HyperoptPipeline):
         }
 
         if status == STATUS_OK:
-            distance = np.mean([x['value'] for x in evaluation_measurements])
+            distance = np.mean([x['distance'] for x in evaluation_measurements])
             loss = distance
             response['loss'] = loss
 

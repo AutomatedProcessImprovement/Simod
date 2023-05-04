@@ -1,11 +1,11 @@
 import pytest
+from pix_utils.log_ids import DEFAULT_CSV_IDS
 
-from simod.configuration import Configuration, CalendarType
-from simod.event_log.column_mapping import EventLogIDs
 from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings, CalendarOptimizationSettings
-from simod.utilities import get_project_dir
+from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
+from simod.settings.temporal_settings import CalendarType
 
 test_cases = [
     {
@@ -26,17 +26,11 @@ test_cases = [
 @pytest.mark.integration
 @pytest.mark.parametrize('test_case', test_cases, ids=[case['name'] for case in test_cases])
 def test_optimizer(entry_point, test_case):
-    base_dir = get_project_dir() / 'outputs'
+    base_dir = PROJECT_DIR / 'outputs'
 
-    log_ids = EventLogIDs(
-        case='case_id',
-        activity='Activity',
-        resource='Resource',
-        start_time='start_time',
-        end_time='end_time',
-    )
+    log_ids = DEFAULT_CSV_IDS
 
-    settings = Configuration.default()
+    settings = SimodSettings.default()
     settings.calendars.resource_profiles.discovery_type = test_case['resource_discovery_method']
     settings.common.log_ids = log_ids
 
@@ -51,7 +45,7 @@ def test_optimizer(entry_point, test_case):
         calendar_settings,
         event_log,
         train_model_path=model_path,
-        gateway_probabilities_method=settings.structure.gateway_probabilities
+        gateway_probabilities_method=settings.control_flow.gateway_probabilities
     )
     result = optimizer.run()
 

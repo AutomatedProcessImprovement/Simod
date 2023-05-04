@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -14,5 +13,7 @@ def runner(request):
 def entry_point() -> Path:
     if Path.cwd().name == 'tests':
         return Path('assets')
+    elif 'test_' in Path.cwd().name:
+        return Path('../assets')
     else:
         return Path('tests/assets')

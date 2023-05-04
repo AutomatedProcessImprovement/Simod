@@ -7,17 +7,17 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Union
 
 import pandas as pd
+from bpdfr_simulation_engine.simulation_engine import run_simulation
+from pix_utils.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 
 from simod.cli_formatter import print_notice, print_step
-from simod.utilities import execute_shell_cmd
 from .parameters.activity_resources import ActivityResourceDistribution
 from .parameters.calendars import Calendar
 from .parameters.gateway_probabilities import GatewayProbabilities
 from .parameters.resource_profiles import ResourceProfile
-from ..configuration import Metric
-from ..event_log.column_mapping import PROSIMOS_COLUMNS, EventLogIDs
 from ..event_log.utilities import read
 from ..metrics.metrics import compute_metric
+from ..settings.common_settings import Metric
 
 cpu_count = multiprocessing.cpu_count()
 
@@ -54,7 +54,8 @@ class SimulationParameters:
                     gateway_probabilities.to_dict()
                     for gateway_probabilities in self.gateway_branching_probabilities
                 ]
-                if isinstance(self.gateway_branching_probabilities[0], GatewayProbabilities)
+                if len(self.gateway_branching_probabilities) > 0 and isinstance(self.gateway_branching_probabilities[0],
+                                                                                GatewayProbabilities)
                 else self.gateway_branching_probabilities,
         }
 
@@ -88,16 +89,15 @@ def simulate(settings: ProsimosSettings):
     """
     print_notice(f'Number of simulation cases: {settings.num_simulation_cases}')
 
-    args = [
-        'diff_res_bpsim', 'start-simulation',
-        '--bpmn_path', settings.bpmn_path.__str__(),
-        '--json_path', settings.parameters_path.__str__(),
-        '--log_out_path', settings.output_log_path.__str__(),
-        '--total_cases', str(settings.num_simulation_cases),
-        '--starting_at', settings.simulation_start.isoformat()
-    ]
-
-    execute_shell_cmd(args)
+    run_simulation(
+        bpmn_path=settings.bpmn_path.__str__(),
+        json_path=settings.parameters_path.__str__(),
+        total_cases=settings.num_simulation_cases,
+        stat_out_path=None,  # No statistics
+        log_out_path=settings.output_log_path.__str__(),
+        starting_at=settings.simulation_start.isoformat(),
+        is_event_added_to_log=False  # Don't add Events (start/end/timers) to output log
+    )
 
 
 def simulate_and_evaluate(
@@ -194,7 +194,7 @@ def evaluate_logs(
     # Read simulated logs
 
     read_arguments = [
-        (simulation_log_paths[index], PROSIMOS_COLUMNS, index)
+        (simulation_log_paths[index], PROSIMOS_LOG_IDS, index)
         for index in range(len(simulation_log_paths))
     ]
 
@@ -206,7 +206,7 @@ def evaluate_logs(
     # Evaluate
 
     evaluation_arguments = [
-        (validation_log, validation_log_ids, log, PROSIMOS_COLUMNS, metrics)
+        (validation_log, validation_log_ids, log, PROSIMOS_LOG_IDS, metrics)
         for log in simulated_logs
     ]
 
@@ -243,6 +243,6 @@ def _evaluate_logs_using_metrics(arguments: Tuple) -> List[dict]:
     measurements = []
     for metric in metrics:
         value = compute_metric(metric, validation_log, validation_log_ids, simulated_log, simulated_log_ids)
-        measurements.append({'run_num': rep, 'metric': metric, 'value': value})
+        measurements.append({'run_num': rep, 'metric': metric, 'distance': value})
 
     return measurements

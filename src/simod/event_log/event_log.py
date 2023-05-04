@@ -1,10 +1,10 @@
 from pathlib import Path
-
-import pandas as pd
-from pix_utils.log_split.log_split import split_log_training_validation_trace_wise as split_log
 from typing import Optional
 
-from .column_mapping import EventLogIDs, STANDARD_COLUMNS
+import pandas as pd
+from pix_utils.log_ids import EventLogIDs, DEFAULT_XES_IDS
+from pix_utils.log_split.log_split import split_log_training_validation_trace_wise as split_log
+
 from .utilities import read, convert_df_to_xes
 
 
@@ -167,4 +167,4 @@ def write_xes(
 
     df.fillna('UNDEFINED', inplace=True)
 
-    convert_df_to_xes(df, STANDARD_COLUMNS, output_path)
+    convert_df_to_xes(df, DEFAULT_XES_IDS, output_path)

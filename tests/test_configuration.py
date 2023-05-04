@@ -1,7 +1,7 @@
 import pytest
 import yaml
 
-from simod.configuration import Configuration
+from simod.settings.simod_settings import SimodSettings
 
 config_yaml_C = """
 version: 2
@@ -13,7 +13,7 @@ common:
     - absolute_hourly_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   max_evaluations: 2
   mining_algorithm: sm3
   concurrency:
@@ -52,6 +52,6 @@ calendars:
 @pytest.mark.parametrize('test_case', [config_yaml_C])
 def test_configuration(test_case):
     config = yaml.safe_load(test_case)
-    result = Configuration.from_yaml(config)
+    result = SimodSettings.from_yaml(config)
 
     assert result is not None

@@ -1,13 +1,13 @@
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Union
+from xml.etree import ElementTree
 
 import lxml.etree
 import networkx as nx
 import xmltodict as xtd
 
 from simod.bpm import graph
-from simod.configuration import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
+from simod.settings.simod_settings import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
 
 
 class BPMNReaderWriter:
@@ -117,7 +117,7 @@ class BPMNReaderWriter:
     def serialize_model(self) -> dict:
         ns = {'qbp': QBP_NAMESPACE_URI}
 
-        model_xml = ET.tostring(self._root.find("qbp:processSimulationInfo", namespaces=ns))
+        model_xml = ElementTree.tostring(self._root.find("qbp:processSimulationInfo", namespaces=ns))
         model_xml = model_xml.decode()
         model_xml = model_xml.replace(ns['qbp'], 'qbp')
         model_xml = bytes(model_xml, 'utf-8')

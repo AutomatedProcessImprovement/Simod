@@ -1,7 +1,6 @@
 import pandas as pd
-
-from simod.discovery.distribution import get_best_distribution
-from simod.event_log.column_mapping import EventLogIDs
+from pix_utils.log_ids import EventLogIDs
+from pix_utils.statistics.distribution import get_best_fitting_distribution
 
 
 def discover(log: pd.DataFrame, log_ids: EventLogIDs) -> dict:
@@ -24,4 +23,4 @@ def discover(log: pd.DataFrame, log_ids: EventLogIDs) -> dict:
         delta = (start_times[i] - start_times[i - 1]).total_seconds()
         inter_arrival_durations.append(delta)
 
-    return get_best_distribution(inter_arrival_durations)
+    return get_best_fitting_distribution(inter_arrival_durations).to_prosimos_distribution()

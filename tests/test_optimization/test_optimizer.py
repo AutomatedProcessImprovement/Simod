@@ -2,18 +2,18 @@ from pathlib import Path
 
 import pytest
 
-from simod.configuration import Configuration
 from simod.optimization.optimizer import Optimizer
+from simod.settings.simod_settings import SimodSettings
 
 config_yaml_A = """
 version: 2
 common:
-  log_path: tests/assets/Production_train.csv
-  test_log_path: tests/assets/Production_test.csv
+  log_path: tests/assets/Insurance_Claims_train.csv
+  test_log_path: tests/assets/Insurance_Claims_test.csv
   log_ids:
     case: case_id
-    activity: Activity
-    resource: Resource
+    activity: activity
+    resource: resource
     start_time: start_time
     end_time: end_time
   repetitions: 1
@@ -24,7 +24,7 @@ common:
     - circadian_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   optimization_metric: dl
   max_evaluations: 1
   mining_algorithm: sm3
@@ -83,7 +83,7 @@ common:
     - circadian_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   optimization_metric: dl
   max_evaluations: 1
   mining_algorithm: sm3
@@ -135,7 +135,7 @@ common:
     - circadian_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   optimization_metric: dl
   max_evaluations: 1
   mining_algorithm: sm3
@@ -186,7 +186,7 @@ common:
     - circadian_emd
 preprocessing:
   multitasking: false
-structure:
+control_flow:
   optimization_metric: dl
   max_evaluations: 2
   mining_algorithm: sm3
@@ -233,8 +233,8 @@ test_cases = [
     #     'settings': Configuration.from_stream(config_yaml_B),
     # },
     {
-        'name': 'Production_train',
-        'settings': Configuration.from_stream(config_yaml_A),
+        'name': 'Insurance_Claims',
+        'settings': SimodSettings.from_stream(config_yaml_A),
     },
     # {
     #     'name': 'loan_app_differentiated_with_model',
@@ -250,7 +250,7 @@ test_cases = [
 @pytest.mark.system
 @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
 def test_optimizer(test_data, entry_point):
-    settings: Configuration = test_data['settings']
+    settings: SimodSettings = test_data['settings']
 
     settings.common.log_path = (entry_point / Path(settings.common.log_path).name).absolute()
 

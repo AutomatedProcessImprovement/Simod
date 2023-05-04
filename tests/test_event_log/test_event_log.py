@@ -1,22 +1,16 @@
 import pytest
+from pix_utils.log_ids import DEFAULT_CSV_IDS
 
-from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
 from simod.event_log.event_log import EventLog
 
 test_cases = [
     {
         'log_name': 'LoanApp_sequential_9-5_diffres_timers.csv',
-        'log_ids': EventLogIDs(
-            case='case_id',
-            activity='Activity',
-            resource='Resource',
-            start_time='start_time',
-            end_time='end_time',
-        )
+        'log_ids': DEFAULT_CSV_IDS
     },
     {
-        'log_name': 'Production.xes',
-        'log_ids': STANDARD_COLUMNS,
+        'log_name': 'Production.csv',
+        'log_ids': DEFAULT_CSV_IDS,
     },
 ]
 
