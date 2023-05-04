@@ -1,8 +1,8 @@
 import pytest
 from pix_utils.log_ids import DEFAULT_XES_IDS
 
-from simod.discovery import inter_arrival_distribution
 from simod.event_log.utilities import read
+from simod.simulation.parameters.case_arrival import discover_inter_arrival_distribution
 
 test_cases = [
     {
@@ -21,6 +21,6 @@ def test_discover(test_data, entry_point):
     log_ids = DEFAULT_XES_IDS
     log, _ = read(log_path, log_ids)
 
-    result = inter_arrival_distribution.discover(log, log_ids)
+    result = discover_inter_arrival_distribution(log, log_ids)
 
     assert result is not None

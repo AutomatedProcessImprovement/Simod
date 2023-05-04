@@ -8,13 +8,13 @@ from pix_utils.statistics.distribution import get_best_fitting_distribution
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
-from simod.discovery import inter_arrival_distribution
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
-from simod.simulation.calendar_discovery import case_arrival, resource as resource_calendar
+from simod.simulation.calendar_discovery import resource as resource_calendar
 from simod.simulation.parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
 from simod.simulation.parameters.calendars import Calendar
-from simod.simulation.parameters.gateway_probabilities import compute_gateway_probabilities
+from simod.simulation.parameters.case_arrival import discover_case_arrival_calendar, discover_inter_arrival_distribution
+from simod.simulation.parameters.gateway_probabilities import compute_gateway_probabilities, GatewayProbabilities
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
     pd_interval_to_interval
 from simod.simulation.parameters.resource_profiles import ResourceProfile
@@ -28,7 +28,7 @@ def mine_parameters(
         log_ids: EventLogIDs,
         model_path: Path,
         gateways_probability_method: Optional[GatewayProbabilitiesMethod] = None,
-        gateway_probabilities: Optional[list] = None,
+        gateway_probabilities: Optional[List[GatewayProbabilities]] = None,
         process_graph: Optional[DiGraph] = None,
 ) -> SimulationParameters:
     """
@@ -54,18 +54,15 @@ def mine_parameters(
     elif case_arrival_discovery_type in (CalendarType.UNDIFFERENTIATED,
                                          CalendarType.DIFFERENTIATED_BY_POOL,
                                          CalendarType.DIFFERENTIATED_BY_RESOURCE):
-        arrival_calendar = case_arrival.discover_undifferentiated(
+        arrival_calendar = discover_case_arrival_calendar(
             log,
             log_ids,
-            granularity=case_arrival_settings.granularity,
-            min_confidence=case_arrival_settings.confidence,
-            desired_support=case_arrival_settings.support,
-            min_participation=case_arrival_settings.participation,
+            granularity=case_arrival_settings.granularity
         )
     else:
         raise ValueError(f'Unknown calendar discovery type: {case_arrival_discovery_type}')
 
-    arrival_distribution = inter_arrival_distribution.discover(log, log_ids)
+    arrival_distribution = discover_inter_arrival_distribution(log, log_ids)
 
     # Resource parameters
 
@@ -123,7 +120,7 @@ def mine_default_24_7(
 
     resource_calendars = [calendar_24_7]
 
-    arrival_distribution = inter_arrival_distribution.discover(log, log_ids)
+    arrival_distribution = discover_inter_arrival_distribution(log, log_ids)
 
     arrival_calendar = calendar_24_7
 

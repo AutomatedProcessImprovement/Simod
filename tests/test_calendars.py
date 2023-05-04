@@ -9,7 +9,7 @@ from pm4py_wrapper.wrapper import convert_xes_to_csv
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.event_log.utilities import read
-from simod.simulation.calendar_discovery import case_arrival
+from simod.simulation.parameters.case_arrival import discover_case_arrival_calendar
 
 
 @pytest.mark.integration
@@ -60,6 +60,6 @@ def test_calendar_case_arrival_discover(entry_point, log_name):
     # Read event log
     log = read_csv_log(log_path, log_ids)
     # Discover arrival calendar
-    result = case_arrival._discover_undifferentiated(log, log_ids)
+    result = discover_case_arrival_calendar(log, log_ids)
     # Assert it exists...
     assert result
