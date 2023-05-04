@@ -37,16 +37,16 @@
 			<date key="time:timestamp" value="2011-01-01T00:00:00.000"/>
 		</event>
         <event>
-			<string key="concept:name" value="A2"/>
-			<string key="lifecycle:transition" value="start"/>
-			<string key="org:resource" value="R1"/>
-			<date key="time:timestamp" value="2011-01-01T00:01:00.000"/>
-		</event>
-        <event>
 			<string key="concept:name" value="A1"/>
 			<string key="lifecycle:transition" value="complete"/>
 			<string key="org:resource" value="R1"/>
 			<date key="time:timestamp" value="2011-01-01T00:10:00.000"/>
+		</event>
+        <event>
+			<string key="concept:name" value="A2"/>
+			<string key="lifecycle:transition" value="start"/>
+			<string key="org:resource" value="R1"/>
+			<date key="time:timestamp" value="2011-01-01T00:01:00.000"/>
 		</event>
 		<event>
 			<string key="concept:name" value="A2"/>

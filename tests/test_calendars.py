@@ -4,10 +4,9 @@ import pandas as pd
 import pytest
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 
-from pm4py_wrapper.wrapper import convert_xes_to_csv
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.event_log.column_mapping import EventLogIDs
-from simod.event_log.utilities import read
+from simod.event_log.utilities import read, convert_xes_to_csv
 from simod.simulation.calendar_discovery import case_arrival
 
 
