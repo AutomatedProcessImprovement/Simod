@@ -1,7 +1,7 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import pandas as pd
 from extraneous_activity_delays.config import SimulationModel
@@ -18,6 +18,7 @@ from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import HyperoptIterationParams as StructureHyperoptIterationParams
 from simod.settings.control_flow_settings import ControlFlowSettings
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
+from simod.simulation.parameters.gateway_probabilities import GatewayProbabilities
 from simod.simulation.parameters.miner import mine_parameters
 from simod.simulation.prosimos import simulate_and_evaluate
 
@@ -81,7 +82,7 @@ class Optimizer:
             self,
             structure_settings: StructureMinerSettings,
             model_path: Path,
-            gateway_probabilities: list,
+            gateway_probabilities: List[GatewayProbabilities],
             simulation_model: Optional[SimulationModel] = None,
     ) -> Tuple[CalendarOptimizationSettings, CalendarPipelineSettings]:
         calendar_settings = CalendarOptimizationSettings.from_configuration(self._settings, self._output_dir)

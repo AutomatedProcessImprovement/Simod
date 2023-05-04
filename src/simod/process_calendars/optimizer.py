@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,7 @@ from ..cli_formatter import print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from ..settings.control_flow_settings import GatewayProbabilitiesMethod
+from ..simulation.parameters.gateway_probabilities import GatewayProbabilities
 from ..simulation.parameters.miner import mine_parameters
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import nearest_divisor_for_granularity, hyperopt_step
@@ -39,7 +40,7 @@ class CalendarOptimizer:
             event_log: EventLog,
             train_model_path: Path,
             gateway_probabilities_method: GatewayProbabilitiesMethod,
-            gateway_probabilities: Optional[list] = None,
+            gateway_probabilities: Optional[List[GatewayProbabilities]] = None,
             process_graph: Optional[DiGraph] = None,
             event_distribution: Optional[list[dict]] = None,
     ):

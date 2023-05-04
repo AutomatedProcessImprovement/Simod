@@ -4,7 +4,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor as Pool
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional
 
 import pandas as pd
 from bpdfr_simulation_engine.simulation_engine import run_simulation
@@ -33,7 +33,7 @@ class SimulationParameters:
     task_resource_distributions: List[ActivityResourceDistribution]
     arrival_distribution: dict
     arrival_calendar: Calendar
-    gateway_branching_probabilities: Union[List[GatewayProbabilities], List[dict]]
+    gateway_branching_probabilities: List[GatewayProbabilities]
     event_distribution: Optional[dict]
 
     def to_dict(self) -> dict:
@@ -53,10 +53,7 @@ class SimulationParameters:
                 [
                     gateway_probabilities.to_dict()
                     for gateway_probabilities in self.gateway_branching_probabilities
-                ]
-                if len(self.gateway_branching_probabilities) > 0 and isinstance(self.gateway_branching_probabilities[0],
-                                                                                GatewayProbabilities)
-                else self.gateway_branching_probabilities,
+                ],
         }
 
         if self.event_distribution:

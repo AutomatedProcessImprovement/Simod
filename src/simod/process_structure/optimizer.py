@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 import hyperopt
 import numpy as np
@@ -16,6 +16,7 @@ from ..cli_formatter import print_message, print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..settings.common_settings import Metric
 from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings
+from ..simulation.parameters.gateway_probabilities import GatewayProbabilities
 from ..simulation.parameters.miner import mine_default_24_7
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step
@@ -31,7 +32,7 @@ class StructureOptimizer:
     # Path to the process model
     model_path: Path
     # Gateway probabilities
-    gateway_probabilities: list
+    gateway_probabilities: List[GatewayProbabilities]
     # Quality measure of each hyperopt iteration
     evaluation_measurements: pd.DataFrame
 
@@ -162,7 +163,10 @@ class StructureOptimizer:
         )
         # Save discovered gateway probabilities
         best_parameters_path = best_model_path.parent / 'simulation_parameters.json'
-        self.gateway_probabilities = json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
+        self.gateway_probabilities = [
+            GatewayProbabilities.from_dict(gateway_probabilities)
+            for gateway_probabilities in json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
+        ]
         # Save best model path
         self.model_path = best_model_path
         # Save evaluation measurements

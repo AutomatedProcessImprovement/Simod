@@ -15,6 +15,13 @@ class PathProbability:
     path_id: str
     probability: float
 
+    @staticmethod
+    def from_dict(path_probabilities: dict) -> 'PathProbability':
+        return PathProbability(
+            path_id=path_probabilities['path_id'],
+            probability=path_probabilities['value']
+        )
+
     def to_dict(self):
         """Dictionary compatible with Prosimos."""
         return {'path_id': self.path_id, 'value': self.probability}
@@ -25,6 +32,16 @@ class GatewayProbabilities:
     """Gateway branching probabilities for Prosimos."""
     gateway_id: str
     outgoing_paths: List[PathProbability]
+
+    @staticmethod
+    def from_dict(gateway_probabilities: dict) -> 'GatewayProbabilities':
+        return GatewayProbabilities(
+            gateway_id=gateway_probabilities['gateway_id'],
+            outgoing_paths=[
+                PathProbability.from_dict(path_probability)
+                for path_probability in gateway_probabilities['probabilities']
+            ]
+        )
 
     def to_dict(self):
         """Dictionary compatible with Prosimos."""
