@@ -34,6 +34,7 @@ def mine_parameters(
     """
     Mine simulation parameters given the settings for resources and case arrival.
     """
+    # Gateway probabilities
     if gateway_probabilities is None:
         assert gateways_probability_method is not None, \
             "Either gateway probabilities or a method to mine them must be provided."
@@ -44,28 +45,14 @@ def mine_parameters(
         process_graph = bpmn_reader.as_graph()
 
     # Case arrival parameters
-
-    case_arrival_discovery_type = case_arrival_settings.discovery_type
-    if case_arrival_discovery_type == CalendarType.DEFAULT_24_7:
-        arrival_calendar = Calendar.all_day_long()
-    elif case_arrival_discovery_type == CalendarType.DEFAULT_9_5:
-        arrival_calendar = Calendar.work_day()
-    # NOTE: discarding other types of discovery for case arrival
-    elif case_arrival_discovery_type in (CalendarType.UNDIFFERENTIATED,
-                                         CalendarType.DIFFERENTIATED_BY_POOL,
-                                         CalendarType.DIFFERENTIATED_BY_RESOURCE):
-        arrival_calendar = discover_case_arrival_calendar(
-            log,
-            log_ids,
-            granularity=case_arrival_settings.granularity
-        )
-    else:
-        raise ValueError(f'Unknown calendar discovery type: {case_arrival_discovery_type}')
-
+    arrival_calendar = discover_case_arrival_calendar(
+        log,
+        log_ids,
+        granularity=case_arrival_settings.granularity
+    )
     arrival_distribution = discover_inter_arrival_distribution(log, log_ids)
 
     # Resource parameters
-
     resource_discovery_type = resource_profiles_settings.discovery_type
     if resource_discovery_type == CalendarType.DEFAULT_24_7:
         resource_profiles, resource_calendars, task_resource_distributions = mine_default_for_resources(
@@ -89,6 +76,7 @@ def mine_parameters(
     assert len(resource_calendars) > 0, 'No resource calendars found'
     assert len(task_resource_distributions) > 0, 'No task resource distributions found'
 
+    # Create simulation parameters
     parameters = SimulationParameters(
         gateway_branching_probabilities=gateway_probabilities,
         arrival_calendar=arrival_calendar,
@@ -99,6 +87,7 @@ def mine_parameters(
         event_distribution=None,
     )
 
+    # Return parameters
     return parameters
 
 
