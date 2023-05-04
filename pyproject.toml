@@ -29,12 +29,12 @@ scipy = "^1.9.2"
 statistics = "^1.0.3.5"
 tqdm = "^4.64.1"
 xmltodict = "^0.13.0"
-pix_utils = { git = "https://github.com/AutomatedProcessImprovement/pix-utils.git" }
-log-distance-measures = { git = "https://github.com/AutomatedProcessImprovement/log-distance-measures.git" }
-start-time-estimator = { git = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git" }
+log-distance-measures = { git = "https://github.com/AutomatedProcessImprovement/log-distance-measures.git", branch = "main" }
+pix-utils = { git = "https://github.com/AutomatedProcessImprovement/pix-utils.git", branch = "main" }
+start-time-estimator = { git = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git", branch = "main" }
+DiffResBP-Simulator = { git = "https://github.com/AutomatedProcessImprovement/Prosimos.git", branch = "main" }
 extraneous-activity-delays = { git = "https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.git" }
-diffresbp-simulator = { git = "https://github.com/AutomatedProcessImprovement/Prosimos.git" }
-pm4py-wrapper = { git = "https://github.com/AutomatedProcessImprovement/pm4py-wrapper.git" }
+openxes-cli-py = "^0.1.6"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^2.20.0"

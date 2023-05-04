@@ -5,10 +5,9 @@ from xml.etree import ElementTree as ET
 
 import pandas as pd
 import pendulum
+from openxes_cli.lib import xes_to_csv, csv_to_xes
 
-from simod.cli_formatter import print_step
 from simod.event_log.column_mapping import EventLogIDs, STANDARD_COLUMNS
-from simod.utilities import run_shell_with_venv
 
 
 def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFrame:
@@ -76,12 +75,11 @@ def convert_timestamps(log: pd.DataFrame, log_ids: EventLogIDs):
     ]
     for name in time_columns:
         if name in log.columns:
-            log[name] = pd.to_datetime(log[name], utc=True)
+            log[name] = pd.to_datetime(log[name], utc=True, format='ISO8601')
 
 
 def convert_xes_to_csv(xes_path: Path, csv_path: Path):
-    args = ['pm4py_wrapper', '-i', str(xes_path), '-o', str(csv_path.parent), 'xes-to-csv']
-    run_shell_with_venv(args)
+    return xes_to_csv(xes_path, csv_path)
 
 
 def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path):
@@ -91,8 +89,7 @@ def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path)
     df[log_ids.end_time] = df[log_ids.end_time].apply(
         lambda x: pendulum.parse(x.isoformat()).format(xes_datetime_format))
     df.to_csv(output_path, index=False)
-    args = ['pm4py_wrapper', '-i', str(output_path), '-o', str(output_path.parent), 'csv-to-xes']
-    run_shell_with_venv(args)
+    csv_to_xes(output_path, output_path)
 
 
 def reformat_timestamps(xes_path: Path, output_path: Path):
