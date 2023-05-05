@@ -60,6 +60,9 @@ class Optimizer:
             create_folder(self._output_dir)
         else:
             self._output_dir = output_dir
+        # Create folder for the best result
+        self._best_result_dir = self._output_dir / 'best_result'
+        create_folder(self._best_result_dir)
 
     def _optimize_structure(self) -> Tuple[StructureHyperoptIterationParams, Path]:
         """Control-flow and Gateway Probabilities discovery."""
@@ -213,10 +216,6 @@ class Optimizer:
         """
         Run SIMOD main structure
         """
-        # Create folder for the best result
-        best_result_dir = self._output_dir / 'best_result'
-        create_folder(best_result_dir)
-
         # --- Control-Flow Discovery --- #
         print_section('Structure optimization')
         structure_pipeline_settings, parameters_path = self._optimize_structure()
@@ -234,7 +233,7 @@ class Optimizer:
                 self._structure_optimizer.model_path,
                 parameters,
                 self._settings.extraneous_activity_delays.optimization_metric,
-                base_dir=best_result_dir,
+                base_dir=self._best_result_dir,
                 num_iterations=self._settings.extraneous_activity_delays.num_iterations,
                 num_evaluation_simulations=self._settings.common.repetitions,
                 max_alpha=50,
@@ -258,19 +257,19 @@ class Optimizer:
         # --- Final evaluation of best BPS Model --- #
         if self._settings.common.model_path is None:
             print_section('Mining structure using the best hyperparameters')
-            model_path, structure_miner_settings = self._mine_structure(structure_miner_settings, best_result_dir)
+            model_path, structure_miner_settings = self._mine_structure(structure_miner_settings, self._best_result_dir)
         else:
             try:
-                shutil.copy(model_path, best_result_dir)
+                shutil.copy(model_path, self._best_result_dir)
             except shutil.SameFileError:
                 pass
 
         print_section('Mining calendars using the best hyperparameters')
         parameters_path, calendars_settings = self._mine_calendars(
-            calendar_pipeline_settings, model_path, best_result_dir, simulation_model)
+            calendar_pipeline_settings, model_path, self._best_result_dir, simulation_model)
 
         print_section('Evaluation')
-        simulation_dir = best_result_dir / 'simulation'
+        simulation_dir = self._best_result_dir / 'simulation'
         simulation_dir.mkdir(parents=True)
         self._evaluate_model(model_path, parameters_path, simulation_dir)
 
@@ -278,10 +277,10 @@ class Optimizer:
         self._clean_up()
 
         print_section('Exporting canonical model')
-        _export_canonical_model(best_result_dir, structure_miner_settings, self._settings.control_flow,
+        _export_canonical_model(self._best_result_dir, structure_miner_settings, self._settings.control_flow,
                                 calendars_settings, calendar_optimizer_settings)
 
-        self._settings.to_yaml(best_result_dir)
+        self._settings.to_yaml(self._best_result_dir)
 
 
 def _export_canonical_model(

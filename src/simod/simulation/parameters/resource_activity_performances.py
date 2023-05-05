@@ -1,0 +1,132 @@
+from dataclasses import dataclass
+from typing import List
+
+import pandas as pd
+from pix_utils.log_ids import EventLogIDs
+from pix_utils.statistics.distribution import get_best_fitting_distribution
+
+from simod.simulation.parameters.calendar import Calendar
+from simod.simulation.parameters.resource_profiles import ResourceProfile
+
+
+@dataclass
+class ResourceDistribution:
+    """Resource is the item of activity-resource duration distribution for Prosimos."""
+    resource_id: str
+    distribution: dict
+
+    def to_dict(self) -> dict:
+        """Dictionary with the structure compatible with Prosimos:"""
+        return {'resource_id': self.resource_id} | self.distribution
+
+    @staticmethod
+    def from_dict(resource_distribution: dict) -> 'ResourceDistribution':
+        return ResourceDistribution(
+            resource_id=resource_distribution['resource_id'],
+            distribution={
+                key: resource_distribution[key]
+                for key in resource_distribution
+                if key != 'resource_id'
+            }
+        )
+
+
+@dataclass
+class ActivityResourceDistribution:
+    """Activity duration distribution per resource for Prosimos."""
+    activity_id: str
+    activity_resources_distributions: List[ResourceDistribution]
+
+    def to_dict(self) -> dict:
+        """Dictionary with the structure compatible with Prosimos:"""
+        return {
+            'task_id': self.activity_id,
+            'resources': [resource.to_dict() for resource in self.activity_resources_distributions]
+        }
+
+    @staticmethod
+    def from_dict(activity_resource_distribution: dict) -> 'ActivityResourceDistribution':
+        return ActivityResourceDistribution(
+            activity_id=activity_resource_distribution['task_id'],
+            activity_resources_distributions=[
+                ResourceDistribution.from_dict(resource_distribution)
+                for resource_distribution in activity_resource_distribution['resources']
+            ]
+        )
+
+
+def discover_activity_resource_distribution(
+        event_log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        resource_profiles: List[ResourceProfile],
+        resource_calendars: List[Calendar],
+        activity_label_to_id: dict,
+) -> List[ActivityResourceDistribution]:
+    """
+    Discover the performance (activity duration) for each resource in [resource_profiles].
+
+    :param event_log: event log to discover the activity durations from.
+    :param log_ids: column IDs of the event log.
+    :param resource_profiles: list of resource profiles with their ID and resources.
+    :param resource_calendars: list of calendars containing their ID and working intervals.
+    :param activity_label_to_id: map with each activity label as key and its ID as value.
+
+    :return: list of duration distribution per activity.
+    """
+    # Reverse activity mapping
+    activity_id_to_label = {activity_label_to_id[key]: key for key in activity_label_to_id}
+    # Create empty activity-resource distribution per activity
+    activity_resource_distributions = [
+        ActivityResourceDistribution(activity_id, [])
+        for activity_id in activity_id_to_label
+    ]
+    # Go over each resource profile, computing the corresponding activity durations
+    for resource_profile in resource_profiles:
+        assert len(resource_profile.resources) > 0, "Trying to compute activity performance of a resource profile with no resources."
+        # Get the calendar of the resource profile
+        calendar_id = resource_profile.resources[0].calendar_id
+        calendar = [calendar for calendar in resource_calendars if calendar.id == calendar_id][0]
+        # Get the list of resources of this profile and the activities assigned to them
+        resources = [resource.id for resource in resource_profile.resources]
+        assigned_activities = [activity_id_to_label[activity_id] for activity_id in resource_profile.resources[0].assigned_tasks]
+        # Filter the log with activities performed by them
+        filtered_event_log = event_log[
+            event_log[log_ids.activity].isin(assigned_activities) &
+            event_log[log_ids.resource].isin(resources)
+            ]
+        # For each assigned activity
+        for activity_label, events in filtered_event_log.groupby(log_ids.activity):
+            # Get their durations
+            durations = compute_activity_durations_without_off_duty(events, log_ids, calendar)
+            # Compute duration distribution
+            duration_distribution = get_best_fitting_distribution(durations).to_prosimos_distribution()
+            # Append distribution to the durations of this activity (per resource)
+            activity_resource_distribution = [
+                activity_resource_distribution for activity_resource_distribution in activity_resource_distributions
+                if activity_resource_distribution.activity_id == activity_label_to_id[activity_label]
+            ][0]
+            for resource in resources:
+                activity_resource_distribution.activity_resources_distributions += [
+                    ResourceDistribution(resource, duration_distribution)
+                ]
+    # Return list of activity-resource performance
+    return activity_resource_distributions
+
+
+def compute_activity_durations_without_off_duty(
+        events: pd.DataFrame,
+        log_ids: EventLogIDs,
+        calendar: Calendar
+) -> List[float]:
+    """
+    Returns activity durations without off-duty time.
+    """
+    # TODO
+    # activity_intervals = _get_activity_intervals(df, log_ids)
+    # overlapping_intervals = _get_overlapping_intervals(activity_intervals, calendar)
+    # overlapping_durations = []
+    # for intervals in overlapping_intervals:
+    #    duration_intervals = [interval.duration().total_seconds() for interval in intervals]
+    #    overlapping_durations.append(sum(duration_intervals))
+    #
+    # return overlapping_durations

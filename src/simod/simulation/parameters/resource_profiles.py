@@ -7,8 +7,9 @@ from networkx import DiGraph
 from pix_utils.log_ids import EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.simulation.calendar_discovery.resource import PoolMapping
-from simod.simulation.parameters.calendars import Calendar
+from simod.simulation.parameters.calendar import Calendar
 
 
 @dataclass
@@ -18,8 +19,19 @@ class Resource:
     name: str
     amount: int
     cost_per_hour: float
-    calendar_id: Optional[str]
-    assigned_tasks: Optional[List[str]] = None
+    calendar_id: str
+    assigned_tasks: List[str]
+
+    @staticmethod
+    def from_dict(resource: dict) -> 'Resource':
+        return Resource(
+            id=resource['id'],
+            name=resource['name'],
+            amount=int(resource['amount']),
+            cost_per_hour=float(resource['cost_per_hour']),
+            calendar_id=resource['calendar'],
+            assigned_tasks=resource['assignedTasks']
+        )
 
 
 @dataclass
@@ -40,6 +52,17 @@ class ResourceProfile:
             resource['assignedTasks'] = resource.pop('assigned_tasks')
 
         return result
+
+    @staticmethod
+    def from_dict(resource_profile: dict) -> 'ResourceProfile':
+        return ResourceProfile(
+            id=resource_profile['id'],
+            name=resource_profile['name'],
+            resources=[
+                Resource.from_dict(resource)
+                for resource in resource_profile['resource_list']
+            ]
+        )
 
     @staticmethod
     def undifferentiated(
@@ -141,74 +164,6 @@ class ResourceProfile:
         return profiles
 
     @staticmethod
-    def differentiated_by_pool(
-            log: pd.DataFrame,
-            log_ids: EventLogIDs,
-            bpmn_path: Path,
-            calendars: List[Calendar],
-            pool_mapping: PoolMapping,
-            resource_amount: Optional[int] = 1,
-            cost_per_hour: float = 20) -> List['ResourceProfile']:
-
-        # Resource names per pool
-        pool_names = list(set([pool_mapping[resource_name] for resource_name in pool_mapping]))
-        resources_by_pool = {pool_name: set() for pool_name in pool_names}
-        for resource_name in pool_mapping:
-            resources_by_pool[pool_mapping[resource_name]].add(resource_name)
-
-        # Activity names by resource name
-        resource_names = log[log_ids.resource].unique()
-        resource_activities = {resource_name: set() for resource_name in resource_names}
-        for (resource_name, group) in log.groupby(log_ids.resource):
-            activities = group[log_ids.activity].unique()
-            resource_activities[resource_name] = set(activities)
-
-        # Activities IDs mapping
-        bpmn_reader = BPMNReaderWriter(bpmn_path)
-        activity_ids_and_names = bpmn_reader.read_activities()
-        activity_ids_by_name = {activity['task_name'].lower(): activity['task_id']
-                                for activity in activity_ids_and_names}
-
-        # Calendars by resource name
-        resource_calendars = {
-            name: next(filter(lambda c: c.name == resource, calendars))
-            for name in pool_names
-        }
-
-        # Collecting profiles
-        profiles = []
-        for pool_name in pool_names:
-            # TODO: introduce Cost Structure Per Resource or Pool
-            cost = 0 if pool_name.lower() == 'system' else cost_per_hour
-            calendar = resource_calendars[pool_name]
-            resources = resources_by_pool[pool_name]
-
-            assigned_activities_ids = []
-            for resource in resources:
-                for activity in resource_activities[resource]:
-                    activity_id = activity_ids_by_name[activity.lower()]
-                    assigned_activities_ids.append(activity_id)
-
-            profiles.append(
-                ResourceProfile(
-                    id=pool_name,
-                    name=pool_name,
-                    resources=[
-                        Resource(
-                            id=pool_name,
-                            name=pool_name,
-                            amount=resource_amount,
-                            cost_per_hour=cost,
-                            calendar_id=calendar.id,
-                            assigned_tasks=assigned_activities_ids
-                        )
-                    ]
-                )
-            )
-
-        return profiles
-
-    @staticmethod
     def differentiated_by_resource(
             log: pd.DataFrame,
             log_ids: EventLogIDs,
@@ -270,3 +225,156 @@ class ResourceProfile:
             ))
 
         return profiles
+
+
+def discover_undifferentiated_resource_profile(
+        event_log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        activity_label_to_id: dict,
+        calendar_id: str = "Undifferentiated_calendar",
+        cost_per_hour: float = 20,
+        keep_log_names: bool = True
+) -> 'ResourceProfile':
+    """
+    Discover undifferentiated resource profile, by either keeping all the resource names observed in the event log
+    as resources under that single profile, or by creating a single resource with the number of observed resources
+    as amount.
+
+    :param event_log: event log to discover the resource profiles from.
+    :param log_ids: column IDs of the event log.
+    :param calendar_id: ID of the calendar to assign to the created resource profile.
+    :param activity_label_to_id: map with each activity label as key and its ID as value.
+    :param cost_per_hour: cost per hour to assign to each resource in the current resource profile.
+    :param keep_log_names: flag indicating if to summarize all the observed resources as one single resource with
+    their number as the available amount (False), or create a resource per observed resource name (True).
+
+    :return: resource profile with all the observed resources.
+    """
+    # All activities assigned to one single resource profile
+    assigned_activities = list(activity_label_to_id.values())
+    # Create resources for this profile
+    if keep_log_names:
+        # Create a resource for each resource name in the log
+        resources = [
+            Resource(
+                id=name, name=name, amount=1, cost_per_hour=cost_per_hour,
+                calendar_id=calendar_id, assigned_tasks=assigned_activities
+            )
+            for name in event_log[log_ids.resource].unique()
+        ]
+    else:
+        # Create a single resource with the number of different resources in the log
+        resources = [
+            Resource(
+                id="UNDIFFERENTIATED_RESOURCE", name="UNDIFFERENTIATED_RESOURCE",
+                amount=event_log[log_ids.resource].nunique(), cost_per_hour=cost_per_hour,
+                calendar_id=calendar_id, assigned_tasks=assigned_activities
+            )
+        ]
+    # Return resource profile with all the single resources
+    return ResourceProfile(
+        id="UNDIFFERENTIATED_RESOURCE_PROFILE",
+        name="UNDIFFERENTIATED_RESOURCE_PROFILE",
+        resources=resources
+    )
+
+
+def discover_differentiated_resource_profiles(
+        event_log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        activity_label_to_id: dict,
+        cost_per_hour: float = 20
+) -> List['ResourceProfile']:
+    """
+    Discover differentiated resource profiles (one resource profile per resource observed in the log).
+
+    :param event_log: event log to discover the resource profiles from.
+    :param log_ids: column IDs of the event log.
+    :param activity_label_to_id: map with each activity label as key and its ID as value.
+    :param cost_per_hour: cost per hour to assign to each resource in the current resource profiles.
+
+    :return: list of resource profiles with all the observed resources.
+    """
+    # Create a profile for each discovered resource, with the activities they perform
+    resource_profiles = []
+    for resource_value, events in event_log.groupby(log_ids.resource):
+        # Get list of performed activities
+        resource_name = str(resource_value)
+        assigned_activities = [activity_label_to_id[activity_label] for activity_label in events[log_ids.activity].unique()]
+        # Create profile with default calendar ID
+        resource_profiles += [
+            ResourceProfile(
+                id=f"{resource_name}_profile",
+                name=f"{resource_name}_profile",
+                resources=[
+                    Resource(
+                        id=resource_name,
+                        name=resource_name,
+                        amount=1,
+                        cost_per_hour=cost_per_hour,
+                        calendar_id=f"{resource_name}_calendar",
+                        assigned_tasks=assigned_activities
+                    )
+                ]
+            )
+        ]
+    # Return list of profiles
+    return resource_profiles
+
+
+def discover_pool_resource_profiles(
+        event_log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        activity_label_to_id: dict,
+        cost_per_hour: float = 20
+) -> List['ResourceProfile']:
+    """
+    Discover resource profiles grouped by pools. Discover pools of resources with the same characteristics, and
+    create a resource profile per pool.
+
+    :param event_log: event log to discover the resource profiles from.
+    :param log_ids: column IDs of the event log.
+    :param activity_label_to_id: map with each activity label as key and its ID as value.
+    :param cost_per_hour: cost per hour to assign to each resource in the current resource profiles.
+
+    :return: list of resource profiles with the observed resources grouped by pool.
+    """
+    # Discover resource pools
+    analyzer = ResourcePoolDiscoverer(
+        event_log[[log_ids.activity, log_ids.resource]],
+        activity_key=log_ids.activity,
+        resource_key=log_ids.resource
+    )
+    # Map each pool ID to its resources
+    pools = {}
+    for item in analyzer.resource_table:
+        pool_id = item['role']
+        resources = pools.get(pool_id, [])
+        resources += [item['resource']]
+        pools[pool_id] = resources
+    # Create profile for each pool
+    resource_profiles = []
+    for pool_id in pools:
+        # Get list of performed activities
+        filtered_log = event_log[event_log[log_ids.resource].isin(pools[pool_id])]
+        assigned_activities = [activity_label_to_id[activity_label] for activity_label in filtered_log[log_ids.activity].unique()]
+        # Add resource profile with all the resources of this pool
+        resource_profiles += [
+            ResourceProfile(
+                id=f"{pool_id}_profile",
+                name=f"{pool_id}_profile",
+                resources=[
+                    Resource(
+                        id=resource_name,
+                        name=resource_name,
+                        amount=1,
+                        cost_per_hour=cost_per_hour,
+                        calendar_id=f"{pool_id}_calendar",
+                        assigned_tasks=assigned_activities
+                    )
+                    for resource_name in pools[pool_id]
+                ]
+            )
+        ]
+    # Return resource profiles
+    return resource_profiles

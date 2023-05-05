@@ -5,7 +5,7 @@ from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from pix_utils.log_ids import EventLogIDs
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
-from simod.simulation.parameters.calendars import Calendar, Timetable
+from simod.simulation.parameters.calendar import Calendar, Timetable
 
 UNDIFFERENTIATED_RESOURCE_POOL_KEY = "undifferentiated_resource_pool"
 

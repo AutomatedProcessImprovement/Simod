@@ -11,8 +11,8 @@ from bpdfr_simulation_engine.simulation_engine import run_simulation
 from pix_utils.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 
 from simod.cli_formatter import print_notice, print_step
-from .parameters.activity_resources import ActivityResourceDistribution
-from .parameters.calendars import Calendar
+from .parameters.resource_activity_performances import ActivityResourceDistribution
+from .parameters.calendar import Calendar
 from .parameters.gateway_probabilities import GatewayProbabilities
 from .parameters.resource_profiles import ResourceProfile
 from ..event_log.utilities import read

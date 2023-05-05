@@ -11,8 +11,8 @@ from simod.cli_formatter import print_notice
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import resource as resource_calendar
-from simod.simulation.parameters.activity_resources import ActivityResourceDistribution, ResourceDistribution
-from simod.simulation.parameters.calendars import Calendar
+from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, ResourceDistribution
+from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.case_arrival import discover_case_arrival_calendar, discover_inter_arrival_distribution
 from simod.simulation.parameters.gateway_probabilities import compute_gateway_probabilities, GatewayProbabilities
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \

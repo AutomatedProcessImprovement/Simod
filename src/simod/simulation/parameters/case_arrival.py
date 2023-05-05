@@ -5,7 +5,7 @@ from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from pix_utils.log_ids import EventLogIDs
 from pix_utils.statistics.distribution import get_best_fitting_distribution, get_observations_histogram
 
-from simod.simulation.parameters.calendars import Calendar, Timetable
+from simod.simulation.parameters.calendar import Calendar, Timetable
 from simod.utilities import nearest_divisor_for_granularity
 
 

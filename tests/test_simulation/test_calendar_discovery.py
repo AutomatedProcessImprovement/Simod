@@ -3,7 +3,7 @@ from pix_utils.input import read_csv_log
 from pix_utils.log_ids import APROMORE_LOG_IDS
 
 from simod.simulation.calendar_discovery import resource
-from simod.simulation.parameters.calendars import Calendar
+from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.case_arrival import discover_case_arrival_calendar
 
 
