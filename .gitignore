@@ -35,4 +35,3 @@ tests/test_benchmarking/logs
 sandbox
 external_tools/cvxopt
 external_tools/SuiteSparse
-poetry.lock
