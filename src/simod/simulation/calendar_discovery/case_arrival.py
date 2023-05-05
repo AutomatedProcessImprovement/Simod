@@ -1,6 +1,6 @@
 import pandas as pd
 from bpdfr_simulation_engine.resource_calendar import CalendarFactory
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
 
 from simod.simulation.parameters.calendars import Calendar, Timetable
 from simod.utilities import nearest_divisor_for_granularity

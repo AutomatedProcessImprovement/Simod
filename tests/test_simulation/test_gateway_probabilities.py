@@ -1,5 +1,5 @@
 import pytest
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
 
 from simod.event_log.utilities import read
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
@@ -20,7 +20,8 @@ def test_compute_gateway_probabilities(entry_point, log_name):
     model_path = entry_point / 'PurchasingExample.bpmn'
 
     # Discover with equiprobable
-    gateway_probabilities = compute_gateway_probabilities(log, log_ids, model_path, GatewayProbabilitiesMethod.EQUIPROBABLE)
+    gateway_probabilities = compute_gateway_probabilities(log, log_ids, model_path,
+                                                          GatewayProbabilitiesMethod.EQUIPROBABLE)
     # Assert equiprobable probabilities
     assert gateway_probabilities is not None
     for gateway in gateway_probabilities:
@@ -29,7 +30,8 @@ def test_compute_gateway_probabilities(entry_point, log_name):
             assert path.probability == 1.0 / total_paths
 
     # Discover
-    gateway_probabilities = compute_gateway_probabilities(log, log_ids, model_path, GatewayProbabilitiesMethod.DISCOVERY)
+    gateway_probabilities = compute_gateway_probabilities(log, log_ids, model_path,
+                                                          GatewayProbabilitiesMethod.DISCOVERY)
     # Assert they add up to one
     assert gateway_probabilities is not None
     for gateway in gateway_probabilities:

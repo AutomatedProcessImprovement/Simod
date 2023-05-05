@@ -936,14 +936,14 @@ files = [
 
 [[package]]
 name = "openxes-cli-py"
-version = "0.1.11"
+version = "0.1.12"
 description = ""
 category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "openxes_cli_py-0.1.11-py3-none-any.whl", hash = "sha256:a9f2ed8c80795e5c5dc8b20678a1c2080280cafa2173e603cceb77e90ad9ef09"},
-    {file = "openxes_cli_py-0.1.11.tar.gz", hash = "sha256:8c00dce147e88e8e940b5b01e30954a2f6d197fb0a8e2a446592378e1667fd6e"},
+    {file = "openxes_cli_py-0.1.12-py3-none-any.whl", hash = "sha256:62fc9d9dd74709cc422dbb713d551e46cf4644bdccef4e5ff966dbddb45e4d71"},
+    {file = "openxes_cli_py-0.1.12.tar.gz", hash = "sha256:c198426deb8e447b62a26399fd4d9ba5924133127351ef12f869e4027ec3c410"},
 ]
 
 [[package]]
@@ -1140,6 +1140,22 @@ files = [
 [package.extras]
 docs = ["furo", "olefile", "sphinx (>=2.4)", "sphinx-copybutton", "sphinx-inline-tabs", "sphinx-removed-in", "sphinxext-opengraph"]
 tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "packaging", "pyroma", "pytest", "pytest-cov", "pytest-timeout"]
+
+[[package]]
+name = "pix-framework"
+version = "0.7.1"
+description = "Process Improvement Explorer Framework contains process discovery and improvement modules of the Process Improvement Explorer project."
+category = "main"
+optional = false
+python-versions = ">=3.9,<3.12"
+files = [
+    {file = "pix_framework-0.7.1-py3-none-any.whl", hash = "sha256:f4001b5976740f50639a0ef4f1ae2df7597a635c13eb32f1ffe963b9991f3da6"},
+    {file = "pix_framework-0.7.1.tar.gz", hash = "sha256:8f485fa484f9086a3430741873cd4086a6c6d207092c99675afd176b5ef16d05"},
+]
+
+[package.dependencies]
+pandas = ">=2.0.1,<3.0.0"
+scipy = ">=1.10.1,<2.0.0"
 
 [[package]]
 name = "pix-utils"
@@ -1754,4 +1770,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "a855c4f91563ca77e604f062b89e977217289ad3548c2bc64d9bfb8079b7b661"
+content-hash = "4787ef2ec62f55f69f02c3cb4346101fe976206d3a35fe0a4a628793008372bc"

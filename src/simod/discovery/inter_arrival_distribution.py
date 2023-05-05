@@ -1,6 +1,6 @@
 import pandas as pd
-from pix_utils.log_ids import EventLogIDs
-from pix_utils.statistics.distribution import get_best_fitting_distribution
+from pix_framework.log_ids import EventLogIDs
+from pix_framework.statistics.distribution import get_best_fitting_distribution
 
 
 def discover(log: pd.DataFrame, log_ids: EventLogIDs) -> dict:

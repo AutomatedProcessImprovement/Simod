@@ -7,7 +7,7 @@ from extraneous_activity_delays.config import Configuration as ExtraneousActivit
     SimulationEngine, SimulationModel, OptimizationMetric, TimerPlacement
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from lxml import etree
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
 
 from simod.simulation.prosimos import SimulationParameters
 

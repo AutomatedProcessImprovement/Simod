@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Union, List
 
-from pix_utils.log_ids import EventLogIDs, DEFAULT_XES_IDS
+from pix_framework.log_ids import EventLogIDs, DEFAULT_XES_IDS
 from pydantic import BaseModel
 
 from ..utilities import get_project_dir

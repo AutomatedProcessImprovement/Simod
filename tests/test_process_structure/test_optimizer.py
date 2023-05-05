@@ -1,6 +1,6 @@
 import pytest
-from pix_utils.filesystem.file_manager import get_random_folder_id, create_folder
-from pix_utils.log_ids import DEFAULT_XES_IDS
+from pix_framework.filesystem.file_manager import get_random_folder_id, create_folder
+from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.event_log.event_log import EventLog
 from simod.process_structure.optimizer import StructureOptimizer

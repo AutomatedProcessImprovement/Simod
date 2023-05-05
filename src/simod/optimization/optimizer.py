@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 import pandas as pd
 from extraneous_activity_delays.config import SimulationModel
-from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, create_folder
+from pix_framework.filesystem.file_manager import get_random_folder_id, get_random_file_id, create_folder
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message

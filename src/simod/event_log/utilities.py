@@ -6,7 +6,7 @@ from xml.etree import ElementTree
 import pandas as pd
 import pendulum
 from openxes_cli.lib import xes_to_csv, csv_to_xes
-from pix_utils.log_ids import DEFAULT_XES_IDS, EventLogIDs
+from pix_framework.log_ids import DEFAULT_XES_IDS, EventLogIDs
 
 
 def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFrame:
@@ -19,7 +19,7 @@ def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFra
     cases_durations = list()
     for case_id, trace in event_log.groupby(log_ids.case):
         duration = (
-            trace[log_ids.end_time].max() - trace[log_ids.start_time].min()
+                trace[log_ids.end_time].max() - trace[log_ids.start_time].min()
         ).total_seconds()
         cases_durations.append({log_ids.case: case_id, case_duration_key: duration})
     cases_durations = pd.DataFrame(cases_durations)
@@ -36,14 +36,14 @@ def remove_outliers(event_log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFra
     event_log = event_log[
         (event_log[case_duration_key] <= last_quantile.duration_seconds)
         & (event_log.duration_seconds >= first_quantile.duration_seconds)
-    ]
+        ]
     event_log = event_log.drop(columns=[case_duration_key])
 
     return event_log
 
 
 def convert_xes_to_csv_if_needed(
-    log_path: Path, output_path: Optional[Path] = None
+        log_path: Path, output_path: Optional[Path] = None
 ) -> Path:
     _, ext = os.path.splitext(log_path)
     if ext == ".xes":
@@ -58,7 +58,7 @@ def convert_xes_to_csv_if_needed(
 
 
 def read(
-    log_path: Path, log_ids: EventLogIDs = DEFAULT_XES_IDS
+        log_path: Path, log_ids: EventLogIDs = DEFAULT_XES_IDS
 ) -> Tuple[pd.DataFrame, Path]:
     """Reads an event log from XES or CSV and converts timestamp to UTC.
 

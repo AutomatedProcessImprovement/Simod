@@ -7,7 +7,7 @@ from itertools import groupby
 from typing import List, Dict, Optional
 
 import pandas as pd
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
 from tqdm import tqdm
 
 _XES_TIMESTAMP_TAG = 'time:timestamp'

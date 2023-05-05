@@ -1,4 +1,4 @@
-from pix_utils.log_ids import DEFAULT_CSV_IDS
+from pix_framework.log_ids import DEFAULT_CSV_IDS
 
 from simod.event_log.utilities import read
 from simod.simulation.parameters.resource_profiles import ResourceProfile

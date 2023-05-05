@@ -1,5 +1,5 @@
 import pytest
-from pix_utils.log_ids import DEFAULT_XES_IDS, EventLogIDs
+from pix_framework.log_ids import DEFAULT_XES_IDS, EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 

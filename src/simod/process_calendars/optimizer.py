@@ -6,8 +6,8 @@ import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
-from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
+from pix_framework.log_ids import EventLogIDs
 
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_subsection, print_step
@@ -148,7 +148,8 @@ class CalendarOptimizer:
         # Save evaluation measurements
         assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
         self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
-        self.evaluation_measurements.to_csv(self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
+        self.evaluation_measurements.to_csv(
+            self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
 
         return best_settings
 

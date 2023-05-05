@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from pix_utils.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
+from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
 
 from .miner import StructureMiner
 from .settings import HyperoptIterationParams
@@ -175,7 +175,8 @@ class StructureOptimizer:
         space = {}
         # Add gateway probabilities method
         if isinstance(settings.gateway_probabilities, list):
-            space['gateway_probabilities_method'] = hp.choice('gateway_probabilities_method', settings.gateway_probabilities)
+            space['gateway_probabilities_method'] = hp.choice('gateway_probabilities_method',
+                                                              settings.gateway_probabilities)
         else:
             space['gateway_probabilities_method'] = settings.gateway_probabilities
         # Process model discovery parameters if we need to discover it

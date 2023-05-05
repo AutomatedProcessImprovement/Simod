@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from pix_utils.filesystem.file_manager import get_random_folder_id
+from pix_framework.filesystem.file_manager import get_random_folder_id
 
 from simod import cli
 from simod.event_log.event_log import EventLog
@@ -9,8 +9,6 @@ from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
 from simod.optimization.optimizer import Optimizer
 from simod.settings.simod_settings import PROJECT_DIR, SimodSettings
-
-# NOTE: these are mostly general overall long-running tests to check if everything finishes without exceptions
 
 optimize_config_files = [
     'optimize_config_no_start_times.yml',
@@ -27,7 +25,7 @@ def test_optimize(entry_point, runner, path):
     assert result.exit_code == 0
 
 
-def test_SIMOD():
+def test_simod():
     config_path = Path("./tests/assets/optimize_config_no_start_times.yml")
     settings = SimodSettings.from_path(config_path)
 

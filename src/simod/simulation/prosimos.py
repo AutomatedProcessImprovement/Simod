@@ -8,7 +8,7 @@ from typing import List, Tuple, Optional, Union
 
 import pandas as pd
 from bpdfr_simulation_engine.simulation_engine import run_simulation
-from pix_utils.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
+from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 
 from simod.cli_formatter import print_notice, print_step
 from .parameters.activity_resources import ActivityResourceDistribution

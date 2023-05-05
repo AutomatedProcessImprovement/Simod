@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import pandas as pd
 from networkx import DiGraph
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.simulation.calendar_discovery.resource import PoolMapping

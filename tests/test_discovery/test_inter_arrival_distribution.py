@@ -1,5 +1,5 @@
 import pytest
-from pix_utils.log_ids import DEFAULT_XES_IDS
+from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.discovery import inter_arrival_distribution
 from simod.event_log.utilities import read

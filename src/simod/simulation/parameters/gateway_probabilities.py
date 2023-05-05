@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
 
 from simod.cli_formatter import print_step
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod

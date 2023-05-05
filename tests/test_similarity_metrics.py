@@ -1,6 +1,6 @@
 import pytest
-from pix_utils.input import read_csv_log
-from pix_utils.log_ids import DEFAULT_CSV_IDS, APROMORE_LOG_IDS
+from pix_framework.input import read_csv_log
+from pix_framework.log_ids import DEFAULT_CSV_IDS, APROMORE_LOG_IDS
 
 from simod.metrics.metrics import get_absolute_hourly_emd
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import click
-from pix_utils.filesystem.file_manager import get_random_folder_id
+from pix_framework.filesystem.file_manager import get_random_folder_id
 
 from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor

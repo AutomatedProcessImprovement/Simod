@@ -3,8 +3,8 @@ import pytest
 from extraneous_activity_delays.config import Configuration, SimulationEngine, SimulationModel, OptimizationMetric
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from lxml import etree
-from pix_utils.log_ids import DEFAULT_CSV_IDS
-from pix_utils.log_ids import DEFAULT_XES_IDS
+from pix_framework.log_ids import DEFAULT_CSV_IDS
+from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod

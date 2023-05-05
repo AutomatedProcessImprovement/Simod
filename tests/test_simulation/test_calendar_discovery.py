@@ -1,6 +1,6 @@
 import pytest
-from pix_utils.input import read_csv_log
-from pix_utils.log_ids import APROMORE_LOG_IDS
+from pix_framework.input import read_csv_log
+from pix_framework.log_ids import APROMORE_LOG_IDS
 
 from simod.simulation.calendar_discovery import case_arrival, resource
 from simod.simulation.parameters.calendars import Calendar
