@@ -1,4 +1,4 @@
-name: Simod
+name: Build & Test
 
 on:
   workflow_dispatch:
@@ -6,12 +6,14 @@ on:
     branches: [ master ]
     paths:
       - 'src/simod/**'
+      - 'tests/**'
       - '.github/workflows/**'
       - 'Dockerfile'
   pull_request:
     branches: [ master ]
     paths:
       - 'src/simod/**'
+      - 'tests/**'
       - '.github/workflows/**'
       - 'Dockerfile'
 
@@ -59,19 +61,27 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
 
+      - name: Generate changelog
+        run: |
+          echo "# Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "\`\`\`" >> CHANGELOG.md
+          git log --pretty=format:"%h - %s (%an)" $(git describe --tags --abbrev=0)..HEAD >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "\`\`\`" >> CHANGELOG.md
+
       - name: Assign a version tag
         run: |
           git tag ${{ steps.versioning.outputs.version }}
           git push --tags
 
       - name: Create a release
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
+          files: |
+            dist/*
           tag_name: ${{ steps.versioning.outputs.version }}
-          release_name: ${{ steps.versioning.outputs.version }}
+          body_path: CHANGELOG.md
 
   test:
     needs: [ build ]
