@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from pix_framework.enhancement.multitasking import adjust_durations
 from pix_framework.log_ids import EventLogIDs
 from start_time_estimator.concurrency_oracle import OverlappingConcurrencyOracle
 from start_time_estimator.config import (
@@ -12,7 +13,6 @@ from start_time_estimator.config import (
 from start_time_estimator.estimator import StartTimeEstimator
 
 from simod.cli_formatter import print_step, print_section
-from simod.event_log.multitasking import adjust_durations
 
 
 @dataclass
@@ -75,13 +75,12 @@ class Preprocessor:
 
         return self._log
 
-    def _adjust_for_multitasking(self, is_concurrent=False, verbose=False):
+    def _adjust_for_multitasking(self, verbose=False):
         print_step("Adjusting timestamps for multitasking")
 
         self._log = adjust_durations(
             self._log,
             self._log_ids,
-            is_concurrent=is_concurrent,
             verbose=verbose,
         )
 
