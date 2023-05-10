@@ -38,42 +38,34 @@ class Optimizer:
     def __init__(
             self,
             settings: SimodSettings,
-            event_log: Optional[EventLog] = None,
+            event_log: EventLog,
             output_dir: Optional[Path] = None
     ):
         # Save SIMOD settings
         self._settings = settings
         # Read event log from path if not provided
-        # TODO always receive pd.DataFrame and splitting always in SIMOD
-        if event_log is None:
-            self._event_log = EventLog.from_path(
-                path=settings.common.log_path,
-                log_ids=settings.common.log_ids,
-                process_name=settings.common.log_path.stem,
-                test_path=settings.common.test_log_path,
-            )
-        else:
-            self._event_log = event_log
+        self._event_log = event_log
         # Create output directory if not provided
         if output_dir is None:
             self._output_dir = PROJECT_DIR / 'outputs' / get_random_folder_id()
             create_folder(self._output_dir)
         else:
             self._output_dir = output_dir
-        # Create folder for the best result
+        # Create folders for the control-flow optimization, temporal optimization, and best result
+        self._control_flow_dir = self._output_dir / "control-flow"
+        self._temporal_opt_dir = self._output_dir / "temporal"
         self._best_result_dir = self._output_dir / 'best_result'
+        create_folder(self._control_flow_dir)
+        create_folder(self._temporal_opt_dir)
         create_folder(self._best_result_dir)
 
     def _optimize_structure(self) -> Tuple[StructureHyperoptIterationParams, Path]:
         """Control-flow and Gateway Probabilities discovery."""
-        # Create folder to output control-flow optimization files
-        control_flow_dir = self._output_dir / "control-flow"
-        create_folder(control_flow_dir)
         # Instantiate class to perform the optimization of the control-flow discovery
         self._structure_optimizer = StructureOptimizer(
             self._event_log,
             self._settings.control_flow,
-            base_directory=control_flow_dir,
+            base_directory=self._control_flow_dir,
             model_path=self._settings.common.model_path
         )
         # Run optimization process
@@ -100,6 +92,7 @@ class Optimizer:
             calendar_settings,
             self._event_log,
             train_model_path=model_path,
+            base_directory=self._temporal_opt_dir,
             gateway_probabilities=gateway_probabilities,
             gateway_probabilities_method=structure_settings.gateway_probabilities_method,
             process_graph=process_graph,

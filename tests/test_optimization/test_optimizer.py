@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from simod.event_log.event_log import EventLog
 from simod.optimization.optimizer import Optimizer
 from simod.settings.simod_settings import SimodSettings
 
@@ -260,5 +261,11 @@ def test_optimizer(test_data, entry_point):
     if settings.common.model_path:
         settings.common.model_path = (entry_point / Path(settings.common.model_path).name).absolute()
 
-    optimizer = Optimizer(settings)
+    event_log = EventLog.from_path(
+        path=settings.common.log_path,
+        log_ids=settings.common.log_ids,
+        process_name=settings.common.log_path.stem,
+        test_path=settings.common.test_log_path,
+    )
+    optimizer = Optimizer(settings, event_log=event_log)
     optimizer.run()
