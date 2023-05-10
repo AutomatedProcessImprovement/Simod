@@ -192,28 +192,30 @@ class StructureMiner:
             raise ValueError("No output model path specified.")
 
     def _sm2_miner(self, xes_path: Path, concurrency: float):
-        args = ["java"]
-
+        # Define args depending on the system is running
         if is_windows():
-            sep = ";"
+            # Windows: ';' as separator and escape string with '"'
+            args = ["java"]
+            split_miner_path = "\"" + sm2_path.__str__() + ";" + os.path.join(os.path.dirname(sm2_path), "lib", "*") + "\""
+            input_log_path = "\"" + str(xes_path) + "\""
+            model_output_path = "\"" + str(self._model_path_without_suffix()) + "\""
         else:
-            sep = ":"
-            args += ["-Xmx2G", "-Xms1024M"]
-
+            # Linux: ':' as separator and add memory specs
+            args = ["java", "-Xmx2G", "-Xms1024M"]
+            split_miner_path = sm2_path.__str__() + ":" + os.path.join(os.path.dirname(sm2_path), "lib", "*")
+            input_log_path = str(xes_path)
+            model_output_path = str(self._model_path_without_suffix())
+        # Prepare command structure
         args += [
             "-cp",
-            (
-                sm2_path.__str__()
-                + sep
-                + os.path.join(os.path.dirname(sm2_path), "lib", "*")
-            ),
+            split_miner_path,
             "au.edu.unimelb.services.ServiceProvider",
             "SM2",
-            str(xes_path),
-            str(self._model_path_without_suffix()),
+            input_log_path,
+            model_output_path,
             str(concurrency),
         ]
-
+        # Execute command
         print_step(f"SplitMiner2 is running with the following arguments: {args}")
         execute_external_command(args)
 
@@ -225,35 +227,33 @@ class StructureMiner:
         prioritize_parallelism: bool,
         replace_or_joins: bool,
     ):
-        args = ["java"]
-
+        # Define args depending on the system is running
         if is_windows():
-            sep = ";"
+            # Windows: ';' as separator and escape string with '"'
+            args = ["java"]
+            split_miner_path = "\"" + sm3_path.__str__() + ";" + os.path.join(os.path.dirname(sm3_path), "lib", "*") + "\""
+            input_log_path = "\"" + str(xes_path) + "\""
+            model_output_path = "\"" + str(self._model_path_without_suffix()) + "\""
         else:
-            sep = ":"
-            args += ["-Xmx2G", "-Xms1024M"]
-
-        # prioritizes parallelism on loops
-        parallelism_first = str(prioritize_parallelism).lower()
-        # replaces non trivial OR joins
-        replace_or_joins = str(replace_or_joins).lower()
-        # removes loop activity markers (false increases model complexity)
-        remove_loop_activity_markers = "false"
-
+            # Linux: ':' as separator and add memory specs
+            args = ["java", "-Xmx2G", "-Xms1024M"]
+            split_miner_path = sm3_path.__str__() + ":" + os.path.join(os.path.dirname(sm3_path), "lib", "*")
+            input_log_path = str(xes_path)
+            model_output_path = str(self._model_path_without_suffix())
+        # Prepare command structure
         args += [
             "-cp",
-            sm3_path.__str__()
-            + sep
-            + os.path.join(os.path.dirname(sm3_path), "lib", "*"),
+            split_miner_path,
             "au.edu.unimelb.services.ServiceProvider",
             "SMD",
             str(eta),
             str(epsilon),
-            parallelism_first,
-            replace_or_joins,
-            remove_loop_activity_markers,
-            str(xes_path),
-            str(self._model_path_without_suffix()),
+            str(prioritize_parallelism).lower(),  # Prioritize parallelism over loops
+            str(replace_or_joins).lower(),  # Replace non-trivial OR joins
+            "false",  # Remove loop activity markers (false increases model complexity)
+            input_log_path,
+            model_output_path,
         ]
+        # Execute command
         print_step(f"SplitMiner3 is running with the following arguments: {args}")
         execute_external_command(args)
