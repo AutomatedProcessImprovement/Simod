@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 import pandas as pd
+from pix_utils.calendar.resource_calendar import RCalendar, absolute_unavailability_intervals_within
 from pix_utils.log_ids import EventLogIDs
 from pix_utils.statistics.distribution import get_best_fitting_distribution
 
@@ -121,12 +122,38 @@ def compute_activity_durations_without_off_duty(
     """
     Returns activity durations without off-duty time.
     """
-    # TODO
-    # activity_intervals = _get_activity_intervals(df, log_ids)
-    # overlapping_intervals = _get_overlapping_intervals(activity_intervals, calendar)
-    # overlapping_durations = []
-    # for intervals in overlapping_intervals:
-    #    duration_intervals = [interval.duration().total_seconds() for interval in intervals]
-    #    overlapping_durations.append(sum(duration_intervals))
-    #
-    # return overlapping_durations
+    # Transform Simod calendar into PIX Framework calendar
+    preproc_calendar = _preprocess_calendar(calendar)
+    # Compute the calendar-aware duration of each event
+    calendar_aware_durations = []
+    for start, end in events[[log_ids.start_time, log_ids.end_time]].values.tolist():
+        # Recover off-duty periods based on given calendar
+        unavailable_periods = absolute_unavailability_intervals_within(
+            start=start,
+            end=end,
+            schedule=preproc_calendar
+        )
+        # Compute total off-duty duration
+        unavailable_time = sum([
+            (unavailable_period.end - unavailable_period.start).total_seconds()
+            for unavailable_period in unavailable_periods
+        ])
+        # Compute raw duration and subtract off-duty periods
+        calendar_aware_durations += [(end - start).total_seconds() - unavailable_time]
+    # Return durations without off-duty time
+    return calendar_aware_durations
+
+
+def _preprocess_calendar(calendar: Calendar) -> RCalendar:
+    # Create empty RCalendar with the same ID
+    preproc_calendar = RCalendar(calendar_id=calendar.id)
+    # Add working periods one by one
+    for timetable in calendar.timetables:
+        preproc_calendar.add_calendar_item(
+            from_day=timetable.from_day.value,
+            to_day=timetable.to_day.value,
+            begin_time=timetable.begin_time,
+            end_time=timetable.end_time
+        )
+    # Return calendar in PIX Framework format
+    return preproc_calendar
