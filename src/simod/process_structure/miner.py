@@ -1,13 +1,9 @@
 import os
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
-import yaml
-
-from simod.cli_formatter import print_warning, print_step
+from simod.cli_formatter import print_step
 from simod.settings.control_flow_settings import (
-    GatewayProbabilitiesMethod,
     ProcessModelDiscoveryAlgorithm,
 )
 from simod.settings.simod_settings import PROJECT_DIR
@@ -15,124 +11,6 @@ from simod.utilities import is_windows, execute_external_command
 
 sm2_path: Path = PROJECT_DIR / "external_tools/splitminer2/sm2.jar"
 sm3_path: Path = PROJECT_DIR / "external_tools/splitminer3/bpmtk.jar"
-
-
-@dataclass
-class Settings:
-    """
-    Settings for the structure miner.
-    """
-
-    gateway_probabilities_method: GatewayProbabilitiesMethod
-    mining_algorithm: ProcessModelDiscoveryAlgorithm = (
-        ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3
-    )
-
-    # Split Miner 1 and 3
-    epsilon: Optional[float] = None
-    eta: Optional[float] = None
-
-    # Split Miner 2
-    concurrency: Optional[float] = 0.0
-
-    # Split Miner 3
-    prioritize_parallelism: Optional[bool] = False
-    replace_or_joins: Optional[bool] = False
-
-    @staticmethod
-    def default() -> "Settings":
-        return Settings(
-            gateway_probabilities_method=GatewayProbabilitiesMethod.DISCOVERY,
-            mining_algorithm=ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3,
-            prioritize_parallelism=False,
-            replace_or_joins=False,
-            epsilon=0.5,
-            eta=0.5,
-        )
-
-    @staticmethod
-    def from_stream(stream: Union[str, bytes]) -> Optional["Settings"]:
-        settings = yaml.load(stream, Loader=yaml.FullLoader)
-
-        if "structure_optimizer" in settings:
-            settings = settings["structure_optimizer"]
-
-        gateway_probabilities_method = settings.get(
-            "gateway_probabilities_method", None
-        )
-        if gateway_probabilities_method is not None:
-            gateway_probabilities_method = GatewayProbabilitiesMethod.from_str(
-                gateway_probabilities_method
-            )
-
-        mining_algorithm = settings.get("mining_algorithm", None)
-        if mining_algorithm is None:
-            mining_algorithm = settings.get("mining_alg", None)  # legacy key support
-        if mining_algorithm is not None:
-            mining_algorithm = ProcessModelDiscoveryAlgorithm.from_str(mining_algorithm)
-        if mining_algorithm is None:
-            print_warning("No mining algorithm specified.")
-            return None
-
-        epsilon = settings.get("epsilon", None)
-        assert type(epsilon) is not list, "epsilon must be a single value"
-
-        eta = settings.get("eta", None)
-        assert type(eta) is not list, "eta must be a single value"
-
-        concurrency = settings.get("concurrency", 0.0)
-        assert type(concurrency) is not list, "concurrency must be a single value"
-
-        prioritize_parallelism = None
-        parallelism = settings.get("prioritize_parallelism", None)
-        if parallelism is not None:
-            if isinstance(parallelism, bool):
-                prioritize_parallelism = parallelism
-            elif isinstance(parallelism, str):
-                prioritize_parallelism = [parallelism.lower() == "true"]
-            elif isinstance(parallelism, list):
-                prioritize_parallelism = parallelism
-            else:
-                raise ValueError(
-                    "prioritize_parallelism must be a bool, list or string."
-                )
-
-        replace_or_joins = None
-        or_joins = settings.get("replace_or_joins", None)
-        if or_joins is not None:
-            if isinstance(or_joins, bool):
-                replace_or_joins = or_joins
-            elif isinstance(or_joins, str):
-                replace_or_joins = [or_joins.lower() == "true"]
-            elif isinstance(or_joins, list):
-                replace_or_joins = or_joins
-            else:
-                raise ValueError("replace_or_joins must be a bool, list or string.")
-
-        return Settings(
-            gateway_probabilities_method=gateway_probabilities_method,
-            mining_algorithm=mining_algorithm,
-            epsilon=epsilon,
-            eta=eta,
-            concurrency=concurrency,
-            prioritize_parallelism=prioritize_parallelism,
-            replace_or_joins=replace_or_joins,
-        )
-
-    def to_dict(self) -> dict:
-        return {
-            "mining_algorithm": self.mining_algorithm.value
-            if self.mining_algorithm
-            else None,
-            "gateway_probabilities_method": self.gateway_probabilities_method.value
-            if self.gateway_probabilities_method
-            else None,
-            "epsilon": self.epsilon,
-            "eta": self.eta,
-            "concurrency": self.concurrency,
-            "prioritize_parallelism": self.prioritize_parallelism,
-            "replace_or_joins": self.replace_or_joins,
-        }
 
 
 class StructureMiner:

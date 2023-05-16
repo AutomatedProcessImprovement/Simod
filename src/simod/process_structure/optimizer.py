@@ -1,4 +1,5 @@
 import json
+import shutil
 from pathlib import Path
 from typing import Tuple, Optional, List
 
@@ -15,9 +16,10 @@ from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_message, print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..settings.common_settings import Metric
-from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings
-from ..simulation.parameters.gateway_probabilities import GatewayProbabilities
-from ..simulation.parameters.miner import mine_default_24_7
+from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings, GatewayProbabilitiesMethod
+from ..simulation.parameters.BPS_model import BPSModel
+from ..simulation.parameters.gateway_probabilities import GatewayProbabilities, compute_gateway_probabilities
+from ..simulation.parameters.miner import get_activities_ids_by_name
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step
 
@@ -25,14 +27,14 @@ from ..utilities import hyperopt_step
 class StructureOptimizer:
     # Event log with train/test partitions
     event_log: EventLog
+    # BPS model taken as starting point
+    initial_bps_model: BPSModel
     # Configuration settings
     settings: ControlFlowSettings
     # Root directory for the output files
     base_directory: Path
-    # Path to the process model
-    model_path: Path
-    # Gateway probabilities
-    gateway_probabilities: List[GatewayProbabilities]
+    # Path to the best process model
+    best_bps_model: Optional[BPSModel]
     # Quality measure of each hyperopt iteration
     evaluation_measurements: pd.DataFrame
 
@@ -40,105 +42,114 @@ class StructureOptimizer:
     _need_to_discover_model: bool
     # Path to the training log in XES format, needed for Split Miner
     _xes_train_log_path: Optional[Path] = None
+    # Set of trials for the hyperparameter optimization process
+    _bayes_trials = Trials
 
     def __init__(
             self,
             event_log: EventLog,
+            bps_model: BPSModel,
             settings: ControlFlowSettings,
-            base_directory: Path,
-            model_path: Optional[Path] = None,
+            base_directory: Path
     ):
         # Save event log, optimization settings, and output directory
         self.event_log = event_log
+        self.initial_bps_model = bps_model.deep_copy()
         self.settings = settings
         self.base_directory = base_directory
-        # Save model path
-        if model_path is not None:
-            # Provided
-            self.model_path = model_path
-            self._need_to_discover_model = False
-        else:
+        # Check if it is needed to discover the process model
+        self.best_bps_model = None
+        if self.initial_bps_model.process_model is None:
             # Not provided, create path to best discovered model
-            self.model_path = self.base_directory / f"{self.event_log.process_name}.bpmn"
             self._need_to_discover_model = True
-            # Create path to export training log (XES format) for SplitMiner
+            # Export training log (XES format) for SplitMiner
             self._xes_train_log_path = self.base_directory / (self.event_log.process_name + '.xes')
-        # Initialize empty list for gateway probabilities
-        self.gateway_probabilities = []
-        # Initialize table to store quality measures
+            self.event_log.train_to_xes(self._xes_train_log_path)
+        else:
+            # Process model provided
+            self._need_to_discover_model = False
+        # Initialize table to store quality measures of each iteration
         self.evaluation_measurements = pd.DataFrame(columns=[
             'distance', 'metric', 'status', 'gateway_probabilities', 'epsilon',
             'eta', 'prioritize_parallelism', 'replace_or_joins', 'output_dir'
         ])
-
         # Instantiate trials for hyper-optimization process
         self._bayes_trials = Trials()
 
     def _hyperopt_iteration(self, hyperopt_iteration_dict: dict):
+        # Report new iteration
         print_subsection("Control-flow optimization iteration")
-        # Initializing status
-        status = STATUS_OK
 
+        # Initialize status
+        status = STATUS_OK
         # Create folder for this iteration
         output_dir = self.base_directory / get_random_folder_id(prefix='iteration_')
         create_folder(output_dir)
-
-        # Parse the parameters of this iteration of the hyperopt process
+        # Initialize BPS model for this iteration
+        current_bps_model = self.initial_bps_model.deep_copy()
+        # Parameters of this iteration
         hyperopt_iteration_params = HyperoptIterationParams.from_hyperopt_dict(
             hyperopt_dict=hyperopt_iteration_dict,
             optimization_metric=self.settings.optimization_metric,
             mining_algorithm=self.settings.mining_algorithm,
-            model_path=None if self._need_to_discover_model else self.model_path,
+            model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
             output_dir=output_dir,
             project_name=self.event_log.process_name,
         )
-        print_message(f'Parameters: {hyperopt_iteration_params}', capitalize=False)
+        print_message(f"Parameters: {hyperopt_iteration_params}", capitalize=False)
 
-        # Discover process model if needed
+        # Discover process model (if needed)
         if self._need_to_discover_model:
             try:
-                hyperopt_iteration_params.model_path = output_dir / f"{self.event_log.process_name}.bpmn"
-                status, _ = hyperopt_step(status, self._discover_process_model, hyperopt_iteration_params)
+                status, current_bps_model.process_model = hyperopt_step(
+                    status,
+                    self._discover_process_model,
+                    hyperopt_iteration_params
+                )
             except Exception as e:
-                print_message(f'Process Discovery failed: {e}')
+                print_message(f"Process Discovery failed: {e}")
                 status = STATUS_FAIL
         else:
-            hyperopt_iteration_params.model_path = self.model_path
+            current_bps_model.process_model = hyperopt_iteration_params.model_path
 
-        # simulation parameters mining
-        # TODO only discover gateway probabilities here, the rest are given by SIMOD
-        status, result = hyperopt_step(
+        # Discover gateway probabilities
+        status, current_bps_model.gateway_probabilities = hyperopt_step(
             status,
-            self._extract_parameters_undifferentiated,
-            hyperopt_iteration_params)
+            self._discover_gateway_probabilities,
+            current_bps_model.process_model,
+            hyperopt_iteration_params.gateway_probabilities_method
+        )
 
-        json_path = result if status is STATUS_OK else None
-
-        # Simulate BPS model of this iteration and evaluate its quality
-        status, evaluation_measurements = hyperopt_step(status, self._simulate_undifferentiated,
-                                                        hyperopt_iteration_params,
-                                                        self.settings.num_evaluations_per_iteration,
-                                                        json_path)
+        # Simulate candidate and evaluate its quality
+        status, evaluation_measurements = hyperopt_step(
+            status,
+            self._simulate_bps_model,
+            current_bps_model,
+            hyperopt_iteration_params
+        )
 
         # Define the response of this iteration
-        status, response = self._define_response(status, evaluation_measurements, hyperopt_iteration_params)
+        status, response = self._define_response(
+            status,
+            evaluation_measurements,
+            hyperopt_iteration_params.output_dir,
+            current_bps_model.process_model
+        )
         print(f"Control-flow iteration response: {response}")
 
-        # Save quality of this evaluation
+        # Save the quality of this evaluation
         self._process_measurements(hyperopt_iteration_params, status, evaluation_measurements)
 
         return response
 
-    def run(self) -> Tuple[HyperoptIterationParams, Path]:
+    def run(self) -> HyperoptIterationParams:
         """
         Run Control-Flow & Gateway Probabilities discovery
         :return: Tuple of the best settings, the path to the best model and the list of evaluation measurements.
         """
         # Define search space
         search_space = self._define_search_space(settings=self.settings)
-        # If needed, write training event log to xes (SplitMiner needs XES as input)
-        if self._need_to_discover_model:
-            self.event_log.train_to_xes(self._xes_train_log_path)
+
         # Launch optimization process
         best_hyperopt_params = fmin(
             fn=self._hyperopt_iteration,
@@ -149,31 +160,45 @@ class StructureOptimizer:
             show_progressbar=False
         )
         best_hyperopt_params = hyperopt.space_eval(search_space, best_hyperopt_params)
+
         # Process best results
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
-        best_model_path = results[results.status == STATUS_OK].iloc[0].model_path
-        assert best_model_path.exists(), f'Best model path {best_model_path} does not exist'
-        best_settings = HyperoptIterationParams.from_hyperopt_dict(
+        best_result = results[results.status == STATUS_OK].iloc[0]
+        assert best_result['model_path'].exists(), f"Best model path {best_result['model_path']} does not exist"
+
+        # Re-build parameters of best hyperopt iteration
+        best_hyperopt_parameters = HyperoptIterationParams.from_hyperopt_dict(
             hyperopt_dict=best_hyperopt_params,
             optimization_metric=self.settings.optimization_metric,
             mining_algorithm=self.settings.mining_algorithm,
-            model_path=None if self._need_to_discover_model else self.model_path,
-            output_dir=best_model_path.parent,
+            model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
+            output_dir=best_result['output_dir'],
             project_name=self.event_log.process_name,
         )
-        # Save discovered gateway probabilities
-        best_parameters_path = best_model_path.parent / 'simulation_parameters.json'
-        self.gateway_probabilities = [
+
+        # Instantiate best BPS model
+        self.best_bps_model = self.initial_bps_model.deep_copy()
+        # Update best process model (save it in base directory)
+        self.best_bps_model.process_model = self._get_process_model_path(self.base_directory)
+        best_model_path = best_result['model_path'] if self._need_to_discover_model else self.initial_bps_model.process_model
+        shutil.copyfile(best_model_path, self.best_bps_model.process_model)
+        # Update simulation parameters (save them in base directory)
+        best_parameters_path = self._get_simulation_parameters_path(self.base_directory)
+        shutil.copyfile(
+            self._get_simulation_parameters_path(best_result['output_dir']),
+            best_parameters_path
+        )
+        self.best_bps_model.gateway_probabilities = [
             GatewayProbabilities.from_dict(gateway_probabilities)
             for gateway_probabilities in json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
         ]
-        # Save best model path
-        self.model_path = best_model_path
+
         # Save evaluation measurements
         self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
         self.evaluation_measurements.to_csv(self.base_directory / "evaluation_measures.csv", index=False)
-        # Return settings of the best iteration and path to the best simulation parameters
-        return best_settings, best_parameters_path
+
+        # Return settings of the best iteration
+        return best_hyperopt_parameters
 
     def _define_search_space(self, settings: ControlFlowSettings) -> dict:
         space = {}
@@ -228,7 +253,8 @@ class StructureOptimizer:
     def _define_response(
             status: str,
             evaluation_measurements: list,
-            pipeline_settings: HyperoptIterationParams,
+            output_dir: Path,
+            model_path: Path
     ) -> Tuple[str, dict]:
         # Compute mean distance if status is OK
         if status is STATUS_OK:
@@ -242,8 +268,8 @@ class StructureOptimizer:
         response = {
             'loss': distance,  # Loss value for the fmin function
             'status': status,  # Status of the optimization iteration
-            'output_dir': pipeline_settings.output_dir,
-            'model_path': pipeline_settings.model_path,
+            'output_dir': output_dir,
+            'model_path': model_path,
         }
 
         return status, response
@@ -272,52 +298,70 @@ class StructureOptimizer:
             values = values | optimization_parameters
             self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
 
-    def _discover_process_model(self, params: HyperoptIterationParams):
-        print_step('Discovering Process Model with SplitMiner')
+    def _discover_process_model(self, params: HyperoptIterationParams) -> Path:
+        print_step(f"Discovering Process Model with {params.mining_algorithm.value}")
+        model_path = self._get_process_model_path(params.output_dir)
         StructureMiner(
             params.mining_algorithm,
             self._xes_train_log_path,
-            params.model_path,
+            model_path,
             concurrency=params.concurrency,
             eta=params.eta,
             epsilon=params.epsilon,
             prioritize_parallelism=params.prioritize_parallelism,
             replace_or_joins=params.replace_or_joins,
         ).run()
+        return model_path
 
-    def _extract_parameters_undifferentiated(self, settings: HyperoptIterationParams) -> Path:
-        # Below, we mine simulation parameters with undifferentiated resources, because we optimize the structure,
-        # not calendars. So, we do not need to differentiate resources.
-        process_graph = self._process_graph = BPMNReaderWriter(settings.model_path).as_graph()
-        simulation_parameters = mine_default_24_7(
-            self.event_log.train_partition,
-            self.event_log.log_ids,
-            settings.model_path,
-            process_graph,
-            settings.gateway_probabilities_method)
-
-        json_path = settings.model_path.parent / 'simulation_parameters.json'
-        simulation_parameters.to_json_file(json_path)
-
-        return json_path
-
-    def _simulate_undifferentiated(
+    def _discover_gateway_probabilities(
             self,
-            settings: HyperoptIterationParams,
-            simulation_repetitions: int,
-            json_path: Path):
-        self.event_log.validation_partition['source'] = 'log'
-        self.event_log.validation_partition['run_num'] = 0
-        self.event_log.validation_partition['role'] = 'SYSTEM'
+            process_model: Path,
+            gateway_probabilities_method: GatewayProbabilitiesMethod
+    ) -> List[GatewayProbabilities]:
+        print_step(f"Mining gateway probabilities with {gateway_probabilities_method}")
+        return compute_gateway_probabilities(
+            event_log=self.event_log.train_partition,
+            log_ids=self.event_log.log_ids,
+            bpmn_path=process_model,
+            gateways_probability_type=gateway_probabilities_method
+        )
 
-        return simulate_and_evaluate(
-            model_path=settings.model_path,
-            parameters_path=json_path,
+    def _simulate_bps_model(
+            self,
+            bps_model: BPSModel,
+            settings: HyperoptIterationParams
+    ) -> List[dict]:
+        # Update activity label -> activity ID mapping of current process model
+        activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(bps_model.process_model).as_graph())
+        for resource_profile in bps_model.resource_model.resource_profiles:
+            for resource in resource_profile.resources:
+                resource.assigned_tasks = [
+                    activity_label_to_id[activity_label]
+                    for activity_label in resource.assigned_tasks
+                ]
+        for activity_resource_distributions in bps_model.resource_model.activity_resource_distributions:
+            activity_resource_distributions.activity_id = activity_label_to_id[activity_resource_distributions.activity_id]
+        # Write JSON parameters to file
+        json_parameters_path = self._get_simulation_parameters_path(settings.output_dir)
+        with json_parameters_path.open('w') as f:
+            json.dump(bps_model.to_dict(), f)
+        # Simulate and evaluate BPS model
+        evaluation_measures = simulate_and_evaluate(
+            model_path=bps_model.process_model,
+            parameters_path=json_parameters_path,
             output_dir=settings.output_dir,
             simulation_cases=self.event_log.validation_partition[self.event_log.log_ids.case].nunique(),
             simulation_start_time=self.event_log.validation_partition[self.event_log.log_ids.start_time].min(),
             validation_log=self.event_log.validation_partition,
             validation_log_ids=self.event_log.log_ids,
             metrics=[self.settings.optimization_metric],
-            num_simulations=simulation_repetitions,
+            num_simulations=self.settings.num_evaluations_per_iteration,
         )
+        # Return evaluation measures
+        return evaluation_measures
+
+    def _get_process_model_path(self, base_dir: Path) -> Path:
+        return base_dir / f"{self.event_log.process_name}.bpmn"
+
+    def _get_simulation_parameters_path(self, base_dir: Path) -> Path:
+        return base_dir / f"{self.event_log.process_name}.json"

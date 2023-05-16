@@ -11,12 +11,12 @@ from simod.cli_formatter import print_notice
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import resource as resource_calendar
-from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, ResourceDistribution
 from simod.simulation.parameters.calendar import Calendar
-from simod.simulation.parameters.case_arrival import discover_case_arrival_calendar, discover_inter_arrival_distribution
+from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar, discover_inter_arrival_distribution
 from simod.simulation.parameters.gateway_probabilities import compute_gateway_probabilities, GatewayProbabilities
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
     pd_interval_to_interval
+from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, ResourceDistribution
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 from simod.simulation.prosimos import SimulationParameters
 
@@ -330,11 +330,11 @@ def _get_overlapping_intervals(intervals: List[pd.Interval], calendar: Calendar)
 
 
 def _activity_duration_distributions_pools(
-    log: pd.DataFrame,
-    log_ids: EventLogIDs,
-    process_graph: DiGraph,
-    pool_by_resource_name: dict,
-    calendars: List[Calendar],
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        process_graph: DiGraph,
+        pool_by_resource_name: dict,
+        calendars: List[Calendar],
 ) -> List[ActivityResourceDistribution]:
     """
     Mines activity duration distributions for pooled resources for the Prosimos simulator.
@@ -354,7 +354,7 @@ def _activity_duration_distributions_pools(
             (calendar for calendar in calendars if calendar.id == pool_name), None
         )
         assert (
-            calendar is not None
+                calendar is not None
         ), f"Resource calendar for resource {pool_name} not found."
 
         durations = _get_activity_durations_without_off_duty(group, log_ids, calendar)

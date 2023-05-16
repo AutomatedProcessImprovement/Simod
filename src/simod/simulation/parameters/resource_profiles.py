@@ -230,7 +230,6 @@ class ResourceProfile:
 def discover_undifferentiated_resource_profile(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        activity_label_to_id: dict,
         calendar_id: str = "Undifferentiated_calendar",
         cost_per_hour: float = 20,
         keep_log_names: bool = True
@@ -243,7 +242,6 @@ def discover_undifferentiated_resource_profile(
     :param event_log: event log to discover the resource profiles from.
     :param log_ids: column IDs of the event log.
     :param calendar_id: ID of the calendar to assign to the created resource profile.
-    :param activity_label_to_id: map with each activity label as key and its ID as value.
     :param cost_per_hour: cost per hour to assign to each resource in the current resource profile.
     :param keep_log_names: flag indicating if to summarize all the observed resources as one single resource with
     their number as the available amount (False), or create a resource per observed resource name (True).
@@ -251,7 +249,7 @@ def discover_undifferentiated_resource_profile(
     :return: resource profile with all the observed resources.
     """
     # All activities assigned to one single resource profile
-    assigned_activities = list(activity_label_to_id.values())
+    assigned_activities = list(event_log[log_ids.activity].unique())
     # Create resources for this profile
     if keep_log_names:
         # Create a resource for each resource name in the log
@@ -282,7 +280,6 @@ def discover_undifferentiated_resource_profile(
 def discover_differentiated_resource_profiles(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        activity_label_to_id: dict,
         cost_per_hour: float = 20
 ) -> List['ResourceProfile']:
     """
@@ -290,7 +287,6 @@ def discover_differentiated_resource_profiles(
 
     :param event_log: event log to discover the resource profiles from.
     :param log_ids: column IDs of the event log.
-    :param activity_label_to_id: map with each activity label as key and its ID as value.
     :param cost_per_hour: cost per hour to assign to each resource in the current resource profiles.
 
     :return: list of resource profiles with all the observed resources.
@@ -300,7 +296,7 @@ def discover_differentiated_resource_profiles(
     for resource_value, events in event_log.groupby(log_ids.resource):
         # Get list of performed activities
         resource_name = str(resource_value)
-        assigned_activities = [activity_label_to_id[activity_label] for activity_label in events[log_ids.activity].unique()]
+        assigned_activities = list(events[log_ids.activity].unique())
         # Create profile with default calendar ID
         resource_profiles += [
             ResourceProfile(
@@ -325,7 +321,6 @@ def discover_differentiated_resource_profiles(
 def discover_pool_resource_profiles(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        activity_label_to_id: dict,
         cost_per_hour: float = 20
 ) -> List['ResourceProfile']:
     """
@@ -334,7 +329,6 @@ def discover_pool_resource_profiles(
 
     :param event_log: event log to discover the resource profiles from.
     :param log_ids: column IDs of the event log.
-    :param activity_label_to_id: map with each activity label as key and its ID as value.
     :param cost_per_hour: cost per hour to assign to each resource in the current resource profiles.
 
     :return: list of resource profiles with the observed resources grouped by pool.
@@ -357,7 +351,7 @@ def discover_pool_resource_profiles(
     for pool_id in pools:
         # Get list of performed activities
         filtered_log = event_log[event_log[log_ids.resource].isin(pools[pool_id])]
-        assigned_activities = [activity_label_to_id[activity_label] for activity_label in filtered_log[log_ids.activity].unique()]
+        assigned_activities = list(filtered_log[log_ids.activity].unique())
         # Add resource profile with all the resources of this pool
         resource_profiles += [
             ResourceProfile(

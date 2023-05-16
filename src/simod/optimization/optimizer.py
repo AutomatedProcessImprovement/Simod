@@ -13,13 +13,16 @@ from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_ti
 from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings, CalendarOptimizationSettings
-from simod.process_structure.miner import Settings as StructureMinerSettings, StructureMiner
+from simod.process_structure.miner import StructureMiner
 from simod.process_structure.optimizer import StructureOptimizer
 from simod.process_structure.settings import HyperoptIterationParams as StructureHyperoptIterationParams
-from simod.settings.control_flow_settings import ControlFlowSettings
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
+from simod.settings.temporal_settings import CalendarSettings
+from simod.simulation.parameters.BPS_model import BPSModel
+from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
 from simod.simulation.parameters.gateway_probabilities import GatewayProbabilities
 from simod.simulation.parameters.miner import mine_parameters
+from simod.simulation.parameters.resource_model import discover_resource_model
 from simod.simulation.prosimos import simulate_and_evaluate
 
 
@@ -30,9 +33,10 @@ class Optimizer:
 
     _settings: SimodSettings
     _event_log: EventLog
+    _best_bps_model: BPSModel
     _output_dir: Path
 
-    _structure_optimizer: Optional[StructureOptimizer]
+    _control_flow_optimizer: Optional[StructureOptimizer]
     _calendar_optimizer: Optional[CalendarOptimizer]
 
     def __init__(
@@ -45,6 +49,10 @@ class Optimizer:
         self._settings = settings
         # Read event log from path if not provided
         self._event_log = event_log
+        # Create empty BPS model
+        self._best_bps_model = BPSModel(
+            process_model=self._settings.common.model_path
+        )
         # Create output directory if not provided
         if output_dir is None:
             self._output_dir = PROJECT_DIR / 'outputs' / get_random_folder_id()
@@ -59,23 +67,23 @@ class Optimizer:
         create_folder(self._temporal_opt_dir)
         create_folder(self._best_result_dir)
 
-    def _optimize_structure(self) -> Tuple[StructureHyperoptIterationParams, Path]:
+    def _optimize_structure(self) -> StructureHyperoptIterationParams:
         """Control-flow and Gateway Probabilities discovery."""
         # Instantiate class to perform the optimization of the control-flow discovery
-        self._structure_optimizer = StructureOptimizer(
-            self._event_log,
-            self._settings.control_flow,
+        self._control_flow_optimizer = StructureOptimizer(
+            event_log=self._event_log,
+            bps_model=self._best_bps_model,
+            settings=self._settings.control_flow,
             base_directory=self._control_flow_dir,
-            model_path=self._settings.common.model_path
         )
         # Run optimization process
-        best_pipeline_settings, parameters_path = self._structure_optimizer.run()
+        best_control_flow_settings = self._control_flow_optimizer.run()
         # Return results
-        return best_pipeline_settings, parameters_path
+        return best_control_flow_settings
 
     def _optimize_calendars(
             self,
-            structure_settings: StructureMinerSettings,
+            structure_settings: StructureHyperoptIterationParams,
             model_path: Path,
             gateway_probabilities: List[GatewayProbabilities],
             simulation_model: Optional[SimulationModel] = None,
@@ -143,11 +151,11 @@ class Optimizer:
             return
 
         print_section('Removing intermediate files')
-        self._structure_optimizer.cleanup()
+        self._control_flow_optimizer.cleanup()
         self._calendar_optimizer.cleanup()
 
-    def _mine_structure(self, settings: StructureMinerSettings, output_dir: Path) \
-            -> Tuple[Path, StructureMinerSettings]:
+    def _mine_structure(self, settings: StructureHyperoptIterationParams, output_dir: Path) \
+            -> Path:
         print_message(f'Mining structure with settings {settings.to_dict()}')
 
         log_path = (output_dir / self._event_log.process_name).with_suffix('.xes')
@@ -166,7 +174,7 @@ class Optimizer:
             replace_or_joins=settings.replace_or_joins,
         ).run()
 
-        return model_path, settings
+        return model_path
 
     def _mine_calendars(
             self,
@@ -209,21 +217,36 @@ class Optimizer:
         """
         Run SIMOD main structure
         """
-        # --- Control-Flow Discovery --- #
-        print_section('Structure optimization')
-        structure_pipeline_settings, parameters_path = self._optimize_structure()
-        model_path = self._structure_optimizer.model_path
+
+        # --- Discover Default Case Arrival and Resource Allocation models --- #
+        self._best_bps_model.case_arrival_model = discover_case_arrival_model(
+            self._event_log.train_validation_partition,  # No optimization process here, use train + validation
+            self._event_log.log_ids
+        )
+        self._best_bps_model.resource_model = discover_resource_model(
+            self._event_log.train_validation_partition,  # No optimization process here, use train + validation
+            self._event_log.log_ids,
+            CalendarSettings.default()
+        )
+
+        # --- Control-Flow Optimization --- #
+        print_section('Control-flow optimization')
+        best_control_flow_settings = self._optimize_structure()
+        self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
+        self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
 
         # --- Extraneous Delays Discovery --- #
         simulation_model = None
         if self._settings.extraneous_activity_delays is not None:
-            print_section('Mining extraneous delay timers')
+            print_section('Discovering extraneous delays')
+            # Hardcoded from here for now, should work with the BPSModel in the future
+            parameters_path = self._control_flow_optimizer.base_directory / f"{self._event_log.process_name}.json"
             with parameters_path.open() as f:
                 parameters = json.load(f)
             simulation_model, model_path, parameters_path = discover_extraneous_delay_timers(
                 self._event_log.train_validation_partition,
                 self._event_log.log_ids,
-                self._structure_optimizer.model_path,
+                self._best_bps_model.process_model,
                 parameters,
                 self._settings.extraneous_activity_delays.optimization_metric,
                 base_dir=self._best_result_dir,
@@ -231,26 +254,18 @@ class Optimizer:
                 num_evaluation_simulations=self._settings.common.repetitions,
                 max_alpha=50,
             )
-
-        structure_miner_settings = StructureMinerSettings(
-            gateway_probabilities_method=structure_pipeline_settings.gateway_probabilities_method,
-            mining_algorithm=self._settings.control_flow.mining_algorithm,
-            epsilon=structure_pipeline_settings.epsilon,
-            eta=structure_pipeline_settings.eta,
-            concurrency=structure_pipeline_settings.concurrency,
-            prioritize_parallelism=structure_pipeline_settings.prioritize_parallelism,
-            replace_or_joins=structure_pipeline_settings.replace_or_joins,
-        )
+        else:
+            model_path = self._best_bps_model.process_model
 
         # --- Congestion Model Discovery --- #
         print_section('Calendars optimization')
         calendar_optimizer_settings, calendar_pipeline_settings = self._optimize_calendars(
-            structure_miner_settings, model_path, self._structure_optimizer.gateway_probabilities, simulation_model)
+            best_control_flow_settings, model_path, self._best_bps_model.gateway_probabilities, simulation_model)
 
         # --- Final evaluation of best BPS Model --- #
         if self._settings.common.model_path is None:
             print_section('Mining structure using the best hyperparameters')
-            model_path, structure_miner_settings = self._mine_structure(structure_miner_settings, self._best_result_dir)
+            model_path = self._mine_structure(best_control_flow_settings, self._best_result_dir)
         else:
             try:
                 shutil.copy(model_path, self._best_result_dir)
@@ -270,7 +285,7 @@ class Optimizer:
         self._clean_up()
 
         print_section('Exporting canonical model')
-        _export_canonical_model(self._best_result_dir, structure_miner_settings, self._settings.control_flow,
+        _export_canonical_model(self._best_result_dir, best_control_flow_settings,
                                 calendars_settings, calendar_optimizer_settings)
 
         self._settings.to_yaml(self._best_result_dir)
@@ -278,16 +293,13 @@ class Optimizer:
 
 def _export_canonical_model(
         output_dir: Path,
-        structure_settings: StructureMinerSettings,
-        structure_optimizer_settings: ControlFlowSettings,
+        structure_settings: StructureHyperoptIterationParams,
         calendar_settings: CalendarPipelineSettings,
         calendar_optimizer_settings: CalendarOptimizationSettings,
 ):
     canon_path = output_dir / 'canonical_model.json'
 
-    structure = structure_settings.to_dict() | {
-        'optimization_metric': str(structure_optimizer_settings.optimization_metric)
-    }
+    structure = structure_settings.to_dict()
 
     calendars = calendar_settings.to_dict() | {
         'optimization_metric': str(calendar_optimizer_settings.optimization_metric)

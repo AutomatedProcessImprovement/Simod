@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List
 
 import pandas as pd
@@ -7,6 +8,58 @@ from pix_utils.statistics.distribution import get_best_fitting_distribution, get
 
 from simod.simulation.parameters.calendar import Calendar, Timetable
 from simod.utilities import nearest_divisor_for_granularity
+
+
+@dataclass
+class CaseArrivalModel:
+    """
+    Simulation model parameters containing the calendar of the case arrivals and the distribution modeling the inter-arrival times.
+    """
+
+    case_arrival_calendar: Calendar
+    inter_arrival_times: dict
+
+    def to_dict(self) -> dict:
+        return {
+            'arrival_time_calendar':
+                [timetable.to_dict() for timetable in self.case_arrival_calendar.timetables],
+            'arrival_time_distribution':
+                self.inter_arrival_times
+        }
+
+    @staticmethod
+    def from_dict(resource_model: dict) -> 'CaseArrivalModel':
+        return CaseArrivalModel(
+            case_arrival_calendar=Calendar(
+                id="Arrival Calendar",
+                name="Arrival Calendar",
+                timetables=[Timetable.from_dict(timetable) for timetable in resource_model['arrival_time_calendar']]
+            ),
+            inter_arrival_times=resource_model['arrival_time_distribution']
+        )
+
+
+def discover_case_arrival_model(
+        event_log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        granularity=60,
+        filter_outliers: bool = True
+) -> CaseArrivalModel:
+    """
+    Discover the case arrival model associated to the given event log.
+
+    :param event_log: event log to discover the case arrival model from.
+    :param log_ids: Event log column IDs.
+    :param granularity: number of minutes to take as minimum available interval surrounding each
+                        observed arrival for the calendar.
+    :param filter_outliers: flag to remove outlier in the inter-arrival time discovery.
+
+    :return: case arrival model.
+    """
+    return CaseArrivalModel(
+        case_arrival_calendar=discover_case_arrival_calendar(event_log, log_ids, granularity),
+        inter_arrival_times=discover_inter_arrival_distribution(event_log, log_ids, filter_outliers)
+    )
 
 
 def discover_case_arrival_calendar(

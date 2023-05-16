@@ -5,7 +5,6 @@ from typing import List
 import pandas as pd
 from pix_utils.log_ids import EventLogIDs
 
-from simod.cli_formatter import print_step
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
@@ -54,7 +53,6 @@ def compute_gateway_probabilities(
         bpmn_path: Path,
         gateways_probability_type: GatewayProbabilitiesMethod
 ) -> List[GatewayProbabilities]:
-    print_step(f'Mining gateway probabilities with {gateways_probability_type}')
     # Read BPMN model
     bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
     # Discover gateway probabilities depending on the type

@@ -8,7 +8,7 @@ from pix_utils.log_ids import APROMORE_LOG_IDS
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.event_log.utilities import read, convert_xes_to_csv
-from simod.simulation.parameters.case_arrival import discover_case_arrival_calendar
+from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar
 
 
 @pytest.mark.integration

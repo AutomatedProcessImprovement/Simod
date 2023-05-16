@@ -29,9 +29,9 @@ class HyperoptIterationParams:
         """Returns a dictionary with the parameters for this run."""
         # Save common params
         optimization_parameters = {
-            'output_dir': self.output_dir,
+            'output_dir': str(self.output_dir),
             'optimization_metric': str(self.optimization_metric),
-            'gateway_probabilities': self.gateway_probabilities_method,
+            'gateway_probabilities': self.gateway_probabilities_method.value,
             'mining_algorithm': str(self.mining_algorithm),
         }
         # Save params depending on the discovery algorithm

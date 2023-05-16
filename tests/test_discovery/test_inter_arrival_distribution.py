@@ -2,7 +2,7 @@ import pytest
 from pix_utils.log_ids import DEFAULT_XES_IDS
 
 from simod.event_log.utilities import read
-from simod.simulation.parameters.case_arrival import discover_inter_arrival_distribution
+from simod.simulation.parameters.case_arrival_model import discover_inter_arrival_distribution
 
 test_cases = [
     {

@@ -39,7 +39,7 @@ class ResourceModel:
             resource_calendars=[Calendar.from_dict(calendar) for calendar in resource_model['resource_calendars']],
             activity_resource_distributions=[
                 ActivityResourceDistribution.from_dict(activity_resource_distribution)
-                for activity_resource_distribution in resource_model['task_resource_distributions']
+                for activity_resource_distribution in resource_model['task_resource_distribution']
             ]
         )
 
@@ -47,7 +47,6 @@ class ResourceModel:
 def discover_resource_model(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        activity_label_to_id: dict,
         calendar_settings: CalendarSettings
 ) -> ResourceModel:
     """
@@ -56,7 +55,6 @@ def discover_resource_model(
 
     :param event_log: event log to discover the resource profiles, calendars, and performances from.
     :param log_ids: column IDs of the event log.
-    :param activity_label_to_id: map with each activity label as key and its ID as value.
     :param calendar_settings: settings for the calendar discovery composed of the calendar type (default 24/7,
     default 9/5 undifferentiated, differentiates, or pools), and, if needed, the parameters for their discovery.
 
@@ -65,11 +63,11 @@ def discover_resource_model(
     # --- Discover resource profiles --- #
     calendar_type = calendar_settings.discovery_type
     if calendar_type in [CalendarType.DEFAULT_24_7, CalendarType.DEFAULT_9_5, CalendarType.UNDIFFERENTIATED]:
-        resource_profiles = [discover_undifferentiated_resource_profile(event_log, log_ids, activity_label_to_id)]
+        resource_profiles = [discover_undifferentiated_resource_profile(event_log, log_ids)]
     elif calendar_type == CalendarType.DIFFERENTIATED_BY_RESOURCE:
-        resource_profiles = discover_differentiated_resource_profiles(event_log, log_ids, activity_label_to_id)
+        resource_profiles = discover_differentiated_resource_profiles(event_log, log_ids)
     elif calendar_type == CalendarType.DIFFERENTIATED_BY_POOL:
-        resource_profiles = discover_pool_resource_profiles(event_log, log_ids, activity_label_to_id)
+        resource_profiles = discover_pool_resource_profiles(event_log, log_ids)
     else:
         raise ValueError(f'Unknown calendar discovery type: {calendar_type}')
     # Assert there are discovered resource profiles
@@ -85,8 +83,7 @@ def discover_resource_model(
         event_log,
         log_ids,
         resource_profiles,
-        resource_calendars,
-        activity_label_to_id
+        resource_calendars
     )
     # Assert there are discovered activity-resource performance
     assert len(activity_resource_distributions) > 0, 'No activity resource distributions found'

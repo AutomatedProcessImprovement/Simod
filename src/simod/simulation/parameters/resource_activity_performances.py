@@ -60,8 +60,7 @@ def discover_activity_resource_distribution(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
         resource_profiles: List[ResourceProfile],
-        resource_calendars: List[Calendar],
-        activity_label_to_id: dict,
+        resource_calendars: List[Calendar]
 ) -> List[ActivityResourceDistribution]:
     """
     Discover the performance (activity duration) for each resource in [resource_profiles].
@@ -70,18 +69,11 @@ def discover_activity_resource_distribution(
     :param log_ids: column IDs of the event log.
     :param resource_profiles: list of resource profiles with their ID and resources.
     :param resource_calendars: list of calendars containing their ID and working intervals.
-    :param activity_label_to_id: map with each activity label as key and its ID as value.
 
     :return: list of duration distribution per activity.
     """
-    # Reverse activity mapping
-    activity_id_to_label = {activity_label_to_id[key]: key for key in activity_label_to_id}
-    # Create empty activity-resource distribution per activity
-    activity_resource_distributions = [
-        ActivityResourceDistribution(activity_id, [])
-        for activity_id in activity_id_to_label
-    ]
     # Go over each resource profile, computing the corresponding activity durations
+    activity_resource_distributions = []
     for resource_profile in resource_profiles:
         assert len(resource_profile.resources) > 0, "Trying to compute activity performance of a resource profile with no resources."
         # Get the calendar of the resource profile
@@ -89,7 +81,7 @@ def discover_activity_resource_distribution(
         calendar = [calendar for calendar in resource_calendars if calendar.id == calendar_id][0]
         # Get the list of resources of this profile and the activities assigned to them
         resources = [resource.id for resource in resource_profile.resources]
-        assigned_activities = [activity_id_to_label[activity_id] for activity_id in resource_profile.resources[0].assigned_tasks]
+        assigned_activities = resource_profile.resources[0].assigned_tasks
         # Filter the log with activities performed by them
         filtered_event_log = event_log[
             event_log[log_ids.activity].isin(assigned_activities) &
@@ -101,15 +93,15 @@ def discover_activity_resource_distribution(
             durations = compute_activity_durations_without_off_duty(events, log_ids, calendar)
             # Compute duration distribution
             duration_distribution = get_best_fitting_distribution(durations).to_prosimos_distribution()
+            # Create empty activity-resource distribution
+            activity_resource_distribution = ActivityResourceDistribution(activity_label, [])
             # Append distribution to the durations of this activity (per resource)
-            activity_resource_distribution = [
-                activity_resource_distribution for activity_resource_distribution in activity_resource_distributions
-                if activity_resource_distribution.activity_id == activity_label_to_id[activity_label]
-            ][0]
             for resource in resources:
                 activity_resource_distribution.activity_resources_distributions += [
                     ResourceDistribution(resource, duration_distribution)
                 ]
+            # Add resource distributions of this activity
+            activity_resource_distributions += [activity_resource_distribution]
     # Return list of activity-resource performance
     return activity_resource_distributions
 
