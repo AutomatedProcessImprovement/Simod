@@ -2,14 +2,14 @@
 
 [[package]]
 name = "certifi"
-version = "2022.12.7"
+version = "2023.5.7"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2022.12.7-py3-none-any.whl", hash = "sha256:4ad3232f5e926d6718ec31cfc1fcadfde020920e278684144551c91769c7bc18"},
-    {file = "certifi-2022.12.7.tar.gz", hash = "sha256:35824b4c3a97115964b408844d64aa14db1cc518f6562e8d7261699d1350a9e3"},
+    {file = "certifi-2023.5.7-py3-none-any.whl", hash = "sha256:c6c2e98f5c7869efca1f8916fed228dd91539f9f1b444c314c06eef02980c716"},
+    {file = "certifi-2023.5.7.tar.gz", hash = "sha256:0f0d56dc5a6ad56fd4ba36484d6cc34451e1c6548c61daad8c320169f91eddc7"},
 ]
 
 [[package]]
@@ -291,6 +291,36 @@ tomli = {version = "*", optional = true, markers = "python_full_version <= \"3.1
 toml = ["tomli"]
 
 [[package]]
+name = "cvxopt"
+version = "1.3.1"
+description = "Convex optimization package"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "cvxopt-1.3.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e569f070a00b1d8817d8891c11692fd75cd26efc625bf17bed0b11ace809c8b3"},
+    {file = "cvxopt-1.3.1-cp310-cp310-macosx_13_0_arm64.whl", hash = "sha256:0ffbc8536a4ce0ecab18bf634ee0432e4cc8a60ce113d2e47d8e9734b9898a44"},
+    {file = "cvxopt-1.3.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:424ba591b6d837f88b15a5623ceb9563782f64ed7840e65d50acd5af12bfb074"},
+    {file = "cvxopt-1.3.1-cp310-cp310-win_amd64.whl", hash = "sha256:8beec8a0225276fdfa767af9417599a8f1d7e5b56e312160af04477f4415e9d7"},
+    {file = "cvxopt-1.3.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:98674d4ddcd5b447d4e860862d371a9e9ccacd65a73ce2ccbc961842ad076ce9"},
+    {file = "cvxopt-1.3.1-cp311-cp311-macosx_13_0_arm64.whl", hash = "sha256:058abca57083379efceb71e0b155f5ea9f925cf49dfc185f6561dc8c9dde63fc"},
+    {file = "cvxopt-1.3.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:569b9000a692e55d74eb48b68c7b7325f97049b9f22957b599fb89055f88ca7b"},
+    {file = "cvxopt-1.3.1-cp311-cp311-win_amd64.whl", hash = "sha256:fe2806cb762de1d04ad6c2d262e4e97d7db3bfec099d5ee3e7feb5d1ada67058"},
+    {file = "cvxopt-1.3.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:b9f9de25f71c6e0cc53ab7192af1469ce3fcb8b5979b3abc10841ac1bf0201ce"},
+    {file = "cvxopt-1.3.1-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ba2151f2da6207e72eb92db722bdfa3060cade4fa982363d1d0721d656e1f36b"},
+    {file = "cvxopt-1.3.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:b431d78fc6bf446ce917e3d9db5396abf9f3d21afbf6ecec818d4b119f880cd6"},
+    {file = "cvxopt-1.3.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:357e94a1cb062d89585d52e00d500964594b5a14f6dcfdd2066abf24ee1db06b"},
+    {file = "cvxopt-1.3.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6a5e8058366017a35eda83fe44eb2e69b17333974795eae5115539e2eae19e23"},
+    {file = "cvxopt-1.3.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:801965426d4bd57e53214706072794fe9a604ec3ffa47ad03fd4e8f130cd90a1"},
+    {file = "cvxopt-1.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:0b6a8ab4f155e291eebd9e8e0ad878e5dfc2f71c3be84c776192bdf92737b95c"},
+    {file = "cvxopt-1.3.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:e449744375bfde702a392e87ea282666e0ae593d568808f63aa486f9862d399a"},
+    {file = "cvxopt-1.3.1-cp39-cp39-macosx_13_0_arm64.whl", hash = "sha256:80a42e57e9345df1c686da15694cf9c7b127d1a33c04e6aedc53ac65909e4176"},
+    {file = "cvxopt-1.3.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dba110ed6c9d8af293500b9c5baef664b2dc376fe0661c1b2f39833a14eac606"},
+    {file = "cvxopt-1.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:f096377218fa3cddc7bd1f433d2f91a182ab159be463a545b4bd5b439a6baa01"},
+    {file = "cvxopt-1.3.1.tar.gz", hash = "sha256:8d567981cbfa2a4ba1667b3e6f73cb941cf1c6992bf1438911035963294aa498"},
+]
+
+[[package]]
 name = "cycler"
 version = "0.11.0"
 description = "Composable style cycles"
@@ -303,24 +333,19 @@ files = [
 ]
 
 [[package]]
-name = "DiffResBP-Simulator"
-version = "0.1.0"
-description = ""
+name = "deprecation"
+version = "2.1.0"
+description = "A library to handle automated deprecations"
 category = "main"
 optional = false
 python-versions = "*"
-files = []
-develop = false
+files = [
+    {file = "deprecation-2.1.0-py2.py3-none-any.whl", hash = "sha256:a10811591210e1fb0e768a8c25517cabeabcba6f0bf96564f8ff45189f90b14a"},
+    {file = "deprecation-2.1.0.tar.gz", hash = "sha256:72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff"},
+]
 
 [package.dependencies]
-click = "*"
-simpy = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/AutomatedProcessImprovement/Prosimos.git"
-reference = "main"
-resolved_reference = "ab4394c066353ecca57dc5005e0f29ef34458c57"
+packaging = "*"
 
 [[package]]
 name = "distlib"
@@ -336,14 +361,14 @@ files = [
 
 [[package]]
 name = "docutils"
-version = "0.19"
+version = "0.20.1"
 description = "Docutils -- Python Documentation Utilities"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "docutils-0.19-py3-none-any.whl", hash = "sha256:5e1de4d849fee02c63b040a4a3fd567f4ab104defd8a5511fbbc24a8a017efbc"},
-    {file = "docutils-0.19.tar.gz", hash = "sha256:33995a6753c30b7f577febfc2c50411fec6aac7f7ffeb7c4cfe5991072dcf9e6"},
+    {file = "docutils-0.20.1-py3-none-any.whl", hash = "sha256:96f387a2c5562db4476f09f13bbab2192e764cac08ebbf3a34a95d9b1e4a59d6"},
+    {file = "docutils-0.20.1.tar.gz", hash = "sha256:f08a4e276c3a1583a86dce3e34aba3fe04d02bba2dd51ed16106244e8a923e3b"},
 ]
 
 [[package]]
@@ -363,7 +388,7 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "extraneous-activity-delays"
-version = "2.1.3"
+version = "2.1.5"
 description = ""
 category = "main"
 optional = false
@@ -372,18 +397,18 @@ files = []
 develop = false
 
 [package.dependencies]
-DiffResBP-Simulator = {git = "https://github.com/AutomatedProcessImprovement/Prosimos.git", branch = "main"}
 hyperopt = "^0.2.7"
-log-distance-measures = {git = "https://github.com/AutomatedProcessImprovement/log-distance-measures.git", branch = "main"}
+log-distance-measures = "^1.0.2"
 lxml = "^4.9.2"
-pix-utils = {git = "https://github.com/AutomatedProcessImprovement/pix-utils.git", branch = "main"}
-start-time-estimator = {git = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git", branch = "main"}
+pix-framework = "^0.7.1"
+prosimos = {git = "https://github.com/AutomatedProcessImprovement/Prosimos.git", branch = "main"}
+start-time-estimator = "^1.10.3"
 
 [package.source]
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.git"
 reference = "HEAD"
-resolved_reference = "6a58f71c811a187efdb352bf38831f8982707aed"
+resolved_reference = "7aa2fe7c7da16573450a50bbf6737dcbaba69c1c"
 
 [[package]]
 name = "filelock"
@@ -403,14 +428,14 @@ testing = ["covdefaults (>=2.3)", "coverage (>=7.2.3)", "diff-cover (>=7.5)", "p
 
 [[package]]
 name = "fonttools"
-version = "4.39.3"
+version = "4.39.4"
 description = "Tools to manipulate font files"
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fonttools-4.39.3-py3-none-any.whl", hash = "sha256:64c0c05c337f826183637570ac5ab49ee220eec66cf50248e8df527edfa95aeb"},
-    {file = "fonttools-4.39.3.zip", hash = "sha256:9234b9f57b74e31b192c3fc32ef1a40750a8fbc1cd9837a7b7bfc4ca4a5c51d7"},
+    {file = "fonttools-4.39.4-py3-none-any.whl", hash = "sha256:106caf6167c4597556b31a8d9175a3fdc0356fdcd70ab19973c3b0d4c893c461"},
+    {file = "fonttools-4.39.4.zip", hash = "sha256:dba8d7cdb8e2bac1b3da28c5ed5960de09e59a2fe7e63bb73f5a59e57b0430d2"},
 ]
 
 [package.extras]
@@ -437,6 +462,23 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 files = [
     {file = "future-0.18.3.tar.gz", hash = "sha256:34a17436ed1e96697a86f9de3d15a3b0be01d8bc8de9c1dffd59fb8234ed5307"},
 ]
+
+[[package]]
+name = "graphviz"
+version = "0.20.1"
+description = "Simple Python interface for Graphviz"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "graphviz-0.20.1-py3-none-any.whl", hash = "sha256:587c58a223b51611c0cf461132da386edd896a029524ca61a1462b880bf97977"},
+    {file = "graphviz-0.20.1.zip", hash = "sha256:8c58f14adaa3b947daf26c19bc1e98c4e0702cdc31cf99153e6f06904d492bf8"},
+]
+
+[package.extras]
+dev = ["flake8", "pep8-naming", "tox (>=3)", "twine", "wheel"]
+docs = ["sphinx (>=5)", "sphinx-autodoc-typehints", "sphinx-rtd-theme"]
+test = ["coverage", "mock (>=4)", "pytest (>=7)", "pytest-cov", "pytest-mock (>=3)"]
 
 [[package]]
 name = "hyperopt"
@@ -523,6 +565,20 @@ files = [
     {file = "iniconfig-2.0.0-py3-none-any.whl", hash = "sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374"},
     {file = "iniconfig-2.0.0.tar.gz", hash = "sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3"},
 ]
+
+[[package]]
+name = "intervaltree"
+version = "3.1.0"
+description = "Editable interval tree data structure for Python 2 and 3"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "intervaltree-3.1.0.tar.gz", hash = "sha256:902b1b88936918f9b2a19e0e5eb7ccb430ae45cde4f39ea4b36932920d33952d"},
+]
+
+[package.dependencies]
+sortedcontainers = ">=2.0,<3.0"
 
 [[package]]
 name = "jellyfish"
@@ -675,21 +731,17 @@ version = "1.0.2"
 description = "Python package with the implementation of different distance measures between two event logs, from the control-flow, temporal, and queuing perspectives."
 category = "main"
 optional = false
-python-versions = ">=3.9, <3.12"
-files = []
-develop = false
+python-versions = ">=3.9,<3.12"
+files = [
+    {file = "log_distance_measures-1.0.2-py3-none-any.whl", hash = "sha256:4f53547493e62c6a920942ef5eac2475ca42f6babd1d637971c3a4d5e42cf594"},
+    {file = "log_distance_measures-1.0.2.tar.gz", hash = "sha256:379ea9c329454c323f58969fdff0584054fd7bbff2533e9eb53979686d54b8f5"},
+]
 
 [package.dependencies]
-jellyfish = "^0.11.2"
-pandas = "^2.0.0"
-pulp = "^2.7.0"
-scipy = "^1.10.1"
-
-[package.source]
-type = "git"
-url = "https://github.com/AutomatedProcessImprovement/log-distance-measures.git"
-reference = "main"
-resolved_reference = "62a1bbbcbf16d7f7664ebb4798413d9cd62b6dcb"
+jellyfish = ">=0.11.2,<0.12.0"
+pandas = ">=2.0.0,<3.0.0"
+pulp = ">=2.7.0,<3.0.0"
+scipy = ">=1.10.1,<2.0.0"
 
 [[package]]
 name = "lxml"
@@ -883,14 +935,14 @@ test = ["codecov (>=2.1)", "pytest (>=7.2)", "pytest-cov (>=4.0)"]
 
 [[package]]
 name = "nodeenv"
-version = "1.7.0"
+version = "1.8.0"
 description = "Node.js virtual environment builder"
 category = "dev"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*"
 files = [
-    {file = "nodeenv-1.7.0-py2.py3-none-any.whl", hash = "sha256:27083a7b96a25f2f5e1d8cb4b6317ee8aeda3bdd121394e5ac54e498028a042e"},
-    {file = "nodeenv-1.7.0.tar.gz", hash = "sha256:e0e7f7dfb85fc5394c6fe1e8fa98131a2473e04311a45afb6508f7cf1836fa2b"},
+    {file = "nodeenv-1.8.0-py2.py3-none-any.whl", hash = "sha256:df865724bb3c3adc86b3876fa209771517b0cfe596beff01a92700e0e8be4cec"},
+    {file = "nodeenv-1.8.0.tar.gz", hash = "sha256:d51e0c37e64fbf47d017feac3145cdbb58836d7eee8c6f6d3b6880c5456227d2"},
 ]
 
 [package.dependencies]
@@ -1158,39 +1210,19 @@ pandas = ">=2.0.1,<3.0.0"
 scipy = ">=1.10.1,<2.0.0"
 
 [[package]]
-name = "pix-utils"
-version = "0.6.10"
-description = "Common utilities for all PIX projects."
-category = "main"
-optional = false
-python-versions = ">=3.9, <3.12"
-files = []
-develop = false
-
-[package.dependencies]
-pandas = "^2.0.0"
-scipy = "^1.10.1"
-
-[package.source]
-type = "git"
-url = "https://github.com/AutomatedProcessImprovement/pix-utils.git"
-reference = "main"
-resolved_reference = "4f75e23e1ec86a928c29b4cacf5c7957c20afd3d"
-
-[[package]]
 name = "platformdirs"
-version = "3.5.0"
+version = "3.5.1"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.5.0-py3-none-any.whl", hash = "sha256:47692bc24c1958e8b0f13dd727307cff1db103fca36399f457da8e05f222fdc4"},
-    {file = "platformdirs-3.5.0.tar.gz", hash = "sha256:7954a68d0ba23558d753f73437c55f89027cf8f5108c19844d4b82e5af396335"},
+    {file = "platformdirs-3.5.1-py3-none-any.whl", hash = "sha256:e2378146f1964972c03c085bb5662ae80b2b8c06226c54b2ff4aa9483e8a13a5"},
+    {file = "platformdirs-3.5.1.tar.gz", hash = "sha256:412dae91f52a6f84830f39a8078cecd0e866cb72294a5c66808e74d5e88d251f"},
 ]
 
 [package.extras]
-docs = ["furo (>=2023.3.27)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
+docs = ["furo (>=2023.3.27)", "proselint (>=0.13)", "sphinx (>=6.2.1)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
 test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
@@ -1210,6 +1242,34 @@ dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
+name = "pm4py"
+version = "2.7.4"
+description = "Process mining for Python"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pm4py-2.7.4-py3-none-any.whl", hash = "sha256:626eefcf7a7c4ea8726f6e5091030ec7f6e6313470118547d46e58ae2fa56733"},
+    {file = "pm4py-2.7.4.tar.gz", hash = "sha256:20ce8c9d740e4fe4c5d59278c970f8665428da98ef09073ff1c5c4cd29dfe1d8"},
+]
+
+[package.dependencies]
+cvxopt = {version = "*", markers = "python_version < \"3.11\" or python_version < \"3.12\" and sys_platform == \"win32\""}
+deprecation = "*"
+graphviz = "*"
+intervaltree = "*"
+lxml = "*"
+matplotlib = "*"
+networkx = "*"
+numpy = "*"
+pandas = "*"
+pydotplus = "*"
+pytz = "*"
+scipy = "*"
+stringdist = "*"
+tqdm = "*"
+
+[[package]]
 name = "pre-commit"
 version = "2.21.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
@@ -1227,6 +1287,31 @@ identify = ">=1.0.0"
 nodeenv = ">=0.11.1"
 pyyaml = ">=5.1"
 virtualenv = ">=20.10.0"
+
+[[package]]
+name = "prosimos"
+version = "1.2.3"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.8,<3.12"
+files = []
+develop = false
+
+[package.dependencies]
+click = "^8.1.3"
+numpy = "^1.24.3"
+pandas = "^2.0.1"
+pm4py = "^2.7.4"
+python-dateutil = "^2.8.2"
+pytz = "^2023.3"
+scipy = "^1.10.1"
+
+[package.source]
+type = "git"
+url = "https://github.com/AutomatedProcessImprovement/Prosimos.git"
+reference = "main"
+resolved_reference = "a6b13d79b6bb73c226dd76089c60563b738cff3b"
 
 [[package]]
 name = "psutil"
@@ -1333,6 +1418,20 @@ dotenv = ["python-dotenv (>=0.10.4)"]
 email = ["email-validator (>=1.0.3)"]
 
 [[package]]
+name = "pydotplus"
+version = "2.0.2"
+description = "Python interface to Graphviz's Dot language"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pydotplus-2.0.2.tar.gz", hash = "sha256:91e85e9ee9b85d2391ead7d635e3d9c7f5f44fd60a60e59b13e2403fa66505c4"},
+]
+
+[package.dependencies]
+pyparsing = ">=2.0.1"
+
+[[package]]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -1435,14 +1534,14 @@ six = ">=1.4.0"
 
 [[package]]
 name = "pytz"
-version = "2022.7.1"
+version = "2023.3"
 description = "World timezone definitions, modern and historical"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pytz-2022.7.1-py2.py3-none-any.whl", hash = "sha256:78f4f37d8198e0627c5f1143240bb0206b8691d8d7ac6d78fee88b78733f8c4a"},
-    {file = "pytz-2022.7.1.tar.gz", hash = "sha256:01a0681c4b9684a28304615eba55d1ab31ae00bf68ec157ec3708a8182dbbcd0"},
+    {file = "pytz-2023.3-py2.py3-none-any.whl", hash = "sha256:a151b3abb88eda1d4e34a9814df37de2a80e301e68ba0fd856fb9b46bfbbbffb"},
+    {file = "pytz-2023.3.tar.gz", hash = "sha256:1d8ce29db189191fb55338ee6d0387d82ab59f3d00eac103412d64e0ebd0c588"},
 ]
 
 [[package]]
@@ -1586,18 +1685,6 @@ testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8 (<5)", "flake8-202
 testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
 
 [[package]]
-name = "simpy"
-version = "4.0.1"
-description = "Event discrete, process based simulation for Python."
-category = "main"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "simpy-4.0.1-py2.py3-none-any.whl", hash = "sha256:6c90c105628a5b4c9c3ee822b45b9980c60d3126b99295b616bb72cd69b6a35e"},
-    {file = "simpy-4.0.1.tar.gz", hash = "sha256:b36542e2faab612f861c5ef4da17220ac1553f5892b3583c67281dbe4faad404"},
-]
-
-[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -1610,24 +1697,32 @@ files = [
 ]
 
 [[package]]
+name = "sortedcontainers"
+version = "2.4.0"
+description = "Sorted Containers -- Sorted List, Sorted Dict, Sorted Set"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0"},
+    {file = "sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88"},
+]
+
+[[package]]
 name = "start-time-estimator"
 version = "1.10.4"
 description = "Python package to estimate the enabled time, enabling activity, and resource availability time of each activity instance in an event log."
 category = "main"
 optional = false
-python-versions = ">=3.9, <3.12"
-files = []
-develop = false
+python-versions = ">=3.9,<3.12"
+files = [
+    {file = "start_time_estimator-1.10.4-py3-none-any.whl", hash = "sha256:57b32a0d4e8f96bd4d6b6dde04f2bc04190d9ab9a68fc1518dac6f9ffbc1bc17"},
+    {file = "start_time_estimator-1.10.4.tar.gz", hash = "sha256:75a0a7956c0bc9b9322539807fd16b85d16d9f58279d34c423ecb6b4cac061a4"},
+]
 
 [package.dependencies]
-pandas = "^2.0.0"
-pix-framework = "^0.7.1"
-
-[package.source]
-type = "git"
-url = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git"
-reference = "main"
-resolved_reference = "90c62ef2f85195ae4792d7cb6b43d267186c3030"
+pandas = ">=2.0.0,<3.0.0"
+pix-framework = ">=0.7.1,<0.8.0"
 
 [[package]]
 name = "statistics"
@@ -1642,6 +1737,17 @@ files = [
 
 [package.dependencies]
 docutils = ">=0.3"
+
+[[package]]
+name = "stringdist"
+version = "1.0.9"
+description = "This package provides the stringdist module, which includes several functions for calculating string distances. Under the hood, a C extension module is preferentially used for optimal performance, with an automatic fallback to a Python implementation."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "StringDist-1.0.9.tar.gz", hash = "sha256:91e6d4a348223db094d029e7e3de9ce89c561738047555dfad60ff5ccb7a5b74"},
+]
 
 [[package]]
 name = "tomli"
@@ -1770,4 +1876,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "005233563c1901c170be700e37b1506a59478c6af11112457d5990f4f9625a70"
+content-hash = "110272d8f6fd7be8478f14077f27cd3a2b14d3324d8dc2dedd188be993397989"
