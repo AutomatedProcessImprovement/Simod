@@ -2,9 +2,9 @@ import uuid
 
 import pandas as pd
 import pytest
-from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
+from prosimos.resource_calendar import CalendarFactory
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.event_log.utilities import read, convert_xes_to_csv
