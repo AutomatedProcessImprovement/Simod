@@ -3,11 +3,11 @@ import pytest
 from extraneous_activity_delays.config import Configuration, SimulationEngine, SimulationModel, OptimizationMetric
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from lxml import etree
+from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
 from pix_framework.log_ids import DEFAULT_CSV_IDS
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
-from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.parameters.miner import mine_parameters
 
@@ -49,7 +49,7 @@ def test_extraneous_activity_delays(test_data, entry_point):
 
     parameters = mine_parameters(
         case_arrival_settings, resource_settings, event_log, log_ids, model_path,
-        GatewayProbabilitiesMethod.DISCOVERY)
+        GatewayProbabilitiesDiscoveryMethod.DISCOVERY)
 
     parser = etree.XMLParser(remove_blank_text=True)
     bpmn_model = etree.parse(model_path, parser)
@@ -93,7 +93,7 @@ def test_discover_extraneous_delay_timers(test_data, entry_point):
 
     parameters = mine_parameters(
         case_arrival_settings, resource_settings, event_log, log_ids, model_path,
-        GatewayProbabilitiesMethod.DISCOVERY)
+        GatewayProbabilitiesDiscoveryMethod.DISCOVERY)
 
     _, out_model_path, out_parameters_path = discover_extraneous_delay_timers(
         event_log, log_ids, model_path, parameters, OptimizationMetric.ABSOLUTE_EMD, num_iterations=1)

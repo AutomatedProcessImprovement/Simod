@@ -3,20 +3,23 @@ from typing import List, Tuple, Optional
 
 import pandas as pd
 from networkx import DiGraph
+from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod, GatewayProbabilities, \
+    compute_gateway_probabilities
+from pix_framework.io.bpm_graph import BPMNGraph
 from pix_framework.log_ids import EventLogIDs
 from pix_framework.statistics.distribution import get_best_fitting_distribution
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
-from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import resource as resource_calendar
 from simod.simulation.parameters.calendar import Calendar
-from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar, discover_inter_arrival_distribution
-from simod.simulation.parameters.gateway_probabilities import compute_gateway_probabilities, GatewayProbabilities
+from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar, \
+    discover_inter_arrival_distribution
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
     pd_interval_to_interval
-from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, ResourceDistribution
+from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \
+    ResourceDistribution
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 from simod.simulation.prosimos import SimulationParameters
 
@@ -27,7 +30,7 @@ def mine_parameters(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         model_path: Path,
-        gateways_probability_method: Optional[GatewayProbabilitiesMethod] = None,
+        gateways_probability_method: Optional[GatewayProbabilitiesDiscoveryMethod] = None,
         gateway_probabilities: Optional[List[GatewayProbabilities]] = None,
         process_graph: Optional[DiGraph] = None,
 ) -> SimulationParameters:
@@ -35,10 +38,11 @@ def mine_parameters(
     Mine simulation parameters given the settings for resources and case arrival.
     """
     # Gateway probabilities
+    bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
     if gateway_probabilities is None:
         assert gateways_probability_method is not None, \
             "Either gateway probabilities or a method to mine them must be provided."
-        gateway_probabilities = compute_gateway_probabilities(log, log_ids, model_path, gateways_probability_method)
+        gateway_probabilities = compute_gateway_probabilities(log, log_ids, bpmn_graph, gateways_probability_method)
 
     if not process_graph:
         bpmn_reader = BPMNReaderWriter(model_path)
@@ -100,12 +104,14 @@ def mine_default_24_7(
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph,
-        gateways_probabilities_method: GatewayProbabilitiesMethod
+        gateways_probabilities_method: GatewayProbabilitiesDiscoveryMethod
 ) -> SimulationParameters:
     """
     Simulation parameters with default calendar 24/7.
     """
     assert gateways_probabilities_method is not None, "Gateway probabilities method discovery must be provided."
+
+    bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
 
     calendar_24_7 = Calendar.all_day_long()
 
@@ -121,7 +127,7 @@ def mine_default_24_7(
     arrival_calendar = calendar_24_7
 
     gateway_probabilities_ = compute_gateway_probabilities(
-        log, log_ids, bpmn_path, gateways_probabilities_method
+        log, log_ids, bpmn_graph, gateways_probabilities_method
     )
 
     activity_duration_distributions = _activity_duration_distributions_undifferentiated(

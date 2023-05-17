@@ -8,7 +8,10 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities, \
+    GatewayProbabilitiesDiscoveryMethod, GatewayProbabilities
 from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
+from pix_framework.io.bpm_graph import BPMNGraph
 
 from .discovery import discover_process_model
 from .settings import HyperoptIterationParams
@@ -16,9 +19,8 @@ from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_message, print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..settings.common_settings import Metric
-from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings, GatewayProbabilitiesMethod
+from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings
 from ..simulation.parameters.BPS_model import BPSModel
-from ..simulation.parameters.gateway_probabilities import GatewayProbabilities, compute_gateway_probabilities
 from ..simulation.parameters.miner import get_activities_ids_by_name
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step
@@ -180,7 +182,8 @@ class ControlFlowOptimizer:
         self.best_bps_model = self.initial_bps_model.deep_copy()
         # Update best process model (save it in base directory)
         self.best_bps_model.process_model = self._get_process_model_path(self.base_directory)
-        best_model_path = best_result['model_path'] if self._need_to_discover_model else self.initial_bps_model.process_model
+        best_model_path = best_result[
+            'model_path'] if self._need_to_discover_model else self.initial_bps_model.process_model
         shutil.copyfile(best_model_path, self.best_bps_model.process_model)
         # Update simulation parameters (save them in base directory)
         best_parameters_path = self._get_simulation_parameters_path(self.base_directory)
@@ -312,14 +315,15 @@ class ControlFlowOptimizer:
     def _discover_gateway_probabilities(
             self,
             process_model: Path,
-            gateway_probabilities_method: GatewayProbabilitiesMethod
+            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     ) -> List[GatewayProbabilities]:
         print_step(f"Mining gateway probabilities with {gateway_probabilities_method}")
+        bpmn_graph = BPMNGraph.from_bpmn_path(process_model)
         return compute_gateway_probabilities(
             event_log=self.event_log.train_partition,
             log_ids=self.event_log.log_ids,
-            bpmn_path=process_model,
-            gateways_probability_type=gateway_probabilities_method
+            bpmn_graph=bpmn_graph,
+            discovery_method=gateway_probabilities_method
         )
 
     def _simulate_bps_model(
@@ -336,7 +340,8 @@ class ControlFlowOptimizer:
                     for activity_label in resource.assigned_tasks
                 ]
         for activity_resource_distributions in bps_model.resource_model.activity_resource_distributions:
-            activity_resource_distributions.activity_id = activity_label_to_id[activity_resource_distributions.activity_id]
+            activity_resource_distributions.activity_id = activity_label_to_id[
+                activity_resource_distributions.activity_id]
         # Write JSON parameters to file
         json_parameters_path = self._get_simulation_parameters_path(settings.output_dir)
         with json_parameters_path.open('w') as f:

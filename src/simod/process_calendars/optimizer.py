@@ -6,6 +6,7 @@ import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from networkx import DiGraph
+from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod, GatewayProbabilities
 from pix_framework.filesystem.file_manager import get_random_folder_id, get_random_file_id, remove_asset
 from pix_framework.log_ids import EventLogIDs
 
@@ -13,8 +14,6 @@ from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
-from ..settings.control_flow_settings import GatewayProbabilitiesMethod
-from ..simulation.parameters.gateway_probabilities import GatewayProbabilities
 from ..simulation.parameters.miner import mine_parameters
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import nearest_divisor_for_granularity, hyperopt_step
@@ -25,7 +24,7 @@ class CalendarOptimizer:
     _log_train: pd.DataFrame
     _log_validation: pd.DataFrame
     _log_ids: EventLogIDs
-    _gateway_probabilities_method: GatewayProbabilitiesMethod
+    _gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     _gateway_probabilities: Optional[dict]
     _train_model_path: Path
     base_directory: Path
@@ -40,7 +39,7 @@ class CalendarOptimizer:
             event_log: EventLog,
             train_model_path: Path,
             base_directory: Path,
-            gateway_probabilities_method: GatewayProbabilitiesMethod,
+            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod,
             gateway_probabilities: Optional[List[GatewayProbabilities]] = None,
             process_graph: Optional[DiGraph] = None,
             event_distribution: Optional[list[dict]] = None,
@@ -148,7 +147,8 @@ class CalendarOptimizer:
         # Save evaluation measurements
         assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
         self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
-        self.evaluation_measurements.to_csv(self.base_directory / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
+        self.evaluation_measurements.to_csv(
+            self.base_directory / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
 
         return best_settings
 

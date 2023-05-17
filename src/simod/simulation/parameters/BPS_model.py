@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, List
 
+from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
+
 from simod.simulation.parameters.case_arrival_model import CaseArrivalModel
-from simod.simulation.parameters.gateway_probabilities import GatewayProbabilities
 from simod.simulation.parameters.resource_model import ResourceModel
 
 

@@ -1,9 +1,9 @@
 import pytest
+from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
 from pix_framework.log_ids import EventLogIDs
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.event_log.utilities import read
-from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.miner import mine_default_24_7
 
@@ -22,7 +22,7 @@ def test_mine_default_24_7(entry_point, log_name):
     model_path = entry_point / 'PurchasingExample.bpmn'
     bpmn_reader = BPMNReaderWriter(model_path)
     process_graph = bpmn_reader.as_graph()
-    gateways_probability_type = GatewayProbabilitiesMethod.EQUIPROBABLE
+    gateways_probability_type = GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE
 
     # Discover 24/7 with equiprobable paths
     result = mine_default_24_7(log, log_ids, model_path, process_graph, gateways_probability_type)

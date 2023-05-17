@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
+
 from simod.settings.common_settings import Metric
-from simod.settings.control_flow_settings import GatewayProbabilitiesMethod, ProcessModelDiscoveryAlgorithm
+from simod.settings.control_flow_settings import ProcessModelDiscoveryAlgorithm
 
 
 @dataclass
@@ -15,7 +17,7 @@ class HyperoptIterationParams:
     project_name: str  # Name of the project for file naming
 
     optimization_metric: Metric  # Metric to evaluate the candidate of this iteration
-    gateway_probabilities_method: GatewayProbabilitiesMethod  # Method to discover the gateway probabilities
+    gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod  # Method to discover the gateway probabilities
     mining_algorithm: ProcessModelDiscoveryAlgorithm  # Algorithm to discover the process model
     # Split Miner 2
     concurrency: Optional[float]  # Concurrency threshold
@@ -62,7 +64,8 @@ class HyperoptIterationParams:
     ) -> 'HyperoptIterationParams':
         """Create the params for this run from the hyperopt dictionary returned by the fmin function."""
         # Extract gateway probabilities method
-        gateway_probabilities_method = GatewayProbabilitiesMethod.from_str(hyperopt_dict['gateway_probabilities_method'])
+        gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.from_str(
+            hyperopt_dict['gateway_probabilities_method'])
         # Extract model discovery parameters if needed (by default None)
         epsilon = None
         eta = None

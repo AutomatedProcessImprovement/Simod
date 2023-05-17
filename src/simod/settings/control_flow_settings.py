@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Union, List, Tuple, Optional
 
+from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
+
 from .common_settings import Metric
 from ..utilities import parse_single_value_or_interval
 
@@ -27,34 +29,6 @@ class ProcessModelDiscoveryAlgorithm(str, Enum):
         return f'Unknown ProcessModelDiscoveryAlgorithm {str(self)}'
 
 
-class GatewayProbabilitiesMethod(str, Enum):
-    DISCOVERY = 'discovery'
-    EQUIPROBABLE = 'equiprobable'
-
-    @classmethod
-    def from_str(cls, value: Union[str, List[str]]) -> Union['GatewayProbabilitiesMethod', List['GatewayProbabilitiesMethod']]:
-        if isinstance(value, str):
-            return GatewayProbabilitiesMethod._from_str(value)
-        elif isinstance(value, list):
-            return [GatewayProbabilitiesMethod._from_str(v) for v in value]
-
-    @classmethod
-    def _from_str(cls, value: str) -> 'GatewayProbabilitiesMethod':
-        if value.lower() == "discovery":
-            return cls.DISCOVERY
-        elif value.lower() == "equiprobable":
-            return cls.EQUIPROBABLE
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-    def __str__(self):
-        if self == GatewayProbabilitiesMethod.DISCOVERY:
-            return "discovery"
-        elif self == GatewayProbabilitiesMethod.EQUIPROBABLE:
-            return "equiprobable"
-        return f'Unknown GateManagement {str(self)}'
-
-
 @dataclass
 class ControlFlowSettings:
     """
@@ -64,7 +38,10 @@ class ControlFlowSettings:
     optimization_metric: Metric = Metric.N_GRAM_DISTANCE
     max_evaluations: int = 10
     num_evaluations_per_iteration: int = 3
-    gateway_probabilities: Union[GatewayProbabilitiesMethod, List[GatewayProbabilitiesMethod]] = GatewayProbabilitiesMethod.DISCOVERY
+    gateway_probabilities: Union[
+        GatewayProbabilitiesDiscoveryMethod,
+        List[GatewayProbabilitiesDiscoveryMethod]
+    ] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
     mining_algorithm: ProcessModelDiscoveryAlgorithm = ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3
     concurrency: Optional[Union[float, Tuple[float, float]]] = None
     epsilon: Optional[Union[float, Tuple[float, float]]] = (0.0, 1.0)  # parallelism threshold (epsilon)
@@ -81,7 +58,8 @@ class ControlFlowSettings:
         # Num evaluations per iteration
         num_evaluations_per_iteration = config.get('num_evaluations_per_iteration', 3)
         # Gateway probabilities discovery method
-        gateway_probabilities = GatewayProbabilitiesMethod.from_str(config.get('gateway_probabilities', "discovery"))
+        gateway_probabilities = GatewayProbabilitiesDiscoveryMethod.from_str(
+            config.get('gateway_probabilities', "discovery"))
         # Process model discovery algorithm
         mining_algorithm = ProcessModelDiscoveryAlgorithm.from_str(config.get('mining_algorithm', "sm3"))
         if mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
