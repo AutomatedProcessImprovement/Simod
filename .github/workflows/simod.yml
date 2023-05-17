@@ -99,6 +99,12 @@ jobs:
           poetry install
           poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x
 
+      - name: PyLint
+        shell: bash
+        run: |
+          cd /usr/src/Simod
+          poetry run pylint -j 0 --exit-zero src/simod
+
       - name: Upload Simod output
         uses: actions/upload-artifact@v3
         with:
