@@ -2,11 +2,12 @@ from dataclasses import dataclass
 from typing import List
 
 import pandas as pd
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
 
 from simod.settings.temporal_settings import CalendarType, CalendarSettings
 from simod.simulation.parameters.calendar import Calendar
-from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, discover_activity_resource_distribution
+from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \
+    discover_activity_resource_distribution
 from simod.simulation.parameters.resource_calendars import discover_resource_calendars_per_profile
 from simod.simulation.parameters.resource_profiles import ResourceProfile, discover_undifferentiated_resource_profile, \
     discover_differentiated_resource_profiles, discover_pool_resource_profiles
@@ -35,7 +36,8 @@ class ResourceModel:
     @staticmethod
     def from_dict(resource_model: dict) -> 'ResourceModel':
         return ResourceModel(
-            resource_profiles=[ResourceProfile.from_dict(resource_profile) for resource_profile in resource_model['resource_profiles']],
+            resource_profiles=[ResourceProfile.from_dict(resource_profile) for resource_profile in
+                               resource_model['resource_profiles']],
             resource_calendars=[Calendar.from_dict(calendar) for calendar in resource_model['resource_calendars']],
             activity_resource_distributions=[
                 ActivityResourceDistribution.from_dict(activity_resource_distribution)
@@ -74,7 +76,8 @@ def discover_resource_model(
     assert len(resource_profiles) > 0, 'No resource profiles found'
 
     # --- Discover resource calendars for each profile --- #
-    resource_calendars = discover_resource_calendars_per_profile(event_log, log_ids, calendar_settings, resource_profiles)
+    resource_calendars = discover_resource_calendars_per_profile(event_log, log_ids, calendar_settings,
+                                                                 resource_profiles)
     # Assert there are discovered resource calendars
     assert len(resource_calendars) > 0, 'No resource calendars found'
 

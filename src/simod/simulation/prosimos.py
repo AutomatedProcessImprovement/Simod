@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 
 import pandas as pd
-from bpdfr_simulation_engine.simulation_engine import run_simulation
 from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
+from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_notice, print_step
-from .parameters.resource_activity_performances import ActivityResourceDistribution
 from .parameters.calendar import Calendar
 from .parameters.gateway_probabilities import GatewayProbabilities
+from .parameters.resource_activity_performances import ActivityResourceDistribution
 from .parameters.resource_profiles import ResourceProfile
 from ..event_log.utilities import read
 from ..metrics.metrics import compute_metric

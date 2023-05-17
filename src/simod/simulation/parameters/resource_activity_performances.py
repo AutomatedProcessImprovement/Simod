@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import List
 
 import pandas as pd
-from pix_utils.calendar.resource_calendar import RCalendar, absolute_unavailability_intervals_within
-from pix_utils.log_ids import EventLogIDs
-from pix_utils.statistics.distribution import get_best_fitting_distribution
+from pix_framework.calendar.resource_calendar import RCalendar, absolute_unavailability_intervals_within
+from pix_framework.log_ids import EventLogIDs
+from pix_framework.statistics.distribution import get_best_fitting_distribution
 
 from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.resource_profiles import ResourceProfile
@@ -75,7 +75,8 @@ def discover_activity_resource_distribution(
     # Go over each resource profile, computing the corresponding activity durations
     activity_resource_distributions = []
     for resource_profile in resource_profiles:
-        assert len(resource_profile.resources) > 0, "Trying to compute activity performance of a resource profile with no resources."
+        assert len(
+            resource_profile.resources) > 0, "Trying to compute activity performance of a resource profile with no resources."
         # Get the calendar of the resource profile
         calendar_id = resource_profile.resources[0].calendar_id
         calendar = [calendar for calendar in resource_calendars if calendar.id == calendar_id][0]

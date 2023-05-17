@@ -1,8 +1,8 @@
 from typing import NewType, Dict, List, Optional, Tuple
 
 import pandas as pd
-from bpdfr_simulation_engine.resource_calendar import CalendarFactory
 from pix_framework.log_ids import EventLogIDs
+from prosimos.resource_calendar import CalendarFactory
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.simulation.parameters.calendar import Calendar, Timetable

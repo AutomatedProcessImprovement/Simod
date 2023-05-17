@@ -1,8 +1,8 @@
 from typing import List, Optional
 
 import pandas as pd
-from bpdfr_simulation_engine.resource_calendar import CalendarFactory
-from pix_utils.log_ids import EventLogIDs
+from pix_framework.log_ids import EventLogIDs
+from prosimos.resource_calendar import CalendarFactory
 
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.parameters.calendar import Calendar, Timetable
@@ -61,7 +61,8 @@ def discover_resource_calendars_per_profile(
     elif calendar_type == CalendarType.UNDIFFERENTIATED:
         # Discover a resource calendar for all the resources in the log
         calendar_id = resource_profiles[0].resources[0].calendar_id
-        resource_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, calendar_settings, calendar_id)
+        resource_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, calendar_settings,
+                                                                         calendar_id)
         # Set discovered calendar, or default 24/7 if could not discover one
         resource_calendars = [
             resource_calendar
@@ -74,7 +75,8 @@ def discover_resource_calendars_per_profile(
         ]
     else:
         # Discover a resource calendar per resource profile
-        resource_calendars = _discover_resource_calendars_per_profile(event_log, log_ids, calendar_settings, resource_profiles)
+        resource_calendars = _discover_resource_calendars_per_profile(event_log, log_ids, calendar_settings,
+                                                                      resource_profiles)
     # Return discovered resource calendars
     return resource_calendars
 
@@ -178,10 +180,12 @@ def _discover_resource_calendars_per_profile(
             if resource.id in missing_resources:
                 resource.calendar_id = calendar_id
         # Discover one resource calendar for all of them
-        resource_calendar = _discover_undifferentiated_resource_calendar(filtered_event_log, log_ids, calendar_settings, calendar_id)
+        resource_calendar = _discover_undifferentiated_resource_calendar(filtered_event_log, log_ids, calendar_settings,
+                                                                         calendar_id)
         if resource_calendar is None:
             # Could not discover calendar for the missing resources, discover calendar with the entire log
-            resource_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, calendar_settings, calendar_id)
+            resource_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, calendar_settings,
+                                                                             calendar_id)
             if resource_calendar is None:
                 # Could not discover calendar for all the resources in the log, assign default 24/7
                 resource_calendar = Calendar(

@@ -1,12 +1,14 @@
-FROM nokal/simod-base:v2.1.0
+FROM nokal/simod-base:v2.1.0 as base
 
 RUN apt clean && rm -rf /var/lib/apt/lists/*
+RUN pip install -U pip
+
+FROM base as builder
 
 WORKDIR /usr/src/Simod
 ADD . .
-RUN bash build_poetry_docker.bash
-
-RUN rm -rf /usr/src/SuiteSparse && rm -rf /usr/src/cvxopt
+RUN pip install poetry
+RUN poetry install
 
 ENV DISPLAY=:99
 CMD ["/bin/bash"]
