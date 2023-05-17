@@ -3,12 +3,8 @@
 ![Simod](https://github.com/AutomatedProcessImprovement/Simod/actions/workflows/simod.yml/badge.svg)
 ![version](https://img.shields.io/github/v/tag/AutomatedProcessImprovement/simod)
 
-Simod combines several process mining techniques to automate the generation and validation of BPS models. The only input required by the Simod method is an event log in XES, or CSV format, and a configuration file.
-
-This repository contains 2 projects:
-
-- `src/simod` - the main Simod package
-- `src/simod_http` - a web server for Simod
+Simod combines several process mining techniques to automate the generation and validation of BPS models. The only input
+required by the Simod method is an event log in XES, or CSV format, and a configuration file.
 
 ## Simod
 
@@ -30,7 +26,8 @@ To start a container:
 docker run -it -v /path/to/resources/:/usr/src/Simod/resources -v /path/to/output:/usr/src/Simod/outputs nokal/simod:v3.2.1 bash
 ```
 
-Use the `resources` directory to store event logs and configuration files. The `outputs` directory will contain the results of Simod. 
+Use the `resources` directory to store event logs and configuration files. The `outputs` directory will contain the
+results of Simod.
 
 To start using Simod, you need to activate the Python environment in the container and start `Xvfb`:
 
@@ -132,7 +129,3 @@ Coverage:
 ```shell
 pytest -m "not integration" --cov=simod
 ```
-
-## Simod HTTP
-
-Since Simod v3.3.0 its subproject Simod HTTP has moved as one of the services to https://github.com/AutomatedProcessImprovement/simod-on-containers.
