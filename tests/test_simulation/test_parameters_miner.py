@@ -4,7 +4,7 @@ from pix_framework.log_ids import EventLogIDs
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.event_log.utilities import read
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
-from simod.simulation.parameters.calendars import Calendar
+from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.miner import mine_default_24_7
 
 

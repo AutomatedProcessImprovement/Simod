@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,7 @@ from ..cli_formatter import print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..process_calendars.settings import CalendarOptimizationSettings, PipelineSettings
 from ..settings.control_flow_settings import GatewayProbabilitiesMethod
+from ..simulation.parameters.gateway_probabilities import GatewayProbabilities
 from ..simulation.parameters.miner import mine_parameters
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import nearest_divisor_for_granularity, hyperopt_step
@@ -27,7 +28,7 @@ class CalendarOptimizer:
     _gateway_probabilities_method: GatewayProbabilitiesMethod
     _gateway_probabilities: Optional[dict]
     _train_model_path: Path
-    _output_dir: Path
+    base_directory: Path
     _bayes_trials: Trials
     _process_graph: Optional[DiGraph]
 
@@ -38,11 +39,14 @@ class CalendarOptimizer:
             calendar_optimizer_settings: CalendarOptimizationSettings,
             event_log: EventLog,
             train_model_path: Path,
+            base_directory: Path,
             gateway_probabilities_method: GatewayProbabilitiesMethod,
-            gateway_probabilities: Optional[list] = None,
+            gateway_probabilities: Optional[List[GatewayProbabilities]] = None,
             process_graph: Optional[DiGraph] = None,
             event_distribution: Optional[list[dict]] = None,
     ):
+        # Calendar optimization base folder
+        self.base_directory = base_directory
         self._calendar_optimizer_settings = calendar_optimizer_settings
         self._event_log = event_log
         self._log_ids = event_log.log_ids
@@ -54,10 +58,6 @@ class CalendarOptimizer:
 
         self._log_train = event_log.train_partition
         self._log_validation = event_log.validation_partition
-
-        # Calendar optimization base folder
-        self._output_dir = self._calendar_optimizer_settings.base_dir / get_random_folder_id(prefix='calendars_')
-        self._output_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluation_measurements = pd.DataFrame(
             columns=['distance', 'metric', 'gateway_probabilities', 'status', 'output_dir'])
@@ -75,7 +75,7 @@ class CalendarOptimizer:
         if isinstance(trial_stg, dict):
             trial_stg = PipelineSettings.from_hyperopt_option_dict(
                 trial_stg,
-                output_dir=self._output_dir,
+                output_dir=self.base_directory,
                 model_path=self._train_model_path,
                 gateway_probabilities_method=self._gateway_probabilities_method
             )
@@ -92,7 +92,7 @@ class CalendarOptimizer:
         status = STATUS_OK
 
         # creating and defining folders and paths
-        output_dir = self._output_dir / get_random_folder_id(prefix='calendars_trial_')
+        output_dir = self.base_directory / get_random_folder_id(prefix='calendars_trial_')
         output_dir.mkdir(parents=True, exist_ok=True)
         trial_stg.output_dir = output_dir
 
@@ -148,14 +148,13 @@ class CalendarOptimizer:
         # Save evaluation measurements
         assert len(self.evaluation_measurements) > 0, 'No evaluation measurements were collected'
         self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
-        self.evaluation_measurements.to_csv(
-            self._output_dir / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
+        self.evaluation_measurements.to_csv(self.base_directory / get_random_file_id(extension="csv", prefix="evaluation_"), index=False)
 
         return best_settings
 
     def cleanup(self):
-        print_step(f'Removing {self._output_dir}')
-        remove_asset(self._output_dir)
+        print_step(f'Removing {self.base_directory}')
+        remove_asset(self.base_directory)
 
     @staticmethod
     def _define_search_space(optimizer_settings: CalendarOptimizationSettings):
