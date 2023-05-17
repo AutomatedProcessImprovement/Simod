@@ -3,8 +3,8 @@ from pix_utils.filesystem.file_manager import get_random_folder_id, create_folde
 from pix_utils.log_ids import DEFAULT_XES_IDS
 
 from simod.event_log.event_log import EventLog
-from simod.process_structure.optimizer import StructureOptimizer
-from simod.process_structure.settings import HyperoptIterationParams
+from simod.control_flow.optimizer import ControlFlowOptimizer
+from simod.control_flow.settings import HyperoptIterationParams
 from simod.settings.control_flow_settings import ControlFlowSettings
 from simod.settings.simod_settings import PROJECT_DIR
 from simod.settings.temporal_settings import CalendarSettings
@@ -55,7 +55,7 @@ def test_structure_optimizer(entry_point, test_data):
     )
 
     settings = ControlFlowSettings.from_dict(test_data['parameters'])
-    optimizer = StructureOptimizer(
+    optimizer = ControlFlowOptimizer(
         event_log=event_log,
         bps_model=bps_model,
         settings=settings,
@@ -107,7 +107,7 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
         resource_model=resource_model
     )
 
-    optimizer = StructureOptimizer(
+    optimizer = ControlFlowOptimizer(
         event_log=event_log,
         bps_model=bps_model,
         settings=settings,

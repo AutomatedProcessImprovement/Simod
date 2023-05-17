@@ -9,13 +9,13 @@ from pix_utils.filesystem.file_manager import get_random_folder_id, get_random_f
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_message
+from simod.control_flow.discovery import discover_process_model
+from simod.control_flow.optimizer import ControlFlowOptimizer
+from simod.control_flow.settings import HyperoptIterationParams as StructureHyperoptIterationParams
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
 from simod.event_log.event_log import EventLog
 from simod.process_calendars.optimizer import CalendarOptimizer
 from simod.process_calendars.settings import PipelineSettings as CalendarPipelineSettings, CalendarOptimizationSettings
-from simod.process_structure.miner import StructureMiner
-from simod.process_structure.optimizer import StructureOptimizer
-from simod.process_structure.settings import HyperoptIterationParams as StructureHyperoptIterationParams
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.settings.temporal_settings import CalendarSettings
 from simod.simulation.parameters.BPS_model import BPSModel
@@ -36,7 +36,7 @@ class Optimizer:
     _best_bps_model: BPSModel
     _output_dir: Path
 
-    _control_flow_optimizer: Optional[StructureOptimizer]
+    _control_flow_optimizer: Optional[ControlFlowOptimizer]
     _calendar_optimizer: Optional[CalendarOptimizer]
 
     def __init__(
@@ -70,7 +70,7 @@ class Optimizer:
     def _optimize_structure(self) -> StructureHyperoptIterationParams:
         """Control-flow and Gateway Probabilities discovery."""
         # Instantiate class to perform the optimization of the control-flow discovery
-        self._control_flow_optimizer = StructureOptimizer(
+        self._control_flow_optimizer = ControlFlowOptimizer(
             event_log=self._event_log,
             bps_model=self._best_bps_model,
             settings=self._settings.control_flow,
@@ -159,20 +159,15 @@ class Optimizer:
         print_message(f'Mining structure with settings {settings.to_dict()}')
 
         log_path = (output_dir / self._event_log.process_name).with_suffix('.xes')
-        self._event_log.train_to_xes(log_path)
+        self._event_log.train_to_xes(log_path)  # TODO should be train+validation
 
         model_path = output_dir / (self._event_log.process_name + '.bpmn')
 
-        StructureMiner(
-            settings.mining_algorithm,
+        discover_process_model(
             log_path,
             model_path,
-            concurrency=settings.concurrency,
-            eta=settings.eta,
-            epsilon=settings.epsilon,
-            prioritize_parallelism=settings.prioritize_parallelism,
-            replace_or_joins=settings.replace_or_joins,
-        ).run()
+            settings
+        )
 
         return model_path
 

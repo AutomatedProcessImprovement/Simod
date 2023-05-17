@@ -10,7 +10,7 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from pix_utils.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
 
-from .miner import StructureMiner
+from .discovery import discover_process_model
 from .settings import HyperoptIterationParams
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_message, print_subsection, print_step
@@ -24,7 +24,7 @@ from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step
 
 
-class StructureOptimizer:
+class ControlFlowOptimizer:
     # Event log with train/test partitions
     event_log: EventLog
     # BPS model taken as starting point
@@ -300,18 +300,13 @@ class StructureOptimizer:
 
     def _discover_process_model(self, params: HyperoptIterationParams) -> Path:
         print_step(f"Discovering Process Model with {params.mining_algorithm.value}")
-        model_path = self._get_process_model_path(params.output_dir)
-        StructureMiner(
-            params.mining_algorithm,
+        output_model_path = self._get_process_model_path(params.output_dir)
+        discover_process_model(
             self._xes_train_log_path,
-            model_path,
-            concurrency=params.concurrency,
-            eta=params.eta,
-            epsilon=params.epsilon,
-            prioritize_parallelism=params.prioritize_parallelism,
-            replace_or_joins=params.replace_or_joins,
-        ).run()
-        return model_path
+            output_model_path,
+            params
+        )
+        return output_model_path
 
     def _discover_gateway_probabilities(
             self,

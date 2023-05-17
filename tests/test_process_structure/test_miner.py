@@ -3,8 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from simod.process_structure.miner import StructureMiner
-from simod.settings.control_flow_settings import ProcessModelDiscoveryAlgorithm
+from simod.control_flow.discovery import discover_process_model
+from simod.control_flow.settings import HyperoptIterationParams
+from simod.settings.common_settings import Metric
+from simod.settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, GatewayProbabilitiesMethod
 
 structure_config_sm2 = {
     "mining_algorithm": "sm2",
@@ -49,16 +51,23 @@ def test_miner(entry_point, test_data):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         output_path = Path(tmp_dir) / 'model.bpmn'
-
-        StructureMiner(
-            ProcessModelDiscoveryAlgorithm.from_str(test_data['config_data']['mining_algorithm']),
+        params = HyperoptIterationParams(
+            output_dir=Path(tmp_dir),
+            model_path=output_path,
+            project_name="PurchasingExample",
+            optimization_metric=Metric.N_GRAM_DISTANCE,
+            gateway_probabilities_method=GatewayProbabilitiesMethod.EQUIPROBABLE,
+            mining_algorithm=ProcessModelDiscoveryAlgorithm.from_str(test_data['config_data']['mining_algorithm']),
+            concurrency=test_data['config_data']['concurrency'],
+            epsilon=test_data['config_data']['epsilon'],
+            eta=test_data['config_data']['eta'],
+            replace_or_joins=test_data['config_data']['replace_or_joins'],
+            prioritize_parallelism=test_data['config_data']['prioritize_parallelism']
+        )
+        discover_process_model(
             log_path,
             output_path,
-            eta=test_data['config_data']['eta'],
-            epsilon=test_data['config_data']['epsilon'],
-            concurrency=test_data['config_data']['concurrency'],
-            replace_or_joins=test_data['config_data']['replace_or_joins'],
-            prioritize_parallelism=test_data['config_data']['prioritize_parallelism'],
-        ).run()
+            params
+        )
 
         assert output_path.exists()
