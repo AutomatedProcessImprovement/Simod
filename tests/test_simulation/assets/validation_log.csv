@@ -1,0 +1,1085 @@
+,case_id,activity,start_time,end_time,resource,extraneous_delay,source,run_num,role
+3841,805,Check if customer has all required information,2023-01-02 12:59:36.020000+00:00,2023-01-02 13:00:36.080000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+3848,806,Check if customer has all required information,2023-01-02 13:00:04.320000+00:00,2023-01-02 13:01:06.810000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+3852,807,Check if customer has all required information,2023-01-02 13:00:10.830000+00:00,2023-01-02 13:01:13.030000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+3856,808,Check if customer has all required information,2023-01-02 13:00:52.170000+00:00,2023-01-02 13:02:01.800000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+3865,809,Check if customer has all required information,2023-01-02 13:01:13.030000+00:00,2023-01-02 13:02:14.950000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+3871,810,Check if customer has all required information,2023-01-02 13:01:45.590000+00:00,2023-01-02 13:02:47.480000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+3874,811,Check if customer has all required information,2023-01-02 13:02:14.950000+00:00,2023-01-02 13:03:15.530000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+3876,812,Check if customer has all required information,2023-01-02 13:02:26.390000+00:00,2023-01-02 13:03:30.600000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+3883,813,Check if customer has all required information,2023-01-02 13:03:15.530000+00:00,2023-01-02 13:04:21.050000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+3888,814,Check if customer has all required information,2023-01-02 13:03:30.600000+00:00,2023-01-02 13:04:33.590000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+3896,815,Check if customer has all required information,2023-01-02 13:03:48.450000+00:00,2023-01-02 13:04:50.260000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+3898,816,Check if customer has all required information,2023-01-02 13:03:53.170000+00:00,2023-01-02 13:04:55.760000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+3907,817,Check if customer has all required information,2023-01-02 13:04:33.590000+00:00,2023-01-02 13:05:34.470000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+3910,818,Check if customer has all required information,2023-01-02 13:04:50.260000+00:00,2023-01-02 13:05:51.630000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+3916,819,Check if customer has all required information,2023-01-02 13:04:58.370000+00:00,2023-01-02 13:06:06.320000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+3920,820,Check if customer has all required information,2023-01-02 13:05:11.610000+00:00,2023-01-02 13:06:30.670000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+3925,821,Check if customer has all required information,2023-01-02 13:05:51.630000+00:00,2023-01-02 13:06:53.020000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+3928,822,Check if customer has all required information,2023-01-02 13:05:51.760000+00:00,2023-01-02 13:07:03.730000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+3932,823,Check if customer has all required information,2023-01-02 13:05:58.110000+00:00,2023-01-02 13:07:01.570000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+3940,824,Check if customer has all required information,2023-01-02 13:06:25.960000+00:00,2023-01-02 13:07:27.550000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+3941,825,Check if customer has all required information,2023-01-02 13:06:30.670000+00:00,2023-01-02 13:07:31.990000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+3946,826,Check if customer has all required information,2023-01-02 13:06:53.020000+00:00,2023-01-02 13:07:53.800000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+3949,827,Check if customer has all required information,2023-01-02 13:07:01.570000+00:00,2023-01-02 13:08:04.630000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+3956,828,Check if customer has all required information,2023-01-02 13:07:27.550000+00:00,2023-01-02 13:08:33.260000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+3964,829,Check if customer has all required information,2023-01-02 13:07:31.990000+00:00,2023-01-02 13:08:35.520000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+3967,830,Check if customer has all required information,2023-01-02 13:07:43.080000+00:00,2023-01-02 13:08:44.960000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+3974,831,Check if customer has all required information,2023-01-02 13:07:58.840000+00:00,2023-01-02 13:08:59.570000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+3983,832,Check if customer has all required information,2023-01-02 13:08:33.260000+00:00,2023-01-02 13:09:33.780000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+3985,833,Check if customer has all required information,2023-01-02 13:08:35.520000+00:00,2023-01-02 13:09:35.600000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+3987,834,Check if customer has all required information,2023-01-02 13:08:40.730000+00:00,2023-01-02 13:09:41.370000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+3992,835,Check if customer has all required information,2023-01-02 13:08:47.570000+00:00,2023-01-02 13:09:47.690000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+3996,836,Check if customer has all required information,2023-01-02 13:09:33.780000+00:00,2023-01-02 13:10:45.440000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4000,837,Check if customer has all required information,2023-01-02 13:09:37.120000+00:00,2023-01-02 13:10:41.850000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4004,838,Check if customer has all required information,2023-01-02 13:09:41.370000+00:00,2023-01-02 13:10:42.610000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4009,839,Check if customer has all required information,2023-01-02 13:10:18.260000+00:00,2023-01-02 13:11:19.930000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4017,840,Check if customer has all required information,2023-01-02 13:10:18.620000+00:00,2023-01-02 13:11:19.910000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4020,841,Check if customer has all required information,2023-01-02 13:10:41.850000+00:00,2023-01-02 13:11:49.660000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4027,842,Check if customer has all required information,2023-01-02 13:10:45.440000+00:00,2023-01-02 13:11:52.220000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4037,843,Check if customer has all required information,2023-01-02 13:11:19.910000+00:00,2023-01-02 13:12:22.450000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4040,844,Check if customer has all required information,2023-01-02 13:11:20.010000+00:00,2023-01-02 13:12:21.220000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4045,845,Check if customer has all required information,2023-01-02 13:11:41.390000+00:00,2023-01-02 13:12:46.500000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4052,846,Check if customer has all required information,2023-01-02 13:11:52.220000+00:00,2023-01-02 13:12:52.860000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4060,847,Check if customer has all required information,2023-01-02 13:11:54.690000+00:00,2023-01-02 13:12:56.020000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4061,848,Check if customer has all required information,2023-01-02 13:12:21.220000+00:00,2023-01-02 13:13:21.280000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4067,849,Check if customer has all required information,2023-01-02 13:12:22.450000+00:00,2023-01-02 13:13:24.870000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4071,806,Register Claim,2023-01-02 13:12:24.900000+00:00,2023-01-02 13:21:36.260000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4072,807,Register Claim,2023-01-02 13:12:46.500000+00:00,2023-01-02 13:21:56.390000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4073,850,Check if customer has all required information,2023-01-02 13:12:52.860000+00:00,2023-01-02 13:13:55.050000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4077,851,Check if customer has all required information,2023-01-02 13:12:53.530000+00:00,2023-01-02 13:13:54.690000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4082,852,Check if customer has all required information,2023-01-02 13:12:56.020000+00:00,2023-01-02 13:14:02.050000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4084,808,Register Claim,2023-01-02 13:13:21.280000+00:00,2023-01-02 13:22:36.670000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4085,853,Check if customer has all required information,2023-01-02 13:13:22.260000+00:00,2023-01-02 13:14:24.510000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4089,809,Register Claim,2023-01-02 13:13:24.870000+00:00,2023-01-02 13:22:37.100000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4090,854,Check if customer has all required information,2023-01-02 13:13:46.230000+00:00,2023-01-02 13:14:57.380000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4093,855,Check if customer has all required information,2023-01-02 13:13:54.690000+00:00,2023-01-02 13:14:58.140000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4095,810,Register Claim,2023-01-02 13:13:55.050000+00:00,2023-01-02 13:22:55.520000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4098,856,Check if customer has all required information,2023-01-02 13:13:57.760000+00:00,2023-01-02 13:14:58.640000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4103,857,Check if customer has all required information,2023-01-02 13:14:00.660000+00:00,2023-01-02 13:15:01.700000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4104,811,Register Claim,2023-01-02 13:14:02.050000+00:00,2023-01-02 13:23:03.850000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4109,858,Check if customer has all required information,2023-01-02 13:14:24.510000+00:00,2023-01-02 13:15:25.510000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4110,812,Register Claim,2023-01-02 13:14:36.410000+00:00,2023-01-02 13:23:40.910000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4111,859,Check if customer has all required information,2023-01-02 13:14:57.380000+00:00,2023-01-02 13:16:03.090000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4117,860,Check if customer has all required information,2023-01-02 13:14:58.140000+00:00,2023-01-02 13:15:58.930000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4121,861,Check if customer has all required information,2023-01-02 13:14:58.640000+00:00,2023-01-02 13:16:01.500000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4122,813,Register Claim,2023-01-02 13:15:01.700000+00:00,2023-01-02 13:24:02.230000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4124,814,Register Claim,2023-01-02 13:15:07.610000+00:00,2023-01-02 13:24:12.780000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4127,862,Check if customer has all required information,2023-01-02 13:15:15.140000+00:00,2023-01-02 13:16:23.020000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4132,815,Register Claim,2023-01-02 13:15:25.510000+00:00,2023-01-02 13:24:27.570000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4133,863,Check if customer has all required information,2023-01-02 13:15:58.930000+00:00,2023-01-02 13:17:01.630000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4134,816,Register Claim,2023-01-02 13:16:01.500000+00:00,2023-01-02 13:25:10.400000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4138,864,Check if customer has all required information,2023-01-02 13:16:03.090000+00:00,2023-01-02 13:17:05.780000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4142,865,Check if customer has all required information,2023-01-02 13:16:08.680000+00:00,2023-01-02 13:17:12.850000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4143,817,Register Claim,2023-01-02 13:16:14.440000+00:00,2023-01-02 13:25:19.890000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4146,866,Check if customer has all required information,2023-01-02 13:16:15.320000+00:00,2023-01-02 13:17:21.500000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4150,818,Register Claim,2023-01-02 13:16:23.020000+00:00,2023-01-02 13:25:24.270000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4156,819,Register Claim,2023-01-02 13:16:24.790000+00:00,2023-01-02 13:25:33.360000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4157,867,Check if customer has all required information,2023-01-02 13:16:55.560000+00:00,2023-01-02 13:17:57.550000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4159,868,Check if customer has all required information,2023-01-02 13:17:01.630000+00:00,2023-01-02 13:18:04.830000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4161,820,Register Claim,2023-01-02 13:17:05.780000+00:00,2023-01-02 13:26:09.630000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4162,869,Check if customer has all required information,2023-01-02 13:17:09.490000+00:00,2023-01-02 13:18:10.490000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4167,870,Check if customer has all required information,2023-01-02 13:17:12.850000+00:00,2023-01-02 13:18:14.040000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4169,823,Register Claim,2023-01-02 13:17:21.500000+00:00,2023-01-02 13:26:21.530000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4170,822,Register Claim,2023-01-02 13:17:38.210000+00:00,2023-01-02 13:26:41.820000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4173,871,Check if customer has all required information,2023-01-02 13:17:51.060000+00:00,2023-01-02 13:18:51.200000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4175,824,Register Claim,2023-01-02 13:17:57.550000+00:00,2023-01-02 13:27:00.450000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4176,872,Check if customer has all required information,2023-01-02 13:18:01.580000+00:00,2023-01-02 13:19:08.950000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4178,825,Register Claim,2023-01-02 13:18:04.830000+00:00,2023-01-02 13:27:11.650000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4182,873,Check if customer has all required information,2023-01-02 13:18:10.490000+00:00,2023-01-02 13:19:11.820000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4184,826,Register Claim,2023-01-02 13:18:14.040000+00:00,2023-01-02 13:27:14.130000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4189,827,Register Claim,2023-01-02 13:18:37.920000+00:00,2023-01-02 13:27:41.490000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4190,874,Check if customer has all required information,2023-01-02 13:18:51.200000+00:00,2023-01-02 13:19:51.740000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4193,875,Check if customer has all required information,2023-01-02 13:18:55.300000+00:00,2023-01-02 13:19:59.140000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4197,828,Register Claim,2023-01-02 13:18:56.060000+00:00,2023-01-02 13:28:02.320000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4198,829,Register Claim,2023-01-02 13:19:08.950000+00:00,2023-01-02 13:28:20.210000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4200,876,Check if customer has all required information,2023-01-02 13:19:11.820000+00:00,2023-01-02 13:20:17.330000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4202,830,Register Claim,2023-01-02 13:19:49.030000+00:00,2023-01-02 13:28:52.740000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4205,877,Check if customer has all required information,2023-01-02 13:19:51.740000+00:00,2023-01-02 13:21:00.620000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4207,831,Register Claim,2023-01-02 13:19:59.140000+00:00,2023-01-02 13:29:00.080000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4209,878,Check if customer has all required information,2023-01-02 13:20:05.720000+00:00,2023-01-02 13:21:08.160000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4211,879,Check if customer has all required information,2023-01-02 13:20:17.330000+00:00,2023-01-02 13:21:18.960000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4212,832,Register Claim,2023-01-02 13:20:22.600000+00:00,2023-01-02 13:29:25.770000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4213,833,Register Claim,2023-01-02 13:20:55.840000+00:00,2023-01-02 13:29:58.630000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4216,835,Register Claim,2023-01-02 13:21:00.620000+00:00,2023-01-02 13:30:09.410000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4217,880,Check if customer has all required information,2023-01-02 13:21:08.160000+00:00,2023-01-02 13:22:11.720000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4226,881,Check if customer has all required information,2023-01-02 13:21:18.960000+00:00,2023-01-02 13:22:22.530000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4229,882,Check if customer has all required information,2023-01-02 13:21:36.260000+00:00,2023-01-02 13:22:37.290000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4230,883,Check if customer has all required information,2023-01-02 13:21:56.390000+00:00,2023-01-02 13:23:05.290000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4231,837,Register Claim,2023-01-02 13:22:11.720000+00:00,2023-01-02 13:31:15.420000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4233,838,Register Claim,2023-01-02 13:22:22.530000+00:00,2023-01-02 13:31:24.970000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4234,836,Register Claim,2023-01-02 13:22:36.670000+00:00,2023-01-02 13:31:39.300000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4239,884,Check if customer has all required information,2023-01-02 13:22:37.100000+00:00,2023-01-02 13:23:37.280000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4242,885,Check if customer has all required information,2023-01-02 13:22:37.290000+00:00,2023-01-02 13:23:42.470000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4243,840,Register Claim,2023-01-02 13:22:55.520000+00:00,2023-01-02 13:31:56.360000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4244,839,Register Claim,2023-01-02 13:23:03.850000+00:00,2023-01-02 13:32:06.500000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4246,886,Check if customer has all required information,2023-01-02 13:23:05.290000+00:00,2023-01-02 13:24:07.610000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4252,887,Check if customer has all required information,2023-01-02 13:23:37.280000+00:00,2023-01-02 13:24:39.370000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4253,841,Register Claim,2023-01-02 13:23:40.910000+00:00,2023-01-02 13:32:42.260000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4256,842,Register Claim,2023-01-02 13:23:42.470000+00:00,2023-01-02 13:32:43.660000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4259,888,Check if customer has all required information,2023-01-02 13:24:02.230000+00:00,2023-01-02 13:25:02.530000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4262,889,Check if customer has all required information,2023-01-02 13:24:07.610000+00:00,2023-01-02 13:25:17.050000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4264,844,Register Claim,2023-01-02 13:24:12.780000+00:00,2023-01-02 13:33:13.400000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4267,890,Check if customer has all required information,2023-01-02 13:24:27.570000+00:00,2023-01-02 13:25:29.800000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4268,845,Register Claim,2023-01-02 13:24:39.370000+00:00,2023-01-02 13:33:39.840000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4269,846,Register Claim,2023-01-02 13:25:02.530000+00:00,2023-01-02 13:34:09.680000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4271,891,Check if customer has all required information,2023-01-02 13:25:10.400000+00:00,2023-01-02 13:26:18.670000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4272,847,Register Claim,2023-01-02 13:25:17.050000+00:00,2023-01-02 13:34:29.980000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4274,892,Check if customer has all required information,2023-01-02 13:25:19.890000+00:00,2023-01-02 13:26:24.120000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4275,848,Register Claim,2023-01-02 13:25:24.270000+00:00,2023-01-02 13:34:27.960000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4278,849,Register Claim,2023-01-02 13:25:29.800000+00:00,2023-01-02 13:34:30.490000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4279,893,Check if customer has all required information,2023-01-02 13:25:33.360000+00:00,2023-01-02 13:26:34.410000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4282,894,Check if customer has all required information,2023-01-02 13:26:09.630000+00:00,2023-01-02 13:27:11.940000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4287,851,Register Claim,2023-01-02 13:26:18.670000+00:00,2023-01-02 13:35:20.270000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4288,850,Register Claim,2023-01-02 13:26:21.530000+00:00,2023-01-02 13:35:29.620000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4292,895,Check if customer has all required information,2023-01-02 13:26:24.120000+00:00,2023-01-02 13:27:30.370000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4294,852,Register Claim,2023-01-02 13:26:34.410000+00:00,2023-01-02 13:35:43.780000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4296,896,Check if customer has all required information,2023-01-02 13:26:41.820000+00:00,2023-01-02 13:27:52.630000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4299,853,Register Claim,2023-01-02 13:27:00.450000+00:00,2023-01-02 13:36:06.050000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4303,897,Check if customer has all required information,2023-01-02 13:27:11.650000+00:00,2023-01-02 13:28:16.330000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4306,898,Check if customer has all required information,2023-01-02 13:27:11.940000+00:00,2023-01-02 13:28:12.220000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4311,854,Register Claim,2023-01-02 13:27:14.130000+00:00,2023-01-02 13:36:20.980000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4312,856,Register Claim,2023-01-02 13:27:30.370000+00:00,2023-01-02 13:36:32.050000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4313,857,Register Claim,2023-01-02 13:27:41.490000+00:00,2023-01-02 13:36:43.670000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4314,899,Check if customer has all required information,2023-01-02 13:27:52.630000+00:00,2023-01-02 13:29:09.040000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4317,900,Check if customer has all required information,2023-01-02 13:28:02.320000+00:00,2023-01-02 13:29:03.650000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4318,858,Register Claim,2023-01-02 13:28:12.220000+00:00,2023-01-02 13:37:20.960000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4320,901,Check if customer has all required information,2023-01-02 13:28:16.330000+00:00,2023-01-02 13:29:21.220000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4324,902,Check if customer has all required information,2023-01-02 13:28:20.210000+00:00,2023-01-02 13:29:21.310000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4325,860,Register Claim,2023-01-02 13:28:52.740000+00:00,2023-01-02 13:37:55.740000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4327,861,Register Claim,2023-01-02 13:29:00.080000+00:00,2023-01-02 13:38:41.060000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4330,859,Register Claim,2023-01-02 13:29:03.650000+00:00,2023-01-02 13:38:10.920000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4333,903,Check if customer has all required information,2023-01-02 13:29:09.040000+00:00,2023-01-02 13:30:09.910000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4336,862,Register Claim,2023-01-02 13:29:21.220000+00:00,2023-01-02 13:38:26.260000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4338,904,Check if customer has all required information,2023-01-02 13:29:21.310000+00:00,2023-01-02 13:30:24.750000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4340,905,Check if customer has all required information,2023-01-02 13:29:25.770000+00:00,2023-01-02 13:30:27.670000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4342,863,Register Claim,2023-01-02 13:29:58.630000+00:00,2023-01-02 13:39:18.470000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4343,906,Check if customer has all required information,2023-01-02 13:30:09.410000+00:00,2023-01-02 13:31:13.530000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4344,864,Register Claim,2023-01-02 13:30:09.910000+00:00,2023-01-02 13:39:15.720000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4346,865,Register Claim,2023-01-02 13:30:24.750000+00:00,2023-01-02 13:39:31.400000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4348,907,Check if customer has all required information,2023-01-02 13:30:27.670000+00:00,2023-01-02 13:31:28.310000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4349,866,Register Claim,2023-01-02 13:31:13.530000+00:00,2023-01-02 13:40:15.990000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4350,908,Check if customer has all required information,2023-01-02 13:31:15.420000+00:00,2023-01-02 13:32:17.820000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4355,909,Check if customer has all required information,2023-01-02 13:31:24.970000+00:00,2023-01-02 13:32:39.850000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4356,867,Register Claim,2023-01-02 13:31:28.310000+00:00,2023-01-02 13:40:32.360000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4358,868,Register Claim,2023-01-02 13:31:39.300000+00:00,2023-01-02 13:40:41.710000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4361,910,Check if customer has all required information,2023-01-02 13:31:56.360000+00:00,2023-01-02 13:32:58.520000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4365,869,Register Claim,2023-01-02 13:32:06.500000+00:00,2023-01-02 13:41:06.950000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4366,870,Register Claim,2023-01-02 13:32:17.820000+00:00,2023-01-02 13:41:26.080000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4368,911,Check if customer has all required information,2023-01-02 13:32:39.850000+00:00,2023-01-02 13:33:45.620000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4375,912,Check if customer has all required information,2023-01-02 13:32:42.260000+00:00,2023-01-02 13:33:45.070000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4377,871,Register Claim,2023-01-02 13:32:43.660000+00:00,2023-01-02 13:41:48.370000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4381,913,Check if customer has all required information,2023-01-02 13:32:58.520000+00:00,2023-01-02 13:34:01.890000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4382,872,Register Claim,2023-01-02 13:33:13.400000+00:00,2023-01-02 13:42:13.650000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4383,873,Register Claim,2023-01-02 13:33:39.840000+00:00,2023-01-02 13:42:41.280000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4384,914,Check if customer has all required information,2023-01-02 13:33:45.070000+00:00,2023-01-02 13:34:46.040000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4385,915,Check if customer has all required information,2023-01-02 13:33:45.620000+00:00,2023-01-02 13:34:47.500000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4388,916,Check if customer has all required information,2023-01-02 13:34:01.890000+00:00,2023-01-02 13:35:03.120000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4390,874,Register Claim,2023-01-02 13:34:09.680000+00:00,2023-01-02 13:43:10.140000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4392,875,Register Claim,2023-01-02 13:34:27.960000+00:00,2023-01-02 13:43:36.480000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4397,917,Check if customer has all required information,2023-01-02 13:34:29.980000+00:00,2023-01-02 13:35:30.580000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4399,876,Register Claim,2023-01-02 13:34:30.490000+00:00,2023-01-02 13:43:36.780000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4401,918,Check if customer has all required information,2023-01-02 13:34:46.040000+00:00,2023-01-02 13:35:46.510000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4405,919,Check if customer has all required information,2023-01-02 13:34:47.500000+00:00,2023-01-02 13:35:52.800000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4407,920,Check if customer has all required information,2023-01-02 13:35:03.120000+00:00,2023-01-02 13:36:07.190000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4409,877,Register Claim,2023-01-02 13:35:20.270000+00:00,2023-01-02 13:44:23.630000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4411,878,Register Claim,2023-01-02 13:35:29.620000+00:00,2023-01-02 13:44:37.150000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4412,921,Check if customer has all required information,2023-01-02 13:35:30.580000+00:00,2023-01-02 13:36:33.840000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4415,879,Register Claim,2023-01-02 13:35:43.780000+00:00,2023-01-02 13:44:46.110000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4416,922,Check if customer has all required information,2023-01-02 13:35:46.510000+00:00,2023-01-02 13:36:49.550000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4417,806,Determine likelihood of the claim,2023-01-02 13:21:36.260000+00:00,2023-01-02 13:23:36.410000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+4418,923,Check if customer has all required information,2023-01-02 13:35:52.800000+00:00,2023-01-02 13:37:02.880000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4420,807,Determine likelihood of the claim,2023-01-02 13:21:56.390000+00:00,2023-01-02 13:23:57.780000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+4421,924,Check if customer has all required information,2023-01-02 13:36:06.050000+00:00,2023-01-02 13:37:06.380000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4426,880,Register Claim,2023-01-02 13:36:07.190000+00:00,2023-01-02 13:45:10.690000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4430,925,Check if customer has all required information,2023-01-02 13:36:20.980000+00:00,2023-01-02 13:37:21.560000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4432,808,Determine likelihood of the claim,2023-01-02 13:22:36.670000+00:00,2023-01-02 13:24:40.170000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+4433,926,Check if customer has all required information,2023-01-02 13:36:32.050000+00:00,2023-01-02 13:37:36.890000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4434,809,Determine likelihood of the claim,2023-01-02 13:22:37.100000+00:00,2023-01-02 13:24:41.080000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+4435,882,Register Claim,2023-01-02 13:36:33.840000+00:00,2023-01-02 13:45:40.140000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4436,810,Determine likelihood of the claim,2023-01-02 13:22:55.520000+00:00,2023-01-02 13:24:55.900000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+4438,927,Check if customer has all required information,2023-01-02 13:36:43.670000+00:00,2023-01-02 13:37:43.950000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4441,811,Determine likelihood of the claim,2023-01-02 13:23:03.850000+00:00,2023-01-02 13:25:03.910000+00:00,Claims Handler_84,0.0,log,0,SYSTEM
+4442,883,Register Claim,2023-01-02 13:36:49.550000+00:00,2023-01-02 13:45:56.300000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4443,928,Check if customer has all required information,2023-01-02 13:37:02.880000+00:00,2023-01-02 13:38:06.740000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4448,929,Check if customer has all required information,2023-01-02 13:37:06.380000+00:00,2023-01-02 13:38:07.290000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4449,806,Assess Claim,2023-01-02 13:23:36.410000+00:00,2023-01-02 13:43:51.380000+00:00,Claims Handler_63,0.0,log,0,SYSTEM
+4450,884,Register Claim,2023-01-02 13:37:20.960000+00:00,2023-01-02 13:46:22.040000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4451,812,Determine likelihood of the claim,2023-01-02 13:23:40.910000+00:00,2023-01-02 13:25:41.660000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+4452,885,Register Claim,2023-01-02 13:37:21.560000+00:00,2023-01-02 13:46:30.320000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4455,930,Check if customer has all required information,2023-01-02 13:37:36.890000+00:00,2023-01-02 13:38:41.210000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4457,807,Assess Claim,2023-01-02 13:23:57.780000+00:00,2023-01-02 13:44:01.310000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+4458,813,Determine likelihood of the claim,2023-01-02 13:24:02.230000+00:00,2023-01-02 13:26:03.540000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+4459,931,Check if customer has all required information,2023-01-02 13:37:43.950000+00:00,2023-01-02 13:38:48.490000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4461,814,Determine likelihood of the claim,2023-01-02 13:24:12.780000+00:00,2023-01-02 13:26:14.990000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+4462,932,Check if customer has all required information,2023-01-02 13:37:55.740000+00:00,2023-01-02 13:38:59.150000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4463,815,Determine likelihood of the claim,2023-01-02 13:24:27.570000+00:00,2023-01-02 13:26:29.800000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+4465,887,Register Claim,2023-01-02 13:38:06.740000+00:00,2023-01-02 13:47:21.370000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4466,808,Assess Claim,2023-01-02 13:24:40.170000+00:00,2023-01-02 13:44:42.720000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+4467,933,Check if customer has all required information,2023-01-02 13:38:07.290000+00:00,2023-01-02 13:39:18.010000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4470,810,Assess Claim,2023-01-02 13:24:55.900000+00:00,2023-01-02 13:45:09.520000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+4473,934,Check if customer has all required information,2023-01-02 13:38:10.920000+00:00,2023-01-02 13:39:14.240000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4474,811,Assess Claim,2023-01-02 13:25:03.910000+00:00,2023-01-02 13:45:09.970000+00:00,Claims Handler_51,0.0,log,0,SYSTEM
+4475,816,Determine likelihood of the claim,2023-01-02 13:25:10.400000+00:00,2023-01-02 13:27:11.030000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+4477,889,Register Claim,2023-01-02 13:38:26.260000+00:00,2023-01-02 13:47:26.650000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4478,935,Check if customer has all required information,2023-01-02 13:38:41.060000+00:00,2023-01-02 13:39:44.770000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4479,817,Determine likelihood of the claim,2023-01-02 13:25:19.890000+00:00,2023-01-02 13:27:20.970000+00:00,Claims Handler_62,0.0,log,0,SYSTEM
+4480,818,Determine likelihood of the claim,2023-01-02 13:25:24.270000+00:00,2023-01-02 13:27:27.960000+00:00,Claims Handler_78,0.0,log,0,SYSTEM
+4481,890,Register Claim,2023-01-02 13:38:41.210000+00:00,2023-01-02 13:47:41.750000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4482,819,Determine likelihood of the claim,2023-01-02 13:25:33.360000+00:00,2023-01-02 13:27:34.240000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+4483,936,Check if customer has all required information,2023-01-02 13:38:48.490000+00:00,2023-01-02 13:39:54.720000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4486,812,Assess Claim,2023-01-02 13:25:41.660000+00:00,2023-01-02 13:45:44.500000+00:00,Claims Handler_27,0.0,log,0,SYSTEM
+4489,937,Check if customer has all required information,2023-01-02 13:38:59.150000+00:00,2023-01-02 13:40:00.350000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4490,813,Assess Claim,2023-01-02 13:26:03.540000+00:00,2023-01-02 13:46:15.930000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+4491,820,Determine likelihood of the claim,2023-01-02 13:26:09.630000+00:00,2023-01-02 13:28:09.860000+00:00,Claims Handler_52,0.0,log,0,SYSTEM
+4492,938,Check if customer has all required information,2023-01-02 13:39:14.240000+00:00,2023-01-02 13:40:18.690000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4496,814,Assess Claim,2023-01-02 13:26:14.990000+00:00,2023-01-02 13:46:23.520000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+4498,891,Register Claim,2023-01-02 13:39:15.720000+00:00,2023-01-02 13:48:28.670000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4499,823,Determine likelihood of the claim,2023-01-02 13:26:21.530000+00:00,2023-01-02 13:28:21.910000+00:00,Claims Handler_56,0.0,log,0,SYSTEM
+4500,892,Register Claim,2023-01-02 13:39:18.010000+00:00,2023-01-02 13:48:23.560000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4501,939,Check if customer has all required information,2023-01-02 13:39:18.470000+00:00,2023-01-02 13:40:18.610000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4502,893,Register Claim,2023-01-02 13:39:31.400000+00:00,2023-01-02 13:48:37.030000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4503,822,Determine likelihood of the claim,2023-01-02 13:26:41.820000+00:00,2023-01-02 13:28:43.080000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+4506,940,Check if customer has all required information,2023-01-02 13:39:44.770000+00:00,2023-01-02 13:40:47.290000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4508,824,Determine likelihood of the claim,2023-01-02 13:27:00.450000+00:00,2023-01-02 13:29:00.610000+00:00,Claims Handler_26,0.0,log,0,SYSTEM
+4509,941,Check if customer has all required information,2023-01-02 13:39:54.720000+00:00,2023-01-02 13:40:56.510000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4510,816,Assess Claim,2023-01-02 13:27:11.030000+00:00,2023-01-02 13:47:17.610000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+4511,825,Determine likelihood of the claim,2023-01-02 13:27:11.650000+00:00,2023-01-02 13:29:17.930000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+4512,894,Register Claim,2023-01-02 13:40:00.350000+00:00,2023-01-02 13:49:00.470000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4513,826,Determine likelihood of the claim,2023-01-02 13:27:14.130000+00:00,2023-01-02 13:29:18.110000+00:00,Claims Handler_11,0.0,log,0,SYSTEM
+4515,942,Check if customer has all required information,2023-01-02 13:40:15.990000+00:00,2023-01-02 13:41:18.530000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4521,818,Assess Claim,2023-01-02 13:27:27.960000+00:00,2023-01-02 13:47:29.410000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+4522,895,Register Claim,2023-01-02 13:40:18.610000+00:00,2023-01-02 13:49:24.940000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4523,819,Assess Claim,2023-01-02 13:27:34.240000+00:00,2023-01-02 13:47:38.390000+00:00,Claims Handler_77,0.0,log,0,SYSTEM
+4524,943,Check if customer has all required information,2023-01-02 13:40:18.690000+00:00,2023-01-02 13:41:19.020000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4525,827,Determine likelihood of the claim,2023-01-02 13:27:41.490000+00:00,2023-01-02 13:29:51.540000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+4527,944,Check if customer has all required information,2023-01-02 13:40:32.360000+00:00,2023-01-02 13:41:34.180000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4530,828,Determine likelihood of the claim,2023-01-02 13:28:02.320000+00:00,2023-01-02 13:30:04.970000+00:00,Claims Handler_25,0.0,log,0,SYSTEM
+4531,945,Check if customer has all required information,2023-01-02 13:40:41.710000+00:00,2023-01-02 13:41:49.270000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4532,898,Register Claim,2023-01-02 13:40:47.290000+00:00,2023-01-02 13:49:47.390000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4533,829,Determine likelihood of the claim,2023-01-02 13:28:20.210000+00:00,2023-01-02 13:30:25.440000+00:00,Claims Handler_67,0.0,log,0,SYSTEM
+4534,823,Assess Claim,2023-01-02 13:28:21.910000+00:00,2023-01-02 13:48:33.050000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+4535,946,Check if customer has all required information,2023-01-02 13:40:56.510000+00:00,2023-01-02 13:41:57.120000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4536,947,Check if customer has all required information,2023-01-02 13:41:06.950000+00:00,2023-01-02 13:42:09.960000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4537,822,Assess Claim,2023-01-02 13:28:43.080000+00:00,2023-01-02 13:48:48.020000+00:00,Claims Handler_91,0.0,log,0,SYSTEM
+4541,830,Determine likelihood of the claim,2023-01-02 13:28:52.740000+00:00,2023-01-02 13:30:57.690000+00:00,Claims Handler_43,0.0,log,0,SYSTEM
+4544,948,Check if customer has all required information,2023-01-02 13:41:18.530000+00:00,2023-01-02 13:42:18.930000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4545,831,Determine likelihood of the claim,2023-01-02 13:29:00.080000+00:00,2023-01-02 13:31:00.390000+00:00,Claims Handler_86,0.0,log,0,SYSTEM
+4546,824,Assess Claim,2023-01-02 13:29:00.610000+00:00,2023-01-02 13:49:27.450000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+4547,900,Register Claim,2023-01-02 13:41:19.020000+00:00,2023-01-02 13:50:21.670000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4549,899,Register Claim,2023-01-02 13:41:26.080000+00:00,2023-01-02 13:50:38.480000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4550,949,Check if customer has all required information,2023-01-02 13:41:34.180000+00:00,2023-01-02 13:42:42.380000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4551,825,Assess Claim,2023-01-02 13:29:17.930000+00:00,2023-01-02 13:49:27.980000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+4552,826,Assess Claim,2023-01-02 13:29:18.110000+00:00,2023-01-02 13:49:42.850000+00:00,Claims Handler_48,0.0,log,0,SYSTEM
+4553,901,Register Claim,2023-01-02 13:41:48.370000+00:00,2023-01-02 13:50:48.800000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4554,902,Register Claim,2023-01-02 13:41:49.270000+00:00,2023-01-02 13:50:55.910000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4557,832,Determine likelihood of the claim,2023-01-02 13:29:25.770000+00:00,2023-01-02 13:31:38.690000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+4558,950,Check if customer has all required information,2023-01-02 13:41:57.120000+00:00,2023-01-02 13:42:58.270000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4563,827,Assess Claim,2023-01-02 13:29:51.540000+00:00,2023-01-02 13:50:07.120000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+4564,951,Check if customer has all required information,2023-01-02 13:42:09.960000+00:00,2023-01-02 13:43:10.810000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4565,833,Determine likelihood of the claim,2023-01-02 13:29:58.630000+00:00,2023-01-02 13:32:01.990000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+4566,828,Assess Claim,2023-01-02 13:30:04.970000+00:00,2023-01-02 13:50:09.060000+00:00,Claims Handler_57,0.0,log,0,SYSTEM
+4567,952,Check if customer has all required information,2023-01-02 13:42:13.650000+00:00,2023-01-02 13:43:14.940000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4568,835,Determine likelihood of the claim,2023-01-02 13:30:09.410000+00:00,2023-01-02 13:32:15.290000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+4569,903,Register Claim,2023-01-02 13:42:18.930000+00:00,2023-01-02 13:51:24.520000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4571,953,Check if customer has all required information,2023-01-02 13:42:41.280000+00:00,2023-01-02 13:43:49.620000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4572,904,Register Claim,2023-01-02 13:42:42.380000+00:00,2023-01-02 13:51:46.530000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4573,829,Assess Claim,2023-01-02 13:30:25.440000+00:00,2023-01-02 13:50:40.020000+00:00,Claims Handler_90,0.0,log,0,SYSTEM
+4574,905,Register Claim,2023-01-02 13:42:58.270000+00:00,2023-01-02 13:51:58.650000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4575,954,Check if customer has all required information,2023-01-02 13:43:10.140000+00:00,2023-01-02 13:44:19.640000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4577,955,Check if customer has all required information,2023-01-02 13:43:10.810000+00:00,2023-01-02 13:44:12.550000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4578,830,Assess Claim,2023-01-02 13:30:57.690000+00:00,2023-01-02 13:50:59.820000+00:00,Claims Handler_30,0.0,log,0,SYSTEM
+4579,831,Assess Claim,2023-01-02 13:31:00.390000+00:00,2023-01-02 13:51:09.840000+00:00,Claims Handler_71,0.0,log,0,SYSTEM
+4580,906,Register Claim,2023-01-02 13:43:14.940000+00:00,2023-01-02 13:52:17.220000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4581,837,Determine likelihood of the claim,2023-01-02 13:31:15.420000+00:00,2023-01-02 13:33:19.120000+00:00,Claims Handler_56,0.0,log,0,SYSTEM
+4582,956,Check if customer has all required information,2023-01-02 13:43:36.480000+00:00,2023-01-02 13:44:38.330000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4585,838,Determine likelihood of the claim,2023-01-02 13:31:24.970000+00:00,2023-01-02 13:33:28.610000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+4586,907,Register Claim,2023-01-02 13:43:36.780000+00:00,2023-01-02 13:52:38.900000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4587,957,Check if customer has all required information,2023-01-02 13:43:49.620000+00:00,2023-01-02 13:44:51.700000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4590,832,Assess Claim,2023-01-02 13:31:38.690000+00:00,2023-01-02 13:51:42.570000+00:00,Claims Handler_47,0.0,log,0,SYSTEM
+4591,836,Determine likelihood of the claim,2023-01-02 13:31:39.300000+00:00,2023-01-02 13:33:49.740000+00:00,Claims Handler_36,0.0,log,0,SYSTEM
+4592,958,Check if customer has all required information,2023-01-02 13:44:12.550000+00:00,2023-01-02 13:45:14.060000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4593,840,Determine likelihood of the claim,2023-01-02 13:31:56.360000+00:00,2023-01-02 13:33:56.850000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+4594,833,Assess Claim,2023-01-02 13:32:01.990000+00:00,2023-01-02 13:52:28.080000+00:00,Claims Handler_0,0.0,log,0,SYSTEM
+4596,959,Check if customer has all required information,2023-01-02 13:44:19.640000+00:00,2023-01-02 13:45:20.790000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4597,839,Determine likelihood of the claim,2023-01-02 13:32:06.500000+00:00,2023-01-02 13:34:09.610000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+4598,835,Assess Claim,2023-01-02 13:32:15.290000+00:00,2023-01-02 13:52:27.470000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+4599,908,Register Claim,2023-01-02 13:44:23.630000+00:00,2023-01-02 13:53:34.560000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4600,960,Check if customer has all required information,2023-01-02 13:44:37.150000+00:00,2023-01-02 13:45:39.640000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4603,909,Register Claim,2023-01-02 13:44:38.330000+00:00,2023-01-02 13:53:49.810000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4604,961,Check if customer has all required information,2023-01-02 13:44:46.110000+00:00,2023-01-02 13:45:47.060000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4605,841,Determine likelihood of the claim,2023-01-02 13:32:42.260000+00:00,2023-01-02 13:34:42.490000+00:00,Claims Handler_98,0.0,log,0,SYSTEM
+4606,842,Determine likelihood of the claim,2023-01-02 13:32:43.660000+00:00,2023-01-02 13:34:45.980000+00:00,Claims Handler_73,0.0,log,0,SYSTEM
+4608,962,Check if customer has all required information,2023-01-02 13:44:51.700000+00:00,2023-01-02 13:45:56.310000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4609,910,Register Claim,2023-01-02 13:45:10.690000+00:00,2023-01-02 13:54:19.450000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4613,844,Determine likelihood of the claim,2023-01-02 13:33:13.400000+00:00,2023-01-02 13:35:14.380000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+4614,963,Check if customer has all required information,2023-01-02 13:45:14.060000+00:00,2023-01-02 13:46:18.360000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4615,837,Assess Claim,2023-01-02 13:33:19.120000+00:00,2023-01-02 13:53:25.300000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+4617,838,Assess Claim,2023-01-02 13:33:28.610000+00:00,2023-01-02 13:53:39.760000+00:00,Claims Handler_25,0.0,log,0,SYSTEM
+4618,964,Check if customer has all required information,2023-01-02 13:45:20.790000+00:00,2023-01-02 13:46:20.960000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4621,845,Determine likelihood of the claim,2023-01-02 13:33:39.840000+00:00,2023-01-02 13:35:42.100000+00:00,Claims Handler_85,0.0,log,0,SYSTEM
+4622,912,Register Claim,2023-01-02 13:45:39.640000+00:00,2023-01-02 13:54:57.420000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4623,911,Register Claim,2023-01-02 13:45:40.140000+00:00,2023-01-02 13:54:43.600000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4624,965,Check if customer has all required information,2023-01-02 13:45:47.060000+00:00,2023-01-02 13:46:49.950000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4625,836,Assess Claim,2023-01-02 13:33:49.740000+00:00,2023-01-02 13:53:59.670000+00:00,Claims Handler_67,0.0,log,0,SYSTEM
+4627,840,Assess Claim,2023-01-02 13:33:56.850000+00:00,2023-01-02 13:54:04.830000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+4628,913,Register Claim,2023-01-02 13:45:56.300000+00:00,2023-01-02 13:55:00.580000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4629,966,Check if customer has all required information,2023-01-02 13:45:56.310000+00:00,2023-01-02 13:46:57.200000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4632,839,Assess Claim,2023-01-02 13:34:09.610000+00:00,2023-01-02 13:54:19.360000+00:00,Claims Handler_62,0.0,log,0,SYSTEM
+4633,846,Determine likelihood of the claim,2023-01-02 13:34:09.680000+00:00,2023-01-02 13:36:13.300000+00:00,Claims Handler_43,0.0,log,0,SYSTEM
+4634,967,Check if customer has all required information,2023-01-02 13:46:18.360000+00:00,2023-01-02 13:47:19.200000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4635,848,Determine likelihood of the claim,2023-01-02 13:34:27.960000+00:00,2023-01-02 13:36:31.910000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+4636,847,Determine likelihood of the claim,2023-01-02 13:34:29.980000+00:00,2023-01-02 13:36:34.720000+00:00,Claims Handler_86,0.0,log,0,SYSTEM
+4637,849,Determine likelihood of the claim,2023-01-02 13:34:30.490000+00:00,2023-01-02 13:36:30.650000+00:00,Claims Handler_87,0.0,log,0,SYSTEM
+4640,968,Check if customer has all required information,2023-01-02 13:46:20.960000+00:00,2023-01-02 13:47:23.110000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4641,842,Assess Claim,2023-01-02 13:34:45.980000+00:00,2023-01-02 13:54:50.290000+00:00,Claims Handler_4,0.0,log,0,SYSTEM
+4642,915,Register Claim,2023-01-02 13:46:22.040000+00:00,2023-01-02 13:55:25.340000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4643,969,Check if customer has all required information,2023-01-02 13:46:30.320000+00:00,2023-01-02 13:47:32.250000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4646,916,Register Claim,2023-01-02 13:46:49.950000+00:00,2023-01-02 13:55:51.900000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4647,970,Check if customer has all required information,2023-01-02 13:46:57.200000+00:00,2023-01-02 13:47:59.840000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4648,844,Assess Claim,2023-01-02 13:35:14.380000+00:00,2023-01-02 13:55:54.120000+00:00,Claims Handler_52,0.0,log,0,SYSTEM
+4649,851,Determine likelihood of the claim,2023-01-02 13:35:20.270000+00:00,2023-01-02 13:37:25.840000+00:00,Claims Handler_78,0.0,log,0,SYSTEM
+4650,971,Check if customer has all required information,2023-01-02 13:47:19.200000+00:00,2023-01-02 13:48:23.640000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4651,850,Determine likelihood of the claim,2023-01-02 13:35:29.620000+00:00,2023-01-02 13:37:31.410000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+4652,917,Register Claim,2023-01-02 13:47:21.370000+00:00,2023-01-02 13:56:25.490000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4656,852,Determine likelihood of the claim,2023-01-02 13:35:43.780000+00:00,2023-01-02 13:37:46.100000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+4657,972,Check if customer has all required information,2023-01-02 13:47:23.110000+00:00,2023-01-02 13:48:23.110000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4658,918,Register Claim,2023-01-02 13:47:26.650000+00:00,2023-01-02 13:56:27.320000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4659,919,Register Claim,2023-01-02 13:47:32.250000+00:00,2023-01-02 13:56:32.370000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4662,973,Check if customer has all required information,2023-01-02 13:47:41.750000+00:00,2023-01-02 13:48:42.730000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4663,853,Determine likelihood of the claim,2023-01-02 13:36:06.050000+00:00,2023-01-02 13:38:06.780000+00:00,Claims Handler_15,0.0,log,0,SYSTEM
+4664,920,Register Claim,2023-01-02 13:47:59.840000+00:00,2023-01-02 13:57:04.410000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4667,846,Assess Claim,2023-01-02 13:36:13.300000+00:00,2023-01-02 13:56:48.670000+00:00,Claims Handler_28,0.0,log,0,SYSTEM
+4670,974,Check if customer has all required information,2023-01-02 13:48:23.110000+00:00,2023-01-02 13:49:26.320000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4671,854,Determine likelihood of the claim,2023-01-02 13:36:20.980000+00:00,2023-01-02 13:38:23.480000+00:00,Claims Handler_7,0.0,log,0,SYSTEM
+4672,849,Assess Claim,2023-01-02 13:36:30.650000+00:00,2023-01-02 13:56:33.150000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+4673,848,Assess Claim,2023-01-02 13:36:31.910000+00:00,2023-01-02 13:56:40.320000+00:00,Claims Handler_40,0.0,log,0,SYSTEM
+4674,856,Determine likelihood of the claim,2023-01-02 13:36:32.050000+00:00,2023-01-02 13:38:32.310000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+4675,921,Register Claim,2023-01-02 13:48:23.560000+00:00,2023-01-02 13:57:24+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4676,847,Assess Claim,2023-01-02 13:36:34.720000+00:00,2023-01-02 13:56:46.410000+00:00,Claims Handler_36,0.0,log,0,SYSTEM
+4678,975,Check if customer has all required information,2023-01-02 13:48:23.640000+00:00,2023-01-02 13:49:24.860000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4679,857,Determine likelihood of the claim,2023-01-02 13:36:43.670000+00:00,2023-01-02 13:38:43.800000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+4680,922,Register Claim,2023-01-02 13:48:28.670000+00:00,2023-01-02 13:57:29.350000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4681,976,Check if customer has all required information,2023-01-02 13:48:37.030000+00:00,2023-01-02 13:49:40.070000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4684,923,Register Claim,2023-01-02 13:48:42.730000+00:00,2023-01-02 13:57:50.610000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4685,924,Register Claim,2023-01-02 13:49:00.470000+00:00,2023-01-02 13:58:03.600000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4687,977,Check if customer has all required information,2023-01-02 13:49:24.860000+00:00,2023-01-02 13:50:32.020000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4688,858,Determine likelihood of the claim,2023-01-02 13:37:20.960000+00:00,2023-01-02 13:39:21.250000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+4689,925,Register Claim,2023-01-02 13:49:24.940000+00:00,2023-01-02 13:58:33.030000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4690,851,Assess Claim,2023-01-02 13:37:25.840000+00:00,2023-01-02 13:57:42.740000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+4691,978,Check if customer has all required information,2023-01-02 13:49:26.320000+00:00,2023-01-02 13:50:26.500000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4694,850,Assess Claim,2023-01-02 13:37:31.410000+00:00,2023-01-02 13:57:42.550000+00:00,Claims Handler_11,0.0,log,0,SYSTEM
+4695,926,Register Claim,2023-01-02 13:49:40.070000+00:00,2023-01-02 13:58:42.440000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4697,979,Check if customer has all required information,2023-01-02 13:49:47.390000+00:00,2023-01-02 13:50:50.810000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4698,927,Register Claim,2023-01-02 13:50:21.670000+00:00,2023-01-02 13:59:26.330000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4699,852,Assess Claim,2023-01-02 13:37:46.100000+00:00,2023-01-02 13:57:47.890000+00:00,Claims Handler_73,0.0,log,0,SYSTEM
+4700,860,Determine likelihood of the claim,2023-01-02 13:37:55.740000+00:00,2023-01-02 13:39:55.990000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+4701,980,Check if customer has all required information,2023-01-02 13:50:26.500000+00:00,2023-01-02 13:51:30.040000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4702,928,Register Claim,2023-01-02 13:50:32.020000+00:00,2023-01-02 13:59:37.940000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4703,853,Assess Claim,2023-01-02 13:38:06.780000+00:00,2023-01-02 13:58:11.930000+00:00,Claims Handler_42,0.0,log,0,SYSTEM
+4704,929,Register Claim,2023-01-02 13:50:38.480000+00:00,2023-01-02 13:59:38.820000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4706,859,Determine likelihood of the claim,2023-01-02 13:38:10.920000+00:00,2023-01-02 13:40:12.330000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+4709,981,Check if customer has all required information,2023-01-02 13:50:48.800000+00:00,2023-01-02 13:51:51.010000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4710,854,Assess Claim,2023-01-02 13:38:23.480000+00:00,2023-01-02 13:58:31.190000+00:00,Claims Handler_85,0.0,log,0,SYSTEM
+4713,862,Determine likelihood of the claim,2023-01-02 13:38:26.260000+00:00,2023-01-02 13:40:30.410000+00:00,Claims Handler_96,0.0,log,0,SYSTEM
+4714,856,Assess Claim,2023-01-02 13:38:32.310000+00:00,2023-01-02 13:58:43.910000+00:00,Claims Handler_82,0.0,log,0,SYSTEM
+4715,982,Check if customer has all required information,2023-01-02 13:50:50.810000+00:00,2023-01-02 13:51:58.650000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4717,861,Determine likelihood of the claim,2023-01-02 13:38:41.060000+00:00,2023-01-02 13:40:51.720000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+4718,930,Register Claim,2023-01-02 13:50:55.910000+00:00,2023-01-02 14:00:02.390000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4719,857,Assess Claim,2023-01-02 13:38:43.800000+00:00,2023-01-02 13:58:44.550000+00:00,Claims Handler_87,0.0,log,0,SYSTEM
+4720,931,Register Claim,2023-01-02 13:51:24.520000+00:00,2023-01-02 14:00:31.330000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4721,983,Check if customer has all required information,2023-01-02 13:51:30.040000+00:00,2023-01-02 13:52:31.090000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4722,932,Register Claim,2023-01-02 13:51:46.530000+00:00,2023-01-02 14:00:51.180000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4726,984,Check if customer has all required information,2023-01-02 13:51:51.010000+00:00,2023-01-02 13:52:54.820000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4727,934,Register Claim,2023-01-02 13:51:58.650000+00:00,2023-01-02 14:01:03.900000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4728,864,Determine likelihood of the claim,2023-01-02 13:39:15.720000+00:00,2023-01-02 13:41:17.820000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+4729,863,Determine likelihood of the claim,2023-01-02 13:39:18.470000+00:00,2023-01-02 13:41:22.970000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+4730,858,Assess Claim,2023-01-02 13:39:21.250000+00:00,2023-01-02 13:59:32.520000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+4731,985,Check if customer has all required information,2023-01-02 13:51:58.650000+00:00,2023-01-02 13:52:59.040000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4732,865,Determine likelihood of the claim,2023-01-02 13:39:31.400000+00:00,2023-01-02 13:41:33.060000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+4734,986,Check if customer has all required information,2023-01-02 13:52:17.220000+00:00,2023-01-02 13:53:17.550000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4735,935,Register Claim,2023-01-02 13:52:31.090000+00:00,2023-01-02 14:01:31.380000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4736,936,Register Claim,2023-01-02 13:52:38.900000+00:00,2023-01-02 14:01:50.660000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4737,860,Assess Claim,2023-01-02 13:39:55.990000+00:00,2023-01-02 14:00:09.780000+00:00,Claims Handler_78,0.0,log,0,SYSTEM
+4739,937,Register Claim,2023-01-02 13:52:54.820000+00:00,2023-01-02 14:01:58.120000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4740,987,Check if customer has all required information,2023-01-02 13:52:59.040000+00:00,2023-01-02 13:54:02.580000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4742,866,Determine likelihood of the claim,2023-01-02 13:40:15.990000+00:00,2023-01-02 13:42:16.740000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+4743,939,Register Claim,2023-01-02 13:53:17.550000+00:00,2023-01-02 14:02:34.560000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4744,938,Register Claim,2023-01-02 13:53:34.560000+00:00,2023-01-02 14:02:36.630000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4745,988,Check if customer has all required information,2023-01-02 13:53:49.810000+00:00,2023-01-02 13:54:59.500000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4746,862,Assess Claim,2023-01-02 13:40:30.410000+00:00,2023-01-02 14:00:33.080000+00:00,Claims Handler_41,0.0,log,0,SYSTEM
+4748,867,Determine likelihood of the claim,2023-01-02 13:40:32.360000+00:00,2023-01-02 13:42:35.340000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+4749,989,Check if customer has all required information,2023-01-02 13:54:02.580000+00:00,2023-01-02 13:55:03.270000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4750,868,Determine likelihood of the claim,2023-01-02 13:40:41.710000+00:00,2023-01-02 13:42:42.790000+00:00,Claims Handler_88,0.0,log,0,SYSTEM
+4751,940,Register Claim,2023-01-02 13:54:19.450000+00:00,2023-01-02 14:03:29.930000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4752,861,Assess Claim,2023-01-02 13:40:51.720000+00:00,2023-01-02 14:00:52.690000+00:00,Claims Handler_15,0.0,log,0,SYSTEM
+4753,990,Check if customer has all required information,2023-01-02 13:54:43.600000+00:00,2023-01-02 13:55:44.790000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4754,941,Register Claim,2023-01-02 13:54:57.420000+00:00,2023-01-02 14:03:58.840000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4756,869,Determine likelihood of the claim,2023-01-02 13:41:06.950000+00:00,2023-01-02 13:43:08.530000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+4759,991,Check if customer has all required information,2023-01-02 13:54:59.500000+00:00,2023-01-02 13:55:59.760000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4760,864,Assess Claim,2023-01-02 13:41:17.820000+00:00,2023-01-02 14:01:19.510000+00:00,Claims Handler_26,0.0,log,0,SYSTEM
+4761,942,Register Claim,2023-01-02 13:55:00.580000+00:00,2023-01-02 14:04:06.350000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4762,943,Register Claim,2023-01-02 13:55:03.270000+00:00,2023-01-02 14:04:04+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4765,870,Determine likelihood of the claim,2023-01-02 13:41:26.080000+00:00,2023-01-02 13:43:26.510000+00:00,Claims Handler_22,0.0,log,0,SYSTEM
+4766,992,Check if customer has all required information,2023-01-02 13:55:25.340000+00:00,2023-01-02 13:56:27.160000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4768,865,Assess Claim,2023-01-02 13:41:33.060000+00:00,2023-01-02 14:02:03.850000+00:00,Claims Handler_37,0.0,log,0,SYSTEM
+4769,944,Register Claim,2023-01-02 13:55:44.790000+00:00,2023-01-02 14:04:49.800000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4770,993,Check if customer has all required information,2023-01-02 13:55:51.900000+00:00,2023-01-02 13:56:57.480000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4771,871,Determine likelihood of the claim,2023-01-02 13:41:48.370000+00:00,2023-01-02 13:43:48.950000+00:00,Claims Handler_98,0.0,log,0,SYSTEM
+4772,945,Register Claim,2023-01-02 13:55:59.760000+00:00,2023-01-02 14:05:00.050000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4773,946,Register Claim,2023-01-02 13:56:25.490000+00:00,2023-01-02 14:05:35.910000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4774,994,Check if customer has all required information,2023-01-02 13:56:27.160000+00:00,2023-01-02 13:57:27.700000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4777,947,Register Claim,2023-01-02 13:56:27.320000+00:00,2023-01-02 14:05:31.030000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4778,872,Determine likelihood of the claim,2023-01-02 13:42:13.650000+00:00,2023-01-02 13:44:15.780000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+4779,866,Assess Claim,2023-01-02 13:42:16.740000+00:00,2023-01-02 14:02:31.470000+00:00,Claims Handler_9,0.0,log,0,SYSTEM
+4780,948,Register Claim,2023-01-02 13:56:32.370000+00:00,2023-01-02 14:05:34.670000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4782,995,Check if customer has all required information,2023-01-02 13:56:57.480000+00:00,2023-01-02 13:58:00.140000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4786,867,Assess Claim,2023-01-02 13:42:35.340000+00:00,2023-01-02 14:02:43.010000+00:00,Claims Handler_43,0.0,log,0,SYSTEM
+4787,996,Check if customer has all required information,2023-01-02 13:57:04.410000+00:00,2023-01-02 13:58:06.800000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4788,873,Determine likelihood of the claim,2023-01-02 13:42:41.280000+00:00,2023-01-02 13:44:41.730000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+4789,949,Register Claim,2023-01-02 13:57:24+00:00,2023-01-02 14:06:28.460000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4790,868,Assess Claim,2023-01-02 13:42:42.790000+00:00,2023-01-02 14:02:59.370000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+4791,997,Check if customer has all required information,2023-01-02 13:57:27.700000+00:00,2023-01-02 13:58:28.050000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4792,950,Register Claim,2023-01-02 13:57:29.350000+00:00,2023-01-02 14:06:34.380000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4793,869,Assess Claim,2023-01-02 13:43:08.530000+00:00,2023-01-02 14:03:10.500000+00:00,Claims Handler_45,0.0,log,0,SYSTEM
+4794,874,Determine likelihood of the claim,2023-01-02 13:43:10.140000+00:00,2023-01-02 13:45:15.200000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+4795,951,Register Claim,2023-01-02 13:57:50.610000+00:00,2023-01-02 14:06:56.260000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4799,952,Register Claim,2023-01-02 13:58:00.140000+00:00,2023-01-02 14:07:01.930000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4800,998,Check if customer has all required information,2023-01-02 13:58:03.600000+00:00,2023-01-02 13:59:04.340000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4801,870,Assess Claim,2023-01-02 13:43:26.510000+00:00,2023-01-02 14:03:27.970000+00:00,Claims Handler_83,0.0,log,0,SYSTEM
+4802,999,Check if customer has all required information,2023-01-02 13:58:06.800000+00:00,2023-01-02 13:59:10.930000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4803,875,Determine likelihood of the claim,2023-01-02 13:43:36.480000+00:00,2023-01-02 13:45:47.260000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+4804,876,Determine likelihood of the claim,2023-01-02 13:43:36.780000+00:00,2023-01-02 13:45:36.880000+00:00,Claims Handler_96,0.0,log,0,SYSTEM
+4805,871,Assess Claim,2023-01-02 13:43:48.950000+00:00,2023-01-02 14:04:13.540000+00:00,Claims Handler_56,0.0,log,0,SYSTEM
+4806,806,Advise Claimant on Reimbursement,2023-01-02 13:43:51.380000+00:00,2023-01-02 13:47:51.900000+00:00,Claims Handler_70,0.0,log,0,SYSTEM
+4807,806,Initiate Payment,2023-01-02 13:43:51.380000+00:00,2023-01-02 13:45:54.830000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+4808,807,Advise Claimant on Reimbursement,2023-01-02 13:44:01.310000+00:00,2023-01-02 13:48:03.370000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+4809,807,Initiate Payment,2023-01-02 13:44:01.310000+00:00,2023-01-02 13:46:03.610000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+4810,955,Register Claim,2023-01-02 13:58:28.050000+00:00,2023-01-02 14:07:28.580000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4811,872,Assess Claim,2023-01-02 13:44:15.780000+00:00,2023-01-02 14:04:33.070000+00:00,Claims Handler_66,0.0,log,0,SYSTEM
+4812,954,Register Claim,2023-01-02 13:58:33.030000+00:00,2023-01-02 14:07:33.540000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4813,877,Determine likelihood of the claim,2023-01-02 13:44:23.630000+00:00,2023-01-02 13:46:27.480000+00:00,Claims Handler_86,0.0,log,0,SYSTEM
+4814,878,Determine likelihood of the claim,2023-01-02 13:44:37.150000+00:00,2023-01-02 13:46:40.820000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+4815,956,Register Claim,2023-01-02 13:58:42.440000+00:00,2023-01-02 14:07:44.540000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4816,873,Assess Claim,2023-01-02 13:44:41.730000+00:00,2023-01-02 14:04:49.930000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+4817,808,Advise Claimant on Reimbursement,2023-01-02 13:44:42.720000+00:00,2023-01-02 13:48:44.660000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+4818,808,Initiate Payment,2023-01-02 13:44:42.720000+00:00,2023-01-02 13:46:53.100000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+4819,879,Determine likelihood of the claim,2023-01-02 13:44:46.110000+00:00,2023-01-02 13:46:47.340000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+4820,957,Register Claim,2023-01-02 13:59:04.340000+00:00,2023-01-02 14:08:11.590000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4821,810,Advise Claimant on Reimbursement,2023-01-02 13:45:09.520000+00:00,2023-01-02 13:49:12.360000+00:00,Claims Handler_14,0.0,log,0,SYSTEM
+4822,810,Initiate Payment,2023-01-02 13:45:09.520000+00:00,2023-01-02 13:47:15.250000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+4823,811,Advise Claimant on Reimbursement,2023-01-02 13:45:09.970000+00:00,2023-01-02 13:49:13.880000+00:00,Claims Handler_80,0.0,log,0,SYSTEM
+4824,811,Initiate Payment,2023-01-02 13:45:09.970000+00:00,2023-01-02 13:47:14.900000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+4825,880,Determine likelihood of the claim,2023-01-02 13:45:10.690000+00:00,2023-01-02 13:47:14.850000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+4826,958,Register Claim,2023-01-02 13:59:10.930000+00:00,2023-01-02 14:08:11.960000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4828,874,Assess Claim,2023-01-02 13:45:15.200000+00:00,2023-01-02 14:05:16.120000+00:00,Claims Handler_72,0.0,log,0,SYSTEM
+4829,959,Register Claim,2023-01-02 13:59:26.330000+00:00,2023-01-02 14:08:29.020000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+4830,876,Assess Claim,2023-01-02 13:45:36.880000+00:00,2023-01-02 14:05:38.760000+00:00,Claims Handler_76,0.0,log,0,SYSTEM
+4832,882,Determine likelihood of the claim,2023-01-02 13:45:40.140000+00:00,2023-01-02 13:47:41.430000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+4833,961,Register Claim,2023-01-02 13:59:37.940000+00:00,2023-01-02 14:08:40.150000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+4834,875,Assess Claim,2023-01-02 13:45:47.260000+00:00,2023-01-02 14:05:56.510000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+4835,883,Determine likelihood of the claim,2023-01-02 13:45:56.300000+00:00,2023-01-02 13:47:58.030000+00:00,Claims Handler_88,0.0,log,0,SYSTEM
+4837,963,Register Claim,2023-01-02 13:59:38.820000+00:00,2023-01-02 14:08:42.180000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+4838,964,Register Claim,2023-01-02 14:00:02.390000+00:00,2023-01-02 14:09:06.080000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+4839,884,Determine likelihood of the claim,2023-01-02 13:46:22.040000+00:00,2023-01-02 13:48:23.180000+00:00,Claims Handler_53,0.0,log,0,SYSTEM
+4840,814,Initiate Payment,2023-01-02 13:46:23.520000+00:00,2023-01-02 13:48:24.570000+00:00,Claims Handler_84,0.0,log,0,SYSTEM
+4841,814,Advise Claimant on Reimbursement,2023-01-02 13:46:23.520000+00:00,2023-01-02 13:50:34.910000+00:00,Claims Handler_12,0.0,log,0,SYSTEM
+4842,885,Determine likelihood of the claim,2023-01-02 13:46:30.320000+00:00,2023-01-02 13:48:41.670000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+4844,878,Assess Claim,2023-01-02 13:46:40.820000+00:00,2023-01-02 14:07:58.920000+00:00,Claims Handler_22,0.0,log,0,SYSTEM
+4845,879,Assess Claim,2023-01-02 13:46:47.340000+00:00,2023-01-02 14:06:57.780000+00:00,Claims Handler_55,0.0,log,0,SYSTEM
+4846,965,Register Claim,2023-01-02 14:00:31.330000+00:00,2023-01-02 14:09:32.490000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+4847,966,Register Claim,2023-01-02 14:00:51.180000+00:00,2023-01-02 14:09:58.920000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+4848,880,Assess Claim,2023-01-02 13:47:14.850000+00:00,2023-01-02 14:07:25.040000+00:00,Claims Handler_98,0.0,log,0,SYSTEM
+4850,816,Advise Claimant on Reimbursement,2023-01-02 13:47:17.610000+00:00,2023-01-02 13:51:29.600000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+4851,816,Initiate Payment,2023-01-02 13:47:17.610000+00:00,2023-01-02 13:49:19.710000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+4852,967,Register Claim,2023-01-02 14:01:03.900000+00:00,2023-01-02 14:10:06.060000+00:00,Call Centre Operator_19,0.0,log,0,SYSTEM
+4853,887,Determine likelihood of the claim,2023-01-02 13:47:21.370000+00:00,2023-01-02 13:49:21.900000+00:00,Claims Handler_89,0.0,log,0,SYSTEM
+4854,968,Register Claim,2023-01-02 14:01:31.380000+00:00,2023-01-02 14:10:35.860000+00:00,Call Centre Operator_26,0.0,log,0,SYSTEM
+4855,889,Determine likelihood of the claim,2023-01-02 13:47:26.650000+00:00,2023-01-02 13:49:28.140000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+4856,818,Initiate Payment,2023-01-02 13:47:29.410000+00:00,2023-01-02 13:49:29.560000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+4857,818,Advise Claimant on Reimbursement,2023-01-02 13:47:29.410000+00:00,2023-01-02 13:51:35.390000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+4858,969,Register Claim,2023-01-02 14:01:50.660000+00:00,2023-01-02 14:11:01.130000+00:00,Call Centre Operator_14,0.0,log,0,SYSTEM
+4859,819,Initiate Payment,2023-01-02 13:47:38.390000+00:00,2023-01-02 13:49:45.170000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+4860,819,Advise Claimant on Reimbursement,2023-01-02 13:47:38.390000+00:00,2023-01-02 13:51:39.390000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+4861,882,Assess Claim,2023-01-02 13:47:41.430000+00:00,2023-01-02 14:07:42.920000+00:00,Claims Handler_51,0.0,log,0,SYSTEM
+4862,890,Determine likelihood of the claim,2023-01-02 13:47:41.750000+00:00,2023-01-02 13:49:45.210000+00:00,Claims Handler_24,0.0,log,0,SYSTEM
+4863,806,Close Claim,2023-01-02 13:47:51.900000+00:00,2023-01-02 13:48:57.310000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+4864,883,Assess Claim,2023-01-02 13:47:58.030000+00:00,2023-01-02 14:08:07.380000+00:00,Claims Handler_95,0.0,log,0,SYSTEM
+4865,970,Register Claim,2023-01-02 14:01:58.120000+00:00,2023-01-02 14:11:04.470000+00:00,Call Centre Operator_2,0.0,log,0,SYSTEM
+4866,807,Close Claim,2023-01-02 13:48:03.370000+00:00,2023-01-02 13:49:06.040000+00:00,Claims Handler_96,0.0,log,0,SYSTEM
+4867,892,Determine likelihood of the claim,2023-01-02 13:48:23.560000+00:00,2023-01-02 13:50:25.600000+00:00,Claims Handler_7,0.0,log,0,SYSTEM
+4868,971,Register Claim,2023-01-02 14:02:34.560000+00:00,2023-01-02 14:11:35.490000+00:00,Call Centre Operator_28,0.0,log,0,SYSTEM
+4869,891,Determine likelihood of the claim,2023-01-02 13:48:28.670000+00:00,2023-01-02 13:50:32.420000+00:00,Claims Handler_27,0.0,log,0,SYSTEM
+4870,823,Initiate Payment,2023-01-02 13:48:33.050000+00:00,2023-01-02 13:50:34.580000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+4871,823,Advise Claimant on Reimbursement,2023-01-02 13:48:33.050000+00:00,2023-01-02 13:52:35.890000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+4872,893,Determine likelihood of the claim,2023-01-02 13:48:37.030000+00:00,2023-01-02 13:50:41.220000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+4873,885,Assess Claim,2023-01-02 13:48:41.670000+00:00,2023-01-02 14:08:49.390000+00:00,Claims Handler_65,0.0,log,0,SYSTEM
+4874,973,Register Claim,2023-01-02 14:02:36.630000+00:00,2023-01-02 14:11:48.080000+00:00,Call Centre Operator_25,0.0,log,0,SYSTEM
+4875,808,Close Claim,2023-01-02 13:48:44.660000+00:00,2023-01-02 13:49:44.890000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+4876,822,Initiate Payment,2023-01-02 13:48:48.020000+00:00,2023-01-02 13:50:49.630000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+4877,822,Advise Claimant on Reimbursement,2023-01-02 13:48:48.020000+00:00,2023-01-02 13:52:57.020000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+4878,894,Determine likelihood of the claim,2023-01-02 13:49:00.470000+00:00,2023-01-02 13:51:02.380000+00:00,Claims Handler_86,0.0,log,0,SYSTEM
+4879,810,Close Claim,2023-01-02 13:49:12.360000+00:00,2023-01-02 13:50:15.360000+00:00,Claims Handler_64,0.0,log,0,SYSTEM
+4880,811,Close Claim,2023-01-02 13:49:13.880000+00:00,2023-01-02 13:50:22.570000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+4881,887,Assess Claim,2023-01-02 13:49:21.900000+00:00,2023-01-02 14:09:35.230000+00:00,Claims Handler_46,0.0,log,0,SYSTEM
+4882,975,Register Claim,2023-01-02 14:03:29.930000+00:00,2023-01-02 14:12:31.690000+00:00,Call Centre Operator_9,0.0,log,0,SYSTEM
+4883,895,Determine likelihood of the claim,2023-01-02 13:49:24.940000+00:00,2023-01-02 13:51:27.690000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+4884,974,Register Claim,2023-01-02 14:03:58.840000+00:00,2023-01-02 14:13:05.960000+00:00,Call Centre Operator_10,0.0,log,0,SYSTEM
+4885,824,Advise Claimant on Reimbursement,2023-01-02 13:49:27.450000+00:00,2023-01-02 13:53:32.480000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+4886,824,Initiate Payment,2023-01-02 13:49:27.450000+00:00,2023-01-02 13:51:28.970000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+4887,825,Initiate Payment,2023-01-02 13:49:27.980000+00:00,2023-01-02 13:51:29.480000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+4888,825,Advise Claimant on Reimbursement,2023-01-02 13:49:27.980000+00:00,2023-01-02 13:53:28.940000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+4889,889,Assess Claim,2023-01-02 13:49:28.140000+00:00,2023-01-02 14:09:38.540000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+4890,976,Register Claim,2023-01-02 14:04:04+00:00,2023-01-02 14:13:08.960000+00:00,Call Centre Operator_29,0.0,log,0,SYSTEM
+4891,826,Advise Claimant on Reimbursement,2023-01-02 13:49:42.850000+00:00,2023-01-02 13:53:42.860000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+4892,826,Initiate Payment,2023-01-02 13:49:42.850000+00:00,2023-01-02 13:51:44.250000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+4893,898,Determine likelihood of the claim,2023-01-02 13:49:47.390000+00:00,2023-01-02 13:51:50.770000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+4894,827,Advise Claimant on Reimbursement,2023-01-02 13:50:07.120000+00:00,2023-01-02 13:54:07.480000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+4895,827,Initiate Payment,2023-01-02 13:50:07.120000+00:00,2023-01-02 13:52:08.670000+00:00,Claims Handler_77,0.0,log,0,SYSTEM
+4896,900,Determine likelihood of the claim,2023-01-02 13:50:21.670000+00:00,2023-01-02 13:52:22.310000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+4897,892,Assess Claim,2023-01-02 13:50:25.600000+00:00,2023-01-02 14:10:31.240000+00:00,Claims Handler_70,0.0,log,0,SYSTEM
+4898,978,Register Claim,2023-01-02 14:04:06.350000+00:00,2023-01-02 14:13:07.250000+00:00,Call Centre Operator_15,0.0,log,0,SYSTEM
+4899,977,Register Claim,2023-01-02 14:04:49.800000+00:00,2023-01-02 14:13:51.030000+00:00,Call Centre Operator_13,0.0,log,0,SYSTEM
+4900,891,Assess Claim,2023-01-02 13:50:32.420000+00:00,2023-01-02 14:10:37.160000+00:00,Claims Handler_88,0.0,log,0,SYSTEM
+4901,814,Close Claim,2023-01-02 13:50:34.910000+00:00,2023-01-02 13:51:37.350000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+4902,899,Determine likelihood of the claim,2023-01-02 13:50:38.480000+00:00,2023-01-02 13:52:39.260000+00:00,Claims Handler_63,0.0,log,0,SYSTEM
+4903,829,Advise Claimant on Reimbursement,2023-01-02 13:50:40.020000+00:00,2023-01-02 13:54:45.550000+00:00,Claims Handler_53,0.0,log,0,SYSTEM
+4904,829,Initiate Payment,2023-01-02 13:50:40.020000+00:00,2023-01-02 13:52:41.620000+00:00,Claims Handler_84,0.0,log,0,SYSTEM
+4905,893,Assess Claim,2023-01-02 13:50:41.220000+00:00,2023-01-02 14:10:49.370000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+4906,901,Determine likelihood of the claim,2023-01-02 13:50:48.800000+00:00,2023-01-02 13:53:00.730000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+4907,979,Register Claim,2023-01-02 14:05:00.050000+00:00,2023-01-02 14:14:00.280000+00:00,Call Centre Operator_1,0.0,log,0,SYSTEM
+4908,902,Determine likelihood of the claim,2023-01-02 13:50:55.910000+00:00,2023-01-02 13:53:02.170000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+4909,830,Advise Claimant on Reimbursement,2023-01-02 13:50:59.820000+00:00,2023-01-02 13:55:00.860000+00:00,Claims Handler_91,0.0,log,0,SYSTEM
+4910,830,Initiate Payment,2023-01-02 13:50:59.820000+00:00,2023-01-02 13:53:03.410000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+4911,894,Assess Claim,2023-01-02 13:51:02.380000+00:00,2023-01-02 14:11:14.540000+00:00,Claims Handler_96,0.0,log,0,SYSTEM
+4912,831,Advise Claimant on Reimbursement,2023-01-02 13:51:09.840000+00:00,2023-01-02 13:55:10.940000+00:00,Claims Handler_14,0.0,log,0,SYSTEM
+4913,831,Initiate Payment,2023-01-02 13:51:09.840000+00:00,2023-01-02 13:53:18.400000+00:00,Claims Handler_80,0.0,log,0,SYSTEM
+4914,903,Determine likelihood of the claim,2023-01-02 13:51:24.520000+00:00,2023-01-02 13:53:25.230000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+4915,895,Assess Claim,2023-01-02 13:51:27.690000+00:00,2023-01-02 14:12:02.590000+00:00,Claims Handler_89,0.0,log,0,SYSTEM
+4916,816,Close Claim,2023-01-02 13:51:29.600000+00:00,2023-01-02 13:52:38.120000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+4917,980,Register Claim,2023-01-02 14:05:31.030000+00:00,2023-01-02 14:14:31.180000+00:00,Call Centre Operator_7,0.0,log,0,SYSTEM
+4918,818,Close Claim,2023-01-02 13:51:35.390000+00:00,2023-01-02 13:52:40.230000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+4919,819,Close Claim,2023-01-02 13:51:39.390000+00:00,2023-01-02 13:52:39.660000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+4920,832,Advise Claimant on Reimbursement,2023-01-02 13:51:42.570000+00:00,2023-01-02 13:55:43.600000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+4921,832,Initiate Payment,2023-01-02 13:51:42.570000+00:00,2023-01-02 13:53:43.740000+00:00,Claims Handler_48,0.0,log,0,SYSTEM
+4922,904,Determine likelihood of the claim,2023-01-02 13:51:46.530000+00:00,2023-01-02 13:53:48.640000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+4923,898,Assess Claim,2023-01-02 13:51:50.770000+00:00,2023-01-02 14:11:51.460000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+4924,981,Register Claim,2023-01-02 14:05:34.670000+00:00,2023-01-02 14:14:36.690000+00:00,Call Centre Operator_24,0.0,log,0,SYSTEM
+4925,905,Determine likelihood of the claim,2023-01-02 13:51:58.650000+00:00,2023-01-02 13:54:04.970000+00:00,Claims Handler_24,0.0,log,0,SYSTEM
+4926,982,Register Claim,2023-01-02 14:05:35.910000+00:00,2023-01-02 14:14:38.460000+00:00,Call Centre Operator_27,0.0,log,0,SYSTEM
+4927,906,Determine likelihood of the claim,2023-01-02 13:52:17.220000+00:00,2023-01-02 13:54:19.590000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+4928,900,Assess Claim,2023-01-02 13:52:22.310000+00:00,2023-01-02 14:12:23.300000+00:00,Claims Handler_57,0.0,log,0,SYSTEM
+4929,835,Advise Claimant on Reimbursement,2023-01-02 13:52:27.470000+00:00,2023-01-02 13:56:30.950000+00:00,Claims Handler_64,0.0,log,0,SYSTEM
+4930,835,Initiate Payment,2023-01-02 13:52:27.470000+00:00,2023-01-02 13:54:30.420000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+4931,833,Advise Claimant on Reimbursement,2023-01-02 13:52:28.080000+00:00,2023-01-02 13:56:28.440000+00:00,Claims Handler_7,0.0,log,0,SYSTEM
+4932,833,Initiate Payment,2023-01-02 13:52:28.080000+00:00,2023-01-02 13:54:29.860000+00:00,Claims Handler_27,0.0,log,0,SYSTEM
+4933,983,Register Claim,2023-01-02 14:06:28.460000+00:00,2023-01-02 14:15:32.380000+00:00,Call Centre Operator_23,0.0,log,0,SYSTEM
+4934,823,Close Claim,2023-01-02 13:52:35.890000+00:00,2023-01-02 13:53:41.420000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+4935,907,Determine likelihood of the claim,2023-01-02 13:52:38.900000+00:00,2023-01-02 13:54:39+00:00,Claims Handler_12,0.0,log,0,SYSTEM
+4936,899,Assess Claim,2023-01-02 13:52:39.260000+00:00,2023-01-02 14:12:47.050000+00:00,Claims Handler_90,0.0,log,0,SYSTEM
+4937,984,Register Claim,2023-01-02 14:06:34.380000+00:00,2023-01-02 14:15:40.820000+00:00,Call Centre Operator_3,0.0,log,0,SYSTEM
+4938,822,Close Claim,2023-01-02 13:52:57.020000+00:00,2023-01-02 13:54:01.040000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+4939,985,Register Claim,2023-01-02 14:06:56.260000+00:00,2023-01-02 14:15:57.060000+00:00,Call Centre Operator_22,0.0,log,0,SYSTEM
+4940,901,Assess Claim,2023-01-02 13:53:00.730000+00:00,2023-01-02 14:13:11.240000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+4941,902,Assess Claim,2023-01-02 13:53:02.170000+00:00,2023-01-02 14:13:03.110000+00:00,Claims Handler_30,0.0,log,0,SYSTEM
+4942,986,Register Claim,2023-01-02 14:07:01.930000+00:00,2023-01-02 14:16:03.050000+00:00,Call Centre Operator_16,0.0,log,0,SYSTEM
+4943,903,Assess Claim,2023-01-02 13:53:25.230000+00:00,2023-01-02 14:13:38.680000+00:00,Claims Handler_86,0.0,log,0,SYSTEM
+4944,837,Advise Claimant on Reimbursement,2023-01-02 13:53:25.300000+00:00,2023-01-02 13:57:33.620000+00:00,Claims Handler_71,0.0,log,0,SYSTEM
+4945,837,Initiate Payment,2023-01-02 13:53:25.300000+00:00,2023-01-02 13:55:25.880000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+4946,825,Close Claim,2023-01-02 13:53:28.940000+00:00,2023-01-02 13:54:29.870000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+4947,824,Close Claim,2023-01-02 13:53:32.480000+00:00,2023-01-02 13:54:33.040000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+4948,908,Determine likelihood of the claim,2023-01-02 13:53:34.560000+00:00,2023-01-02 13:55:38.640000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+4949,838,Initiate Payment,2023-01-02 13:53:39.760000+00:00,2023-01-02 13:55:41.520000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+4950,838,Advise Claimant on Reimbursement,2023-01-02 13:53:39.760000+00:00,2023-01-02 13:57:43.550000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+4951,826,Close Claim,2023-01-02 13:53:42.860000+00:00,2023-01-02 13:54:47.950000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+4952,904,Assess Claim,2023-01-02 13:53:48.640000+00:00,2023-01-02 14:13:50.640000+00:00,Claims Handler_47,0.0,log,0,SYSTEM
+4953,909,Determine likelihood of the claim,2023-01-02 13:53:49.810000+00:00,2023-01-02 13:55:58.600000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+4954,836,Advise Claimant on Reimbursement,2023-01-02 13:53:59.670000+00:00,2023-01-02 13:58:01.540000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+4955,836,Initiate Payment,2023-01-02 13:53:59.670000+00:00,2023-01-02 13:56:17+00:00,Claims Handler_77,0.0,log,0,SYSTEM
+4956,987,Register Claim,2023-01-02 14:07:28.580000+00:00,2023-01-02 14:16:30.070000+00:00,Call Centre Operator_17,0.0,log,0,SYSTEM
+4957,840,Advise Claimant on Reimbursement,2023-01-02 13:54:04.830000+00:00,2023-01-02 13:58:05.490000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+4958,840,Initiate Payment,2023-01-02 13:54:04.830000+00:00,2023-01-02 13:56:07.080000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+4959,905,Assess Claim,2023-01-02 13:54:04.970000+00:00,2023-01-02 14:14:22.910000+00:00,Claims Handler_0,0.0,log,0,SYSTEM
+4960,827,Close Claim,2023-01-02 13:54:07.480000+00:00,2023-01-02 13:55:08.750000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+4961,839,Initiate Payment,2023-01-02 13:54:19.360000+00:00,2023-01-02 13:56:20.160000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+4962,839,Advise Claimant on Reimbursement,2023-01-02 13:54:19.360000+00:00,2023-01-02 13:58:21.030000+00:00,Claims Handler_63,0.0,log,0,SYSTEM
+4963,910,Determine likelihood of the claim,2023-01-02 13:54:19.450000+00:00,2023-01-02 13:56:20.570000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+4964,906,Assess Claim,2023-01-02 13:54:19.590000+00:00,2023-01-02 14:14:40.220000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+4965,907,Assess Claim,2023-01-02 13:54:39+00:00,2023-01-02 14:15:11.970000+00:00,Claims Handler_84,0.0,log,0,SYSTEM
+4966,911,Determine likelihood of the claim,2023-01-02 13:54:43.600000+00:00,2023-01-02 13:56:52.230000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+4967,829,Close Claim,2023-01-02 13:54:45.550000+00:00,2023-01-02 13:55:45.930000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+4968,842,Initiate Payment,2023-01-02 13:54:50.290000+00:00,2023-01-02 13:56:50.820000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+4969,842,Advise Claimant on Reimbursement,2023-01-02 13:54:50.290000+00:00,2023-01-02 13:58:50.480000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+4970,912,Determine likelihood of the claim,2023-01-02 13:54:57.420000+00:00,2023-01-02 13:57:11.310000+00:00,Claims Handler_80,0.0,log,0,SYSTEM
+4971,988,Register Claim,2023-01-02 14:07:33.540000+00:00,2023-01-02 14:16:40.170000+00:00,Call Centre Operator_20,0.0,log,0,SYSTEM
+4972,913,Determine likelihood of the claim,2023-01-02 13:55:00.580000+00:00,2023-01-02 13:57:02.170000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+4973,830,Close Claim,2023-01-02 13:55:00.860000+00:00,2023-01-02 13:56:02.270000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+4974,989,Register Claim,2023-01-02 14:07:44.540000+00:00,2023-01-02 14:16:45.500000+00:00,Call Centre Operator_5,0.0,log,0,SYSTEM
+4975,831,Close Claim,2023-01-02 13:55:10.940000+00:00,2023-01-02 13:56:11.810000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+4976,915,Determine likelihood of the claim,2023-01-02 13:55:25.340000+00:00,2023-01-02 13:57:25.720000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+4977,908,Assess Claim,2023-01-02 13:55:38.640000+00:00,2023-01-02 14:16:11.770000+00:00,Claims Handler_25,0.0,log,0,SYSTEM
+4978,832,Close Claim,2023-01-02 13:55:43.600000+00:00,2023-01-02 13:56:46.100000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+4979,916,Determine likelihood of the claim,2023-01-02 13:55:51.900000+00:00,2023-01-02 13:57:53.360000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+4980,909,Assess Claim,2023-01-02 13:55:58.600000+00:00,2023-01-02 14:16:12.420000+00:00,Claims Handler_48,0.0,log,0,SYSTEM
+4981,991,Register Claim,2023-01-02 14:08:11.590000+00:00,2023-01-02 14:17:19.960000+00:00,Call Centre Operator_21,0.0,log,0,SYSTEM
+4982,910,Assess Claim,2023-01-02 13:56:20.570000+00:00,2023-01-02 14:16:33.940000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+4983,917,Determine likelihood of the claim,2023-01-02 13:56:25.490000+00:00,2023-01-02 13:58:31.150000+00:00,Claims Handler_67,0.0,log,0,SYSTEM
+4984,992,Register Claim,2023-01-02 14:08:11.960000+00:00,2023-01-02 14:17:18.420000+00:00,Call Centre Operator_8,0.0,log,0,SYSTEM
+4985,918,Determine likelihood of the claim,2023-01-02 13:56:27.320000+00:00,2023-01-02 13:58:29.310000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+4986,833,Close Claim,2023-01-02 13:56:28.440000+00:00,2023-01-02 13:57:29.730000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+4987,835,Close Claim,2023-01-02 13:56:30.950000+00:00,2023-01-02 13:57:32.910000+00:00,Claims Handler_24,0.0,log,0,SYSTEM
+4988,919,Determine likelihood of the claim,2023-01-02 13:56:32.370000+00:00,2023-01-02 13:58:32.750000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+4989,849,Initiate Payment,2023-01-02 13:56:33.150000+00:00,2023-01-02 13:58:35.470000+00:00,Claims Handler_62,0.0,log,0,SYSTEM
+4990,849,Advise Claimant on Reimbursement,2023-01-02 13:56:33.150000+00:00,2023-01-02 14:00:36.870000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+4991,847,Initiate Payment,2023-01-02 13:56:46.410000+00:00,2023-01-02 13:58:49.130000+00:00,Claims Handler_27,0.0,log,0,SYSTEM
+4992,847,Advise Claimant on Reimbursement,2023-01-02 13:56:46.410000+00:00,2023-01-02 14:00:51.340000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+4993,846,Initiate Payment,2023-01-02 13:56:48.670000+00:00,2023-01-02 13:58:51.640000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+4994,846,Advise Claimant on Reimbursement,2023-01-02 13:56:48.670000+00:00,2023-01-02 14:00:53.500000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+4995,911,Assess Claim,2023-01-02 13:56:52.230000+00:00,2023-01-02 14:16:55.030000+00:00,Claims Handler_12,0.0,log,0,SYSTEM
+4996,920,Determine likelihood of the claim,2023-01-02 13:57:04.410000+00:00,2023-01-02 13:59:05.260000+00:00,Claims Handler_53,0.0,log,0,SYSTEM
+4997,912,Assess Claim,2023-01-02 13:57:11.310000+00:00,2023-01-02 14:17:17.720000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+4998,921,Determine likelihood of the claim,2023-01-02 13:57:24+00:00,2023-01-02 13:59:25.780000+00:00,Claims Handler_4,0.0,log,0,SYSTEM
+4999,915,Assess Claim,2023-01-02 13:57:25.720000+00:00,2023-01-02 14:17:38.340000+00:00,Claims Handler_91,0.0,log,0,SYSTEM
+5000,994,Register Claim,2023-01-02 14:08:29.020000+00:00,2023-01-02 14:17:35.030000+00:00,Call Centre Operator_0,0.0,log,0,SYSTEM
+5001,922,Determine likelihood of the claim,2023-01-02 13:57:29.350000+00:00,2023-01-02 13:59:30.050000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+5002,837,Close Claim,2023-01-02 13:57:33.620000+00:00,2023-01-02 13:58:41.960000+00:00,Claims Handler_14,0.0,log,0,SYSTEM
+5003,850,Initiate Payment,2023-01-02 13:57:42.550000+00:00,2023-01-02 13:59:43.450000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5004,850,Advise Claimant on Reimbursement,2023-01-02 13:57:42.550000+00:00,2023-01-02 14:01:48.400000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+5005,851,Advise Claimant on Reimbursement,2023-01-02 13:57:42.740000+00:00,2023-01-02 14:01:48.070000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5006,851,Initiate Payment,2023-01-02 13:57:42.740000+00:00,2023-01-02 13:59:44.680000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+5007,838,Close Claim,2023-01-02 13:57:43.550000+00:00,2023-01-02 13:58:46.290000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+5008,852,Advise Claimant on Reimbursement,2023-01-02 13:57:47.890000+00:00,2023-01-02 14:01:50.910000+00:00,Claims Handler_52,0.0,log,0,SYSTEM
+5009,852,Initiate Payment,2023-01-02 13:57:47.890000+00:00,2023-01-02 13:59:48.890000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+5010,923,Determine likelihood of the claim,2023-01-02 13:57:50.610000+00:00,2023-01-02 13:59:51.430000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5011,916,Assess Claim,2023-01-02 13:57:53.360000+00:00,2023-01-02 14:17:59.810000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+5012,995,Register Claim,2023-01-02 14:08:40.150000+00:00,2023-01-02 14:17:40.550000+00:00,Call Centre Operator_6,0.0,log,0,SYSTEM
+5013,836,Close Claim,2023-01-02 13:58:01.540000+00:00,2023-01-02 13:59:02.710000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+5014,924,Determine likelihood of the claim,2023-01-02 13:58:03.600000+00:00,2023-01-02 14:00:10.360000+00:00,Claims Handler_77,0.0,log,0,SYSTEM
+5015,840,Close Claim,2023-01-02 13:58:05.490000+00:00,2023-01-02 13:59:05.870000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5016,996,Register Claim,2023-01-02 14:08:42.180000+00:00,2023-01-02 14:17:43.130000+00:00,Call Centre Operator_12,0.0,log,0,SYSTEM
+5017,839,Close Claim,2023-01-02 13:58:21.030000+00:00,2023-01-02 13:59:24.950000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5018,997,Register Claim,2023-01-02 14:09:06.080000+00:00,2023-01-02 14:18:07.750000+00:00,Call Centre Operator_11,0.0,log,0,SYSTEM
+5019,918,Assess Claim,2023-01-02 13:58:29.310000+00:00,2023-01-02 14:18:54.640000+00:00,Claims Handler_7,0.0,log,0,SYSTEM
+5020,917,Assess Claim,2023-01-02 13:58:31.150000+00:00,2023-01-02 14:18:41.210000+00:00,Claims Handler_64,0.0,log,0,SYSTEM
+5021,925,Determine likelihood of the claim,2023-01-02 13:58:33.030000+00:00,2023-01-02 14:00:33.270000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5022,926,Determine likelihood of the claim,2023-01-02 13:58:42.440000+00:00,2023-01-02 14:00:48.690000+00:00,Claims Handler_40,0.0,log,0,SYSTEM
+5023,856,Initiate Payment,2023-01-02 13:58:43.910000+00:00,2023-01-02 14:00:49.020000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+5024,856,Advise Claimant on Reimbursement,2023-01-02 13:58:43.910000+00:00,2023-01-02 14:02:47.270000+00:00,Claims Handler_36,0.0,log,0,SYSTEM
+5025,842,Close Claim,2023-01-02 13:58:50.480000+00:00,2023-01-02 13:59:55.910000+00:00,Claims Handler_28,0.0,log,0,SYSTEM
+5026,998,Register Claim,2023-01-02 14:09:32.490000+00:00,2023-01-02 14:18:38.480000+00:00,Call Centre Operator_4,0.0,log,0,SYSTEM
+5027,920,Assess Claim,2023-01-02 13:59:05.260000+00:00,2023-01-02 14:19:09.320000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+5028,999,Register Claim,2023-01-02 14:09:58.920000+00:00,2023-01-02 14:19:02.480000+00:00,Call Centre Operator_18,0.0,log,0,SYSTEM
+5029,921,Assess Claim,2023-01-02 13:59:25.780000+00:00,2023-01-02 14:19:35.070000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+5030,927,Determine likelihood of the claim,2023-01-02 13:59:26.330000+00:00,2023-01-02 14:01:28.790000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5031,922,Assess Claim,2023-01-02 13:59:30.050000+00:00,2023-01-02 14:19:40.040000+00:00,Claims Handler_80,0.0,log,0,SYSTEM
+5032,858,Advise Claimant on Reimbursement,2023-01-02 13:59:32.520000+00:00,2023-01-02 14:03:36.890000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+5033,858,Initiate Payment,2023-01-02 13:59:32.520000+00:00,2023-01-02 14:01:35.680000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5034,928,Determine likelihood of the claim,2023-01-02 13:59:37.940000+00:00,2023-01-02 14:01:50.230000+00:00,Claims Handler_24,0.0,log,0,SYSTEM
+5035,929,Determine likelihood of the claim,2023-01-02 13:59:38.820000+00:00,2023-01-02 14:01:39.450000+00:00,Claims Handler_71,0.0,log,0,SYSTEM
+5036,923,Assess Claim,2023-01-02 13:59:51.430000+00:00,2023-01-02 14:19:54.180000+00:00,Claims Handler_11,0.0,log,0,SYSTEM
+5037,930,Determine likelihood of the claim,2023-01-02 14:00:02.390000+00:00,2023-01-02 14:02:05.010000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5038,860,Advise Claimant on Reimbursement,2023-01-02 14:00:09.780000+00:00,2023-01-02 14:04:14.730000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+5039,860,Initiate Payment,2023-01-02 14:00:09.780000+00:00,2023-01-02 14:02:17.790000+00:00,Claims Handler_73,0.0,log,0,SYSTEM
+5040,924,Assess Claim,2023-01-02 14:00:10.360000+00:00,2023-01-02 14:20:24.690000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+5041,931,Determine likelihood of the claim,2023-01-02 14:00:31.330000+00:00,2023-01-02 14:02:34.120000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5042,862,Initiate Payment,2023-01-02 14:00:33.080000+00:00,2023-01-02 14:02:36.090000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+5043,862,Advise Claimant on Reimbursement,2023-01-02 14:00:33.080000+00:00,2023-01-02 14:04:45+00:00,Claims Handler_42,0.0,log,0,SYSTEM
+5044,849,Close Claim,2023-01-02 14:00:36.870000+00:00,2023-01-02 14:01:38.100000+00:00,Claims Handler_63,0.0,log,0,SYSTEM
+5045,926,Assess Claim,2023-01-02 14:00:48.690000+00:00,2023-01-02 14:21:08.220000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+5046,932,Determine likelihood of the claim,2023-01-02 14:00:51.180000+00:00,2023-01-02 14:02:53.440000+00:00,Claims Handler_67,0.0,log,0,SYSTEM
+5047,847,Close Claim,2023-01-02 14:00:51.340000+00:00,2023-01-02 14:01:52.230000+00:00,Claims Handler_85,0.0,log,0,SYSTEM
+5048,861,Initiate Payment,2023-01-02 14:00:52.690000+00:00,2023-01-02 14:02:56.530000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5049,861,Advise Claimant on Reimbursement,2023-01-02 14:00:52.690000+00:00,2023-01-02 14:04:56.830000+00:00,Claims Handler_62,0.0,log,0,SYSTEM
+5050,846,Close Claim,2023-01-02 14:00:53.500000+00:00,2023-01-02 14:01:55.640000+00:00,Claims Handler_14,0.0,log,0,SYSTEM
+5051,934,Determine likelihood of the claim,2023-01-02 14:01:03.900000+00:00,2023-01-02 14:03:04.640000+00:00,Claims Handler_82,0.0,log,0,SYSTEM
+5052,864,Initiate Payment,2023-01-02 14:01:19.510000+00:00,2023-01-02 14:03:22.390000+00:00,Claims Handler_87,0.0,log,0,SYSTEM
+5053,864,Advise Claimant on Reimbursement,2023-01-02 14:01:19.510000+00:00,2023-01-02 14:05:22.500000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+5054,927,Assess Claim,2023-01-02 14:01:28.790000+00:00,2023-01-02 14:21:31.030000+00:00,Claims Handler_27,0.0,log,0,SYSTEM
+5055,935,Determine likelihood of the claim,2023-01-02 14:01:31.380000+00:00,2023-01-02 14:03:31.390000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+5056,851,Close Claim,2023-01-02 14:01:48.070000+00:00,2023-01-02 14:02:56.650000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+5057,850,Close Claim,2023-01-02 14:01:48.400000+00:00,2023-01-02 14:02:49.420000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+5058,928,Assess Claim,2023-01-02 14:01:50.230000+00:00,2023-01-02 14:21:55.310000+00:00,Claims Handler_53,0.0,log,0,SYSTEM
+5059,936,Determine likelihood of the claim,2023-01-02 14:01:50.660000+00:00,2023-01-02 14:03:51.100000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5060,852,Close Claim,2023-01-02 14:01:50.910000+00:00,2023-01-02 14:02:53.100000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5061,937,Determine likelihood of the claim,2023-01-02 14:01:58.120000+00:00,2023-01-02 14:03:59.310000+00:00,Claims Handler_4,0.0,log,0,SYSTEM
+5062,930,Assess Claim,2023-01-02 14:02:05.010000+00:00,2023-01-02 14:22:18.380000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+5063,866,Advise Claimant on Reimbursement,2023-01-02 14:02:31.470000+00:00,2023-01-02 14:06:38.430000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+5064,866,Initiate Payment,2023-01-02 14:02:31.470000+00:00,2023-01-02 14:04:36.450000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5065,931,Assess Claim,2023-01-02 14:02:34.120000+00:00,2023-01-02 14:22:52.550000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+5066,939,Determine likelihood of the claim,2023-01-02 14:02:34.560000+00:00,2023-01-02 14:04:39.580000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+5067,938,Determine likelihood of the claim,2023-01-02 14:02:36.630000+00:00,2023-01-02 14:04:38.330000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5068,856,Close Claim,2023-01-02 14:02:47.270000+00:00,2023-01-02 14:03:49.220000+00:00,Claims Handler_28,0.0,log,0,SYSTEM
+5069,868,Initiate Payment,2023-01-02 14:02:59.370000+00:00,2023-01-02 14:05:01.060000+00:00,Claims Handler_78,0.0,log,0,SYSTEM
+5070,868,Advise Claimant on Reimbursement,2023-01-02 14:02:59.370000+00:00,2023-01-02 14:07:06.700000+00:00,Claims Handler_77,0.0,log,0,SYSTEM
+5071,934,Assess Claim,2023-01-02 14:03:04.640000+00:00,2023-01-02 14:23:06.500000+00:00,Claims Handler_41,0.0,log,0,SYSTEM
+5072,869,Initiate Payment,2023-01-02 14:03:10.500000+00:00,2023-01-02 14:05:15.620000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5073,869,Advise Claimant on Reimbursement,2023-01-02 14:03:10.500000+00:00,2023-01-02 14:07:13.170000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+5074,940,Determine likelihood of the claim,2023-01-02 14:03:29.930000+00:00,2023-01-02 14:05:30.200000+00:00,Claims Handler_40,0.0,log,0,SYSTEM
+5075,935,Assess Claim,2023-01-02 14:03:31.390000+00:00,2023-01-02 14:23:47.520000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+5076,858,Close Claim,2023-01-02 14:03:36.890000+00:00,2023-01-02 14:04:39.510000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+5077,936,Assess Claim,2023-01-02 14:03:51.100000+00:00,2023-01-02 14:24:31.220000+00:00,Claims Handler_15,0.0,log,0,SYSTEM
+5078,941,Determine likelihood of the claim,2023-01-02 14:03:58.840000+00:00,2023-01-02 14:05:59.610000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+5079,937,Assess Claim,2023-01-02 14:03:59.310000+00:00,2023-01-02 14:24:00.080000+00:00,Claims Handler_26,0.0,log,0,SYSTEM
+5080,943,Determine likelihood of the claim,2023-01-02 14:04:04+00:00,2023-01-02 14:06:04.040000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5081,942,Determine likelihood of the claim,2023-01-02 14:04:06.350000+00:00,2023-01-02 14:06:07.270000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5082,871,Advise Claimant on Reimbursement,2023-01-02 14:04:13.540000+00:00,2023-01-02 14:08:13.550000+00:00,Claims Handler_63,0.0,log,0,SYSTEM
+5083,871,Initiate Payment,2023-01-02 14:04:13.540000+00:00,2023-01-02 14:06:17.130000+00:00,Claims Handler_71,0.0,log,0,SYSTEM
+5084,860,Close Claim,2023-01-02 14:04:14.730000+00:00,2023-01-02 14:05:18.770000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5085,872,Initiate Payment,2023-01-02 14:04:33.070000+00:00,2023-01-02 14:06:34.500000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+5086,872,Advise Claimant on Reimbursement,2023-01-02 14:04:33.070000+00:00,2023-01-02 14:08:34.310000+00:00,Claims Handler_24,0.0,log,0,SYSTEM
+5087,938,Assess Claim,2023-01-02 14:04:38.330000+00:00,2023-01-02 14:24:38.960000+00:00,Claims Handler_52,0.0,log,0,SYSTEM
+5088,939,Assess Claim,2023-01-02 14:04:39.580000+00:00,2023-01-02 14:24:39.690000+00:00,Claims Handler_85,0.0,log,0,SYSTEM
+5089,862,Close Claim,2023-01-02 14:04:45+00:00,2023-01-02 14:05:51.150000+00:00,Claims Handler_14,0.0,log,0,SYSTEM
+5090,944,Determine likelihood of the claim,2023-01-02 14:04:49.800000+00:00,2023-01-02 14:06:56.350000+00:00,Claims Handler_37,0.0,log,0,SYSTEM
+5091,873,Advise Claimant on Reimbursement,2023-01-02 14:04:49.930000+00:00,2023-01-02 14:08:51.540000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5092,873,Initiate Payment,2023-01-02 14:04:49.930000+00:00,2023-01-02 14:06:52.280000+00:00,Claims Handler_73,0.0,log,0,SYSTEM
+5093,861,Close Claim,2023-01-02 14:04:56.830000+00:00,2023-01-02 14:05:56.850000+00:00,Claims Handler_9,0.0,log,0,SYSTEM
+5094,945,Determine likelihood of the claim,2023-01-02 14:05:00.050000+00:00,2023-01-02 14:07:08.820000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5095,874,Advise Claimant on Reimbursement,2023-01-02 14:05:16.120000+00:00,2023-01-02 14:09:17.760000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+5096,874,Initiate Payment,2023-01-02 14:05:16.120000+00:00,2023-01-02 14:07:17.030000+00:00,Claims Handler_43,0.0,log,0,SYSTEM
+5097,864,Close Claim,2023-01-02 14:05:22.500000+00:00,2023-01-02 14:06:23.970000+00:00,Claims Handler_36,0.0,log,0,SYSTEM
+5098,940,Assess Claim,2023-01-02 14:05:30.200000+00:00,2023-01-02 14:25:33.090000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+5099,947,Determine likelihood of the claim,2023-01-02 14:05:31.030000+00:00,2023-01-02 14:07:33.270000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5100,948,Determine likelihood of the claim,2023-01-02 14:05:34.670000+00:00,2023-01-02 14:07:38.330000+00:00,Claims Handler_67,0.0,log,0,SYSTEM
+5101,946,Determine likelihood of the claim,2023-01-02 14:05:35.910000+00:00,2023-01-02 14:07:37.350000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5102,875,Advise Claimant on Reimbursement,2023-01-02 14:05:56.510000+00:00,2023-01-02 14:10:03.030000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+5103,875,Initiate Payment,2023-01-02 14:05:56.510000+00:00,2023-01-02 14:07:58.580000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+5104,941,Assess Claim,2023-01-02 14:05:59.610000+00:00,2023-01-02 14:26:09.430000+00:00,Claims Handler_82,0.0,log,0,SYSTEM
+5105,942,Assess Claim,2023-01-02 14:06:07.270000+00:00,2023-01-02 14:26:36.180000+00:00,Claims Handler_45,0.0,log,0,SYSTEM
+5106,949,Determine likelihood of the claim,2023-01-02 14:06:28.460000+00:00,2023-01-02 14:08:29.990000+00:00,Claims Handler_87,0.0,log,0,SYSTEM
+5107,950,Determine likelihood of the claim,2023-01-02 14:06:34.380000+00:00,2023-01-02 14:08:38.090000+00:00,Claims Handler_83,0.0,log,0,SYSTEM
+5108,866,Close Claim,2023-01-02 14:06:38.430000+00:00,2023-01-02 14:07:40.940000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+5109,951,Determine likelihood of the claim,2023-01-02 14:06:56.260000+00:00,2023-01-02 14:09:00.980000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+5110,944,Assess Claim,2023-01-02 14:06:56.350000+00:00,2023-01-02 14:27:03.750000+00:00,Claims Handler_28,0.0,log,0,SYSTEM
+5111,952,Determine likelihood of the claim,2023-01-02 14:07:01.930000+00:00,2023-01-02 14:09:02.910000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5112,868,Close Claim,2023-01-02 14:07:06.700000+00:00,2023-01-02 14:08:08.340000+00:00,Claims Handler_4,0.0,log,0,SYSTEM
+5113,945,Assess Claim,2023-01-02 14:07:08.820000+00:00,2023-01-02 14:27:16.260000+00:00,Claims Handler_56,0.0,log,0,SYSTEM
+5114,869,Close Claim,2023-01-02 14:07:13.170000+00:00,2023-01-02 14:08:15.470000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+5115,880,Advise Claimant on Reimbursement,2023-01-02 14:07:25.040000+00:00,2023-01-02 14:11:25.100000+00:00,Claims Handler_66,0.0,log,0,SYSTEM
+5116,880,Initiate Payment,2023-01-02 14:07:25.040000+00:00,2023-01-02 14:09:25.340000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5117,955,Determine likelihood of the claim,2023-01-02 14:07:28.580000+00:00,2023-01-02 14:09:34.790000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5118,954,Determine likelihood of the claim,2023-01-02 14:07:33.540000+00:00,2023-01-02 14:09:36.620000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+5119,946,Assess Claim,2023-01-02 14:07:37.350000+00:00,2023-01-02 14:27:40.470000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+5120,948,Assess Claim,2023-01-02 14:07:38.330000+00:00,2023-01-02 14:27:42.600000+00:00,Claims Handler_42,0.0,log,0,SYSTEM
+5121,956,Determine likelihood of the claim,2023-01-02 14:07:44.540000+00:00,2023-01-02 14:09:48.830000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+5122,883,Advise Claimant on Reimbursement,2023-01-02 14:08:07.380000+00:00,2023-01-02 14:12:18.340000+00:00,Claims Handler_62,0.0,log,0,SYSTEM
+5123,883,Initiate Payment,2023-01-02 14:08:07.380000+00:00,2023-01-02 14:10:07.430000+00:00,Claims Handler_78,0.0,log,0,SYSTEM
+5124,957,Determine likelihood of the claim,2023-01-02 14:08:11.590000+00:00,2023-01-02 14:10:11.600000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5125,958,Determine likelihood of the claim,2023-01-02 14:08:11.960000+00:00,2023-01-02 14:10:13.650000+00:00,Claims Handler_72,0.0,log,0,SYSTEM
+5126,871,Close Claim,2023-01-02 14:08:13.550000+00:00,2023-01-02 14:09:23.790000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5127,959,Determine likelihood of the claim,2023-01-02 14:08:29.020000+00:00,2023-01-02 14:10:39.260000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+5128,949,Assess Claim,2023-01-02 14:08:29.990000+00:00,2023-01-02 14:28:32.330000+00:00,Claims Handler_40,0.0,log,0,SYSTEM
+5129,872,Close Claim,2023-01-02 14:08:34.310000+00:00,2023-01-02 14:09:35.520000+00:00,Claims Handler_76,0.0,log,0,SYSTEM
+5130,950,Assess Claim,2023-01-02 14:08:38.090000+00:00,2023-01-02 14:28:45.830000+00:00,Claims Handler_14,0.0,log,0,SYSTEM
+5131,961,Determine likelihood of the claim,2023-01-02 14:08:40.150000+00:00,2023-01-02 14:10:40.670000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+5132,963,Determine likelihood of the claim,2023-01-02 14:08:42.180000+00:00,2023-01-02 14:10:46.510000+00:00,Claims Handler_9,0.0,log,0,SYSTEM
+5133,885,Initiate Payment,2023-01-02 14:08:49.390000+00:00,2023-01-02 14:10:51.520000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+5134,885,Advise Claimant on Reimbursement,2023-01-02 14:08:49.390000+00:00,2023-01-02 14:12:51.740000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5135,873,Close Claim,2023-01-02 14:08:51.540000+00:00,2023-01-02 14:09:58.480000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5136,951,Assess Claim,2023-01-02 14:09:00.980000+00:00,2023-01-02 14:29:16.650000+00:00,Claims Handler_71,0.0,log,0,SYSTEM
+5137,964,Determine likelihood of the claim,2023-01-02 14:09:06.080000+00:00,2023-01-02 14:11:09.610000+00:00,Claims Handler_36,0.0,log,0,SYSTEM
+5138,874,Close Claim,2023-01-02 14:09:17.760000+00:00,2023-01-02 14:10:19.010000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+5139,965,Determine likelihood of the claim,2023-01-02 14:09:32.490000+00:00,2023-01-02 14:11:35.890000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+5140,955,Assess Claim,2023-01-02 14:09:34.790000+00:00,2023-01-02 14:29:36.440000+00:00,Claims Handler_73,0.0,log,0,SYSTEM
+5141,887,Advise Claimant on Reimbursement,2023-01-02 14:09:35.230000+00:00,2023-01-02 14:13:45.470000+00:00,Claims Handler_37,0.0,log,0,SYSTEM
+5142,887,Initiate Payment,2023-01-02 14:09:35.230000+00:00,2023-01-02 14:11:37.660000+00:00,Claims Handler_55,0.0,log,0,SYSTEM
+5143,954,Assess Claim,2023-01-02 14:09:36.620000+00:00,2023-01-02 14:29:40.680000+00:00,Claims Handler_77,0.0,log,0,SYSTEM
+5144,889,Initiate Payment,2023-01-02 14:09:38.540000+00:00,2023-01-02 14:11:38.680000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5145,889,Advise Claimant on Reimbursement,2023-01-02 14:09:38.540000+00:00,2023-01-02 14:13:40.790000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+5146,956,Assess Claim,2023-01-02 14:09:48.830000+00:00,2023-01-02 14:29:55.910000+00:00,Claims Handler_43,0.0,log,0,SYSTEM
+5147,966,Determine likelihood of the claim,2023-01-02 14:09:58.920000+00:00,2023-01-02 14:12:03.210000+00:00,Claims Handler_98,0.0,log,0,SYSTEM
+5148,875,Close Claim,2023-01-02 14:10:03.030000+00:00,2023-01-02 14:11:03.470000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5149,967,Determine likelihood of the claim,2023-01-02 14:10:06.060000+00:00,2023-01-02 14:12:06.590000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5150,957,Assess Claim,2023-01-02 14:10:11.600000+00:00,2023-01-02 14:30:13.290000+00:00,Claims Handler_67,0.0,log,0,SYSTEM
+5151,958,Assess Claim,2023-01-02 14:10:13.650000+00:00,2023-01-02 14:30:14.840000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+5152,892,Advise Claimant on Reimbursement,2023-01-02 14:10:31.240000+00:00,2023-01-02 14:14:37.640000+00:00,Claims Handler_51,0.0,log,0,SYSTEM
+5153,892,Initiate Payment,2023-01-02 14:10:31.240000+00:00,2023-01-02 14:12:34.850000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+5154,968,Determine likelihood of the claim,2023-01-02 14:10:35.860000+00:00,2023-01-02 14:12:43.170000+00:00,Claims Handler_22,0.0,log,0,SYSTEM
+5155,959,Assess Claim,2023-01-02 14:10:39.260000+00:00,2023-01-02 14:31:03.270000+00:00,Claims Handler_95,0.0,log,0,SYSTEM
+5156,961,Assess Claim,2023-01-02 14:10:40.670000+00:00,2023-01-02 14:30:51.710000+00:00,Claims Handler_4,0.0,log,0,SYSTEM
+5157,963,Assess Claim,2023-01-02 14:10:46.510000+00:00,2023-01-02 14:31:16.490000+00:00,Claims Handler_63,0.0,log,0,SYSTEM
+5158,969,Determine likelihood of the claim,2023-01-02 14:11:01.130000+00:00,2023-01-02 14:13:03.610000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+5159,970,Determine likelihood of the claim,2023-01-02 14:11:04.470000+00:00,2023-01-02 14:13:04.710000+00:00,Claims Handler_87,0.0,log,0,SYSTEM
+5160,964,Assess Claim,2023-01-02 14:11:09.610000+00:00,2023-01-02 14:31:32.430000+00:00,Claims Handler_24,0.0,log,0,SYSTEM
+5161,894,Initiate Payment,2023-01-02 14:11:14.540000+00:00,2023-01-02 14:13:19.490000+00:00,Claims Handler_83,0.0,log,0,SYSTEM
+5162,894,Advise Claimant on Reimbursement,2023-01-02 14:11:14.540000+00:00,2023-01-02 14:15:16.520000+00:00,Claims Handler_65,0.0,log,0,SYSTEM
+5163,880,Close Claim,2023-01-02 14:11:25.100000+00:00,2023-01-02 14:12:31.720000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5164,971,Determine likelihood of the claim,2023-01-02 14:11:35.490000+00:00,2023-01-02 14:13:35.790000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+5165,973,Determine likelihood of the claim,2023-01-02 14:11:48.080000+00:00,2023-01-02 14:13:54.900000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5166,898,Advise Claimant on Reimbursement,2023-01-02 14:11:51.460000+00:00,2023-01-02 14:15:51.620000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+5167,898,Initiate Payment,2023-01-02 14:11:51.460000+00:00,2023-01-02 14:13:52.310000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5168,895,Initiate Payment,2023-01-02 14:12:02.590000+00:00,2023-01-02 14:14:03.980000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5169,895,Advise Claimant on Reimbursement,2023-01-02 14:12:02.590000+00:00,2023-01-02 14:16:11.670000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5170,966,Assess Claim,2023-01-02 14:12:03.210000+00:00,2023-01-02 14:32:23.970000+00:00,Claims Handler_46,0.0,log,0,SYSTEM
+5171,967,Assess Claim,2023-01-02 14:12:06.590000+00:00,2023-01-02 14:32:08.060000+00:00,Claims Handler_76,0.0,log,0,SYSTEM
+5172,883,Close Claim,2023-01-02 14:12:18.340000+00:00,2023-01-02 14:13:18.410000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+5173,900,Advise Claimant on Reimbursement,2023-01-02 14:12:23.300000+00:00,2023-01-02 14:16:25.390000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+5174,900,Initiate Payment,2023-01-02 14:12:23.300000+00:00,2023-01-02 14:14:26.480000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+5175,975,Determine likelihood of the claim,2023-01-02 14:12:31.690000+00:00,2023-01-02 14:14:33.220000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5176,968,Assess Claim,2023-01-02 14:12:43.170000+00:00,2023-01-02 14:32:45.330000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+5177,899,Advise Claimant on Reimbursement,2023-01-02 14:12:47.050000+00:00,2023-01-02 14:16:48.100000+00:00,Claims Handler_78,0.0,log,0,SYSTEM
+5178,899,Initiate Payment,2023-01-02 14:12:47.050000+00:00,2023-01-02 14:14:50.050000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5179,885,Close Claim,2023-01-02 14:12:51.740000+00:00,2023-01-02 14:13:55.550000+00:00,Claims Handler_72,0.0,log,0,SYSTEM
+5180,902,Initiate Payment,2023-01-02 14:13:03.110000+00:00,2023-01-02 14:15:04.270000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+5181,902,Advise Claimant on Reimbursement,2023-01-02 14:13:03.110000+00:00,2023-01-02 14:17:09.410000+00:00,Claims Handler_70,0.0,log,0,SYSTEM
+5182,969,Assess Claim,2023-01-02 14:13:03.610000+00:00,2023-01-02 14:33:06.870000+00:00,Claims Handler_88,0.0,log,0,SYSTEM
+5183,970,Assess Claim,2023-01-02 14:13:04.710000+00:00,2023-01-02 14:33:12.420000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+5184,974,Determine likelihood of the claim,2023-01-02 14:13:05.960000+00:00,2023-01-02 14:15:08.970000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+5185,978,Determine likelihood of the claim,2023-01-02 14:13:07.250000+00:00,2023-01-02 14:15:11.040000+00:00,Claims Handler_9,0.0,log,0,SYSTEM
+5186,976,Determine likelihood of the claim,2023-01-02 14:13:08.960000+00:00,2023-01-02 14:15:11.580000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+5187,901,Advise Claimant on Reimbursement,2023-01-02 14:13:11.240000+00:00,2023-01-02 14:17:12.640000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+5188,901,Initiate Payment,2023-01-02 14:13:11.240000+00:00,2023-01-02 14:15:11.920000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5189,971,Assess Claim,2023-01-02 14:13:35.790000+00:00,2023-01-02 14:33:38.130000+00:00,Claims Handler_36,0.0,log,0,SYSTEM
+5190,903,Advise Claimant on Reimbursement,2023-01-02 14:13:38.680000+00:00,2023-01-02 14:17:41.080000+00:00,Claims Handler_96,0.0,log,0,SYSTEM
+5191,903,Initiate Payment,2023-01-02 14:13:38.680000+00:00,2023-01-02 14:15:44.110000+00:00,Claims Handler_66,0.0,log,0,SYSTEM
+5192,889,Close Claim,2023-01-02 14:13:40.790000+00:00,2023-01-02 14:14:44.580000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+5193,887,Close Claim,2023-01-02 14:13:45.470000+00:00,2023-01-02 14:14:46.200000+00:00,Claims Handler_55,0.0,log,0,SYSTEM
+5194,904,Initiate Payment,2023-01-02 14:13:50.640000+00:00,2023-01-02 14:15:51.020000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5195,904,Advise Claimant on Reimbursement,2023-01-02 14:13:50.640000+00:00,2023-01-02 14:17:55.330000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+5196,977,Determine likelihood of the claim,2023-01-02 14:13:51.030000+00:00,2023-01-02 14:15:52.140000+00:00,Claims Handler_89,0.0,log,0,SYSTEM
+5197,973,Assess Claim,2023-01-02 14:13:54.900000+00:00,2023-01-02 14:34:15.350000+00:00,Claims Handler_98,0.0,log,0,SYSTEM
+5198,979,Determine likelihood of the claim,2023-01-02 14:14:00.280000+00:00,2023-01-02 14:16:02.240000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5199,980,Determine likelihood of the claim,2023-01-02 14:14:31.180000+00:00,2023-01-02 14:16:32.910000+00:00,Claims Handler_62,0.0,log,0,SYSTEM
+5200,975,Assess Claim,2023-01-02 14:14:33.220000+00:00,2023-01-02 14:34:55.790000+00:00,Claims Handler_57,0.0,log,0,SYSTEM
+5201,981,Determine likelihood of the claim,2023-01-02 14:14:36.690000+00:00,2023-01-02 14:16:37.660000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5202,892,Close Claim,2023-01-02 14:14:37.640000+00:00,2023-01-02 14:15:40.670000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+5203,982,Determine likelihood of the claim,2023-01-02 14:14:38.460000+00:00,2023-01-02 14:16:50.100000+00:00,Claims Handler_22,0.0,log,0,SYSTEM
+5204,906,Advise Claimant on Reimbursement,2023-01-02 14:14:40.220000+00:00,2023-01-02 14:18:44.500000+00:00,Claims Handler_90,0.0,log,0,SYSTEM
+5205,906,Initiate Payment,2023-01-02 14:14:40.220000+00:00,2023-01-02 14:16:41.550000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5206,974,Assess Claim,2023-01-02 14:15:08.970000+00:00,2023-01-02 14:35:13.020000+00:00,Claims Handler_30,0.0,log,0,SYSTEM
+5207,978,Assess Claim,2023-01-02 14:15:11.040000+00:00,2023-01-02 14:35:13.270000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+5208,976,Assess Claim,2023-01-02 14:15:11.580000+00:00,2023-01-02 14:35:34.140000+00:00,Claims Handler_87,0.0,log,0,SYSTEM
+5209,894,Close Claim,2023-01-02 14:15:16.520000+00:00,2023-01-02 14:16:16.920000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+5210,983,Determine likelihood of the claim,2023-01-02 14:15:32.380000+00:00,2023-01-02 14:17:35.450000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+5211,984,Determine likelihood of the claim,2023-01-02 14:15:40.820000+00:00,2023-01-02 14:17:42.600000+00:00,Claims Handler_83,0.0,log,0,SYSTEM
+5212,898,Close Claim,2023-01-02 14:15:51.620000+00:00,2023-01-02 14:16:51.650000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+5213,977,Assess Claim,2023-01-02 14:15:52.140000+00:00,2023-01-02 14:36:10.470000+00:00,Claims Handler_86,0.0,log,0,SYSTEM
+5214,985,Determine likelihood of the claim,2023-01-02 14:15:57.060000+00:00,2023-01-02 14:17:57.340000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+5215,979,Assess Claim,2023-01-02 14:16:02.240000+00:00,2023-01-02 14:36:07.570000+00:00,Claims Handler_37,0.0,log,0,SYSTEM
+5216,986,Determine likelihood of the claim,2023-01-02 14:16:03.050000+00:00,2023-01-02 14:18:09.240000+00:00,Claims Handler_47,0.0,log,0,SYSTEM
+5217,895,Close Claim,2023-01-02 14:16:11.670000+00:00,2023-01-02 14:17:19.200000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5218,908,Advise Claimant on Reimbursement,2023-01-02 14:16:11.770000+00:00,2023-01-02 14:20:11.770000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5219,908,Initiate Payment,2023-01-02 14:16:11.770000+00:00,2023-01-02 14:18:17.380000+00:00,Claims Handler_72,0.0,log,0,SYSTEM
+5220,909,Initiate Payment,2023-01-02 14:16:12.420000+00:00,2023-01-02 14:18:17.540000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5221,909,Advise Claimant on Reimbursement,2023-01-02 14:16:12.420000+00:00,2023-01-02 14:20:12.440000+00:00,Claims Handler_0,0.0,log,0,SYSTEM
+5222,900,Close Claim,2023-01-02 14:16:25.390000+00:00,2023-01-02 14:17:31.580000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+5223,987,Determine likelihood of the claim,2023-01-02 14:16:30.070000+00:00,2023-01-02 14:18:31.370000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5224,980,Assess Claim,2023-01-02 14:16:32.910000+00:00,2023-01-02 14:36:37.390000+00:00,Claims Handler_51,0.0,log,0,SYSTEM
+5225,910,Advise Claimant on Reimbursement,2023-01-02 14:16:33.940000+00:00,2023-01-02 14:20:34.840000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+5226,910,Initiate Payment,2023-01-02 14:16:33.940000+00:00,2023-01-02 14:18:39.950000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+5227,981,Assess Claim,2023-01-02 14:16:37.660000+00:00,2023-01-02 14:36:44.990000+00:00,Claims Handler_55,0.0,log,0,SYSTEM
+5228,988,Determine likelihood of the claim,2023-01-02 14:16:40.170000+00:00,2023-01-02 14:18:41.900000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5229,989,Determine likelihood of the claim,2023-01-02 14:16:45.500000+00:00,2023-01-02 14:18:47.420000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+5230,899,Close Claim,2023-01-02 14:16:48.100000+00:00,2023-01-02 14:17:52.920000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+5231,982,Assess Claim,2023-01-02 14:16:50.100000+00:00,2023-01-02 14:37:05.420000+00:00,Claims Handler_9,0.0,log,0,SYSTEM
+5232,911,Initiate Payment,2023-01-02 14:16:55.030000+00:00,2023-01-02 14:19:04.320000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+5233,911,Advise Claimant on Reimbursement,2023-01-02 14:16:55.030000+00:00,2023-01-02 14:21:01.960000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5234,902,Close Claim,2023-01-02 14:17:09.410000+00:00,2023-01-02 14:18:11.600000+00:00,Claims Handler_84,0.0,log,0,SYSTEM
+5235,901,Close Claim,2023-01-02 14:17:12.640000+00:00,2023-01-02 14:18:12.970000+00:00,Claims Handler_65,0.0,log,0,SYSTEM
+5236,992,Determine likelihood of the claim,2023-01-02 14:17:18.420000+00:00,2023-01-02 14:19:22.600000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+5237,991,Determine likelihood of the claim,2023-01-02 14:17:19.960000+00:00,2023-01-02 14:19:20.070000+00:00,Claims Handler_66,0.0,log,0,SYSTEM
+5238,994,Determine likelihood of the claim,2023-01-02 14:17:35.030000+00:00,2023-01-02 14:19:38.350000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5239,983,Assess Claim,2023-01-02 14:17:35.450000+00:00,2023-01-02 14:37:37.270000+00:00,Claims Handler_74,0.0,log,0,SYSTEM
+5240,915,Advise Claimant on Reimbursement,2023-01-02 14:17:38.340000+00:00,2023-01-02 14:21:41.990000+00:00,Claims Handler_89,0.0,log,0,SYSTEM
+5241,915,Initiate Payment,2023-01-02 14:17:38.340000+00:00,2023-01-02 14:19:42.770000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5242,995,Determine likelihood of the claim,2023-01-02 14:17:40.550000+00:00,2023-01-02 14:19:44.420000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5243,903,Close Claim,2023-01-02 14:17:41.080000+00:00,2023-01-02 14:18:43.010000+00:00,Claims Handler_25,0.0,log,0,SYSTEM
+5244,984,Assess Claim,2023-01-02 14:17:42.600000+00:00,2023-01-02 14:37:51.680000+00:00,Claims Handler_48,0.0,log,0,SYSTEM
+5245,996,Determine likelihood of the claim,2023-01-02 14:17:43.130000+00:00,2023-01-02 14:19:50.980000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+5246,904,Close Claim,2023-01-02 14:17:55.330000+00:00,2023-01-02 14:19:02.360000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+5247,985,Assess Claim,2023-01-02 14:17:57.340000+00:00,2023-01-02 14:38:01.270000+00:00,Claims Handler_62,0.0,log,0,SYSTEM
+5248,916,Initiate Payment,2023-01-02 14:17:59.810000+00:00,2023-01-02 14:20:04.590000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+5249,916,Advise Claimant on Reimbursement,2023-01-02 14:17:59.810000+00:00,2023-01-02 14:22:05.240000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5250,997,Determine likelihood of the claim,2023-01-02 14:18:07.750000+00:00,2023-01-02 14:20:09.550000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5251,986,Assess Claim,2023-01-02 14:18:09.240000+00:00,2023-01-02 14:38:16.890000+00:00,Claims Handler_78,0.0,log,0,SYSTEM
+5252,987,Assess Claim,2023-01-02 14:18:31.370000+00:00,2023-01-02 14:38:34.740000+00:00,Claims Handler_22,0.0,log,0,SYSTEM
+5253,998,Determine likelihood of the claim,2023-01-02 14:18:38.480000+00:00,2023-01-02 14:20:48.230000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+5254,988,Assess Claim,2023-01-02 14:18:41.900000+00:00,2023-01-02 14:38:48.130000+00:00,Claims Handler_12,0.0,log,0,SYSTEM
+5255,906,Close Claim,2023-01-02 14:18:44.500000+00:00,2023-01-02 14:19:52.890000+00:00,Claims Handler_70,0.0,log,0,SYSTEM
+5256,989,Assess Claim,2023-01-02 14:18:47.420000+00:00,2023-01-02 14:39:02.350000+00:00,Claims Handler_79,0.0,log,0,SYSTEM
+5257,918,Initiate Payment,2023-01-02 14:18:54.640000+00:00,2023-01-02 14:20:58.480000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+5258,918,Advise Claimant on Reimbursement,2023-01-02 14:18:54.640000+00:00,2023-01-02 14:23:00.740000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5259,999,Determine likelihood of the claim,2023-01-02 14:19:02.480000+00:00,2023-01-02 14:21:02.580000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+5260,920,Advise Claimant on Reimbursement,2023-01-02 14:19:09.320000+00:00,2023-01-02 14:23:11.340000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+5261,920,Initiate Payment,2023-01-02 14:19:09.320000+00:00,2023-01-02 14:21:11.490000+00:00,Claims Handler_91,0.0,log,0,SYSTEM
+5262,991,Assess Claim,2023-01-02 14:19:20.070000+00:00,2023-01-02 14:39:21.640000+00:00,Claims Handler_96,0.0,log,0,SYSTEM
+5263,992,Assess Claim,2023-01-02 14:19:22.600000+00:00,2023-01-02 14:39:23.090000+00:00,Claims Handler_83,0.0,log,0,SYSTEM
+5264,921,Advise Claimant on Reimbursement,2023-01-02 14:19:35.070000+00:00,2023-01-02 14:23:39.690000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+5265,921,Initiate Payment,2023-01-02 14:19:35.070000+00:00,2023-01-02 14:21:36.940000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+5266,994,Assess Claim,2023-01-02 14:19:38.350000+00:00,2023-01-02 14:40:54.320000+00:00,Claims Handler_17,0.0,log,0,SYSTEM
+5267,922,Advise Claimant on Reimbursement,2023-01-02 14:19:40.040000+00:00,2023-01-02 14:23:41.150000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+5268,922,Initiate Payment,2023-01-02 14:19:40.040000+00:00,2023-01-02 14:21:40.040000+00:00,Claims Handler_47,0.0,log,0,SYSTEM
+5269,995,Assess Claim,2023-01-02 14:19:44.420000+00:00,2023-01-02 14:39:45.210000+00:00,Claims Handler_84,0.0,log,0,SYSTEM
+5270,996,Assess Claim,2023-01-02 14:19:50.980000+00:00,2023-01-02 14:39:53.610000+00:00,Claims Handler_65,0.0,log,0,SYSTEM
+5271,997,Assess Claim,2023-01-02 14:20:09.550000+00:00,2023-01-02 14:40:10.650000+00:00,Claims Handler_72,0.0,log,0,SYSTEM
+5272,908,Close Claim,2023-01-02 14:20:11.770000+00:00,2023-01-02 14:21:17.260000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5273,909,Close Claim,2023-01-02 14:20:12.440000+00:00,2023-01-02 14:21:13.630000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5274,924,Initiate Payment,2023-01-02 14:20:24.690000+00:00,2023-01-02 14:22:25.270000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+5275,924,Advise Claimant on Reimbursement,2023-01-02 14:20:24.690000+00:00,2023-01-02 14:24:25.590000+00:00,Claims Handler_64,0.0,log,0,SYSTEM
+5276,910,Close Claim,2023-01-02 14:20:34.840000+00:00,2023-01-02 14:21:43.190000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5277,998,Assess Claim,2023-01-02 14:20:48.230000+00:00,2023-01-02 14:40:56.540000+00:00,Claims Handler_25,0.0,log,0,SYSTEM
+5278,911,Close Claim,2023-01-02 14:21:01.960000+00:00,2023-01-02 14:22:02.820000+00:00,Claims Handler_90,0.0,log,0,SYSTEM
+5279,999,Assess Claim,2023-01-02 14:21:02.580000+00:00,2023-01-02 14:41:27.050000+00:00,Claims Handler_93,0.0,log,0,SYSTEM
+5280,926,Initiate Payment,2023-01-02 14:21:08.220000+00:00,2023-01-02 14:23:08.870000+00:00,Claims Handler_7,0.0,log,0,SYSTEM
+5281,926,Advise Claimant on Reimbursement,2023-01-02 14:21:08.220000+00:00,2023-01-02 14:25:10.310000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+5282,927,Initiate Payment,2023-01-02 14:21:31.030000+00:00,2023-01-02 14:23:35.220000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+5283,927,Advise Claimant on Reimbursement,2023-01-02 14:21:31.030000+00:00,2023-01-02 14:25:34.610000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+5284,915,Close Claim,2023-01-02 14:21:41.990000+00:00,2023-01-02 14:22:44.560000+00:00,Claims Handler_66,0.0,log,0,SYSTEM
+5285,928,Advise Claimant on Reimbursement,2023-01-02 14:21:55.310000+00:00,2023-01-02 14:26:00.320000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+5286,928,Initiate Payment,2023-01-02 14:21:55.310000+00:00,2023-01-02 14:23:56.660000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+5287,916,Close Claim,2023-01-02 14:22:05.240000+00:00,2023-01-02 14:23:05.490000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5288,930,Initiate Payment,2023-01-02 14:22:18.380000+00:00,2023-01-02 14:24:19.470000+00:00,Claims Handler_80,0.0,log,0,SYSTEM
+5289,930,Advise Claimant on Reimbursement,2023-01-02 14:22:18.380000+00:00,2023-01-02 14:26:25.300000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5290,931,Initiate Payment,2023-01-02 14:22:52.550000+00:00,2023-01-02 14:24:54.750000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5291,931,Advise Claimant on Reimbursement,2023-01-02 14:22:52.550000+00:00,2023-01-02 14:27:06.690000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+5292,918,Close Claim,2023-01-02 14:23:00.740000+00:00,2023-01-02 14:24:01.690000+00:00,Claims Handler_70,0.0,log,0,SYSTEM
+5293,934,Initiate Payment,2023-01-02 14:23:06.500000+00:00,2023-01-02 14:25:07.620000+00:00,Claims Handler_11,0.0,log,0,SYSTEM
+5294,934,Advise Claimant on Reimbursement,2023-01-02 14:23:06.500000+00:00,2023-01-02 14:27:07.550000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+5295,920,Close Claim,2023-01-02 14:23:11.340000+00:00,2023-01-02 14:24:17.230000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5296,921,Close Claim,2023-01-02 14:23:39.690000+00:00,2023-01-02 14:24:42.850000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5297,922,Close Claim,2023-01-02 14:23:41.150000+00:00,2023-01-02 14:24:43.770000+00:00,Claims Handler_0,0.0,log,0,SYSTEM
+5298,935,Initiate Payment,2023-01-02 14:23:47.520000+00:00,2023-01-02 14:25:52.380000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+5299,935,Advise Claimant on Reimbursement,2023-01-02 14:23:47.520000+00:00,2023-01-02 14:27:52.130000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+5300,937,Advise Claimant on Reimbursement,2023-01-02 14:24:00.080000+00:00,2023-01-02 14:28:08.240000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+5301,937,Initiate Payment,2023-01-02 14:24:00.080000+00:00,2023-01-02 14:26:04.470000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+5302,924,Close Claim,2023-01-02 14:24:25.590000+00:00,2023-01-02 14:25:34.860000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5303,936,Advise Claimant on Reimbursement,2023-01-02 14:24:31.220000+00:00,2023-01-02 14:28:33.530000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+5304,936,Initiate Payment,2023-01-02 14:24:31.220000+00:00,2023-01-02 14:26:37.370000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+5305,938,Advise Claimant on Reimbursement,2023-01-02 14:24:38.960000+00:00,2023-01-02 14:28:41.640000+00:00,Claims Handler_91,0.0,log,0,SYSTEM
+5306,938,Initiate Payment,2023-01-02 14:24:38.960000+00:00,2023-01-02 14:26:40.310000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5307,939,Initiate Payment,2023-01-02 14:24:39.690000+00:00,2023-01-02 14:26:42.320000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5308,939,Advise Claimant on Reimbursement,2023-01-02 14:24:39.690000+00:00,2023-01-02 14:28:40.820000+00:00,Claims Handler_27,0.0,log,0,SYSTEM
+5309,926,Close Claim,2023-01-02 14:25:10.310000+00:00,2023-01-02 14:26:11.090000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+5310,940,Initiate Payment,2023-01-02 14:25:33.090000+00:00,2023-01-02 14:27:33.130000+00:00,Claims Handler_47,0.0,log,0,SYSTEM
+5311,940,Advise Claimant on Reimbursement,2023-01-02 14:25:33.090000+00:00,2023-01-02 14:29:34.050000+00:00,Claims Handler_89,0.0,log,0,SYSTEM
+5312,927,Close Claim,2023-01-02 14:25:34.610000+00:00,2023-01-02 14:26:36.820000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5313,928,Close Claim,2023-01-02 14:26:00.320000+00:00,2023-01-02 14:27:00.930000+00:00,Claims Handler_53,0.0,log,0,SYSTEM
+5314,941,Advise Claimant on Reimbursement,2023-01-02 14:26:09.430000+00:00,2023-01-02 14:30:11.020000+00:00,Claims Handler_90,0.0,log,0,SYSTEM
+5315,941,Initiate Payment,2023-01-02 14:26:09.430000+00:00,2023-01-02 14:28:24.730000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5316,930,Close Claim,2023-01-02 14:26:25.300000+00:00,2023-01-02 14:27:28.900000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+5317,944,Initiate Payment,2023-01-02 14:27:03.750000+00:00,2023-01-02 14:29:04.760000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+5318,944,Advise Claimant on Reimbursement,2023-01-02 14:27:03.750000+00:00,2023-01-02 14:31:08.460000+00:00,Claims Handler_66,0.0,log,0,SYSTEM
+5319,931,Close Claim,2023-01-02 14:27:06.690000+00:00,2023-01-02 14:28:07.520000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+5320,934,Close Claim,2023-01-02 14:27:07.550000+00:00,2023-01-02 14:28:08.620000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5321,945,Advise Claimant on Reimbursement,2023-01-02 14:27:16.260000+00:00,2023-01-02 14:31:19.420000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5322,945,Initiate Payment,2023-01-02 14:27:16.260000+00:00,2023-01-02 14:29:18.310000+00:00,Claims Handler_41,0.0,log,0,SYSTEM
+5323,946,Initiate Payment,2023-01-02 14:27:40.470000+00:00,2023-01-02 14:29:41.470000+00:00,Claims Handler_7,0.0,log,0,SYSTEM
+5324,946,Advise Claimant on Reimbursement,2023-01-02 14:27:40.470000+00:00,2023-01-02 14:31:52.870000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+5325,948,Advise Claimant on Reimbursement,2023-01-02 14:27:42.600000+00:00,2023-01-02 14:31:46.330000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+5326,948,Initiate Payment,2023-01-02 14:27:42.600000+00:00,2023-01-02 14:29:46.030000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+5327,935,Close Claim,2023-01-02 14:27:52.130000+00:00,2023-01-02 14:28:53.590000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+5328,937,Close Claim,2023-01-02 14:28:08.240000+00:00,2023-01-02 14:29:09.120000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+5329,936,Close Claim,2023-01-02 14:28:33.530000+00:00,2023-01-02 14:29:38.230000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+5330,939,Close Claim,2023-01-02 14:28:40.820000+00:00,2023-01-02 14:29:43.140000+00:00,Claims Handler_26,0.0,log,0,SYSTEM
+5331,938,Close Claim,2023-01-02 14:28:41.640000+00:00,2023-01-02 14:29:41.960000+00:00,Claims Handler_70,0.0,log,0,SYSTEM
+5332,950,Advise Claimant on Reimbursement,2023-01-02 14:28:45.830000+00:00,2023-01-02 14:32:45.970000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5333,950,Initiate Payment,2023-01-02 14:28:45.830000+00:00,2023-01-02 14:30:46.050000+00:00,Claims Handler_80,0.0,log,0,SYSTEM
+5334,940,Close Claim,2023-01-02 14:29:34.050000+00:00,2023-01-02 14:30:34.580000+00:00,Claims Handler_64,0.0,log,0,SYSTEM
+5335,955,Advise Claimant on Reimbursement,2023-01-02 14:29:36.440000+00:00,2023-01-02 14:33:37.660000+00:00,Claims Handler_15,0.0,log,0,SYSTEM
+5336,955,Initiate Payment,2023-01-02 14:29:36.440000+00:00,2023-01-02 14:31:43.750000+00:00,Claims Handler_52,0.0,log,0,SYSTEM
+5337,954,Initiate Payment,2023-01-02 14:29:40.680000+00:00,2023-01-02 14:31:47.380000+00:00,Claims Handler_85,0.0,log,0,SYSTEM
+5338,954,Advise Claimant on Reimbursement,2023-01-02 14:29:40.680000+00:00,2023-01-02 14:33:46.180000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5339,956,Advise Claimant on Reimbursement,2023-01-02 14:29:55.910000+00:00,2023-01-02 14:33:58.750000+00:00,Claims Handler_0,0.0,log,0,SYSTEM
+5340,956,Initiate Payment,2023-01-02 14:29:55.910000+00:00,2023-01-02 14:31:57.300000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5341,941,Close Claim,2023-01-02 14:30:11.020000+00:00,2023-01-02 14:31:14.610000+00:00,Claims Handler_11,0.0,log,0,SYSTEM
+5342,957,Initiate Payment,2023-01-02 14:30:13.290000+00:00,2023-01-02 14:32:21.170000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+5343,957,Advise Claimant on Reimbursement,2023-01-02 14:30:13.290000+00:00,2023-01-02 14:34:18.800000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+5344,958,Advise Claimant on Reimbursement,2023-01-02 14:30:14.840000+00:00,2023-01-02 14:34:18.810000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+5345,958,Initiate Payment,2023-01-02 14:30:14.840000+00:00,2023-01-02 14:32:21.520000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5346,961,Initiate Payment,2023-01-02 14:30:51.710000+00:00,2023-01-02 14:32:53.530000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+5347,961,Advise Claimant on Reimbursement,2023-01-02 14:30:51.710000+00:00,2023-01-02 14:34:53.590000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+5348,944,Close Claim,2023-01-02 14:31:08.460000+00:00,2023-01-02 14:32:11.040000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+5349,963,Advise Claimant on Reimbursement,2023-01-02 14:31:16.490000+00:00,2023-01-02 14:35:37.320000+00:00,Claims Handler_82,0.0,log,0,SYSTEM
+5350,963,Initiate Payment,2023-01-02 14:31:16.490000+00:00,2023-01-02 14:33:21.460000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+5351,945,Close Claim,2023-01-02 14:31:19.420000+00:00,2023-01-02 14:32:20.020000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5352,964,Advise Claimant on Reimbursement,2023-01-02 14:31:32.430000+00:00,2023-01-02 14:35:37.040000+00:00,Claims Handler_45,0.0,log,0,SYSTEM
+5353,964,Initiate Payment,2023-01-02 14:31:32.430000+00:00,2023-01-02 14:33:33.860000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5354,948,Close Claim,2023-01-02 14:31:46.330000+00:00,2023-01-02 14:32:46.990000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+5355,946,Close Claim,2023-01-02 14:31:52.870000+00:00,2023-01-02 14:32:54.600000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5356,967,Initiate Payment,2023-01-02 14:32:08.060000+00:00,2023-01-02 14:34:09.890000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5357,967,Advise Claimant on Reimbursement,2023-01-02 14:32:08.060000+00:00,2023-01-02 14:36:11.910000+00:00,Claims Handler_53,0.0,log,0,SYSTEM
+5358,966,Advise Claimant on Reimbursement,2023-01-02 14:32:23.970000+00:00,2023-01-02 14:36:33.580000+00:00,Claims Handler_28,0.0,log,0,SYSTEM
+5359,966,Initiate Payment,2023-01-02 14:32:23.970000+00:00,2023-01-02 14:34:26.350000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+5360,968,Advise Claimant on Reimbursement,2023-01-02 14:32:45.330000+00:00,2023-01-02 14:36:49.530000+00:00,Claims Handler_94,0.0,log,0,SYSTEM
+5361,968,Initiate Payment,2023-01-02 14:32:45.330000+00:00,2023-01-02 14:34:53.910000+00:00,Claims Handler_56,0.0,log,0,SYSTEM
+5362,950,Close Claim,2023-01-02 14:32:45.970000+00:00,2023-01-02 14:33:49.970000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+5363,969,Advise Claimant on Reimbursement,2023-01-02 14:33:06.870000+00:00,2023-01-02 14:37:15.440000+00:00,Claims Handler_47,0.0,log,0,SYSTEM
+5364,969,Initiate Payment,2023-01-02 14:33:06.870000+00:00,2023-01-02 14:35:13.660000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+5365,970,Advise Claimant on Reimbursement,2023-01-02 14:33:12.420000+00:00,2023-01-02 14:37:14.960000+00:00,Claims Handler_42,0.0,log,0,SYSTEM
+5366,970,Initiate Payment,2023-01-02 14:33:12.420000+00:00,2023-01-02 14:35:18.590000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+5367,955,Close Claim,2023-01-02 14:33:37.660000+00:00,2023-01-02 14:34:38.120000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+5368,971,Advise Claimant on Reimbursement,2023-01-02 14:33:38.130000+00:00,2023-01-02 14:37:40.540000+00:00,Claims Handler_92,0.0,log,0,SYSTEM
+5369,971,Initiate Payment,2023-01-02 14:33:38.130000+00:00,2023-01-02 14:35:41.320000+00:00,Claims Handler_58,0.0,log,0,SYSTEM
+5370,954,Close Claim,2023-01-02 14:33:46.180000+00:00,2023-01-02 14:34:46.670000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5371,956,Close Claim,2023-01-02 14:33:58.750000+00:00,2023-01-02 14:34:58.950000+00:00,Claims Handler_40,0.0,log,0,SYSTEM
+5372,973,Initiate Payment,2023-01-02 14:34:15.350000+00:00,2023-01-02 14:36:15.720000+00:00,Claims Handler_18,0.0,log,0,SYSTEM
+5373,973,Advise Claimant on Reimbursement,2023-01-02 14:34:15.350000+00:00,2023-01-02 14:38:21.130000+00:00,Claims Handler_27,0.0,log,0,SYSTEM
+5374,957,Close Claim,2023-01-02 14:34:18.800000+00:00,2023-01-02 14:35:19.450000+00:00,Claims Handler_91,0.0,log,0,SYSTEM
+5375,958,Close Claim,2023-01-02 14:34:18.810000+00:00,2023-01-02 14:35:20.470000+00:00,Claims Handler_14,0.0,log,0,SYSTEM
+5376,961,Close Claim,2023-01-02 14:34:53.590000+00:00,2023-01-02 14:35:56.250000+00:00,Claims Handler_38,0.0,log,0,SYSTEM
+5377,974,Initiate Payment,2023-01-02 14:35:13.020000+00:00,2023-01-02 14:37:19.580000+00:00,Claims Handler_21,0.0,log,0,SYSTEM
+5378,974,Advise Claimant on Reimbursement,2023-01-02 14:35:13.020000+00:00,2023-01-02 14:39:18.920000+00:00,Claims Handler_68,0.0,log,0,SYSTEM
+5379,978,Initiate Payment,2023-01-02 14:35:13.270000+00:00,2023-01-02 14:37:14.900000+00:00,Claims Handler_71,0.0,log,0,SYSTEM
+5380,978,Advise Claimant on Reimbursement,2023-01-02 14:35:13.270000+00:00,2023-01-02 14:39:15.420000+00:00,Claims Handler_41,0.0,log,0,SYSTEM
+5381,964,Close Claim,2023-01-02 14:35:37.040000+00:00,2023-01-02 14:36:38.110000+00:00,Claims Handler_89,0.0,log,0,SYSTEM
+5382,963,Close Claim,2023-01-02 14:35:37.320000+00:00,2023-01-02 14:36:38.080000+00:00,Claims Handler_73,0.0,log,0,SYSTEM
+5383,979,Initiate Payment,2023-01-02 14:36:07.570000+00:00,2023-01-02 14:38:12.800000+00:00,Claims Handler_59,0.0,log,0,SYSTEM
+5384,979,Advise Claimant on Reimbursement,2023-01-02 14:36:07.570000+00:00,2023-01-02 14:40:08.470000+00:00,Claims Handler_77,0.0,log,0,SYSTEM
+5385,977,Advise Claimant on Reimbursement,2023-01-02 14:36:10.470000+00:00,2023-01-02 14:40:21.770000+00:00,Claims Handler_7,0.0,log,0,SYSTEM
+5386,977,Initiate Payment,2023-01-02 14:36:10.470000+00:00,2023-01-02 14:38:17.870000+00:00,Claims Handler_70,0.0,log,0,SYSTEM
+5387,967,Close Claim,2023-01-02 14:36:11.910000+00:00,2023-01-02 14:37:12.070000+00:00,Claims Handler_26,0.0,log,0,SYSTEM
+5388,966,Close Claim,2023-01-02 14:36:33.580000+00:00,2023-01-02 14:37:40.970000+00:00,Claims Handler_19,0.0,log,0,SYSTEM
+5389,968,Close Claim,2023-01-02 14:36:49.530000+00:00,2023-01-02 14:37:49.860000+00:00,Claims Handler_43,0.0,log,0,SYSTEM
+5390,982,Initiate Payment,2023-01-02 14:37:05.420000+00:00,2023-01-02 14:39:08.090000+00:00,Claims Handler_90,0.0,log,0,SYSTEM
+5391,982,Advise Claimant on Reimbursement,2023-01-02 14:37:05.420000+00:00,2023-01-02 14:41:08.330000+00:00,Claims Handler_67,0.0,log,0,SYSTEM
+5392,970,Close Claim,2023-01-02 14:37:14.960000+00:00,2023-01-02 14:38:17.700000+00:00,Claims Handler_61,0.0,log,0,SYSTEM
+5393,969,Close Claim,2023-01-02 14:37:15.440000+00:00,2023-01-02 14:38:16.160000+00:00,Claims Handler_64,0.0,log,0,SYSTEM
+5394,983,Initiate Payment,2023-01-02 14:37:37.270000+00:00,2023-01-02 14:39:42.710000+00:00,Claims Handler_80,0.0,log,0,SYSTEM
+5395,983,Advise Claimant on Reimbursement,2023-01-02 14:37:37.270000+00:00,2023-01-02 14:41:38.660000+00:00,Claims Handler_4,0.0,log,0,SYSTEM
+5396,971,Close Claim,2023-01-02 14:37:40.540000+00:00,2023-01-02 14:38:42.250000+00:00,Claims Handler_95,0.0,log,0,SYSTEM
+5397,984,Advise Claimant on Reimbursement,2023-01-02 14:37:51.680000+00:00,2023-01-02 14:41:59.820000+00:00,Claims Handler_66,0.0,log,0,SYSTEM
+5398,984,Initiate Payment,2023-01-02 14:37:51.680000+00:00,2023-01-02 14:39:53.930000+00:00,Claims Handler_11,0.0,log,0,SYSTEM
+5399,985,Advise Claimant on Reimbursement,2023-01-02 14:38:01.270000+00:00,2023-01-02 14:42:02.670000+00:00,Claims Handler_63,0.0,log,0,SYSTEM
+5400,985,Initiate Payment,2023-01-02 14:38:01.270000+00:00,2023-01-02 14:40:11.910000+00:00,Claims Handler_39,0.0,log,0,SYSTEM
+5401,986,Initiate Payment,2023-01-02 14:38:16.890000+00:00,2023-01-02 14:40:17.380000+00:00,Claims Handler_24,0.0,log,0,SYSTEM
+5402,986,Advise Claimant on Reimbursement,2023-01-02 14:38:16.890000+00:00,2023-01-02 14:42:21.970000+00:00,Claims Handler_52,0.0,log,0,SYSTEM
+5403,973,Close Claim,2023-01-02 14:38:21.130000+00:00,2023-01-02 14:39:26.030000+00:00,Claims Handler_3,0.0,log,0,SYSTEM
+5404,987,Advise Claimant on Reimbursement,2023-01-02 14:38:34.740000+00:00,2023-01-02 14:42:37.080000+00:00,Claims Handler_85,0.0,log,0,SYSTEM
+5405,987,Initiate Payment,2023-01-02 14:38:34.740000+00:00,2023-01-02 14:40:36.710000+00:00,Claims Handler_69,0.0,log,0,SYSTEM
+5406,988,Advise Claimant on Reimbursement,2023-01-02 14:38:48.130000+00:00,2023-01-02 14:42:49.410000+00:00,Claims Handler_2,0.0,log,0,SYSTEM
+5407,988,Initiate Payment,2023-01-02 14:38:48.130000+00:00,2023-01-02 14:40:49.200000+00:00,Claims Handler_76,0.0,log,0,SYSTEM
+5408,989,Advise Claimant on Reimbursement,2023-01-02 14:39:02.350000+00:00,2023-01-02 14:43:03.320000+00:00,Claims Handler_34,0.0,log,0,SYSTEM
+5409,989,Initiate Payment,2023-01-02 14:39:02.350000+00:00,2023-01-02 14:41:02.690000+00:00,Claims Handler_32,0.0,log,0,SYSTEM
+5410,978,Close Claim,2023-01-02 14:39:15.420000+00:00,2023-01-02 14:40:17.450000+00:00,Claims Handler_31,0.0,log,0,SYSTEM
+5411,974,Close Claim,2023-01-02 14:39:18.920000+00:00,2023-01-02 14:40:21.350000+00:00,Claims Handler_13,0.0,log,0,SYSTEM
+5412,991,Advise Claimant on Reimbursement,2023-01-02 14:39:21.640000+00:00,2023-01-02 14:43:25.620000+00:00,Claims Handler_46,0.0,log,0,SYSTEM
+5413,991,Initiate Payment,2023-01-02 14:39:21.640000+00:00,2023-01-02 14:41:23.550000+00:00,Claims Handler_1,0.0,log,0,SYSTEM
+5414,992,Initiate Payment,2023-01-02 14:39:23.090000+00:00,2023-01-02 14:41:25.910000+00:00,Claims Handler_81,0.0,log,0,SYSTEM
+5415,992,Advise Claimant on Reimbursement,2023-01-02 14:39:23.090000+00:00,2023-01-02 14:43:28.470000+00:00,Claims Handler_29,0.0,log,0,SYSTEM
+5416,996,Advise Claimant on Reimbursement,2023-01-02 14:39:53.610000+00:00,2023-01-02 14:43:54.140000+00:00,Claims Handler_6,0.0,log,0,SYSTEM
+5417,996,Initiate Payment,2023-01-02 14:39:53.610000+00:00,2023-01-02 14:41:57.190000+00:00,Claims Handler_5,0.0,log,0,SYSTEM
+5418,979,Close Claim,2023-01-02 14:40:08.470000+00:00,2023-01-02 14:41:08.540000+00:00,Claims Handler_88,0.0,log,0,SYSTEM
+5419,997,Initiate Payment,2023-01-02 14:40:10.650000+00:00,2023-01-02 14:42:12.530000+00:00,Claims Handler_97,0.0,log,0,SYSTEM
+5420,997,Advise Claimant on Reimbursement,2023-01-02 14:40:10.650000+00:00,2023-01-02 14:44:12.520000+00:00,Claims Handler_49,0.0,log,0,SYSTEM
+5421,977,Close Claim,2023-01-02 14:40:21.770000+00:00,2023-01-02 14:41:26.670000+00:00,Claims Handler_99,0.0,log,0,SYSTEM
+5422,994,Initiate Payment,2023-01-02 14:40:54.320000+00:00,2023-01-02 14:42:57+00:00,Claims Handler_15,0.0,log,0,SYSTEM
+5423,994,Advise Claimant on Reimbursement,2023-01-02 14:40:54.320000+00:00,2023-01-02 14:44:54.640000+00:00,Claims Handler_36,0.0,log,0,SYSTEM
+5424,998,Initiate Payment,2023-01-02 14:40:56.540000+00:00,2023-01-02 14:43:01.200000+00:00,Claims Handler_16,0.0,log,0,SYSTEM
+5425,998,Advise Claimant on Reimbursement,2023-01-02 14:40:56.540000+00:00,2023-01-02 14:45:00.970000+00:00,Claims Handler_10,0.0,log,0,SYSTEM
+5426,982,Close Claim,2023-01-02 14:41:08.330000+00:00,2023-01-02 14:42:09.840000+00:00,Claims Handler_0,0.0,log,0,SYSTEM
+5427,999,Initiate Payment,2023-01-02 14:41:27.050000+00:00,2023-01-02 14:43:28.530000+00:00,Claims Handler_54,0.0,log,0,SYSTEM
+5428,999,Advise Claimant on Reimbursement,2023-01-02 14:41:27.050000+00:00,2023-01-02 14:45:29.710000+00:00,Claims Handler_98,0.0,log,0,SYSTEM
+5429,983,Close Claim,2023-01-02 14:41:38.660000+00:00,2023-01-02 14:42:44.500000+00:00,Claims Handler_75,0.0,log,0,SYSTEM
+5430,984,Close Claim,2023-01-02 14:41:59.820000+00:00,2023-01-02 14:43:11.470000+00:00,Claims Handler_23,0.0,log,0,SYSTEM
+5431,985,Close Claim,2023-01-02 14:42:02.670000+00:00,2023-01-02 14:43:08.890000+00:00,Claims Handler_35,0.0,log,0,SYSTEM
+5432,986,Close Claim,2023-01-02 14:42:21.970000+00:00,2023-01-02 14:43:25.980000+00:00,Claims Handler_33,0.0,log,0,SYSTEM
+5433,987,Close Claim,2023-01-02 14:42:37.080000+00:00,2023-01-02 14:43:38.730000+00:00,Claims Handler_8,0.0,log,0,SYSTEM
+5434,988,Close Claim,2023-01-02 14:42:49.410000+00:00,2023-01-02 14:43:51.110000+00:00,Claims Handler_44,0.0,log,0,SYSTEM
+5435,989,Close Claim,2023-01-02 14:43:03.320000+00:00,2023-01-02 14:44:07.670000+00:00,Claims Handler_56,0.0,log,0,SYSTEM
+5436,991,Close Claim,2023-01-02 14:43:25.620000+00:00,2023-01-02 14:44:26.150000+00:00,Claims Handler_57,0.0,log,0,SYSTEM
+5437,992,Close Claim,2023-01-02 14:43:28.470000+00:00,2023-01-02 14:44:30.420000+00:00,Claims Handler_40,0.0,log,0,SYSTEM
+5438,996,Close Claim,2023-01-02 14:43:54.140000+00:00,2023-01-02 14:44:55.910000+00:00,Claims Handler_30,0.0,log,0,SYSTEM
+5439,997,Close Claim,2023-01-02 14:44:12.520000+00:00,2023-01-02 14:45:18.090000+00:00,Claims Handler_50,0.0,log,0,SYSTEM
+5440,994,Close Claim,2023-01-02 14:44:54.640000+00:00,2023-01-02 14:45:58.040000+00:00,Claims Handler_60,0.0,log,0,SYSTEM
+5441,998,Close Claim,2023-01-02 14:45:00.970000+00:00,2023-01-02 14:46:01.800000+00:00,Claims Handler_20,0.0,log,0,SYSTEM
+5442,999,Close Claim,2023-01-02 14:45:29.710000+00:00,2023-01-02 14:46:31.290000+00:00,Claims Handler_91,0.0,log,0,SYSTEM
