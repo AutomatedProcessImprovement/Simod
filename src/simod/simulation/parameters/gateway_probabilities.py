@@ -5,7 +5,6 @@ from typing import List
 import pandas as pd
 from pix_framework.log_ids import EventLogIDs
 
-from simod.cli_formatter import print_step
 from simod.settings.control_flow_settings import GatewayProbabilitiesMethod
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
@@ -14,6 +13,13 @@ from simod.simulation.prosimos_bpm_graph import BPMNGraph
 class PathProbability:
     path_id: str
     probability: float
+
+    @staticmethod
+    def from_dict(path_probabilities: dict) -> 'PathProbability':
+        return PathProbability(
+            path_id=path_probabilities['path_id'],
+            probability=path_probabilities['value']
+        )
 
     def to_dict(self):
         """Dictionary compatible with Prosimos."""
@@ -26,6 +32,16 @@ class GatewayProbabilities:
     gateway_id: str
     outgoing_paths: List[PathProbability]
 
+    @staticmethod
+    def from_dict(gateway_probabilities: dict) -> 'GatewayProbabilities':
+        return GatewayProbabilities(
+            gateway_id=gateway_probabilities['gateway_id'],
+            outgoing_paths=[
+                PathProbability.from_dict(path_probability)
+                for path_probability in gateway_probabilities['probabilities']
+            ]
+        )
+
     def to_dict(self):
         """Dictionary compatible with Prosimos."""
         return {'gateway_id': self.gateway_id, 'probabilities': [p.to_dict() for p in self.outgoing_paths]}
@@ -37,7 +53,6 @@ def compute_gateway_probabilities(
         bpmn_path: Path,
         gateways_probability_type: GatewayProbabilitiesMethod
 ) -> List[GatewayProbabilities]:
-    print_step(f'Mining gateway probabilities with {gateways_probability_type}')
     # Read BPMN model
     bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
     # Discover gateway probabilities depending on the type

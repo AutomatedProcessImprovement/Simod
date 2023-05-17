@@ -3,10 +3,14 @@ from pix_framework.filesystem.file_manager import get_random_folder_id, create_f
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.event_log.event_log import EventLog
-from simod.process_structure.optimizer import StructureOptimizer
-from simod.process_structure.settings import HyperoptIterationParams
+from simod.control_flow.optimizer import ControlFlowOptimizer
+from simod.control_flow.settings import HyperoptIterationParams
 from simod.settings.control_flow_settings import ControlFlowSettings
 from simod.settings.simod_settings import PROJECT_DIR
+from simod.settings.temporal_settings import CalendarSettings
+from simod.simulation.parameters.BPS_model import BPSModel
+from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
+from simod.simulation.parameters.resource_model import discover_resource_model
 
 structure_config_sm3 = {
     "max_evaluations": 1,
@@ -36,14 +40,28 @@ def test_structure_optimizer(entry_point, test_data):
     log_path = entry_point / 'PurchasingExample.xes'
     event_log = EventLog.from_path(log_path, DEFAULT_XES_IDS)
 
-    settings = ControlFlowSettings.from_dict(test_data['parameters'])
-    optimizer = StructureOptimizer(
-        event_log=event_log,
-        settings=settings,
-        base_directory=base_dir,
-        model_path=None
+    case_arrival_model = discover_case_arrival_model(
+        event_log.train_validation_partition,  # No optimization process here, use train + validation
+        event_log.log_ids
     )
-    result, _ = optimizer.run()
+    resource_model = discover_resource_model(
+        event_log.train_validation_partition,  # No optimization process here, use train + validation
+        event_log.log_ids,
+        CalendarSettings.default()
+    )
+    bps_model = BPSModel(
+        case_arrival_model=case_arrival_model,
+        resource_model=resource_model
+    )
+
+    settings = ControlFlowSettings.from_dict(test_data['parameters'])
+    optimizer = ControlFlowOptimizer(
+        event_log=event_log,
+        bps_model=bps_model,
+        settings=settings,
+        base_directory=base_dir
+    )
+    result = optimizer.run()
 
     assert type(result) is HyperoptIterationParams
     assert result.output_dir is not None
@@ -74,13 +92,27 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
 
     event_log = EventLog.from_path(log_path, DEFAULT_XES_IDS)
 
-    optimizer = StructureOptimizer(
-        event_log=event_log,
-        settings=settings,
-        base_directory=base_dir,
-        model_path=model_path
+    case_arrival_model = discover_case_arrival_model(
+        event_log.train_validation_partition,  # No optimization process here, use train + validation
+        event_log.log_ids
     )
-    result, _ = optimizer.run()
+    resource_model = discover_resource_model(
+        event_log.train_validation_partition,  # No optimization process here, use train + validation
+        event_log.log_ids,
+        CalendarSettings.default()
+    )
+    bps_model = BPSModel(
+        process_model=model_path,
+        case_arrival_model=case_arrival_model,
+        resource_model=resource_model
+    )
 
-    assert result.model_path == optimizer.model_path
-    assert optimizer.model_path == model_path
+    optimizer = ControlFlowOptimizer(
+        event_log=event_log,
+        bps_model=bps_model,
+        settings=settings,
+        base_directory=base_dir
+    )
+    result = optimizer.run()
+
+    assert result.provided_model_path is not None
