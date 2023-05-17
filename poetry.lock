@@ -671,7 +671,7 @@ files = [
 
 [[package]]
 name = "log-distance-measures"
-version = "1.0.0"
+version = "1.0.2"
 description = "Python package with the implementation of different distance measures between two event logs, from the control-flow, temporal, and queuing perspectives."
 category = "main"
 optional = false
@@ -689,7 +689,7 @@ scipy = "^1.10.1"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/log-distance-measures.git"
 reference = "main"
-resolved_reference = "4c4316a16642b7da0c380734a1827e2d6f8d0ef0"
+resolved_reference = "62a1bbbcbf16d7f7664ebb4798413d9cd62b6dcb"
 
 [[package]]
 name = "lxml"
@@ -936,14 +936,14 @@ files = [
 
 [[package]]
 name = "openxes-cli-py"
-version = "0.1.12"
+version = "0.1.14"
 description = ""
 category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "openxes_cli_py-0.1.12-py3-none-any.whl", hash = "sha256:62fc9d9dd74709cc422dbb713d551e46cf4644bdccef4e5ff966dbddb45e4d71"},
-    {file = "openxes_cli_py-0.1.12.tar.gz", hash = "sha256:c198426deb8e447b62a26399fd4d9ba5924133127351ef12f869e4027ec3c410"},
+    {file = "openxes_cli_py-0.1.14-py3-none-any.whl", hash = "sha256:9771200f89d9a5b0fd8185f864c08443081a91ec55097f7f3fef3bd6f254fd78"},
+    {file = "openxes_cli_py-0.1.14.tar.gz", hash = "sha256:4bd1d902f0c87ab09489c37c74ecb433546b927b6e37af53fd4da5961c23f78e"},
 ]
 
 [[package]]
@@ -1611,7 +1611,7 @@ files = [
 
 [[package]]
 name = "start-time-estimator"
-version = "1.10.1"
+version = "1.10.4"
 description = "Python package to estimate the enabled time, enabling activity, and resource availability time of each activity instance in an event log."
 category = "main"
 optional = false
@@ -1621,13 +1621,13 @@ develop = false
 
 [package.dependencies]
 pandas = "^2.0.0"
-pix-utils = {git = "https://github.com/AutomatedProcessImprovement/pix-utils.git", branch = "main"}
+pix-framework = "^0.7.1"
 
 [package.source]
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/start-time-estimator.git"
 reference = "main"
-resolved_reference = "668778aff52f47fb66d0e5ab341283ac57395d75"
+resolved_reference = "90c62ef2f85195ae4792d7cb6b43d267186c3030"
 
 [[package]]
 name = "statistics"
@@ -1770,4 +1770,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "4787ef2ec62f55f69f02c3cb4346101fe976206d3a35fe0a4a628793008372bc"
+content-hash = "005233563c1901c170be700e37b1506a59478c6af11112457d5990f4f9625a70"
