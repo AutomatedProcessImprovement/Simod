@@ -84,7 +84,7 @@ def convert_timestamps(log: pd.DataFrame, log_ids: EventLogIDs):
     ]
     for name in time_columns:
         if name in log.columns:
-            log[name] = pd.to_datetime(log[name], utc=True)
+            log[name] = pd.to_datetime(log[name], utc=True, format="ISO8601")
 
 
 def convert_xes_to_csv(xes_path: Path, csv_path: Path):
