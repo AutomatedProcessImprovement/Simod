@@ -159,7 +159,7 @@ class Optimizer:
         print_message(f'Mining structure with settings {settings.to_dict()}')
 
         log_path = (output_dir / self._event_log.process_name).with_suffix('.xes')
-        self._event_log.train_to_xes(log_path)  # TODO should be train+validation
+        self._event_log.train_validation_to_xes(log_path)
 
         model_path = output_dir / (self._event_log.process_name + '.bpmn')
 
@@ -192,7 +192,7 @@ class Optimizer:
         parameters = mine_parameters(
             case_arrival_settings=settings.case_arrival,
             resource_profiles_settings=settings.resource_profiles,
-            log=self._event_log.train_partition,
+            log=self._event_log.train_validation_partition,
             log_ids=self._event_log.log_ids,
             model_path=model_path,
             gateways_probability_method=settings.gateway_probabilities_method,
