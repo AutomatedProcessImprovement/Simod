@@ -115,4 +115,4 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
     )
     result = optimizer.run()
 
-    assert result.model_path is not None
+    assert result.provided_model_path is not None

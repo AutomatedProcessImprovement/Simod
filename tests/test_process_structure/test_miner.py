@@ -53,7 +53,7 @@ def test_miner(entry_point, test_data):
         output_path = Path(tmp_dir) / 'model.bpmn'
         params = HyperoptIterationParams(
             output_dir=Path(tmp_dir),
-            model_path=output_path,
+            provided_model_path=output_path,
             project_name="PurchasingExample",
             optimization_metric=Metric.N_GRAM_DISTANCE,
             gateway_probabilities_method=GatewayProbabilitiesMethod.EQUIPROBABLE,

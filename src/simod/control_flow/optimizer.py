@@ -92,7 +92,7 @@ class ControlFlowOptimizer:
             hyperopt_dict=hyperopt_iteration_dict,
             optimization_metric=self.settings.optimization_metric,
             mining_algorithm=self.settings.mining_algorithm,
-            model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
+            provided_model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
             output_dir=output_dir,
             project_name=self.event_log.process_name,
         )
@@ -110,7 +110,7 @@ class ControlFlowOptimizer:
                 print_message(f"Process Discovery failed: {e}")
                 status = STATUS_FAIL
         else:
-            current_bps_model.process_model = hyperopt_iteration_params.model_path
+            current_bps_model.process_model = hyperopt_iteration_params.provided_model_path
 
         # Discover gateway probabilities
         status, current_bps_model.gateway_probabilities = hyperopt_step(
@@ -171,7 +171,7 @@ class ControlFlowOptimizer:
             hyperopt_dict=best_hyperopt_params,
             optimization_metric=self.settings.optimization_metric,
             mining_algorithm=self.settings.mining_algorithm,
-            model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
+            provided_model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
             output_dir=best_result['output_dir'],
             project_name=self.event_log.process_name,
         )
