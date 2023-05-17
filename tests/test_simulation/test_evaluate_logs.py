@@ -40,7 +40,6 @@ def test_evaluate_logs(parallel):
         simulation_log_paths=log_paths,
         validation_log=validation_log,
         validation_log_ids=log_ids,
-        run_parallel=parallel,
     )
 
     assert len(results) > 0
