@@ -1,7 +1,7 @@
 import pytest
+from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
-from prosimos.resource_calendar import RCalendar
 
 from simod.simulation.calendar_discovery.resource import discover_undifferentiated, discover_per_resource_pool, \
     discover_per_resource

@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 
 import pandas as pd
+from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
-from prosimos.resource_calendar import RCalendar
 from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_notice, print_step

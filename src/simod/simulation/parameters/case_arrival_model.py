@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import List
 
 import pandas as pd
+from pix_framework.calendar.resource_calendar import RCalendar
+from pix_framework.discovery.calendar_factory import CalendarFactory
 from pix_framework.log_ids import EventLogIDs
 from pix_framework.statistics.distribution import get_best_fitting_distribution, get_observations_histogram
-from prosimos.resource_calendar import CalendarFactory, RCalendar
 
 from simod.utilities import nearest_divisor_for_granularity
 

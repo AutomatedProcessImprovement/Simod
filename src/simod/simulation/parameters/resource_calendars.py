@@ -1,8 +1,9 @@
 from typing import List, Optional, Dict
 
 import pandas as pd
+from pix_framework.calendar.resource_calendar import RCalendar
+from pix_framework.discovery.calendar_factory import CalendarFactory
 from pix_framework.log_ids import EventLogIDs
-from prosimos.resource_calendar import CalendarFactory, RCalendar
 
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery.resource import full_day_schedule, working_hours_schedule

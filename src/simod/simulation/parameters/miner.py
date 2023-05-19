@@ -3,12 +3,12 @@ from typing import List, Tuple, Optional, Dict
 
 import pandas as pd
 from networkx import DiGraph
+from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod, GatewayProbabilities, \
     compute_gateway_probabilities
 from pix_framework.io.bpm_graph import BPMNGraph
 from pix_framework.log_ids import EventLogIDs
 from pix_framework.statistics.distribution import get_best_fitting_distribution
-from prosimos.resource_calendar import RCalendar
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice

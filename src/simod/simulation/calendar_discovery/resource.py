@@ -1,8 +1,9 @@
 from typing import NewType, Dict, List, Optional, Tuple
 
 import pandas as pd
+from pix_framework.calendar.resource_calendar import RCalendar
+from pix_framework.discovery.calendar_factory import CalendarFactory
 from pix_framework.log_ids import EventLogIDs
-from prosimos.resource_calendar import CalendarFactory, RCalendar
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 

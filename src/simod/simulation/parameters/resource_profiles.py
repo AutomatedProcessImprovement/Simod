@@ -4,8 +4,8 @@ from typing import List, Optional, Dict
 
 import pandas as pd
 from networkx import DiGraph
+from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.log_ids import EventLogIDs
-from prosimos.resource_calendar import RCalendar
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer

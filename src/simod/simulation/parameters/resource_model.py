@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import List, Dict
 
 import pandas as pd
+from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.log_ids import EventLogIDs
-from prosimos.resource_calendar import RCalendar
 
 from simod.settings.temporal_settings import CalendarType, CalendarSettings
 from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \

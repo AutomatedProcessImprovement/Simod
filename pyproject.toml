@@ -31,9 +31,9 @@ tqdm = "^4.64.1"
 xmltodict = "^0.13.0"
 prosimos = { git = "https://github.com/AutomatedProcessImprovement/Prosimos.git", branch = "main" }
 extraneous-activity-delays = { git = "https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.git" }
-openxes-cli-py = "^0.1.12"
+openxes-cli-py = "^0.1"
 pix-framework = "^0.8"
-start-time-estimator = "^1.10.3"
+start-time-estimator = "^1.10"
 log-distance-measures = "^1.0.2"
 
 [tool.poetry.group.dev.dependencies]
