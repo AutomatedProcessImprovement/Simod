@@ -4,6 +4,7 @@ from typing import List, Tuple, Optional, Dict
 import pandas as pd
 from networkx import DiGraph
 from pix_framework.calendar.resource_calendar import RCalendar
+from pix_framework.discovery.case_arrival import discover_case_arrival_calendar, discover_inter_arrival_distribution
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod, GatewayProbabilities, \
     compute_gateway_probabilities
 from pix_framework.io.bpm_graph import BPMNGraph
@@ -16,8 +17,6 @@ from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import resource as resource_calendar
 from simod.simulation.calendar_discovery.resource import full_day_schedule, working_hours_schedule, \
     UNDIFFERENTIATED_RESOURCE_POOL_KEY
-from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar, \
-    discover_inter_arrival_distribution
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
     pd_interval_to_interval
 from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \

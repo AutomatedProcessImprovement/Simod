@@ -1,11 +1,11 @@
 import pytest
 from pix_framework.calendar.resource_calendar import RCalendar
+from pix_framework.discovery.case_arrival import discover_case_arrival_calendar
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
 
 from simod.simulation.calendar_discovery.resource import discover_undifferentiated, discover_per_resource_pool, \
     discover_per_resource
-from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar
 
 
 @pytest.mark.integration
