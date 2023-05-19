@@ -2,10 +2,9 @@ from typing import NewType, Dict, List, Optional, Tuple
 
 import pandas as pd
 from pix_framework.log_ids import EventLogIDs
-from prosimos.resource_calendar import CalendarFactory
+from prosimos.resource_calendar import CalendarFactory, RCalendar
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
-from simod.simulation.parameters.calendar import Calendar, Timetable
 
 UNDIFFERENTIATED_RESOURCE_POOL_KEY = "undifferentiated_resource_pool"
 
@@ -35,14 +34,16 @@ def _get_simod_column_names(keys: List[str], mapping: dict = None) -> Tuple:
     return tuple(result)
 
 
-def _discover_timetables(event_log: pd.DataFrame,
-                         log_ids: EventLogIDs,
-                         granularity=60,
-                         min_confidence=0.1,
-                         desired_support=0.7,
-                         min_participation=0.4,
-                         differentiated=True,
-                         pool_mapping: Optional[PoolMapping] = None) -> dict:
+def _discover_timetables(
+        event_log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        granularity=60,
+        min_confidence=0.1,
+        desired_support=0.7,
+        min_participation=0.4,
+        differentiated=True,
+        pool_mapping: Optional[PoolMapping] = None,
+) -> Dict[str, RCalendar]:
     """
     Creates a calendar for the given event log using Prosimos. If the amount of events is too low, the results are not
     trustworthy. It's recommended to build a resource calendar for the whole resource pool instead of a single resource.
@@ -74,17 +75,9 @@ def _discover_timetables(event_log: pd.DataFrame,
         calendar_factory.check_date_time(resource, activity, start_time)
         calendar_factory.check_date_time(resource, activity, end_time)
 
-    calendar_candidates = calendar_factory.build_weekly_calendars(min_confidence, desired_support, min_participation)
+    calendars = calendar_factory.build_weekly_calendars(min_confidence, desired_support, min_participation)
 
-    timetables_per_resource_id = {}
-    for resource_id in calendar_candidates:
-        if calendar_candidates[resource_id] is not None:
-            timetable_dict = calendar_candidates[resource_id].to_json()
-            timetables_per_resource_id[resource_id] = Timetable.from_list_of_dicts(timetable_dict)
-        else:
-            timetables_per_resource_id[resource_id] = None
-
-    return timetables_per_resource_id
+    return calendars
 
 
 def discover_undifferentiated(
@@ -93,18 +86,11 @@ def discover_undifferentiated(
         granularity=60,
         min_confidence=0.1,
         desired_support=0.7,
-        min_participation=0.4) -> Calendar:
+        min_participation=0.4,
+) -> Dict[str, RCalendar]:
     timetables = _discover_timetables(
         event_log, log_ids, granularity, min_confidence, desired_support, min_participation, False)
-    timetables = timetables[UNDIFFERENTIATED_RESOURCE_POOL_KEY]
-
-    calendar = Calendar(
-        id='Undifferentiated_resources',
-        name='Undifferentiated_resources',
-        timetables=timetables
-    )
-
-    return calendar
+    return timetables
 
 
 def discover_per_resource_pool(
@@ -113,7 +99,8 @@ def discover_per_resource_pool(
         granularity=60,
         min_confidence=0.1,
         desired_support=0.7,
-        min_participation=0.4) -> Tuple[List[Calendar], PoolMapping]:
+        min_participation=0.4,
+) -> Tuple[Dict[str, RCalendar], PoolMapping]:
     analyzer = ResourcePoolDiscoverer(
         event_log[[log_ids.activity, log_ids.resource]],
         activity_key=log_ids.activity,
@@ -207,16 +194,9 @@ def discover_per_resource_pool(
 
     if len(pools_without_timetables) > 0:
         for pool_name in pools_without_timetables:
-            timetables_per_pool[pool_name] = [Timetable.all_day_long()]
+            timetables_per_pool[pool_name] = full_day_schedule(pool_name)
 
-    # Returning calendars
-
-    calendars = [
-        Calendar(id=pool_name, name=pool_name, timetables=timetables_per_pool[pool_name])
-        for pool_name in timetables_per_pool
-    ]
-
-    return calendars, pool_mapping
+    return timetables_per_pool, pool_mapping
 
 
 def discover_per_resource(
@@ -225,7 +205,8 @@ def discover_per_resource(
         granularity=60,
         min_confidence=0.1,
         desired_support=0.7,
-        min_participation=0.4) -> List[Calendar]:
+        min_participation=0.4,
+) -> Dict[str, RCalendar]:  # resource_name -> RCalendar
     timetables_per_resource = _discover_timetables(
         event_log, log_ids, granularity, min_confidence, desired_support, min_participation, True)
 
@@ -278,13 +259,28 @@ def discover_per_resource(
 
     if len(resources_without_calendar) > 0:
         for resource in resources_without_calendar:
-            timetables_per_resource[resource] = [Timetable.all_day_long()]
+            timetables_per_resource[resource] = full_day_schedule(resource)
 
-    # Returning the calendars
+    return timetables_per_resource
 
-    calendars = [
-        Calendar(id=name, name=name, timetables=timetables_per_resource[name])
-        for name in timetables_per_resource
-    ]
 
-    return calendars
+def full_day_schedule(schedule_id: str = '24_7_CALENDAR') -> RCalendar:
+    schedule = RCalendar(schedule_id)
+    schedule.add_calendar_item(
+        from_day="MONDAY",
+        to_day="SUNDAY",
+        begin_time="00:00:00.000",
+        end_time="23:59:59.999",
+    )
+    return schedule
+
+
+def working_hours_schedule(schedule_id: str = '9_5_CALENDAR') -> RCalendar:
+    schedule = RCalendar(schedule_id)
+    schedule.add_calendar_item(
+        from_day="MONDAY",
+        to_day="FRIDAY",
+        begin_time="09:00:00.000",
+        end_time="17:00:00.000",
+    )
+    return schedule

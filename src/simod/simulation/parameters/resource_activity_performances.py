@@ -1,12 +1,11 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 import pandas as pd
 from pix_framework.calendar.resource_calendar import RCalendar, absolute_unavailability_intervals_within
 from pix_framework.log_ids import EventLogIDs
 from pix_framework.statistics.distribution import get_best_fitting_distribution
 
-from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 
 
@@ -60,7 +59,7 @@ def discover_activity_resource_distribution(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
         resource_profiles: List[ResourceProfile],
-        resource_calendars: List[Calendar]
+        resource_calendars: Dict[str, RCalendar],
 ) -> List[ActivityResourceDistribution]:
     """
     Discover the performance (activity duration) for each resource in [resource_profiles].
@@ -79,7 +78,7 @@ def discover_activity_resource_distribution(
             resource_profile.resources) > 0, "Trying to compute activity performance of a resource profile with no resources."
         # Get the calendar of the resource profile
         calendar_id = resource_profile.resources[0].calendar_id
-        calendar = [calendar for calendar in resource_calendars if calendar.id == calendar_id][0]
+        calendar = resource_calendars[calendar_id]
         # Get the list of resources of this profile and the activities assigned to them
         resources = [resource.id for resource in resource_profile.resources]
         assigned_activities = resource_profile.resources[0].assigned_tasks
@@ -110,13 +109,11 @@ def discover_activity_resource_distribution(
 def compute_activity_durations_without_off_duty(
         events: pd.DataFrame,
         log_ids: EventLogIDs,
-        calendar: Calendar
+        calendar: RCalendar,
 ) -> List[float]:
     """
     Returns activity durations without off-duty time.
     """
-    # Transform Simod calendar into PIX Framework calendar
-    preproc_calendar = _preprocess_calendar(calendar)
     # Compute the calendar-aware duration of each event
     calendar_aware_durations = []
     for start, end in events[[log_ids.start_time, log_ids.end_time]].values.tolist():
@@ -124,7 +121,7 @@ def compute_activity_durations_without_off_duty(
         unavailable_periods = absolute_unavailability_intervals_within(
             start=start,
             end=end,
-            schedule=preproc_calendar
+            schedule=calendar,
         )
         # Compute total off-duty duration
         unavailable_time = sum([
@@ -135,18 +132,3 @@ def compute_activity_durations_without_off_duty(
         calendar_aware_durations += [(end - start).total_seconds() - unavailable_time]
     # Return durations without off-duty time
     return calendar_aware_durations
-
-
-def _preprocess_calendar(calendar: Calendar) -> RCalendar:
-    # Create empty RCalendar with the same ID
-    preproc_calendar = RCalendar(calendar_id=calendar.id)
-    # Add working periods one by one
-    for timetable in calendar.timetables:
-        preproc_calendar.add_calendar_item(
-            from_day=timetable.from_day.value,
-            to_day=timetable.to_day.value,
-            begin_time=timetable.begin_time,
-            end_time=timetable.end_time
-        )
-    # Return calendar in PIX Framework format
-    return preproc_calendar

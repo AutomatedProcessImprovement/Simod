@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import pandas as pd
 from networkx import DiGraph
@@ -8,12 +8,14 @@ from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDi
 from pix_framework.io.bpm_graph import BPMNGraph
 from pix_framework.log_ids import EventLogIDs
 from pix_framework.statistics.distribution import get_best_fitting_distribution
+from prosimos.resource_calendar import RCalendar
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_notice
 from simod.settings.temporal_settings import CalendarSettings, CalendarType
 from simod.simulation.calendar_discovery import resource as resource_calendar
-from simod.simulation.parameters.calendar import Calendar
+from simod.simulation.calendar_discovery.resource import full_day_schedule, working_hours_schedule, \
+    UNDIFFERENTIATED_RESOURCE_POOL_KEY
 from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar, \
     discover_inter_arrival_distribution
 from simod.simulation.parameters.intervals import Interval, intersect_intervals, prosimos_interval_to_interval_safe, \
@@ -61,11 +63,11 @@ def mine_parameters(
     resource_discovery_type = resource_profiles_settings.discovery_type
     if resource_discovery_type == CalendarType.DEFAULT_24_7:
         resource_profiles, resource_calendars, task_resource_distributions = mine_default_for_resources(
-            log, log_ids, model_path, process_graph, Calendar.all_day_long()
+            log, log_ids, model_path, process_graph, full_day_schedule()
         )
     elif resource_discovery_type == CalendarType.DEFAULT_9_5:
         resource_profiles, resource_calendars, task_resource_distributions = mine_default_for_resources(
-            log, log_ids, model_path, process_graph, Calendar.work_day()
+            log, log_ids, model_path, process_graph, working_hours_schedule()
         )
     elif resource_discovery_type == CalendarType.UNDIFFERENTIATED:
         resource_profiles, resource_calendars, task_resource_distributions = _resource_parameters_for_undifferentiated(
@@ -99,67 +101,21 @@ def mine_parameters(
     return parameters
 
 
-def mine_default_24_7(
-        log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        bpmn_path: Path,
-        process_graph: DiGraph,
-        gateways_probabilities_method: GatewayProbabilitiesDiscoveryMethod
-) -> SimulationParameters:
-    """
-    Simulation parameters with default calendar 24/7.
-    """
-    assert gateways_probabilities_method is not None, "Gateway probabilities method discovery must be provided."
-
-    bpmn_graph = BPMNGraph.from_bpmn_path(bpmn_path)
-
-    calendar_24_7 = Calendar.all_day_long()
-
-    undifferentiated_resource_profile = ResourceProfile.undifferentiated(
-        log, log_ids, bpmn_path, calendar_24_7.id
-    )
-    resource_profiles = [undifferentiated_resource_profile]
-
-    resource_calendars = [calendar_24_7]
-
-    arrival_distribution = discover_inter_arrival_distribution(log, log_ids)
-
-    arrival_calendar = calendar_24_7
-
-    gateway_probabilities_ = compute_gateway_probabilities(
-        log, log_ids, bpmn_graph, gateways_probabilities_method
-    )
-
-    activity_duration_distributions = _activity_duration_distributions_undifferentiated(
-        log, log_ids, process_graph, calendar_24_7
-    )
-
-    return SimulationParameters(
-        resource_profiles=resource_profiles,
-        resource_calendars=resource_calendars,
-        task_resource_distributions=activity_duration_distributions,
-        arrival_distribution=arrival_distribution,
-        arrival_calendar=arrival_calendar,
-        gateway_branching_probabilities=gateway_probabilities_,
-        event_distribution=None,
-    )
-
-
 def mine_default_for_resources(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph,
-        calendar: Calendar
-) -> Tuple:
+        calendar: RCalendar,
+) -> Tuple[List[ResourceProfile], Dict[str, RCalendar], List[ActivityResourceDistribution]]:
     """Simulation parameters with default calendar 24/7."""
 
     undifferentiated_resource_profile = ResourceProfile.undifferentiated(
-        log, log_ids, bpmn_path, calendar.id
+        log, log_ids, bpmn_path, calendar.calendar_id
     )
     resource_profiles = [undifferentiated_resource_profile]
 
-    resource_calendars = [calendar]
+    resource_calendars = {'undifferentiated': calendar}
 
     activity_duration_distributions = _activity_duration_distributions_undifferentiated(
         log, log_ids, process_graph, calendar
@@ -173,19 +129,21 @@ def _resource_parameters_for_undifferentiated(
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph
-) -> Tuple:
-    """Simulation parameters with undifferentiated resources."""
+) -> Tuple[List[ResourceProfile], Dict[str, RCalendar], List[ActivityResourceDistribution]]:
+    """
+    Simulation parameters with undifferentiated resources.
+    """
+    resource_name = UNDIFFERENTIATED_RESOURCE_POOL_KEY
 
-    calendars = [resource_calendar.discover_undifferentiated(log, log_ids)]
-    assert len(calendars) == 1, "Only one resource calendar is supported for undifferentiated resources."
+    calendars = resource_calendar.discover_undifferentiated(log, log_ids)
 
     undifferentiated_resource_profile = ResourceProfile.undifferentiated(
-        log, log_ids, bpmn_path, calendars[0].id
+        log, log_ids, bpmn_path, calendars[resource_name].calendar_id
     )
     resource_profiles = [undifferentiated_resource_profile]
 
     task_resource_distributions = _activity_duration_distributions_undifferentiated(
-        log, log_ids, process_graph, calendars[0]
+        log, log_ids, process_graph, calendars[resource_name]
     )
 
     return resource_profiles, calendars, task_resource_distributions
@@ -196,6 +154,20 @@ def _resource_parameters_for_pools(log: pd.DataFrame, log_ids: EventLogIDs, proc
 
     calendars, pool_mapping = resource_calendar.discover_per_resource_pool(log, log_ids)
     assert len(calendars) > 0, "At least one resource calendar is required for resource pools."
+
+    # Adding pool information to the log
+    pool_data = pd.DataFrame(pool_mapping.items(), columns=[log_ids.resource, 'pool'])
+    log = log.merge(pool_data, on=log_ids.resource)
+
+    # Adding calendar names to log by pool
+    log = log.merge(
+        pd.DataFrame.from_dict(
+            {'pool': list(calendars.keys()),
+             'resource_calendar': list(map(lambda c: c.calendar_id, list(calendars.values())))}
+        ),
+        on='pool',
+        how='left'
+    )
 
     pool_profiles = ResourceProfile.differentiated_by_pool_(
         log, log_ids, pool_mapping, process_graph
@@ -213,7 +185,7 @@ def _resource_parameters_for_differentiated(
         log_ids: EventLogIDs,
         bpmn_path: Path,
         process_graph: DiGraph
-) -> Tuple:
+) -> Tuple[List[ResourceProfile], Dict[str, RCalendar], List[ActivityResourceDistribution]]:
     """Simulation parameters for fully differentiated resources."""
 
     resource_calendars = resource_calendar.discover_per_resource(log, log_ids)
@@ -234,7 +206,7 @@ def _activity_duration_distributions_differentiated(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         process_graph: DiGraph,
-        calendars: List[Calendar],
+        resource_calendars: Dict[str, RCalendar],  # resource_name -> calendar
 ) -> List[ActivityResourceDistribution]:
     """
     Mines activity duration distributions for fully differentiated resources for the Prosimos simulator.
@@ -242,10 +214,8 @@ def _activity_duration_distributions_differentiated(
     # Finding the best distributions for each activity-resource pair
     activity_duration_distributions = {}
     for (activity, resource_), group in log.groupby([log_ids.activity, log_ids.resource]):
-        calendar = next((calendar for calendar in calendars if calendar.id == resource_), None)
-        assert calendar is not None, f"Resource calendar for resource {resource_} not found."
-
-        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar)
+        calendar = resource_calendars[resource_]
+        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar.to_json())
         if len(durations) == 0:
             durations = [0]
             print_notice(
@@ -286,12 +256,14 @@ def _activity_duration_distributions_differentiated(
     return distributions
 
 
-def _get_activity_durations_without_off_duty(df: pd.DataFrame, log_ids: EventLogIDs, calendar: Calendar) -> List[float]:
+def _get_activity_durations_without_off_duty(
+        df: pd.DataFrame, log_ids: EventLogIDs, timetables: List[dict]
+) -> List[float]:
     """
     Returns activity durations without off-duty time.
     """
     activity_intervals = _get_activity_intervals(df, log_ids)
-    overlapping_intervals = _get_overlapping_intervals(activity_intervals, calendar)
+    overlapping_intervals = _get_overlapping_intervals(activity_intervals, timetables)
     overlapping_durations = []
     for intervals in overlapping_intervals:
         duration_intervals = [
@@ -311,15 +283,15 @@ def _get_activity_intervals(df: pd.DataFrame, log_ids: EventLogIDs) -> List[pd.I
     return [pd.Interval(start, end) for start, end in zip(start_times, end_times)]
 
 
-def _get_overlapping_intervals(intervals: List[pd.Interval], calendar: Calendar) -> List[List[Interval]]:
+def _get_overlapping_intervals(intervals: List[pd.Interval], timetables: List[dict]) -> List[List[Interval]]:
     """
     Returns a list of lists of intervals that overlap with the calendar. First level of the list has intervals for each
     activity. So, each activity can have 1+ intervals.
     """
     calendar_intervals = []
-    for timetable in calendar.timetables:
+    for timetable in timetables:
         calendar_intervals.extend(
-            prosimos_interval_to_interval_safe(timetable.to_dict())
+            prosimos_interval_to_interval_safe(timetable)
         )
 
     intervals_ = [
@@ -339,30 +311,19 @@ def _activity_duration_distributions_pools(
         log_ids: EventLogIDs,
         process_graph: DiGraph,
         pool_by_resource_name: dict,
-        calendars: List[Calendar],
+        resource_calendars: Dict[str, RCalendar],  # resource_name -> calendar
 ) -> List[ActivityResourceDistribution]:
     """
     Mines activity duration distributions for pooled resources for the Prosimos simulator.
     """
 
-    # Adding pool information to the log
     pool_key = "pool"
-    pool_data = pd.DataFrame(
-        pool_by_resource_name.items(), columns=[log_ids.resource, pool_key]
-    )
-    log = log.merge(pool_data, on=log_ids.resource)
 
     # Finding the best distributions for each activity-pool pair
     activity_duration_distributions = {}
     for (activity, pool_name), group in log.groupby([log_ids.activity, pool_key]):
-        calendar = next(
-            (calendar for calendar in calendars if calendar.id == pool_name), None
-        )
-        assert (
-                calendar is not None
-        ), f"Resource calendar for resource {pool_name} not found."
-
-        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar)
+        calendar = resource_calendars[pool_name]
+        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar.to_json())
         if len(durations) == 0:
             durations = [0]
             print_notice(
@@ -399,7 +360,7 @@ def _activity_duration_distributions_undifferentiated(
         log: pd.DataFrame,
         log_ids: EventLogIDs,
         process_graph: DiGraph,
-        calendar: Calendar
+        resource_calendar: RCalendar,
 ) -> List[ActivityResourceDistribution]:
     """
     Mines activity duration distributions for undifferentiated resources for the Prosimos simulator.
@@ -409,7 +370,7 @@ def _activity_duration_distributions_undifferentiated(
 
     activity_duration_distributions = {}
     for activity, group in log.groupby(log_ids.activity):
-        durations = _get_activity_durations_without_off_duty(group, log_ids, calendar)
+        durations = _get_activity_durations_without_off_duty(group, log_ids, resource_calendar.to_json())
         if len(durations) == 0:
             durations = [0]
             print_notice(

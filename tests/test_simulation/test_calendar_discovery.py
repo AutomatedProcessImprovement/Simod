@@ -1,9 +1,10 @@
 import pytest
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
+from prosimos.resource_calendar import RCalendar
 
-from simod.simulation.calendar_discovery import resource
-from simod.simulation.parameters.calendar import Calendar
+from simod.simulation.calendar_discovery.resource import discover_undifferentiated, discover_per_resource_pool, \
+    discover_per_resource
 from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar
 
 
@@ -18,7 +19,7 @@ def test_discover_case_arrival_calendar(entry_point, log_name):
     result = discover_case_arrival_calendar(log, log_ids)
     # Assert
     assert result
-    assert type(result) is Calendar
+    assert type(result) is RCalendar
 
 
 @pytest.mark.integration
@@ -29,11 +30,11 @@ def test_resource_discover_undifferentiated(entry_point, log_name):
     # Read event log
     log = read_csv_log(log_path, log_ids)
     # Discover arrival calendar
-    result = resource.discover_undifferentiated(log, log_ids)
+    result = discover_undifferentiated(log, log_ids)
 
     assert result
-    assert type(result) is Calendar
-    assert len(result.timetables) > 0
+    assert type(list(result.items())[0][1]) is RCalendar
+    assert len(list(result.items())[0][1].to_json()) > 0
 
 
 @pytest.mark.integration
@@ -44,7 +45,7 @@ def test_resource_discover_per_resource_pool(entry_point, log_name):
     # Read event log
     log = read_csv_log(log_path, log_ids)
     # Discover arrival calendar
-    result = resource.discover_per_resource_pool(log, log_ids)
+    result = discover_per_resource_pool(log, log_ids)
 
     assert result
     assert len(result) > 0
@@ -59,8 +60,8 @@ def test_resource_discover_per_resource(entry_point, log_name):
     # Read event log
     log = read_csv_log(log_path, log_ids)
     # Discover arrival calendar
-    result = resource.discover_per_resource(log, log_ids)
+    result = discover_per_resource(log, log_ids)
 
     assert result
     assert len(result) > 0
-    assert len(result[0].timetables) > 0
+    assert len(result['John-000001'].to_json()) > 0

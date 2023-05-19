@@ -1,15 +1,15 @@
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import pandas as pd
 from networkx import DiGraph
 from pix_framework.log_ids import EventLogIDs
+from prosimos.resource_calendar import RCalendar
 
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.simulation.calendar_discovery.resource import PoolMapping
-from simod.simulation.parameters.calendar import Calendar
 
 
 @dataclass
@@ -72,7 +72,8 @@ class ResourceProfile:
             calendar_id: str,
             resource_amount: Optional[int] = 1,
             total_number_of_resources: Optional[int] = None,
-            cost_per_hour: float = 20) -> 'ResourceProfile':
+            cost_per_hour: float = 20,
+    ) -> 'ResourceProfile':
         """Extracts undifferentiated resource profiles for Prosimos. For the structure optimizing stage,
         calendars do not matter.
 
@@ -125,10 +126,6 @@ class ResourceProfile:
         pool_key = 'pool'
         activity_id_key = 'activity_id'
 
-        # Adding pool information to the log
-        pool_data = pd.DataFrame(pool_by_resource_name.items(), columns=[log_ids.resource, pool_key])
-        log = log.merge(pool_data, on=log_ids.resource)
-
         # Adding activity IDs to the log
         activity_ids = get_activities_ids_by_name(process_graph)
         activity_ids_data = pd.DataFrame(activity_ids.items(), columns=[log_ids.activity, activity_id_key])
@@ -148,13 +145,15 @@ class ResourceProfile:
             resources = []
             for resource in pool_resources:
                 cost = 0 if resource.lower() in ('start', 'end') else cost_per_hour
+                calendar_id = log[log[log_ids.resource] == resource]['resource_calendar'].unique()[0]
+
                 resources.append(
                     Resource(
                         id=resource,
                         name=resource,
                         amount=resource_amount,
                         cost_per_hour=cost,
-                        calendar_id=pool,
+                        calendar_id=calendar_id,
                         assigned_tasks=activity_ids
                     )
                 )
@@ -168,9 +167,10 @@ class ResourceProfile:
             log: pd.DataFrame,
             log_ids: EventLogIDs,
             bpmn_path: Path,
-            calendars: List[Calendar],
+            calendars: Dict[str, RCalendar],
             resource_amount: Optional[int] = 1,
-            cost_per_hour: float = 20) -> List['ResourceProfile']:
+            cost_per_hour: float = 20,
+    ) -> List['ResourceProfile']:
 
         # Activity names by resource name
         resource_names = log[log_ids.resource].unique()
@@ -185,14 +185,14 @@ class ResourceProfile:
 
         # Calendars by resource name
         resource_calendars = {
-            name: next(filter(lambda c, name_=name: c.name == name_, calendars))
+            name: calendars[name]
             for name in resource_names
         }
 
         # Collecting profiles
         profiles = []
         for resource_name in resource_names:
-            calendar = resource_calendars[resource_name]
+            calendar: RCalendar = resource_calendars[resource_name]
 
             assigned_activities_ids = []
             for activity_name in resource_activities[resource_name]:
@@ -214,7 +214,7 @@ class ResourceProfile:
                          name=resource_name,
                          amount=resource_amount,
                          cost_per_hour=cost,
-                         calendar_id=calendar.id,
+                         calendar_id=calendar.calendar_id,
                          assigned_tasks=assigned_activities_ids)
             ]
 
@@ -264,9 +264,12 @@ def discover_undifferentiated_resource_profile(
         # Create a single resource with the number of different resources in the log
         resources = [
             Resource(
-                id="UNDIFFERENTIATED_RESOURCE", name="UNDIFFERENTIATED_RESOURCE",
-                amount=event_log[log_ids.resource].nunique(), cost_per_hour=cost_per_hour,
-                calendar_id=calendar_id, assigned_tasks=assigned_activities
+                id="UNDIFFERENTIATED_RESOURCE",
+                name="UNDIFFERENTIATED_RESOURCE",
+                amount=event_log[log_ids.resource].nunique(),
+                cost_per_hour=cost_per_hour,
+                calendar_id=calendar_id,
+                assigned_tasks=assigned_activities
             )
         ]
     # Return resource profile with all the single resources
