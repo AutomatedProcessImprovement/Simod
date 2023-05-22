@@ -2,7 +2,7 @@ import pytest
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
 
-from simod.settings.temporal_settings import CalendarDiscoveryParams
+from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar
 from simod.simulation.parameters.resource_calendars import _discover_undifferentiated_resource_calendar, \

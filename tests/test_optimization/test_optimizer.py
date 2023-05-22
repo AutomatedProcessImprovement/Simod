@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from simod.event_log.event_log import EventLog
-from simod.optimization.optimizer import Optimizer
+from simod.simod import Simod
 from simod.settings.simod_settings import SimodSettings
 
 config_yaml_A = """
@@ -46,7 +46,7 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
-calendars:
+resource_model:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 1
   resource_profiles:
@@ -106,7 +106,7 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
-calendars:
+resource_model:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 1
   resource_profiles:
@@ -158,7 +158,7 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
-calendars:
+resource_model:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 1
   resource_profiles:
@@ -209,7 +209,7 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
-calendars:
+resource_model:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 2
   resource_profiles:
@@ -267,5 +267,5 @@ def test_optimizer(test_data, entry_point):
         process_name=settings.common.log_path.stem,
         test_path=settings.common.test_log_path,
     )
-    optimizer = Optimizer(settings, event_log=event_log)
+    optimizer = Simod(settings, event_log=event_log)
     optimizer.run()

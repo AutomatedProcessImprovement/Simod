@@ -9,7 +9,7 @@ from pix_framework.log_ids import DEFAULT_CSV_IDS
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
-from simod.settings.temporal_settings import ResourceModelSettings, CalendarType
+from simod.settings.resource_model_settings import ResourceModelSettings, CalendarType
 
 test_cases = [
     {

@@ -1,9 +1,9 @@
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Optional
 
 from pix_framework.log_ids import EventLogIDs, DEFAULT_XES_IDS
-from pydantic import BaseModel
 
 from ..utilities import get_project_dir
 
@@ -55,14 +55,15 @@ class Metric(str, Enum):
         return f'Unknown Metric {str(self)}'
 
 
-class CommonSettings(BaseModel):
+@dataclass
+class CommonSettings:
     log_path: Path
-    test_log_path: Union[Path, None]
-    log_ids: Union[EventLogIDs, None]
-    model_path: Union[Path, None]
+    test_log_path: Optional[Path]
+    log_ids: Optional[EventLogIDs]
+    model_path: Optional[Path]
     repetitions: int
     evaluation_metrics: Union[Metric, List[Metric]]
-    clean_intermediate_files: Union[bool, None]
+    clean_intermediate_files: bool = True
 
     @staticmethod
     def default() -> 'CommonSettings':
@@ -97,7 +98,7 @@ class CommonSettings(BaseModel):
         else:
             log_ids = DEFAULT_XES_IDS
 
-        clean_up = config.get('clean_intermediate_files', False)
+        clean_up = config.get('clean_intermediate_files', True)
 
         model_path = config.get('model_path', None)
         if model_path is not None:

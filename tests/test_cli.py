@@ -7,7 +7,7 @@ from simod import cli
 from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
-from simod.optimization.optimizer import Optimizer
+from simod.simod import Simod
 from simod.settings.simod_settings import PROJECT_DIR, SimodSettings
 
 optimize_config_files = [
@@ -56,6 +56,6 @@ def test_simod():
     if output_dir is None:
         output_dir = PROJECT_DIR / 'outputs' / get_random_folder_id()
 
-    Optimizer(settings, event_log=event_log, output_dir=output_dir).run()
+    Simod(settings, event_log=event_log, output_dir=output_dir).run()
 
     assert True

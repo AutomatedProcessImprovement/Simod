@@ -7,7 +7,7 @@ from simod.control_flow.settings import HyperoptIterationParams
 from simod.event_log.event_log import EventLog
 from simod.settings.control_flow_settings import ControlFlowSettings
 from simod.settings.simod_settings import PROJECT_DIR
-from simod.settings.temporal_settings import CalendarDiscoveryParams
+from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
 from simod.simulation.parameters.resource_model import discover_resource_model

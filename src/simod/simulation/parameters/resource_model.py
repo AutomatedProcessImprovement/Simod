@@ -4,7 +4,7 @@ from typing import List
 import pandas as pd
 from pix_framework.log_ids import EventLogIDs
 
-from simod.settings.temporal_settings import CalendarType, CalendarDiscoveryParams
+from simod.settings.resource_model_settings import CalendarType, CalendarDiscoveryParams
 from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \
     discover_activity_resource_distribution

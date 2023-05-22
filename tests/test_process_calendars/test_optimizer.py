@@ -3,10 +3,10 @@ from pix_framework.discovery.gateway_probabilities import compute_gateway_probab
 from pix_framework.log_ids import DEFAULT_CSV_IDS
 
 from simod.event_log.event_log import EventLog
-from simod.process_calendars.optimizer import ResourceModelOptimizer
-from simod.process_calendars.settings import HyperoptIterationParams
+from simod.resource_model.optimizer import ResourceModelOptimizer
+from simod.resource_model.settings import HyperoptIterationParams
 from simod.settings.simod_settings import PROJECT_DIR
-from simod.settings.temporal_settings import CalendarType, ResourceModelSettings
+from simod.settings.resource_model_settings import CalendarType, ResourceModelSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
 from simod.simulation.prosimos_bpm_graph import BPMNGraph

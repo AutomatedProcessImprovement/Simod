@@ -15,10 +15,10 @@ from simod.control_flow.discovery import discover_process_model
 from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams as ControlFlowHyperoptIterationParams
 from simod.event_log.event_log import EventLog
-from simod.process_calendars.optimizer import ResourceModelOptimizer
-from simod.process_calendars.settings import HyperoptIterationParams as ResourceModelHyperoptIterationParams
+from simod.resource_model.optimizer import ResourceModelOptimizer
+from simod.resource_model.settings import HyperoptIterationParams as ResourceModelHyperoptIterationParams
+from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
-from simod.settings.temporal_settings import CalendarDiscoveryParams
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
 from simod.simulation.parameters.resource_model import discover_resource_model
@@ -26,7 +26,7 @@ from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
 
 
-class Optimizer:
+class Simod:
     """
     SIMOD optimization.
     """
@@ -94,7 +94,7 @@ class Optimizer:
         self._resource_model_optimizer = ResourceModelOptimizer(
             event_log=self._event_log,
             bps_model=self._best_bps_model,
-            settings=self._settings.calendars,
+            settings=self._settings.resource_model,
             base_directory=self._resource_model_dir
         )
         # Run optimization process
@@ -259,7 +259,8 @@ class Optimizer:
             best_control_flow_params,
             best_resource_model_params
         )
-        self._clean_up()
+        if self._settings.common.clean_intermediate_files:
+            self._clean_up()
 
         self._settings.to_yaml(self._best_result_dir)
 

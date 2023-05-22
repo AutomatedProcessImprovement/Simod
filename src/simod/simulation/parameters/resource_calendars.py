@@ -4,7 +4,7 @@ import pandas as pd
 from pix_framework.log_ids import EventLogIDs
 from prosimos.resource_calendar import CalendarFactory
 
-from simod.settings.temporal_settings import CalendarType, CalendarDiscoveryParams
+from simod.settings.resource_model_settings import CalendarType, CalendarDiscoveryParams
 from simod.simulation.parameters.calendar import Calendar, Timetable
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 

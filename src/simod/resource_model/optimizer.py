@@ -15,7 +15,7 @@ from ..bpm.graph import get_activities_ids_by_name
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_subsection, print_step, print_message
 from ..event_log.event_log import EventLog
-from ..settings.temporal_settings import CalendarDiscoveryParams, ResourceModelSettings, CalendarType
+from ..settings.resource_model_settings import CalendarDiscoveryParams, ResourceModelSettings, CalendarType
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.parameters.resource_model import ResourceModel, discover_resource_model
 from ..simulation.prosimos import simulate_and_evaluate

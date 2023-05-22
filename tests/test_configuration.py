@@ -34,7 +34,7 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
-calendars:
+resource_model:
   max_evaluations: 2
   resource_profiles:
     discovery_type: pool

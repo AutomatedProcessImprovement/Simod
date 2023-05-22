@@ -40,7 +40,7 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
-calendars:
+resource_model:
   optimization_metric: absolute_hourly_emd
   max_evaluations: 1
   resource_profiles:
