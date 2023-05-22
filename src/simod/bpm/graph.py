@@ -1,5 +1,16 @@
 import matplotlib.pyplot as plt
 import networkx as nx
+import pandas as pd
+
+
+def get_activities_ids_by_name(process_graph: nx.DiGraph) -> dict:
+    """Returns activities' IDs from the model graph"""
+    model_data = pd.DataFrame.from_dict(
+        dict(process_graph.nodes.data()), orient="index"
+    )
+    model_data = model_data[model_data.type.isin(["task", "start", "end"])]
+    items = model_data[["name", "id"]].to_records(index=False)
+    return {item[0]: item[1] for item in items}  # {name: id}
 
 
 def from_bpmn_reader(bpmn, drawing=False, verbose=True) -> nx.DiGraph:

@@ -1,15 +1,15 @@
+import json
+
 import pandas as pd
 import pytest
-from extraneous_activity_delays.config import Configuration, SimulationEngine, SimulationModel, OptimizationMetric
+from extraneous_activity_delays.config import OptimizationMetric, SimulationModel, Configuration, SimulationEngine
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
 from lxml import etree
-from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
 from pix_framework.log_ids import DEFAULT_CSV_IDS
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.discovery.extraneous_delay_timers import discover_extraneous_delay_timers
-from simod.settings.temporal_settings import CalendarSettings, CalendarType
-from simod.simulation.parameters.miner import mine_parameters
+from simod.settings.temporal_settings import ResourceModelSettings, CalendarType
 
 test_cases = [
     {
@@ -17,6 +17,7 @@ test_cases = [
         'log_name': 'LoanApp_sequential_9-5_diffres_filtered.csv',
         'log_ids': DEFAULT_XES_IDS,
         'model_name': 'LoanApp_sequential_9-5_diffres_filtered.bpmn',
+        'params_name': 'LoanApp_sequential_9-5_diffres_filtered.json',
         'should_have_delays': False,
     },
     {
@@ -24,6 +25,7 @@ test_cases = [
         'log_name': 'LoanApp_sequential_9-5_diffres_timers.csv',
         'log_ids': DEFAULT_CSV_IDS,
         'model_name': 'LoanApp_sequential_9-5_timers.bpmn',
+        'params_name': 'LoanApp_sequential_9-5_timers.json',
         'should_have_delays': True,
     },
 ]
@@ -34,6 +36,7 @@ test_cases = [
 def test_extraneous_activity_delays(test_data, entry_point):
     log_path = entry_point / test_data['log_name']
     model_path = entry_point / test_data['model_name']
+    params_path = entry_point / test_data['params_name']
 
     log_ids = test_data['log_ids']
 
@@ -43,18 +46,14 @@ def test_extraneous_activity_delays(test_data, entry_point):
     event_log[log_ids.resource].fillna("NOT_SET", inplace=True)
     event_log[log_ids.resource] = event_log[log_ids.resource].astype("string")
 
-    case_arrival_settings = CalendarSettings.default()
-    resource_settings = CalendarSettings.default()
+    resource_settings = ResourceModelSettings()
     resource_settings.discovery_type = CalendarType.DIFFERENTIATED_BY_RESOURCE
-
-    parameters = mine_parameters(
-        case_arrival_settings, resource_settings, event_log, log_ids, model_path,
-        GatewayProbabilitiesDiscoveryMethod.DISCOVERY)
 
     parser = etree.XMLParser(remove_blank_text=True)
     bpmn_model = etree.parse(model_path, parser)
+    params = json.load(open(params_path, "r"))
 
-    simulation_model = SimulationModel(bpmn_model, parameters.to_dict())
+    simulation_model = SimulationModel(bpmn_model, params)
 
     configuration = Configuration(
         log_ids=log_ids,
@@ -78,6 +77,7 @@ def test_extraneous_activity_delays(test_data, entry_point):
 def test_discover_extraneous_delay_timers(test_data, entry_point):
     log_path = entry_point / test_data['log_name']
     model_path = entry_point / test_data['model_name']
+    params_path = entry_point / test_data['params_name']
 
     log_ids = test_data['log_ids']
 
@@ -87,16 +87,12 @@ def test_discover_extraneous_delay_timers(test_data, entry_point):
     event_log[log_ids.resource].fillna("NOT_SET", inplace=True)
     event_log[log_ids.resource] = event_log[log_ids.resource].astype("string")
 
-    case_arrival_settings = CalendarSettings.default()
-    resource_settings = CalendarSettings.default()
+    resource_settings = ResourceModelSettings()
     resource_settings.discovery_type = CalendarType.DIFFERENTIATED_BY_RESOURCE
-
-    parameters = mine_parameters(
-        case_arrival_settings, resource_settings, event_log, log_ids, model_path,
-        GatewayProbabilitiesDiscoveryMethod.DISCOVERY)
+    params = json.load(open(params_path, "r"))
 
     _, out_model_path, out_parameters_path = discover_extraneous_delay_timers(
-        event_log, log_ids, model_path, parameters, OptimizationMetric.ABSOLUTE_EMD, num_iterations=1)
+        event_log, log_ids, model_path, params, OptimizationMetric.ABSOLUTE_EMD, num_iterations=1)
 
     assert out_model_path.exists()
     assert out_parameters_path.exists()

@@ -2,12 +2,12 @@ import pytest
 from pix_framework.filesystem.file_manager import get_random_folder_id, create_folder
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
-from simod.event_log.event_log import EventLog
 from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams
+from simod.event_log.event_log import EventLog
 from simod.settings.control_flow_settings import ControlFlowSettings
 from simod.settings.simod_settings import PROJECT_DIR
-from simod.settings.temporal_settings import CalendarSettings
+from simod.settings.temporal_settings import CalendarDiscoveryParams
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
 from simod.simulation.parameters.resource_model import discover_resource_model
@@ -47,7 +47,7 @@ def test_structure_optimizer(entry_point, test_data):
     resource_model = discover_resource_model(
         event_log.train_validation_partition,  # No optimization process here, use train + validation
         event_log.log_ids,
-        CalendarSettings.default()
+        CalendarDiscoveryParams()
     )
     bps_model = BPSModel(
         case_arrival_model=case_arrival_model,
@@ -99,7 +99,7 @@ def test_structure_optimizer_with_bpmn(entry_point, test_data):
     resource_model = discover_resource_model(
         event_log.train_validation_partition,  # No optimization process here, use train + validation
         event_log.log_ids,
-        CalendarSettings.default()
+        CalendarDiscoveryParams()
     )
     bps_model = BPSModel(
         process_model=model_path,

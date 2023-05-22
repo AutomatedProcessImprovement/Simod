@@ -1,20 +1,20 @@
 from pix_framework.log_ids import DEFAULT_CSV_IDS
 
 from simod.event_log.utilities import read
-from simod.simulation.parameters.resource_profiles import ResourceProfile
+from simod.simulation.parameters.resource_profiles import discover_undifferentiated_resource_profile
 
 
 def test_resource_profiles_undifferentiated(entry_point):
     log_path = entry_point / 'LoanApp_sequential_9-5_diffres_timers.csv'
-    bpmn_path = entry_point / 'LoanApp_sequential_9-5_timers.bpmn'
 
     log_ids = DEFAULT_CSV_IDS
 
     log, _ = read(log_path, log_ids)
 
-    calendar_id = 'foo'
-
-    profile = ResourceProfile.undifferentiated(log, log_ids, bpmn_path, calendar_id)
+    profile = discover_undifferentiated_resource_profile(
+        event_log=log,
+        log_ids=log_ids
+    )
 
     assert profile is not None
     assert profile.name == 'UNDIFFERENTIATED_RESOURCE_PROFILE'

@@ -4,7 +4,7 @@ import pandas as pd
 from pix_framework.log_ids import EventLogIDs
 from prosimos.resource_calendar import CalendarFactory
 
-from simod.settings.temporal_settings import CalendarSettings, CalendarType
+from simod.settings.temporal_settings import CalendarType, CalendarDiscoveryParams
 from simod.simulation.parameters.calendar import Calendar, Timetable
 from simod.simulation.parameters.resource_profiles import ResourceProfile
 
@@ -12,7 +12,7 @@ from simod.simulation.parameters.resource_profiles import ResourceProfile
 def discover_resource_calendars_per_profile(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        calendar_settings: CalendarSettings,
+        params: CalendarDiscoveryParams,
         resource_profiles: List[ResourceProfile]
 ) -> List[Calendar]:
     """
@@ -28,12 +28,12 @@ def discover_resource_calendars_per_profile(
 
     :param event_log: event log to discover the resource calendars from.
     :param log_ids: column IDs of the event log.
-    :param calendar_settings: parameters for the calendar discovery.
+    :param params: parameters for the calendar discovery.
     :param resource_profiles: list of resource profiles with their ID and resources.
 
     :return: list of availability calendars (one per profile).
     """
-    calendar_type = calendar_settings.discovery_type
+    calendar_type = params.discovery_type
     if calendar_type == CalendarType.DEFAULT_24_7:
         # 24/7 calendar per resource profile
         resource_calendars = []
@@ -61,8 +61,12 @@ def discover_resource_calendars_per_profile(
     elif calendar_type == CalendarType.UNDIFFERENTIATED:
         # Discover a resource calendar for all the resources in the log
         calendar_id = resource_profiles[0].resources[0].calendar_id
-        resource_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, calendar_settings,
-                                                                         calendar_id)
+        resource_calendar = _discover_undifferentiated_resource_calendar(
+            event_log,
+            log_ids,
+            params,
+            calendar_id
+        )
         # Set discovered calendar, or default 24/7 if could not discover one
         resource_calendars = [
             resource_calendar
@@ -75,8 +79,12 @@ def discover_resource_calendars_per_profile(
         ]
     else:
         # Discover a resource calendar per resource profile
-        resource_calendars = _discover_resource_calendars_per_profile(event_log, log_ids, calendar_settings,
-                                                                      resource_profiles)
+        resource_calendars = _discover_resource_calendars_per_profile(
+            event_log,
+            log_ids,
+            params,
+            resource_profiles
+        )
     # Return discovered resource calendars
     return resource_calendars
 
@@ -84,7 +92,7 @@ def discover_resource_calendars_per_profile(
 def _discover_undifferentiated_resource_calendar(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        calendar_settings: CalendarSettings,
+        params: CalendarDiscoveryParams,
         calendar_id: str
 ) -> Optional[Calendar]:
     """
@@ -92,13 +100,13 @@ def _discover_undifferentiated_resource_calendar(
 
     :param event_log: event log to discover the resource calendar from.
     :param log_ids: column IDs of the event log.
-    :param calendar_settings: parameters for the calendar discovery.
+    :param params: parameters for the calendar discovery.
     :param calendar_id: ID to assign to the discovered calendar.
 
     :return: resource calendar for all the events in the received event log.
     """
     # Register each timestamp to the same profile
-    calendar_factory = CalendarFactory(calendar_settings.granularity)
+    calendar_factory = CalendarFactory(params.granularity)
     for _, event in event_log.iterrows():
         # Register start/end timestamps
         activity = event[log_ids.activity]
@@ -106,9 +114,9 @@ def _discover_undifferentiated_resource_calendar(
         calendar_factory.check_date_time("Undifferentiated", activity, event[log_ids.end_time])
     # Discover weekly timetables
     discovered_timetables = calendar_factory.build_weekly_calendars(
-        calendar_settings.confidence,
-        calendar_settings.support,
-        calendar_settings.participation
+        params.confidence,
+        params.support,
+        params.participation
     )
     # Return resource calendar
     return Calendar(
@@ -123,7 +131,7 @@ def _discover_undifferentiated_resource_calendar(
 def _discover_resource_calendars_per_profile(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        calendar_settings: CalendarSettings,
+        params: CalendarDiscoveryParams,
         resource_profiles: List[ResourceProfile]
 ) -> List[Calendar]:
     # Revert resource profiles
@@ -144,7 +152,7 @@ def _discover_resource_calendars_per_profile(
     }
     # --- Discover a calendar per resource profile --- #
     # Register each timestamp to its corresponding profile
-    calendar_factory = CalendarFactory(calendar_settings.granularity)
+    calendar_factory = CalendarFactory(params.granularity)
     for _, event in event_log.iterrows():
         # Register start/end timestamps
         profile_id = resource_to_profile[event[log_ids.resource]]
@@ -153,9 +161,9 @@ def _discover_resource_calendars_per_profile(
         calendar_factory.check_date_time(profile_id, activity, event[log_ids.end_time])
     # Discover weekly timetables
     discovered_timetables = calendar_factory.build_weekly_calendars(
-        calendar_settings.confidence,
-        calendar_settings.support,
-        calendar_settings.participation
+        params.confidence,
+        params.support,
+        params.participation
     )
     # Create calendar per resource profile
     resource_calendars = []
@@ -180,12 +188,20 @@ def _discover_resource_calendars_per_profile(
             if resource.id in missing_resources:
                 resource.calendar_id = calendar_id
         # Discover one resource calendar for all of them
-        resource_calendar = _discover_undifferentiated_resource_calendar(filtered_event_log, log_ids, calendar_settings,
-                                                                         calendar_id)
+        resource_calendar = _discover_undifferentiated_resource_calendar(
+            filtered_event_log,
+            log_ids,
+            params,
+            calendar_id
+        )
         if resource_calendar is None:
             # Could not discover calendar for the missing resources, discover calendar with the entire log
-            resource_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, calendar_settings,
-                                                                             calendar_id)
+            resource_calendar = _discover_undifferentiated_resource_calendar(
+                event_log,
+                log_ids,
+                params,
+                calendar_id
+            )
             if resource_calendar is None:
                 # Could not discover calendar for all the resources in the log, assign default 24/7
                 resource_calendar = Calendar(

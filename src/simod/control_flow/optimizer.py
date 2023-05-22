@@ -15,19 +15,18 @@ from pix_framework.io.bpm_graph import BPMNGraph
 
 from .discovery import discover_process_model
 from .settings import HyperoptIterationParams
+from ..bpm.graph import get_activities_ids_by_name
 from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_message, print_subsection, print_step
 from ..event_log.event_log import EventLog
-from ..settings.common_settings import Metric
 from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings
 from ..simulation.parameters.BPS_model import BPSModel
-from ..simulation.parameters.miner import get_activities_ids_by_name
 from ..simulation.prosimos import simulate_and_evaluate
-from ..utilities import hyperopt_step
+from ..utilities import hyperopt_step, get_simulation_parameters_path, get_process_model_path
 
 
 class ControlFlowOptimizer:
-    # Event log with train/test partitions
+    # Event log with train/validation partitions
     event_log: EventLog
     # BPS model taken as starting point
     initial_bps_model: BPSModel
@@ -98,7 +97,7 @@ class ControlFlowOptimizer:
             output_dir=output_dir,
             project_name=self.event_log.process_name,
         )
-        print_message(f"Parameters: {hyperopt_iteration_params}", capitalize=False)
+        print_message(f"Parameters: {hyperopt_iteration_params}")
 
         # Discover process model (if needed)
         if self._need_to_discover_model:
@@ -127,7 +126,7 @@ class ControlFlowOptimizer:
             status,
             self._simulate_bps_model,
             current_bps_model,
-            hyperopt_iteration_params
+            hyperopt_iteration_params.output_dir
         )
 
         # Define the response of this iteration
@@ -137,7 +136,7 @@ class ControlFlowOptimizer:
             hyperopt_iteration_params.output_dir,
             current_bps_model.process_model
         )
-        print(f"Control-flow iteration response: {response}")
+        print(f"Control-flow optimization iteration response: {response}")
 
         # Save the quality of this evaluation
         self._process_measurements(hyperopt_iteration_params, status, evaluation_measurements)
@@ -147,7 +146,7 @@ class ControlFlowOptimizer:
     def run(self) -> HyperoptIterationParams:
         """
         Run Control-Flow & Gateway Probabilities discovery
-        :return: Tuple of the best settings, the path to the best model and the list of evaluation measurements.
+        :return: The parameters of the best iteration of the optimization process.
         """
         # Define search space
         search_space = self._define_search_space(settings=self.settings)
@@ -181,14 +180,13 @@ class ControlFlowOptimizer:
         # Instantiate best BPS model
         self.best_bps_model = self.initial_bps_model.deep_copy()
         # Update best process model (save it in base directory)
-        self.best_bps_model.process_model = self._get_process_model_path(self.base_directory)
-        best_model_path = best_result[
-            'model_path'] if self._need_to_discover_model else self.initial_bps_model.process_model
+        self.best_bps_model.process_model = get_process_model_path(self.base_directory, self.event_log.process_name)
+        best_model_path = best_result['model_path'] if self._need_to_discover_model else self.initial_bps_model.process_model
         shutil.copyfile(best_model_path, self.best_bps_model.process_model)
         # Update simulation parameters (save them in base directory)
-        best_parameters_path = self._get_simulation_parameters_path(self.base_directory)
+        best_parameters_path = get_simulation_parameters_path(self.base_directory, self.event_log.process_name)
         shutil.copyfile(
-            self._get_simulation_parameters_path(best_result['output_dir']),
+            get_simulation_parameters_path(best_result['output_dir'], self.event_log.process_name),
             best_parameters_path
         )
         self.best_bps_model.gateway_probabilities = [
@@ -275,15 +273,16 @@ class ControlFlowOptimizer:
             'output_dir': output_dir,
             'model_path': model_path,
         }
-
+        # Return updated status and processed response
         return status, response
 
     def _process_measurements(
             self,
-            settings: HyperoptIterationParams,
+            params: HyperoptIterationParams,
             status,
-            evaluation_measurements):
-        optimization_parameters = settings.to_dict()
+            evaluation_measurements
+    ):
+        optimization_parameters = params.to_dict()
         optimization_parameters['status'] = status
 
         if status == STATUS_OK:
@@ -297,14 +296,14 @@ class ControlFlowOptimizer:
         else:
             values = {
                 'distance': 0,
-                'metric': Metric.DL,
+                'metric': params.optimization_metric,
             }
             values = values | optimization_parameters
             self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
 
     def _discover_process_model(self, params: HyperoptIterationParams) -> Path:
         print_step(f"Discovering Process Model with {params.mining_algorithm.value}")
-        output_model_path = self._get_process_model_path(params.output_dir)
+        output_model_path = get_process_model_path(params.output_dir, self.event_log.process_name)
         discover_process_model(
             self._xes_train_log_path,
             output_model_path,
@@ -317,7 +316,7 @@ class ControlFlowOptimizer:
             process_model: Path,
             gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     ) -> List[GatewayProbabilities]:
-        print_step(f"Mining gateway probabilities with {gateway_probabilities_method}")
+        print_step(f"Computing gateway probabilities with {gateway_probabilities_method}")
         bpmn_graph = BPMNGraph.from_bpmn_path(process_model)
         return compute_gateway_probabilities(
             event_log=self.event_log.train_partition,
@@ -329,7 +328,7 @@ class ControlFlowOptimizer:
     def _simulate_bps_model(
             self,
             bps_model: BPSModel,
-            settings: HyperoptIterationParams
+            output_dir: Path
     ) -> List[dict]:
         # Update activity label -> activity ID mapping of current process model
         activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(bps_model.process_model).as_graph())
@@ -343,14 +342,14 @@ class ControlFlowOptimizer:
             activity_resource_distributions.activity_id = activity_label_to_id[
                 activity_resource_distributions.activity_id]
         # Write JSON parameters to file
-        json_parameters_path = self._get_simulation_parameters_path(settings.output_dir)
+        json_parameters_path = get_simulation_parameters_path(output_dir, self.event_log.process_name)
         with json_parameters_path.open('w') as f:
             json.dump(bps_model.to_dict(), f)
         # Simulate and evaluate BPS model
         evaluation_measures = simulate_and_evaluate(
             model_path=bps_model.process_model,
             parameters_path=json_parameters_path,
-            output_dir=settings.output_dir,
+            output_dir=output_dir,
             simulation_cases=self.event_log.validation_partition[self.event_log.log_ids.case].nunique(),
             simulation_start_time=self.event_log.validation_partition[self.event_log.log_ids.start_time].min(),
             validation_log=self.event_log.validation_partition,
@@ -360,9 +359,3 @@ class ControlFlowOptimizer:
         )
         # Return evaluation measures
         return evaluation_measures
-
-    def _get_process_model_path(self, base_dir: Path) -> Path:
-        return base_dir / f"{self.event_log.process_name}.bpmn"
-
-    def _get_simulation_parameters_path(self, base_dir: Path) -> Path:
-        return base_dir / f"{self.event_log.process_name}.json"

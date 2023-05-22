@@ -8,7 +8,7 @@ from .common_settings import CommonSettings
 from .control_flow_settings import ControlFlowSettings
 from .extraneous_delays_settings import ExtraneousDelaysSettings
 from .preprocessing_settings import PreprocessingSettings
-from .temporal_settings import CalendarsSettings
+from .temporal_settings import ResourceModelSettings
 from ..cli_formatter import print_notice
 from ..utilities import get_project_dir
 
@@ -26,7 +26,7 @@ class SimodSettings:
     common: CommonSettings
     preprocessing: PreprocessingSettings
     control_flow: ControlFlowSettings
-    calendars: CalendarsSettings
+    calendars: ResourceModelSettings
     extraneous_activity_delays: Union[ExtraneousDelaysSettings, None] = None
 
     @staticmethod
@@ -40,7 +40,7 @@ class SimodSettings:
             common=CommonSettings.default(),
             preprocessing=PreprocessingSettings.default(),
             control_flow=ControlFlowSettings(),
-            calendars=CalendarsSettings.default(),
+            calendars=ResourceModelSettings(),
             extraneous_activity_delays=ExtraneousDelaysSettings.default()
         )
 
@@ -51,7 +51,7 @@ class SimodSettings:
         common_settings = CommonSettings.from_dict(config['common'])
         preprocessing_settings = PreprocessingSettings.from_dict(config['preprocessing'])
         control_flow_settings = ControlFlowSettings.from_dict(config['control_flow'])
-        calendars_settings = CalendarsSettings.from_dict(config['calendars'])
+        calendars_settings = ResourceModelSettings.from_dict(config['calendars'])
         extraneous_activity_delays_settings = ExtraneousDelaysSettings.from_dict(
             config.get('extraneous_activity_delays'))
 

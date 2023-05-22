@@ -1,10 +1,9 @@
+from dataclasses import dataclass
 from enum import Enum
-from typing import Union, List, Optional, Tuple
+from typing import Union, Optional, Tuple
 
-from hyperopt import hp
-from pydantic import BaseModel
-
-from .common_settings import Metric
+from simod.settings.common_settings import Metric
+from simod.utilities import parse_single_value_or_interval
 
 
 class CalendarType(str, Enum):
@@ -15,18 +14,7 @@ class CalendarType(str, Enum):
     DIFFERENTIATED_BY_RESOURCE = 'differentiated_by_resource'
 
     @classmethod
-    def from_str(cls, value: Union[str, List[str]]) -> 'Union[CalendarType, List[CalendarType]]':
-        if isinstance(value, str):
-            return CalendarType._from_str(value)
-        elif isinstance(value, int):
-            return CalendarType._from_str(str(value))
-        elif isinstance(value, list):
-            return [CalendarType._from_str(v) for v in value]
-        else:
-            raise ValueError(f'Unknown value {value}')
-
-    @classmethod
-    def _from_str(cls, value: str) -> 'CalendarType':
+    def from_str(cls, value: str) -> 'CalendarType':
         if value.lower() in ('default_24_7', 'dt247', '24_7', '247'):
             return cls.DEFAULT_24_7
         elif value.lower() in ('default_9_5', 'dt95', '9_5', '95'):
@@ -54,140 +42,123 @@ class CalendarType(str, Enum):
         return f'Unknown CalendarType {str(self)}'
 
 
-class CalendarSettings(BaseModel):
-    discovery_type: Union[CalendarType, List[CalendarType]]
-    granularity: Optional[Union[int, List[int]]] = None  # minutes per granule
-    confidence: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
-    support: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
-    participation: Optional[Union[float, List[float]]] = None  # from 0 to 1.0
+@dataclass
+class CalendarDiscoveryParams:
+    discovery_type: CalendarType = CalendarType.UNDIFFERENTIATED
+    granularity: Optional[int] = 60  # minutes per granule
+    confidence: Optional[float] = 0.1  # from 0 to 1.0
+    support: Optional[float] = 0.1  # from 0 to 1.0
+    participation: Optional[float] = 0.4  # from 0 to 1.0
+
+    def to_dict(self) -> dict:
+        # Save discovery type
+        calendar_discovery_params = {
+            'discovery_type': self.discovery_type.value
+        }
+        # Add calendar discovery parameters if any
+        if self.discovery_type in [
+            CalendarType.UNDIFFERENTIATED,
+            CalendarType.DIFFERENTIATED_BY_RESOURCE,
+            CalendarType.DIFFERENTIATED_BY_POOL
+        ]:
+            calendar_discovery_params['granularity'] = self.granularity
+            calendar_discovery_params['confidence'] = self.confidence
+            calendar_discovery_params['support'] = self.support
+            calendar_discovery_params['participation'] = self.participation
+        # Return dict
+        return calendar_discovery_params
 
     @staticmethod
-    def default() -> 'CalendarSettings':
-        """
-        Default settings for calendar discovery. Used for case arrival rate discovery if no settings provided.
-        """
-
-        return CalendarSettings(
-            discovery_type=CalendarType.UNDIFFERENTIATED,
-            granularity=60,
-            confidence=0.1,
-            support=0.1,
-            participation=0.4
+    def from_dict(calendar_discovery_params: dict) -> 'CalendarDiscoveryParams':
+        granularity = None
+        confidence = None
+        support = None
+        participation = None
+        # If the discovery type implies a discovery, parse parameters
+        if calendar_discovery_params['discovery_type'] in [
+            CalendarType.UNDIFFERENTIATED,
+            CalendarType.DIFFERENTIATED_BY_RESOURCE,
+            CalendarType.DIFFERENTIATED_BY_POOL
+        ]:
+            granularity = calendar_discovery_params['granularity']
+            confidence = calendar_discovery_params['confidence']
+            support = calendar_discovery_params['support']
+            participation = calendar_discovery_params['participation']
+        # Return parameters instance
+        return CalendarDiscoveryParams(
+            discovery_type=calendar_discovery_params['discovery_type'],
+            granularity=granularity,
+            confidence=confidence,
+            support=support,
+            participation=participation,
         )
 
+
+@dataclass
+class ResourceModelSettings:
+    """
+    Resource Model optimization settings.
+    """
+    optimization_metric: Metric = Metric.CIRCADIAN_EMD
+    max_evaluations: int = 10
+    num_evaluations_per_iteration: int = 3
+    discovery_type: CalendarType = CalendarType.UNDIFFERENTIATED
+    granularity: Optional[Union[int, Tuple[int, int]]] = (15, 60)  # minutes per granule
+    confidence: Optional[Union[float, Tuple[float, float]]] = (0.5, 0.85)  # from 0 to 1.0
+    support: Optional[Union[float, Tuple[float, float]]] = (0.01, 0.3)  # from 0 to 1.0
+    participation: Optional[Union[float, Tuple[float, float]]] = 0.4  # from 0 to 1.0
+
     @staticmethod
-    def from_dict(config: dict) -> 'CalendarSettings':
+    def from_dict(config: dict) -> 'ResourceModelSettings':
+        # Optimization metric
+        optimization_metric = Metric.from_str(config.get('optimization_metric', "circadian_emd"))
+        # Number of iterations for the optimization process
+        max_evaluations = config.get('max_evaluations', 10)
+        # Num evaluations per iteration
+        num_evaluations_per_iteration = config.get('num_evaluations_per_iteration', 3)
+        # Discovery type
         discovery_type = CalendarType.from_str(config.get('discovery_type', 'undifferentiated'))
-
-        return CalendarSettings(
-            discovery_type=discovery_type,
-            granularity=config.get('granularity', 60),
-            confidence=config.get('confidence', 0.1),
-            support=config.get('support', 0.1),
-            participation=config.get('participation', 0.4),
-        )
-
-    def to_hyperopt_options(self, prefix: str = '') -> List[tuple]:
-        options = []
-
-        discovery_types = self.discovery_type if isinstance(self.discovery_type, list) else [self.discovery_type]
-
-        for dt in discovery_types:
-            if dt in (CalendarType.UNDIFFERENTIATED, CalendarType.DIFFERENTIATED_BY_POOL,
-                      CalendarType.DIFFERENTIATED_BY_RESOURCE):
-                granularity = hp.uniform(f'{prefix}-{dt.name}-granularity', *self.granularity) \
-                    if isinstance(self.granularity, list) \
-                    else self.granularity
-                confidence = hp.uniform(f'{prefix}-{dt.name}-confidence', *self.confidence) \
-                    if isinstance(self.confidence, list) \
-                    else self.confidence
-                support = hp.uniform(f'{prefix}-{dt.name}-support', *self.support) \
-                    if isinstance(self.support, list) \
-                    else self.support
-                participation = hp.uniform(f'{prefix}-{dt.name}-participation', *self.participation) \
-                    if isinstance(self.participation, list) \
-                    else self.participation
-                options.append((dt.name,
-                                {'granularity': granularity,
-                                 'confidence': confidence,
-                                 'support': support,
-                                 'participation': participation}))
-            else:
-                # The rest options need only names because these are default calendars
-                options.append((dt.name, {'calendar_type': dt.name}))
-
-        return options
-
-    @staticmethod
-    def from_hyperopt_option(option: Tuple) -> 'CalendarSettings':
-        calendar_type, calendar_parameters = option
-        calendar_type = CalendarType.from_str(calendar_type)
-        if calendar_type in (CalendarType.DEFAULT_9_5, CalendarType.DEFAULT_24_7):
-            return CalendarSettings(discovery_type=calendar_type)
+        # Calendar discovery parameters
+        if discovery_type in [
+            CalendarType.UNDIFFERENTIATED,
+            CalendarType.DIFFERENTIATED_BY_RESOURCE,
+            CalendarType.DIFFERENTIATED_BY_POOL
+        ]:
+            granularity = parse_single_value_or_interval(config.get('granularity', (15, 60)))
+            confidence = parse_single_value_or_interval(config.get('confidence', (0.5, 0.85)))
+            support = parse_single_value_or_interval(config.get('support', (0.01, 0.3)))
+            participation = parse_single_value_or_interval(config.get('participation', 0.4))
         else:
-            return CalendarSettings(discovery_type=calendar_type, **calendar_parameters)
+            granularity, confidence, support, participation = None, None, None, None
 
-    def to_dict(self) -> dict:
-        if isinstance(self.discovery_type, list):
-            discovery_type = [dt.name for dt in self.discovery_type]
-        else:
-            discovery_type = self.discovery_type.name
-
-        return {
-            'discovery_type': discovery_type,
-            'granularity': self.granularity,
-            'confidence': self.confidence,
-            'support': self.support,
-            'participation': self.participation,
-        }
-
-
-class CalendarsSettings(BaseModel):
-    optimization_metric: Metric
-    max_evaluations: int
-    case_arrival: Union[CalendarSettings, None]
-    resource_profiles: Union[CalendarSettings, None]
-
-    @staticmethod
-    def default() -> 'CalendarsSettings':
-        resource_settings = CalendarSettings.default()
-        resource_settings.discovery_type = CalendarType.DIFFERENTIATED_BY_RESOURCE
-
-        return CalendarsSettings(
-            optimization_metric=Metric.ABSOLUTE_HOURLY_EMD,
-            max_evaluations=1,
-            case_arrival=CalendarSettings.default(),
-            resource_profiles=resource_settings
-        )
-
-    @staticmethod
-    def from_dict(config: dict) -> 'CalendarsSettings':
-        # Case arrival is an optional parameter in the configuration file
-        case_arrival = config.get('case_arrival')
-        if case_arrival is not None:
-            case_arrival = CalendarSettings.from_dict(case_arrival)
-        else:
-            case_arrival = CalendarSettings.default()
-
-        resource_profiles = CalendarSettings.from_dict(config['resource_profiles'])
-
-        optimization_metric = config.get('optimization_metric')
-        if optimization_metric is not None:
-            optimization_metric = Metric.from_str(optimization_metric)
-        else:
-            optimization_metric = Metric.ABSOLUTE_HOURLY_EMD
-
-        return CalendarsSettings(
+        return ResourceModelSettings(
             optimization_metric=optimization_metric,
-            max_evaluations=config['max_evaluations'],
-            case_arrival=case_arrival,
-            resource_profiles=resource_profiles,
+            max_evaluations=max_evaluations,
+            num_evaluations_per_iteration=num_evaluations_per_iteration,
+            discovery_type=discovery_type,
+            granularity=granularity,
+            confidence=confidence,
+            support=support,
+            participation=participation
         )
 
     def to_dict(self) -> dict:
-        return {
-            'optimization_metric': str(self.optimization_metric),
+        # Parse general settings
+        dictionary = {
+            'optimization_metric': self.optimization_metric.value,
             'max_evaluations': self.max_evaluations,
-            'case_arrival': self.case_arrival.to_dict(),
-            'resource_profiles': self.resource_profiles.to_dict(),
+            'num_evaluations_per_iteration': self.num_evaluations_per_iteration,
+            'discovery_type': self.discovery_type.value
         }
+        # Parse calendar discovery parameters
+        if self.discovery_type in [
+            CalendarType.UNDIFFERENTIATED,
+            CalendarType.DIFFERENTIATED_BY_RESOURCE,
+            CalendarType.DIFFERENTIATED_BY_POOL
+        ]:
+            dictionary['granularity'] = self.granularity
+            dictionary['confidence'] = self.confidence
+            dictionary['support'] = self.support
+            dictionary['participation'] = self.participation
+        # Return dictionary
+        return dictionary

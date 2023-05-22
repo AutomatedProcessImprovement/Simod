@@ -4,7 +4,7 @@ from typing import List
 import pandas as pd
 from pix_framework.log_ids import EventLogIDs
 
-from simod.settings.temporal_settings import CalendarType, CalendarSettings
+from simod.settings.temporal_settings import CalendarType, CalendarDiscoveryParams
 from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \
     discover_activity_resource_distribution
@@ -49,7 +49,7 @@ class ResourceModel:
 def discover_resource_model(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        calendar_settings: CalendarSettings
+        params: CalendarDiscoveryParams
 ) -> ResourceModel:
     """
     Discover resource model parameters composed by the resource profiles, their calendars, and the resource-activity
@@ -57,13 +57,13 @@ def discover_resource_model(
 
     :param event_log: event log to discover the resource profiles, calendars, and performances from.
     :param log_ids: column IDs of the event log.
-    :param calendar_settings: settings for the calendar discovery composed of the calendar type (default 24/7,
+    :param params: parameters for the calendar discovery composed of the calendar type (default 24/7,
     default 9/5 undifferentiated, differentiates, or pools), and, if needed, the parameters for their discovery.
 
     :return: class with the resource profiles, their calendars, and the resource-activity duration distributions.
     """
     # --- Discover resource profiles --- #
-    calendar_type = calendar_settings.discovery_type
+    calendar_type = params.discovery_type
     if calendar_type in [CalendarType.DEFAULT_24_7, CalendarType.DEFAULT_9_5, CalendarType.UNDIFFERENTIATED]:
         resource_profiles = [discover_undifferentiated_resource_profile(event_log, log_ids)]
     elif calendar_type == CalendarType.DIFFERENTIATED_BY_RESOURCE:
@@ -76,8 +76,12 @@ def discover_resource_model(
     assert len(resource_profiles) > 0, 'No resource profiles found'
 
     # --- Discover resource calendars for each profile --- #
-    resource_calendars = discover_resource_calendars_per_profile(event_log, log_ids, calendar_settings,
-                                                                 resource_profiles)
+    resource_calendars = discover_resource_calendars_per_profile(
+        event_log,
+        log_ids,
+        params,
+        resource_profiles
+    )
     # Assert there are discovered resource calendars
     assert len(resource_calendars) > 0, 'No resource calendars found'
 

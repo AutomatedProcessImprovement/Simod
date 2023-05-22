@@ -1,11 +1,15 @@
 import pytest
+from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
 from pix_framework.log_ids import DEFAULT_CSV_IDS
 
 from simod.event_log.event_log import EventLog
-from simod.process_calendars.optimizer import CalendarOptimizer
-from simod.process_calendars.settings import PipelineSettings, CalendarOptimizationSettings
-from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
-from simod.settings.temporal_settings import CalendarType
+from simod.process_calendars.optimizer import ResourceModelOptimizer
+from simod.process_calendars.settings import HyperoptIterationParams
+from simod.settings.simod_settings import PROJECT_DIR
+from simod.settings.temporal_settings import CalendarType, ResourceModelSettings
+from simod.simulation.parameters.BPS_model import BPSModel
+from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
+from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 test_cases = [
     {
@@ -27,27 +31,34 @@ test_cases = [
 @pytest.mark.parametrize('test_case', test_cases, ids=[case['name'] for case in test_cases])
 def test_optimizer(entry_point, test_case):
     base_dir = PROJECT_DIR / 'outputs'
-
-    log_ids = DEFAULT_CSV_IDS
-
-    settings = SimodSettings.default()
-    settings.calendars.resource_profiles.discovery_type = test_case['resource_discovery_method']
-    settings.common.log_ids = log_ids
-
-    calendar_settings = CalendarOptimizationSettings.from_configuration(settings, base_dir)
-
+    # Set up settings
+    settings = ResourceModelSettings()
+    settings.discovery_type = test_case['resource_discovery_method']
+    # Read event log
     log_path = entry_point / 'LoanApp_sequential_9-5_diffres_timers.csv'
+    event_log = EventLog.from_path(log_path, DEFAULT_CSV_IDS)
+    # Build starting BPS model
     model_path = entry_point / 'LoanApp_sequential_9-5_timers.bpmn'
+    bpmn_graph = BPMNGraph.from_bpmn_path(model_path)
+    bps_model = BPSModel(
+        process_model=model_path,
+        gateway_probabilities=compute_gateway_probabilities(
+            bpmn_graph=bpmn_graph,
+            event_log=event_log.train_validation_partition,
+            log_ids=event_log.log_ids
+        ),
+        case_arrival_model=discover_case_arrival_model(
+            event_log=event_log.train_validation_partition,
+            log_ids=event_log.log_ids
+        )
+    )
 
-    event_log = EventLog.from_path(log_path, log_ids)
-
-    optimizer = CalendarOptimizer(
-        calendar_settings,
-        event_log,
-        train_model_path=model_path,
-        base_directory=base_dir,
-        gateway_probabilities_method=settings.control_flow.gateway_probabilities
+    optimizer = ResourceModelOptimizer(
+        event_log=event_log,
+        bps_model=bps_model,
+        settings=settings,
+        base_directory=base_dir
     )
     result = optimizer.run()
 
-    assert type(result) is PipelineSettings
+    assert type(result) is HyperoptIterationParams
