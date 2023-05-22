@@ -6,7 +6,7 @@
         <task id="node_88f7338e-2c02-433b-90ff-7a8a24410edb" name="Prepare acceptance pack"/>
         <task id="node_1b37bf6b-89a4-4706-9d42-8b8414c15ccd" name="Cancel application"/>
         <task id="node_e23413d5-507b-4f82-b66b-6a09d9dd7d26" name="Approve Loan Offer"/>
-        <task id="node_2ea62064-f4b5-4c52-910b-cf2217fd75a8" name="Approve and send&#160; acceptance pack"/>
+        <task id="node_2ea62064-f4b5-4c52-910b-cf2217fd75a8" name="Approve and send acceptance pack"/>
         <task id="node_04258efc-612d-4184-9ac0-2fc9bf2e6ea8" name="Check  application  form completeness"/>
         <task id="node_8150c18a-f3b4-4dff-8e9c-822818771773" name="Check credit history"/>
         <task id="node_105b849a-fdb8-426a-9a58-d06569febb98" name="Assess loan risk"/>
