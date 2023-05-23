@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 import pandas as pd
+from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.log_ids import EventLogIDs
 
 from simod.settings.resource_model_settings import CalendarType, CalendarDiscoveryParams
-from simod.simulation.parameters.calendar import Calendar
 from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \
     discover_activity_resource_distribution
 from simod.simulation.parameters.resource_calendars import discover_resource_calendars_per_profile
@@ -20,7 +20,7 @@ class ResourceModel:
     """
 
     resource_profiles: List[ResourceProfile]
-    resource_calendars: List[Calendar]
+    resource_calendars: Dict[str, RCalendar]
     activity_resource_distributions: List[ActivityResourceDistribution]
 
     def to_dict(self) -> dict:
@@ -28,17 +28,38 @@ class ResourceModel:
             'resource_profiles':
                 [resource_profile.to_dict() for resource_profile in self.resource_profiles],
             'resource_calendars':
-                [calendar.to_dict() for calendar in self.resource_calendars],
+                [
+                    {
+                        'id': calendar_id,
+                        'name': calendar_id,
+                        'time_periods': self.resource_calendars[calendar_id].to_json(),
+                    }
+                    for calendar_id in self.resource_calendars
+                ],
             'task_resource_distribution':
                 [activity_resources.to_dict() for activity_resources in self.activity_resource_distributions]
         }
 
     @staticmethod
     def from_dict(resource_model: dict) -> 'ResourceModel':
+        calendars = {}
+        for calendar_dict in resource_model['resource_calendars']:
+            calendar = RCalendar(calendar_id=calendar_dict['id'])
+            for time_period in calendar_dict['time_periods']:
+                calendar.add_calendar_item(
+                    from_day=time_period['from'],
+                    to_day=time_period['to'],
+                    begin_time=time_period['beginTime'],
+                    end_time=time_period['endTime'],
+                )
+            calendars[calendar.calendar_id] = calendar
+
         return ResourceModel(
-            resource_profiles=[ResourceProfile.from_dict(resource_profile) for resource_profile in
-                               resource_model['resource_profiles']],
-            resource_calendars=[Calendar.from_dict(calendar) for calendar in resource_model['resource_calendars']],
+            resource_profiles=[
+                ResourceProfile.from_dict(resource_profile)
+                for resource_profile in resource_model['resource_profiles']
+            ],
+            resource_calendars=calendars,
             activity_resource_distributions=[
                 ActivityResourceDistribution.from_dict(activity_resource_distribution)
                 for activity_resource_distribution in resource_model['task_resource_distribution']

@@ -97,9 +97,12 @@ def discover_undifferentiated_resource_profile(
         # Create a single resource with the number of different resources in the log
         resources = [
             Resource(
-                id="UNDIFFERENTIATED_RESOURCE", name="UNDIFFERENTIATED_RESOURCE",
-                amount=event_log[log_ids.resource].nunique(), cost_per_hour=cost_per_hour,
-                calendar_id=calendar_id, assigned_tasks=assigned_activities
+                id="UNDIFFERENTIATED_RESOURCE",
+                name="UNDIFFERENTIATED_RESOURCE",
+                amount=event_log[log_ids.resource].nunique(),
+                cost_per_hour=cost_per_hour,
+                calendar_id=calendar_id,
+                assigned_tasks=assigned_activities
             )
         ]
     # Return resource profile with all the single resources

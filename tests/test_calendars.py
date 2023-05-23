@@ -2,13 +2,13 @@ import uuid
 
 import pandas as pd
 import pytest
+from pix_framework.discovery.case_arrival import discover_case_arrival_calendar
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
 from prosimos.resource_calendar import CalendarFactory
 
 from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 from simod.event_log.utilities import read, convert_xes_to_csv
-from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar
 
 
 @pytest.mark.integration

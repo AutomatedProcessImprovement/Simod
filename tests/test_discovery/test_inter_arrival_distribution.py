@@ -1,8 +1,8 @@
 import pytest
+from pix_framework.discovery.case_arrival import discover_inter_arrival_distribution
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.event_log.utilities import read
-from simod.simulation.parameters.case_arrival_model import discover_inter_arrival_distribution
 
 test_cases = [
     {

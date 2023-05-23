@@ -1,4 +1,6 @@
 import pytest
+from pix_framework.calendar.resource_calendar import RCalendar
+from pix_framework.discovery.case_arrival import discover_case_arrival_calendar
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
 
@@ -21,7 +23,7 @@ def test_discover_case_arrival_calendar(entry_point, log_name):
     result = discover_case_arrival_calendar(log, log_ids)
     # Assert
     assert result
-    assert type(result) is Calendar
+    assert type(result) is RCalendar
 
 
 @pytest.mark.integration

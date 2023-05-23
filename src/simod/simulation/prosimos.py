@@ -4,15 +4,15 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor as Pool
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import pandas as pd
+from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_notice, print_step
-from .parameters.calendar import Calendar
 from .parameters.resource_activity_performances import ActivityResourceDistribution
 from .parameters.resource_profiles import ResourceProfile
 from ..event_log.utilities import read
@@ -29,10 +29,10 @@ class SimulationParameters:
     """
 
     resource_profiles: List[ResourceProfile]
-    resource_calendars: List[Calendar]
+    resource_calendars: Dict[str, RCalendar]
     task_resource_distributions: List[ActivityResourceDistribution]
     arrival_distribution: dict
-    arrival_calendar: Calendar
+    arrival_calendar: RCalendar
     gateway_branching_probabilities: List[GatewayProbabilities]
     event_distribution: Optional[dict]
 
@@ -42,13 +42,20 @@ class SimulationParameters:
             'resource_profiles':
                 [resource_profile.to_dict() for resource_profile in self.resource_profiles],
             'resource_calendars':
-                [calendar.to_dict() for calendar in self.resource_calendars],
+                [
+                    {
+                        'id': self.resource_calendars[resource_name].calendar_id,
+                        'name': self.resource_calendars[resource_name].calendar_id,
+                        'time_periods': self.resource_calendars[resource_name].to_json(),
+                    }
+                    for resource_name in self.resource_calendars
+                ],
             'task_resource_distribution':
                 [activity_resources.to_dict() for activity_resources in self.task_resource_distributions],
             'arrival_time_distribution':
                 self.arrival_distribution,
             'arrival_time_calendar':
-                self.arrival_calendar.to_array(),
+                self.arrival_calendar.to_json(),
             'gateway_branching_probabilities':
                 [
                     gateway_probabilities.to_dict()
