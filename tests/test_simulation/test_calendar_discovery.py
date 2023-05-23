@@ -65,8 +65,8 @@ def test_resource_discover_per_resource_pool(entry_point, log_name):
 
     assert result
     assert len(result) > 0
-    for calendar_id in result:
-        assert len(result[calendar_id].work_intervals) > 0
+    for calendar in result:
+        assert len(calendar.work_intervals) > 0
 
 
 @pytest.mark.integration
@@ -89,5 +89,5 @@ def test_resource_discover_per_resource(entry_point, log_name):
 
     assert result
     assert len(result) > 0
-    for calendar_id in result:
-        assert len(result[calendar_id].work_intervals) > 0
+    for calendar in result:
+        assert len(calendar.work_intervals) > 0

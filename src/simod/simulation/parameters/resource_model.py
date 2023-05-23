@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List
 
 import pandas as pd
 from pix_framework.calendar.resource_calendar import RCalendar
@@ -20,7 +20,7 @@ class ResourceModel:
     """
 
     resource_profiles: List[ResourceProfile]
-    resource_calendars: Dict[str, RCalendar]  # Calendar ID as key, calendar as value
+    resource_calendars: List[RCalendar]
     activity_resource_distributions: List[ActivityResourceDistribution]
 
     def to_dict(self) -> dict:
@@ -30,11 +30,11 @@ class ResourceModel:
             'resource_calendars':
                 [
                     {
-                        'id': calendar_id,
-                        'name': calendar_id,
-                        'time_periods': self.resource_calendars[calendar_id].to_json(),
+                        'id': calendar.calendar_id,
+                        'name': calendar.calendar_id,
+                        'time_periods': calendar.to_json(),
                     }
-                    for calendar_id in self.resource_calendars
+                    for calendar in self.resource_calendars
                 ],
             'task_resource_distribution':
                 [activity_resources.to_dict() for activity_resources in self.activity_resource_distributions]
@@ -42,7 +42,7 @@ class ResourceModel:
 
     @staticmethod
     def from_dict(resource_model: dict) -> 'ResourceModel':
-        calendars = {}
+        calendars = []
         for calendar_dict in resource_model['resource_calendars']:
             calendar = RCalendar(calendar_id=calendar_dict['id'])
             for time_period in calendar_dict['time_periods']:
@@ -52,7 +52,7 @@ class ResourceModel:
                     begin_time=time_period['beginTime'],
                     end_time=time_period['endTime'],
                 )
-            calendars[calendar.calendar_id] = calendar
+            calendars += [calendar]
 
         return ResourceModel(
             resource_profiles=[
