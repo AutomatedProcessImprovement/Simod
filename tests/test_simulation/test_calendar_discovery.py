@@ -5,8 +5,6 @@ from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
 
 from simod.settings.resource_model_settings import CalendarDiscoveryParams
-from simod.simulation.parameters.calendar import Calendar
-from simod.simulation.parameters.case_arrival_model import discover_case_arrival_calendar
 from simod.simulation.parameters.resource_calendars import _discover_undifferentiated_resource_calendar, \
     _discover_resource_calendars_per_profile
 from simod.simulation.parameters.resource_profiles import discover_pool_resource_profiles, discover_differentiated_resource_profiles
@@ -42,9 +40,9 @@ def test_resource_discover_undifferentiated(entry_point, log_name):
     )
 
     assert result
-    assert type(result) is Calendar
-    assert result.id == "Undifferentiated_test"
-    assert len(result.timetables) > 0
+    assert type(result) is RCalendar
+    assert result.calendar_id == "Undifferentiated_test"
+    assert len(result.work_intervals) > 0
 
 
 @pytest.mark.integration
@@ -67,7 +65,8 @@ def test_resource_discover_per_resource_pool(entry_point, log_name):
 
     assert result
     assert len(result) > 0
-    assert len(result[0].timetables) > 0
+    for calendar_id in result:
+        assert len(result[calendar_id].work_intervals) > 0
 
 
 @pytest.mark.integration
@@ -90,4 +89,5 @@ def test_resource_discover_per_resource(entry_point, log_name):
 
     assert result
     assert len(result) > 0
-    assert len(result[0].timetables) > 0
+    for calendar_id in result:
+        assert len(result[calendar_id].work_intervals) > 0

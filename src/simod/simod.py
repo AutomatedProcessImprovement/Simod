@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
 from pix_framework.filesystem.file_manager import get_random_folder_id, get_random_file_id, create_folder
 from pix_framework.io.bpm_graph import BPMNGraph
@@ -20,7 +21,6 @@ from simod.resource_model.settings import HyperoptIterationParams as ResourceMod
 from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
-from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
 from simod.simulation.parameters.resource_model import discover_resource_model
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path

@@ -20,7 +20,7 @@ class ResourceModel:
     """
 
     resource_profiles: List[ResourceProfile]
-    resource_calendars: Dict[str, RCalendar]
+    resource_calendars: Dict[str, RCalendar]  # Calendar ID as key, calendar as value
     activity_resource_distributions: List[ActivityResourceDistribution]
 
     def to_dict(self) -> dict:

@@ -44,11 +44,11 @@ class SimulationParameters:
             'resource_calendars':
                 [
                     {
-                        'id': self.resource_calendars[resource_name].calendar_id,
-                        'name': self.resource_calendars[resource_name].calendar_id,
-                        'time_periods': self.resource_calendars[resource_name].to_json(),
+                        'id': self.resource_calendars[calendar_id].calendar_id,
+                        'name': self.resource_calendars[calendar_id].calendar_id,
+                        'time_periods': self.resource_calendars[calendar_id].to_json(),
                     }
-                    for resource_name in self.resource_calendars
+                    for calendar_id in self.resource_calendars
                 ],
             'task_resource_distribution':
                 [activity_resources.to_dict() for activity_resources in self.task_resource_distributions],

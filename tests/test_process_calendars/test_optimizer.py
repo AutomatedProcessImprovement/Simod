@@ -1,14 +1,14 @@
 import pytest
+from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
 from pix_framework.log_ids import DEFAULT_CSV_IDS
 
 from simod.event_log.event_log import EventLog
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.settings import HyperoptIterationParams
-from simod.settings.simod_settings import PROJECT_DIR
 from simod.settings.resource_model_settings import CalendarType, ResourceModelSettings
+from simod.settings.simod_settings import PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
-from simod.simulation.parameters.case_arrival_model import discover_case_arrival_model
 from simod.simulation.prosimos_bpm_graph import BPMNGraph
 
 test_cases = [

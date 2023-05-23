@@ -68,7 +68,9 @@ def discover_activity_resource_distribution(
     :param event_log: event log to discover the activity durations from.
     :param log_ids: column IDs of the event log.
     :param resource_profiles: list of resource profiles with their ID and resources.
-    :param resource_calendars: list of calendars containing their ID and working intervals.
+    :param resource_calendars: dictionary with each calendar ID as key, and the corresponding
+                               calendar as value of calendars containing their ID and working
+                               intervals.
 
     :return: list of duration distribution per activity.
     """
