@@ -2,7 +2,7 @@ import pytest
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import DEFAULT_CSV_IDS, APROMORE_LOG_IDS
 
-from simod.metrics.metrics import get_absolute_hourly_emd
+from simod.metrics import get_absolute_hourly_emd
 
 test_cases = [
     {

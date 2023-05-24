@@ -13,10 +13,10 @@ from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_notice, print_step
+from simod.metrics import compute_metric
 from .parameters.resource_activity_performances import ActivityResourceDistribution
 from .parameters.resource_profiles import ResourceProfile
 from ..event_log.utilities import read
-from ..metrics.metrics import compute_metric
 from ..settings.common_settings import Metric
 
 cpu_count = multiprocessing.cpu_count()
