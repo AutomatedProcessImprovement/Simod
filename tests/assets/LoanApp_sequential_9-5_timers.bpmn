@@ -201,7 +201,7 @@
             <incoming>edge5</incoming>
             <outgoing>edge6</outgoing>
         </task>
-        <task id="node9" name=" Approve and send&#160; acceptance pack">
+        <task id="node9" name=" Approve and send acceptance pack">
             <incoming>edge6</incoming>
             <outgoing>edge32</outgoing>
         </task>

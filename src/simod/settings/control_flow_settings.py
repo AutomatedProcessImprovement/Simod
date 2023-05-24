@@ -32,7 +32,7 @@ class ProcessModelDiscoveryAlgorithm(str, Enum):
 @dataclass
 class ControlFlowSettings:
     """
-    Structure discovery settings.
+    Control-flow optimization settings.
     """
 
     optimization_metric: Metric = Metric.N_GRAM_DISTANCE
@@ -88,15 +88,27 @@ class ControlFlowSettings:
         )
 
     def to_dict(self) -> dict:
-        return {
-            'optimization_metric': str(self.optimization_metric),
+        # Parse general settings
+        dictionary = {
+            'optimization_metric': self.optimization_metric.value,
             'max_evaluations': self.max_evaluations,
             'num_evaluations_per_iteration': self.num_evaluations_per_iteration,
-            'gateway_probabilities': [str(g) for g in self.gateway_probabilities],
-            'mining_algorithm': str(self.mining_algorithm),
-            'concurrency': self.concurrency,
-            'epsilon': self.epsilon,
-            'eta': self.eta,
-            'replace_or_joins': self.replace_or_joins,
-            'prioritize_parallelism': self.prioritize_parallelism,
+            'mining_algorithm': self.mining_algorithm.value
         }
+        # Parse gateway probabilities
+        if isinstance(self.gateway_probabilities, GatewayProbabilitiesDiscoveryMethod):
+            dictionary['gateway_probabilities'] = self.gateway_probabilities.value
+        else:
+            dictionary['gateway_probabilities'] = [method.value for method in self.gateway_probabilities]
+        # Parse discovery algorithm parameters
+        if self.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
+            # Split Miner 2, set concurrency threshold
+            dictionary['concurrency'] = self.concurrency
+        else:
+            # Split Miner 3, set epsilon/eta/replace_or_joins/prioritize_parallelism
+            dictionary['epsilon'] = self.epsilon
+            dictionary['eta'] = self.eta
+            dictionary['replace_or_joins'] = self.replace_or_joins
+            dictionary['prioritize_parallelism'] = self.prioritize_parallelism
+        # Return dictionary
+        return dictionary

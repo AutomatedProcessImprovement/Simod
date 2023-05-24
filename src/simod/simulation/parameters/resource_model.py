@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List
 
 import pandas as pd
 from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.log_ids import EventLogIDs
 
-from simod.settings.temporal_settings import CalendarType, CalendarSettings
+from simod.settings.resource_model_settings import CalendarType, CalendarDiscoveryParams
 from simod.simulation.parameters.resource_activity_performances import ActivityResourceDistribution, \
     discover_activity_resource_distribution
 from simod.simulation.parameters.resource_calendars import discover_resource_calendars_per_profile
@@ -20,7 +20,7 @@ class ResourceModel:
     """
 
     resource_profiles: List[ResourceProfile]
-    resource_calendars: Dict[str, RCalendar]
+    resource_calendars: List[RCalendar]
     activity_resource_distributions: List[ActivityResourceDistribution]
 
     def to_dict(self) -> dict:
@@ -30,11 +30,11 @@ class ResourceModel:
             'resource_calendars':
                 [
                     {
-                        'id': resource_name,
-                        'name': resource_name,
-                        'time_periods': self.resource_calendars[resource_name].to_json(),
+                        'id': calendar.calendar_id,
+                        'name': calendar.calendar_id,
+                        'time_periods': calendar.to_json(),
                     }
-                    for resource_name in self.resource_calendars
+                    for calendar in self.resource_calendars
                 ],
             'task_resource_distribution':
                 [activity_resources.to_dict() for activity_resources in self.activity_resource_distributions]
@@ -42,21 +42,23 @@ class ResourceModel:
 
     @staticmethod
     def from_dict(resource_model: dict) -> 'ResourceModel':
-        calendars = {}
-        for calendar in resource_model['resource_calendars']:
-            calendar_ = RCalendar(calendar_id=calendar['id'])
-            for time_period in calendar['time_periods']:
-                calendar_.add_calendar_item(
+        calendars = []
+        for calendar_dict in resource_model['resource_calendars']:
+            calendar = RCalendar(calendar_id=calendar_dict['id'])
+            for time_period in calendar_dict['time_periods']:
+                calendar.add_calendar_item(
                     from_day=time_period['from'],
                     to_day=time_period['to'],
                     begin_time=time_period['beginTime'],
                     end_time=time_period['endTime'],
                 )
-            calendars[calendar['id']] = calendar_
+            calendars += [calendar]
 
         return ResourceModel(
-            resource_profiles=[ResourceProfile.from_dict(resource_profile) for resource_profile in
-                               resource_model['resource_profiles']],
+            resource_profiles=[
+                ResourceProfile.from_dict(resource_profile)
+                for resource_profile in resource_model['resource_profiles']
+            ],
             resource_calendars=calendars,
             activity_resource_distributions=[
                 ActivityResourceDistribution.from_dict(activity_resource_distribution)
@@ -68,7 +70,7 @@ class ResourceModel:
 def discover_resource_model(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
-        calendar_settings: CalendarSettings
+        params: CalendarDiscoveryParams
 ) -> ResourceModel:
     """
     Discover resource model parameters composed by the resource profiles, their calendars, and the resource-activity
@@ -76,13 +78,13 @@ def discover_resource_model(
 
     :param event_log: event log to discover the resource profiles, calendars, and performances from.
     :param log_ids: column IDs of the event log.
-    :param calendar_settings: settings for the calendar discovery composed of the calendar type (default 24/7,
+    :param params: parameters for the calendar discovery composed of the calendar type (default 24/7,
     default 9/5 undifferentiated, differentiates, or pools), and, if needed, the parameters for their discovery.
 
     :return: class with the resource profiles, their calendars, and the resource-activity duration distributions.
     """
     # --- Discover resource profiles --- #
-    calendar_type = calendar_settings.discovery_type
+    calendar_type = params.discovery_type
     if calendar_type in [CalendarType.DEFAULT_24_7, CalendarType.DEFAULT_9_5, CalendarType.UNDIFFERENTIATED]:
         resource_profiles = [discover_undifferentiated_resource_profile(event_log, log_ids)]
     elif calendar_type == CalendarType.DIFFERENTIATED_BY_RESOURCE:
@@ -95,8 +97,12 @@ def discover_resource_model(
     assert len(resource_profiles) > 0, 'No resource profiles found'
 
     # --- Discover resource calendars for each profile --- #
-    resource_calendars = discover_resource_calendars_per_profile(event_log, log_ids, calendar_settings,
-                                                                 resource_profiles)
+    resource_calendars = discover_resource_calendars_per_profile(
+        event_log,
+        log_ids,
+        params,
+        resource_profiles
+    )
     # Assert there are discovered resource calendars
     assert len(resource_calendars) > 0, 'No resource calendars found'
 

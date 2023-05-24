@@ -1,37 +1,34 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Tuple, Optional, List
+from typing import Optional, Tuple, List
 
 import hyperopt
 import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
-from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities, \
-    GatewayProbabilitiesDiscoveryMethod, GatewayProbabilities
 from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
-from pix_framework.io.bpm_graph import BPMNGraph
 
-from .discovery import discover_process_model
 from .settings import HyperoptIterationParams
 from ..bpm.graph import get_activities_ids_by_name
 from ..bpm.reader_writer import BPMNReaderWriter
-from ..cli_formatter import print_message, print_subsection, print_step
+from ..cli_formatter import print_subsection, print_step, print_message
 from ..event_log.event_log import EventLog
-from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings
+from ..settings.resource_model_settings import CalendarDiscoveryParams, ResourceModelSettings, CalendarType
 from ..simulation.parameters.BPS_model import BPSModel
+from ..simulation.parameters.resource_model import ResourceModel, discover_resource_model
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step, get_simulation_parameters_path, get_process_model_path
 
 
-class ControlFlowOptimizer:
+class ResourceModelOptimizer:
     # Event log with train/validation partitions
     event_log: EventLog
     # BPS model taken as starting point
     initial_bps_model: BPSModel
     # Configuration settings
-    settings: ControlFlowSettings
+    settings: ResourceModelSettings
     # Root directory for the output files
     base_directory: Path
     # Path to the best process model
@@ -39,10 +36,6 @@ class ControlFlowOptimizer:
     # Quality measure of each hyperopt iteration
     evaluation_measurements: pd.DataFrame
 
-    # Flag indicating if the model is provided of it needs to be discovered
-    _need_to_discover_model: bool
-    # Path to the training log in XES format, needed for Split Miner
-    _xes_train_log_path: Optional[Path] = None
     # Set of trials for the hyperparameter optimization process
     _bayes_trials = Trials
 
@@ -50,7 +43,7 @@ class ControlFlowOptimizer:
             self,
             event_log: EventLog,
             bps_model: BPSModel,
-            settings: ControlFlowSettings,
+            settings: ResourceModelSettings,
             base_directory: Path
     ):
         # Save event log, optimization settings, and output directory
@@ -58,28 +51,18 @@ class ControlFlowOptimizer:
         self.initial_bps_model = bps_model.deep_copy()
         self.settings = settings
         self.base_directory = base_directory
-        # Check if it is needed to discover the process model
-        self.best_bps_model = None
-        if self.initial_bps_model.process_model is None:
-            # Not provided, create path to best discovered model
-            self._need_to_discover_model = True
-            # Export training log (XES format) for SplitMiner
-            self._xes_train_log_path = self.base_directory / (self.event_log.process_name + '.xes')
-            self.event_log.train_to_xes(self._xes_train_log_path)
-        else:
-            # Process model provided
-            self._need_to_discover_model = False
         # Initialize table to store quality measures of each iteration
         self.evaluation_measurements = pd.DataFrame(columns=[
-            'distance', 'metric', 'status', 'gateway_probabilities', 'epsilon',
-            'eta', 'prioritize_parallelism', 'replace_or_joins', 'output_dir'
+            'distance', 'metric', 'status', 'discovery_type',
+            'granularity', 'confidence', 'support',
+            'participation', 'output_dir'
         ])
         # Instantiate trials for hyper-optimization process
         self._bayes_trials = Trials()
 
     def _hyperopt_iteration(self, hyperopt_iteration_dict: dict):
         # Report new iteration
-        print_subsection("Control-flow optimization iteration")
+        print_subsection("Resource Model optimization iteration")
 
         # Initialize status
         status = STATUS_OK
@@ -92,33 +75,18 @@ class ControlFlowOptimizer:
         hyperopt_iteration_params = HyperoptIterationParams.from_hyperopt_dict(
             hyperopt_dict=hyperopt_iteration_dict,
             optimization_metric=self.settings.optimization_metric,
-            mining_algorithm=self.settings.mining_algorithm,
-            provided_model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
+            discovery_type=self.settings.discovery_type,
             output_dir=output_dir,
-            project_name=self.event_log.process_name,
+            model_path=current_bps_model.process_model,
+            project_name=self.event_log.process_name
         )
         print_message(f"Parameters: {hyperopt_iteration_params}")
 
-        # Discover process model (if needed)
-        if self._need_to_discover_model:
-            try:
-                status, current_bps_model.process_model = hyperopt_step(
-                    status,
-                    self._discover_process_model,
-                    hyperopt_iteration_params
-                )
-            except Exception as e:
-                print_message(f"Process Discovery failed: {e}")
-                status = STATUS_FAIL
-        else:
-            current_bps_model.process_model = hyperopt_iteration_params.provided_model_path
-
-        # Discover gateway probabilities
-        status, current_bps_model.gateway_probabilities = hyperopt_step(
+        # Discover resource model
+        status, current_bps_model.resource_model = hyperopt_step(
             status,
-            self._discover_gateway_probabilities,
-            current_bps_model.process_model,
-            hyperopt_iteration_params.gateway_probabilities_method
+            self._discover_resource_model,
+            hyperopt_iteration_params.calendar_discovery_params
         )
 
         # Simulate candidate and evaluate its quality
@@ -136,16 +104,20 @@ class ControlFlowOptimizer:
             hyperopt_iteration_params.output_dir,
             current_bps_model.process_model
         )
-        print(f"Control-flow optimization iteration response: {response}")
+        print(f"Resource Model optimization iteration response: {response}")
 
         # Save the quality of this evaluation
-        self._process_measurements(hyperopt_iteration_params, status, evaluation_measurements)
+        self._process_measurements(
+            hyperopt_iteration_params,
+            status,
+            evaluation_measurements
+        )
 
         return response
 
     def run(self) -> HyperoptIterationParams:
         """
-        Run Control-Flow & Gateway Probabilities discovery
+        Run Resource Model (resource profiles, resource calendars and activity-resource performance) discovery.
         :return: The parameters of the best iteration of the optimization process.
         """
         # Define search space
@@ -165,34 +137,32 @@ class ControlFlowOptimizer:
         # Process best results
         results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
         best_result = results[results.status == STATUS_OK].iloc[0]
-        assert best_result['model_path'].exists(), f"Best model path {best_result['model_path']} does not exist"
 
         # Re-build parameters of best hyperopt iteration
         best_hyperopt_parameters = HyperoptIterationParams.from_hyperopt_dict(
             hyperopt_dict=best_hyperopt_params,
             optimization_metric=self.settings.optimization_metric,
-            mining_algorithm=self.settings.mining_algorithm,
-            provided_model_path=None if self._need_to_discover_model else self.initial_bps_model.process_model,
+            discovery_type=self.settings.discovery_type,
             output_dir=best_result['output_dir'],
             project_name=self.event_log.process_name,
+            model_path=self.initial_bps_model.process_model
         )
 
         # Instantiate best BPS model
         self.best_bps_model = self.initial_bps_model.deep_copy()
         # Update best process model (save it in base directory)
         self.best_bps_model.process_model = get_process_model_path(self.base_directory, self.event_log.process_name)
-        best_model_path = best_result['model_path'] if self._need_to_discover_model else self.initial_bps_model.process_model
-        shutil.copyfile(best_model_path, self.best_bps_model.process_model)
+        shutil.copyfile(best_result['model_path'], self.best_bps_model.process_model)
         # Update simulation parameters (save them in base directory)
         best_parameters_path = get_simulation_parameters_path(self.base_directory, self.event_log.process_name)
         shutil.copyfile(
             get_simulation_parameters_path(best_result['output_dir'], self.event_log.process_name),
             best_parameters_path
         )
-        self.best_bps_model.gateway_probabilities = [
-            GatewayProbabilities.from_dict(gateway_probabilities)
-            for gateway_probabilities in json.load(open(best_parameters_path, 'r'))['gateway_branching_probabilities']
-        ]
+        # Update resource model
+        self.best_bps_model.resource_model = ResourceModel.from_dict(
+            json.load(open(best_parameters_path, 'r'))
+        )
 
         # Save evaluation measurements
         self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
@@ -201,55 +171,84 @@ class ControlFlowOptimizer:
         # Return settings of the best iteration
         return best_hyperopt_parameters
 
-    def _define_search_space(self, settings: ControlFlowSettings) -> dict:
-        space = {}
-        # Add gateway probabilities method
-        if isinstance(settings.gateway_probabilities, list):
-            space['gateway_probabilities_method'] = hp.choice('gateway_probabilities_method',
-                                                              settings.gateway_probabilities)
-        else:
-            space['gateway_probabilities_method'] = settings.gateway_probabilities
-        # Process model discovery parameters if we need to discover it
-        if self._need_to_discover_model:
-            if settings.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-                # Split Miner 2, concurrency parameter
-                if isinstance(settings.concurrency, tuple):
-                    space['concurrency'] = hp.uniform('concurrency', settings.concurrency[0], settings.concurrency[1])
-                else:
-                    space['concurrency'] = settings.concurrency
-            elif settings.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
-                # Split Miner 3
-                # epsilon
-                if isinstance(settings.epsilon, tuple):
-                    space['epsilon'] = hp.uniform('epsilon', settings.epsilon[0], settings.epsilon[1])
-                else:
-                    space['epsilon'] = settings.epsilon
-                # eta
-                if isinstance(settings.eta, tuple):
-                    space['eta'] = hp.uniform('eta', settings.eta[0], settings.eta[1])
-                else:
-                    space['eta'] = settings.eta
-                # prioritize_parallelism
-                if isinstance(settings.prioritize_parallelism, list):
-                    space['prioritize_parallelism'] = hp.choice(
-                        'prioritize_parallelism',
-                        [str(value) for value in settings.prioritize_parallelism]
-                    )
-                else:
-                    space['prioritize_parallelism'] = str(settings.prioritize_parallelism)
-                # replace_or_joins
-                if isinstance(settings.replace_or_joins, list):
-                    space['replace_or_joins'] = hp.choice(
-                        'replace_or_joins',
-                        [str(value) for value in settings.replace_or_joins]
-                    )
-                else:
-                    space['replace_or_joins'] = str(settings.replace_or_joins)
-        # Return search space
-        return space
+    def _discover_resource_model(
+            self,
+            params: CalendarDiscoveryParams
+    ) -> ResourceModel:
+        print_step(f"Discovering resource model with {params}")
+        return discover_resource_model(
+            event_log=self.event_log.train_partition,
+            log_ids=self.event_log.log_ids,
+            params=params
+        )
 
     def cleanup(self):
+        print_step(f'Removing {self.base_directory}')
         remove_asset(self.base_directory)
+
+    @staticmethod
+    def _define_search_space(settings: ResourceModelSettings):
+        space = {}
+        # If discovery type requires discovery, create space for parameters
+        if settings.discovery_type in [
+            CalendarType.UNDIFFERENTIATED,
+            CalendarType.DIFFERENTIATED_BY_RESOURCE,
+            CalendarType.DIFFERENTIATED_BY_POOL
+        ]:
+            # granularity
+            if isinstance(settings.granularity, tuple):
+                space['granularity'] = hp.uniform('granularity', settings.granularity[0], settings.granularity[1])
+            else:
+                space['granularity'] = settings.granularity
+            # confidence
+            if isinstance(settings.confidence, tuple):
+                space['confidence'] = hp.uniform('confidence', settings.confidence[0], settings.confidence[1])
+            else:
+                space['confidence'] = settings.confidence
+            # support
+            if isinstance(settings.support, tuple):
+                space['support'] = hp.uniform('support', settings.support[0], settings.support[1])
+            else:
+                space['support'] = settings.support
+            # participation
+            if isinstance(settings.participation, tuple):
+                space['participation'] = hp.uniform('participation', settings.participation[0], settings.participation[1])
+            else:
+                space['participation'] = settings.participation
+        # Return space
+        return space
+
+    def _process_measurements(
+            self,
+            params: HyperoptIterationParams,
+            status: str,
+            evaluation_measurements: list
+    ):
+        data = {
+            'output_dir': params.output_dir,
+            'metric': params.optimization_metric,
+            'discovery_type': params.calendar_discovery_params.discovery_type,
+            'granularity': params.calendar_discovery_params.granularity,
+            'confidence': params.calendar_discovery_params.confidence,
+            'support': params.calendar_discovery_params.support,
+            'participation': params.calendar_discovery_params.participation,
+            'status': status
+        }
+        if status == STATUS_OK:
+            for measurement in evaluation_measurements:
+                values = {
+                    'distance': measurement['distance'],
+                    'metric': measurement['metric'],
+                }
+                values = values | data
+                self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
+        else:
+            values = {
+                'distance': 0,
+                'metric': params.optimization_metric,
+            }
+            values = values | data
+            self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
 
     @staticmethod
     def _define_response(
@@ -275,55 +274,6 @@ class ControlFlowOptimizer:
         }
         # Return updated status and processed response
         return status, response
-
-    def _process_measurements(
-            self,
-            params: HyperoptIterationParams,
-            status,
-            evaluation_measurements
-    ):
-        optimization_parameters = params.to_dict()
-        optimization_parameters['status'] = status
-
-        if status == STATUS_OK:
-            for measurement in evaluation_measurements:
-                values = {
-                    'distance': measurement['distance'],
-                    'metric': measurement['metric'],
-                }
-                values = values | optimization_parameters
-                self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
-        else:
-            values = {
-                'distance': 0,
-                'metric': params.optimization_metric,
-            }
-            values = values | optimization_parameters
-            self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
-
-    def _discover_process_model(self, params: HyperoptIterationParams) -> Path:
-        print_step(f"Discovering Process Model with {params.mining_algorithm.value}")
-        output_model_path = get_process_model_path(params.output_dir, self.event_log.process_name)
-        discover_process_model(
-            self._xes_train_log_path,
-            output_model_path,
-            params
-        )
-        return output_model_path
-
-    def _discover_gateway_probabilities(
-            self,
-            process_model: Path,
-            gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
-    ) -> List[GatewayProbabilities]:
-        print_step(f"Computing gateway probabilities with {gateway_probabilities_method}")
-        bpmn_graph = BPMNGraph.from_bpmn_path(process_model)
-        return compute_gateway_probabilities(
-            event_log=self.event_log.train_partition,
-            log_ids=self.event_log.log_ids,
-            bpmn_graph=bpmn_graph,
-            discovery_method=gateway_probabilities_method
-        )
 
     def _simulate_bps_model(
             self,

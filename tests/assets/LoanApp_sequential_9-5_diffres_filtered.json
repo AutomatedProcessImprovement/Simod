@@ -1,0 +1,3354 @@
+{
+  "gateway_branching_probabilities": [
+    {
+      "gateway_id": "node_1d1fd3af-bbb9-4e72-a227-1a6274528039",
+      "probabilities": [
+        {
+          "path_id": "node_8a695744-dff9-430d-b9e0-f9b225b07fa0",
+          "value": 0.44424778761061945
+        },
+        {
+          "path_id": "node_82ce1a41-c80a-4c0c-a8be-08fb47070c65",
+          "value": 0.5557522123893806
+        }
+      ]
+    },
+    {
+      "gateway_id": "node_a71bce1b-8c58-41ef-ac3b-cf3e28c40580",
+      "probabilities": [
+        {
+          "path_id": "node_a054319b-fd59-4e08-bf75-435f4129b3a6",
+          "value": 0.428169014084507
+        },
+        {
+          "path_id": "node_5900109b-cbd7-4c74-b7ee-e18238a715e4",
+          "value": 0.571830985915493
+        }
+      ]
+    },
+    {
+      "gateway_id": "node_5126a476-5895-4312-ace0-44c4b1a4aeaf",
+      "probabilities": [
+        {
+          "path_id": "node_022ea335-8d8c-4f38-be47-0c6589b12178",
+          "value": 0.7974481658692185
+        },
+        {
+          "path_id": "node_da6832b3-82aa-4c89-8ee8-18773525e2a8",
+          "value": 0.2025518341307815
+        }
+      ]
+    },
+    {
+      "gateway_id": "node_8e197b20-151f-48a2-bbc7-331b87839a13",
+      "probabilities": [
+        {
+          "path_id": "node_e85ed785-0dfc-41c7-9e10-c9bf1fbdaa1e",
+          "value": 0.4843517138599106
+        },
+        {
+          "path_id": "node_957e6770-3fb6-41b5-b1bc-873e739e5743",
+          "value": 0.5156482861400894
+        }
+      ]
+    }
+  ],
+  "arrival_time_calendar": [
+    {
+      "from": "MONDAY",
+      "to": "MONDAY",
+      "beginTime": "09:00:00",
+      "endTime": "17:00:00"
+    },
+    {
+      "from": "TUESDAY",
+      "to": "TUESDAY",
+      "beginTime": "09:00:00",
+      "endTime": "18:00:00"
+    },
+    {
+      "from": "WEDNESDAY",
+      "to": "WEDNESDAY",
+      "beginTime": "09:00:00",
+      "endTime": "18:00:00"
+    },
+    {
+      "from": "THURSDAY",
+      "to": "THURSDAY",
+      "beginTime": "09:00:00",
+      "endTime": "18:00:00"
+    },
+    {
+      "from": "FRIDAY",
+      "to": "FRIDAY",
+      "beginTime": "09:00:00",
+      "endTime": "18:00:00"
+    }
+  ],
+  "arrival_time_distribution": {
+    "distribution_name": "norm",
+    "distribution_params": [
+      {
+        "value": 702.7692307692307
+      },
+      {
+        "value": 410.28135821580815
+      },
+      {
+        "value": 0.0
+      },
+      {
+        "value": 1800.0
+      }
+    ]
+  },
+  "resource_profiles": [
+    {
+      "id": "UNDIFFERENTIATED_RESOURCE_PROFILE",
+      "name": "UNDIFFERENTIATED_RESOURCE_PROFILE",
+      "resource_list": [
+        {
+          "id": "Clerk-000008",
+          "name": "Clerk-000008",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Clerk-000006",
+          "name": "Clerk-000006",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Slow Loan Officer-000001",
+          "name": "Slow Loan Officer-000001",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Loan Officer-000001",
+          "name": "Loan Officer-000001",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Senior Officer-000002",
+          "name": "Senior Officer-000002",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Clerk-000003",
+          "name": "Clerk-000003",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Loan Officer-000004",
+          "name": "Loan Officer-000004",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Clerk-000004",
+          "name": "Clerk-000004",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Clerk-000001",
+          "name": "Clerk-000001",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Loan Officer-000002",
+          "name": "Loan Officer-000002",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Clerk-000005",
+          "name": "Clerk-000005",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Clerk-000007",
+          "name": "Clerk-000007",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Clerk-000002",
+          "name": "Clerk-000002",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Applicant-000001",
+          "name": "Applicant-000001",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Loan Officer-000003",
+          "name": "Loan Officer-000003",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        },
+        {
+          "id": "Senior Officer-000001",
+          "name": "Senior Officer-000001",
+          "amount": 1,
+          "cost_per_hour": 20,
+          "calendar": "Undifferentiated_calendar",
+          "assignedTasks": [
+            "Check  application  form completeness",
+            "Check credit history",
+            "Assess loan risk",
+            "Design loan offer",
+            "Approve Loan Offer",
+            "Prepare acceptance pack",
+            "Approve and send\u00a0 acceptance pack",
+            "Consider re-design loan offer",
+            "Cancel application",
+            "Reject application",
+            "Return application back to applicant",
+            "Applicant completes form",
+            "Approve application"
+          ]
+        }
+      ]
+    }
+  ],
+  "resource_calendars": [
+    {
+      "id": "Undifferentiated_calendar",
+      "name": "Undifferentiated_calendar",
+      "time_periods": [
+        {
+          "from": "MONDAY",
+          "to": "MONDAY",
+          "beginTime": "09:00:00",
+          "endTime": "18:00:00"
+        },
+        {
+          "from": "TUESDAY",
+          "to": "TUESDAY",
+          "beginTime": "09:00:00",
+          "endTime": "18:00:00"
+        },
+        {
+          "from": "WEDNESDAY",
+          "to": "WEDNESDAY",
+          "beginTime": "09:00:00",
+          "endTime": "18:00:00"
+        },
+        {
+          "from": "THURSDAY",
+          "to": "THURSDAY",
+          "beginTime": "09:00:00",
+          "endTime": "18:00:00"
+        },
+        {
+          "from": "FRIDAY",
+          "to": "FRIDAY",
+          "beginTime": "09:00:00",
+          "endTime": "18:00:00"
+        }
+      ]
+    }
+  ],
+  "task_resource_distribution": [
+    {
+      "task_id": "Applicant completes form",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 439.37007890944824
+            },
+            {
+              "value": 3600.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Approve Loan Offer",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 1200.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Approve and send\u00a0 acceptance pack",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Approve application",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Assess loan risk",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "lognorm",
+          "distribution_params": [
+            {
+              "value": 0.6505036359413269
+            },
+            {
+              "value": 0
+            },
+            {
+              "value": 1558.7244448485212
+            },
+            {
+              "value": 1200.0
+            },
+            {
+              "value": 7200.000002999965
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Cancel application",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 300.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Check  application  form completeness",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 241.1483254433806
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Check credit history",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 291.6000001149996
+            },
+            {
+              "value": 2700.0
+            },
+            {
+              "value": 6300.000002999965
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Consider re-design loan offer",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 900.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Design loan offer",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Prepare acceptance pack",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 252.16095390610963
+            },
+            {
+              "value": 2100.0
+            },
+            {
+              "value": 5700.000002999965
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Reject application",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "fix",
+          "distribution_params": [
+            {
+              "value": 600.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "Return application back to applicant",
+      "resources": [
+        {
+          "resource_id": "Clerk-000008",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000006",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Slow Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000004",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000005",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000007",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Clerk-000002",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Applicant-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Loan Officer-000003",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        },
+        {
+          "resource_id": "Senior Officer-000001",
+          "distribution_name": "expon",
+          "distribution_params": [
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 325.98425209842435
+            },
+            {
+              "value": 1800.0
+            },
+            {
+              "value": 5400.000002999965
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

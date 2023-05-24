@@ -59,3 +59,11 @@ def parse_single_value_or_interval(value: Union[float, List[float]]) -> Union[fl
         return value
     else:
         return value[0], value[1]
+
+
+def get_process_model_path(base_dir: Path, process_name: str) -> Path:
+    return base_dir / f"{process_name}.bpmn"
+
+
+def get_simulation_parameters_path(base_dir: Path, process_name: str) -> Path:
+    return base_dir / f"{process_name}.json"

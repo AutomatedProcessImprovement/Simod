@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List
 
 import pandas as pd
 from pix_framework.calendar.availability import absolute_unavailability_intervals_within
@@ -60,26 +60,32 @@ def discover_activity_resource_distribution(
         event_log: pd.DataFrame,
         log_ids: EventLogIDs,
         resource_profiles: List[ResourceProfile],
-        resource_calendars: Dict[str, RCalendar],
+        resource_calendars: List[RCalendar],
 ) -> List[ActivityResourceDistribution]:
     """
-    Discover the performance (activity duration) for each resource in [resource_profiles].
+    Discover the performance (activity duration) for each resource profile in [resource_profiles]. Treats
+    each resource profile as a pool with shared performance (i.e., all the resources of a profile will
+    have the same performance for an activity A, computed with the durations of the executions of A performed
+    by any resource in that profile).
 
     :param event_log: event log to discover the activity durations from.
     :param log_ids: column IDs of the event log.
     :param resource_profiles: list of resource profiles with their ID and resources.
     :param resource_calendars: list of calendars containing their ID and working intervals.
 
-    :return: list of duration distribution per activity.
+    :return: list of duration distribution per activity and resource.
     """
     # Go over each resource profile, computing the corresponding activity durations
     activity_resource_distributions = []
     for resource_profile in resource_profiles:
-        assert len(
-            resource_profile.resources) > 0, "Trying to compute activity performance of a resource profile with no resources."
+        assert len(resource_profile.resources) > 0, "Trying to compute activity performance of an empty resource profile."
         # Get the calendar of the resource profile
         calendar_id = resource_profile.resources[0].calendar_id
-        calendar = resource_calendars[calendar_id]
+        calendar = next(
+            calendar
+            for calendar in resource_calendars
+            if calendar.calendar_id == calendar_id
+        )
         # Get the list of resources of this profile and the activities assigned to them
         resources = [resource.id for resource in resource_profile.resources]
         assigned_activities = resource_profile.resources[0].assigned_tasks
