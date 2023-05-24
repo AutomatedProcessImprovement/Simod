@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 
@@ -13,20 +12,10 @@ def get_activities_ids_by_name(process_graph: nx.DiGraph) -> dict:
     return {item[0]: item[1] for item in items}  # {name: id}
 
 
-def from_bpmn_reader(bpmn, drawing=False, verbose=True) -> nx.DiGraph:
+def from_bpmn_reader(bpmn, verbose=True) -> nx.DiGraph:
     """Creates a process graph from a BPMNReader instance."""
     g = _load_process_structure(bpmn, verbose)
-    if drawing:
-        _graph_network_x(g)
-    # sup.print_done_task()
     return g
-
-
-def _graph_network_x(g):
-    pos = nx.spring_layout(g)
-    nx.draw_networkx(g, pos, with_labels=True)
-    plt.draw()
-    plt.show()
 
 
 def _find_node_num(g, id):
