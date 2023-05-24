@@ -2,9 +2,8 @@ from dataclasses import dataclass, asdict
 from typing import List
 
 import pandas as pd
+from pix_framework.discovery.resource_pools import discover_resource_pools
 from pix_framework.log_ids import EventLogIDs
-
-from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
 
 
 @dataclass
@@ -169,25 +168,14 @@ def discover_pool_resource_profiles(
 
     :return: list of resource profiles with the observed resources grouped by pool.
     """
-    # Discover resource pools
-    analyzer = ResourcePoolDiscoverer(
-        event_log[[log_ids.activity, log_ids.resource]],
-        activity_key=log_ids.activity,
-        resource_key=log_ids.resource
-    )
-    # Map each pool ID to its resources
-    pools = {}
-    for item in analyzer.resource_table:
-        pool_id = item['role']
-        resources = pools.get(pool_id, [])
-        resources += [item['resource']]
-        pools[pool_id] = resources
-    # Create profile for each pool
+    pools = discover_resource_pools(event_log, log_ids)
+
     resource_profiles = []
     for pool_id in pools:
         # Get list of performed activities
         filtered_log = event_log[event_log[log_ids.resource].isin(pools[pool_id])]
         assigned_activities = list(filtered_log[log_ids.activity].unique())
+
         # Add resource profile with all the resources of this pool
         resource_profiles += [
             ResourceProfile(
@@ -206,5 +194,6 @@ def discover_pool_resource_profiles(
                 ]
             )
         ]
+
     # Return resource profiles
     return resource_profiles

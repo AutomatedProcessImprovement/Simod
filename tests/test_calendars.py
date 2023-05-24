@@ -2,13 +2,12 @@ import uuid
 
 import pandas as pd
 import pytest
+from pix_framework.discovery.calendar_factory import CalendarFactory
 from pix_framework.discovery.case_arrival import discover_case_arrival_calendar
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import APROMORE_LOG_IDS
-from prosimos.resource_calendar import CalendarFactory
 
-from simod.discovery.resource_pool_discoverer import ResourcePoolDiscoverer
-from simod.event_log.utilities import read, convert_xes_to_csv
+from simod.event_log.utilities import convert_xes_to_csv
 
 
 @pytest.mark.integration
@@ -40,18 +39,6 @@ def test_calendar_module(entry_point):
 
     assert len(calendar) > 0
     assert "Kim Passa" in calendar
-
-
-@pytest.mark.integration
-def test_resource_pool_analyzer(entry_point):
-    log_path = entry_point / "PurchasingExample.xes"
-    log, log_path_csv = read(log_path)
-    result = ResourcePoolDiscoverer(
-        log, activity_key="concept:name", resource_key="org:resource"
-    )
-    assert result.resource_table
-    assert len(result.resource_table) > 0
-    log_path_csv.unlink()
 
 
 @pytest.mark.parametrize("log_name", ["DifferentiatedCalendars.csv"])
