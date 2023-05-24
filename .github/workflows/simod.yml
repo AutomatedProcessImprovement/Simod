@@ -24,7 +24,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 80
     outputs:
       version: ${{ steps.versioning.outputs.version }}
       docker_image: ${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
