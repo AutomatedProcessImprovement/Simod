@@ -1306,14 +1306,14 @@ tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "pa
 
 [[package]]
 name = "pix-framework"
-version = "0.8.4"
+version = "0.8.7"
 description = "Process Improvement Explorer Framework contains process discovery and improvement modules of the Process Improvement Explorer project."
 category = "main"
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "pix_framework-0.8.4-py3-none-any.whl", hash = "sha256:c9b22abc0074dab7d7cc7415c3d097a400bd2c55817aadc65724b4704980caa1"},
-    {file = "pix_framework-0.8.4.tar.gz", hash = "sha256:808bbd5bd99029dee8066bca2412c7bf52360f5502f42672e1392e52bdd85ba7"},
+    {file = "pix_framework-0.8.7-py3-none-any.whl", hash = "sha256:431491159096b321164e3e4dcd759ada2954a75daa7333aa919457e252ae9c27"},
+    {file = "pix_framework-0.8.7.tar.gz", hash = "sha256:6548e06830ef788ddabc3be38e91f8950fb9f466c42da00b9396cd35acad172f"},
 ]
 
 [package.dependencies]
@@ -1402,11 +1402,11 @@ virtualenv = ">=20.10.0"
 
 [[package]]
 name = "prosimos"
-version = "1.2.3"
+version = "1.2.4"
 description = ""
 category = "main"
 optional = false
-python-versions = ">=3.8,<3.12"
+python-versions = ">=3.9,<3.12"
 files = []
 develop = false
 
@@ -1414,6 +1414,7 @@ develop = false
 click = "^8.1.3"
 numpy = "^1.24.3"
 pandas = "^2.0.1"
+pix-framework = "^0.8.7"
 pm4py = "^2.7.4"
 python-dateutil = "^2.8.2"
 pytz = "^2023.3"
@@ -1423,7 +1424,7 @@ scipy = "^1.10.1"
 type = "git"
 url = "https://github.com/AutomatedProcessImprovement/Prosimos.git"
 reference = "main"
-resolved_reference = "a6b13d79b6bb73c226dd76089c60563b738cff3b"
+resolved_reference = "e26ca8ddbc9acd4e32dd14261a47e32faaf87e94"
 
 [[package]]
 name = "psutil"
@@ -2115,4 +2116,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "b1c7f759987690511e4480e0c69f19a66769fe5dde0da49f631dbc870a05163a"
+content-hash = "e832c5199c4ef32624ec1da8280fe94e506eaa078fcff04a353bc2c9c244bc16"
