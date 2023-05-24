@@ -63,14 +63,14 @@ jobs:
 
       - name: Generate licenses.md
         run: |
-          pip install pip-licenses
-          pip-licenses --with-system --with-urls --format=markdown --output-file=licenses.md
+          poetry run pip install pip-licenses
+          poetry run pip-licenses --with-system --with-urls --format=markdown --output-file=licenses.md
         if: github.ref == 'refs/heads/master'
 
       - name: Upload licenses.md
         uses: actions/upload-artifact@v3
         with:
-          name: licenses
+          name: licenses.md
           path: licenses.md
         if: github.ref == 'refs/heads/master'
 
@@ -124,15 +124,8 @@ jobs:
       - name: Upload PyLint output
         uses: actions/upload-artifact@v3
         with:
-          name: pylint
+          name: pylint.txt
           path: /usr/src/Simod/pylint.txt
-
-      - name: Upload Simod output
-        uses: actions/upload-artifact@v3
-        with:
-          name: output
-          path: /usr/src/Simod/outputs
-        if: github.ref == 'refs/heads/master'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
