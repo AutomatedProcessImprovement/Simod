@@ -61,6 +61,19 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
 
+      - name: Generate licenses.md
+        run: |
+          pip install pip-licenses
+          pip-licenses --with-system --with-urls --format=markdown --output-file=licenses.md
+        if: github.ref == 'refs/heads/master'
+
+      - name: Upload licenses.md
+        uses: actions/upload-artifact@v3
+        with:
+          name: licenses
+          path: licenses.md
+        if: github.ref == 'refs/heads/master'
+
       - name: Generate changelog
         run: |
           echo "# Changelog" > CHANGELOG.md
@@ -69,11 +82,13 @@ jobs:
           git log --pretty=format:"%h - %s (%an)" $(git describe --tags --abbrev=0)..HEAD >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "\`\`\`" >> CHANGELOG.md
+        if: github.ref == 'refs/heads/master'
 
       - name: Assign a version tag
         run: |
           git tag ${{ steps.versioning.outputs.version }}
           git push --tags
+        if: github.ref == 'refs/heads/master'
 
       - name: Create a release
         uses: softprops/action-gh-release@v1
@@ -82,6 +97,7 @@ jobs:
             dist/*
           tag_name: ${{ steps.versioning.outputs.version }}
           body_path: CHANGELOG.md
+        if: github.ref == 'refs/heads/master'
 
   test:
     needs: [ build ]
@@ -103,13 +119,20 @@ jobs:
         shell: bash
         run: |
           cd /usr/src/Simod
-          poetry run pylint -j 0 --exit-zero src/simod
+          poetry run pylint -j 0 --exit-zero src/simod > pylint.txt
+
+      - name: Upload PyLint output
+        uses: actions/upload-artifact@v3
+        with:
+          name: pylint
+          path: /usr/src/Simod/pylint.txt
 
       - name: Upload Simod output
         uses: actions/upload-artifact@v3
         with:
           name: output
           path: /usr/src/Simod/outputs
+        if: github.ref == 'refs/heads/master'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
