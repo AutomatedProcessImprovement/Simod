@@ -1,7 +1,7 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import pandas as pd
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
@@ -22,6 +22,7 @@ from simod.control_flow.settings import (
     HyperoptIterationParams as ControlFlowHyperoptIterationParams,
 )
 from simod.event_log.event_log import EventLog
+from simod.extraneous_delays.optimizer import ExtraneousDelayTimersOptimizer
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.settings import (
     HyperoptIterationParams as ResourceModelHyperoptIterationParams,
@@ -29,6 +30,7 @@ from simod.resource_model.settings import (
 from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
+from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
 from simod.simulation.parameters.resource_model import discover_resource_model
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
@@ -54,6 +56,8 @@ class Simod:
     _control_flow_optimizer: Optional[ControlFlowOptimizer]
     # Optimizer for the Resource Model
     _resource_model_optimizer: Optional[ResourceModelOptimizer]
+    # Optimizer for the Extraneous Delay Timers
+    _extraneous_delay_timers_optimizer: Optional[ExtraneousDelayTimersOptimizer]
 
     def __init__(
         self,
@@ -71,14 +75,16 @@ class Simod:
             self._output_dir = output_dir
         self._control_flow_dir = self._output_dir / "control-flow"
         self._resource_model_dir = self._output_dir / "resource_model"
+        self._extraneous_delay_timers_dir = self._output_dir / "extraneous-delay-timers"
         self._best_result_dir = self._output_dir / "best_result"
         create_folder(self._control_flow_dir)
         create_folder(self._resource_model_dir)
+        create_folder(self._extraneous_delay_timers_dir)
         create_folder(self._best_result_dir)
 
     def run(self):
         """
-        Run SIMOD main structure
+        Optimizes the BPS model with the given event log and settings.
         """
 
         # --- Discover Default Case Arrival and Resource Allocation models --- #
@@ -105,27 +111,10 @@ class Simod:
         self._best_bps_model.resource_model = self._resource_model_optimizer.best_bps_model.resource_model
 
         # --- Extraneous Delays Discovery --- #
-        # TODO add support for extraneous after calendars, creating the timers not enhancing directly the model
-        # simulation_model = None
-        # if self._settings.extraneous_activity_delays is not None:
-        #    print_section('Discovering extraneous delays')
-        #    # Hardcoded from here for now, should work with the BPSModel in the future
-        #    parameters_path = self._control_flow_optimizer.base_directory / f"{self._event_log.process_name}.json"
-        #    with parameters_path.open() as f:
-        #        parameters = json.load(f)
-        #    simulation_model, model_path, parameters_path = discover_extraneous_delay_timers(
-        #        self._event_log.train_validation_partition,
-        #        self._event_log.log_ids,
-        #        self._best_bps_model.process_model,
-        #        parameters,
-        #        self._settings.extraneous_activity_delays.optimization_metric,
-        #        base_dir=self._best_result_dir,
-        #        num_iterations=self._settings.extraneous_activity_delays.num_iterations,
-        #        num_evaluation_simulations=self._settings.common.repetitions,
-        #        max_alpha=50,
-        #    )
-        # else:
-        #    model_path = self._best_bps_model.process_model
+        print_section("Optimizing extraneous delay timers")
+        timers = self.optimize_extraneous_activity_delays()
+        self._best_bps_model.extraneous_delays = timers
+        # TODO: write timers to BPMN before simulation
 
         # --- Final evaluation --- #
         print_section("Evaluating final BPS model")
@@ -205,6 +194,17 @@ class Simod:
         )
         best_resource_model_params = self._resource_model_optimizer.run()
         return best_resource_model_params
+
+    def optimize_extraneous_activity_delays(self) -> List[ExtraneousDelay]:
+        settings = self._settings.extraneous_activity_delays
+        self._extraneous_delay_timers_optimizer = ExtraneousDelayTimersOptimizer(
+            event_log=self._event_log,
+            bps_model=self._best_bps_model,
+            settings=settings,
+            base_directory=self._extraneous_delay_timers_dir,
+        )
+        timers = self._extraneous_delay_timers_optimizer.run()
+        return timers
 
     def _evaluate_model(self, bps_model: BPSModel, output_dir: Path):
         num_simulations = 10  # TODO: make this a parameter in configuration

@@ -5,6 +5,7 @@ from typing import Optional, List
 from pix_framework.discovery.case_arrival import CaseArrivalModel
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 
+from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
 from simod.simulation.parameters.resource_model import ResourceModel
 
 
@@ -18,56 +19,74 @@ class BPSModel:
     gateway_probabilities: Optional[List[GatewayProbabilities]] = None
     case_arrival_model: Optional[CaseArrivalModel] = None
     resource_model: Optional[ResourceModel] = None
+    extraneous_delays: Optional[List[ExtraneousDelay]] = None
 
-    # extraneous_delays: Optional[List[ExtraneousDelay]]
     # case_attributes: Optional[List[CaseAttribute]]
     # prioritization_rules: Optional[List[PrioritizationRule]]
     # batching_rules: Optional[List[BatchingRule]]
 
     def to_dict(self) -> dict:
-        dictionary = {}
-        # Add model path if present
+        attributes = {}
+
         if self.process_model is not None:
-            dictionary |= {"process_model": str(self.process_model)}
-        # Add gateway probabilities if present
+            attributes |= {"process_model": str(self.process_model)}
+
         if self.gateway_probabilities is not None:
-            dictionary |= {
+            attributes |= {
                 "gateway_branching_probabilities": [
                     gateway_probability.to_dict() for gateway_probability in self.gateway_probabilities
                 ]
             }
-        # Add case arrival model if present
+
         if self.case_arrival_model is not None:
-            dictionary |= self.case_arrival_model.to_dict()
-        # Add resource model if present
+            attributes |= self.case_arrival_model.to_dict()
+
         if self.resource_model is not None:
-            dictionary |= self.resource_model.to_dict()
-        # Return dictionary with current parameters
-        return dictionary
+            attributes |= self.resource_model.to_dict()
+
+        # TODO: extraneous delays?
+
+        return attributes
 
     def deep_copy(self) -> "BPSModel":
         return BPSModel.from_dict(self.to_dict())
 
     @staticmethod
     def from_dict(bps_model: dict) -> "BPSModel":
-        return BPSModel(
-            process_model=Path(bps_model["process_model"]) if "process_model" in bps_model else None,
-            gateway_probabilities=[
+        process_model_path = Path(bps_model["process_model"]) if "process_model" in bps_model else None
+
+        gateway_probabilities = (
+            [
                 GatewayProbabilities.from_dict(gateway_probability)
                 for gateway_probability in bps_model["gateway_branching_probabilities"]
             ]
             if "gateway_branching_probabilities" in bps_model
-            else None,
-            case_arrival_model=CaseArrivalModel.from_dict(bps_model)
+            else None
+        )
+
+        case_arrival_model = (
+            CaseArrivalModel.from_dict(bps_model)
             if ("arrival_time_distribution" in bps_model and "arrival_time_calendar" in bps_model)
-            else None,
-            resource_model=ResourceModel.from_dict(bps_model)
+            else None
+        )
+
+        resource_model = (
+            ResourceModel.from_dict(bps_model)
             if (
                 "resource_profiles" in bps_model
                 and "resource_calendars" in bps_model
                 and "task_resource_distribution" in bps_model
             )
-            else None,
+            else None
+        )
+
+        # TODO: extraneous delays?
+
+        return BPSModel(
+            process_model=process_model_path,
+            gateway_probabilities=gateway_probabilities,
+            case_arrival_model=case_arrival_model,
+            resource_model=resource_model,
         )
 
 
