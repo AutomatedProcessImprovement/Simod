@@ -1,13 +1,9 @@
-FROM nokal/simod-base:v2.1.0 as base
-
-RUN apt clean && rm -rf /var/lib/apt/lists/*
-RUN pip install -U pip
-
-FROM base as builder
+FROM nokal/simod-base:2.2.0
 
 WORKDIR /usr/src/Simod
-ADD . .
-RUN pip install poetry
+COPY . .
+RUN pip install -U pip \
+    && pip install poetry
 RUN poetry install
 
 ENV DISPLAY=:99

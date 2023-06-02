@@ -1,23 +1,25 @@
 FROM openjdk:8-jre-slim-bullseye
 
-RUN apt update
-RUN apt install -y \
+RUN apt-get update && apt-get install -y \
+    git \
+    glpk-utils \
+    libblas-dev \
+    libglpk-dev \
+    liblapack-dev \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
     python3 \
     python3-pip \
     python3-venv \
-    libxrender1 \
-    libxext6 \
-    libxtst6 \
-    xvfb \
-    x11-utils \
-    vim \
-    git \
-    libblas-dev \
-    liblapack-dev \
-    libglpk-dev \
     python3-cvxopt \
-    glpk-utils \
-    libglpk-dev
+    x11-utils \
+    xvfb
+
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
 
 # pm4py requires cvxopt with glpk, for arm64 it needs to be compiled from source
 WORKDIR /usr/src/
