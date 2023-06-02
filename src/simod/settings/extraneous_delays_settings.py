@@ -10,24 +10,24 @@ class ExtraneousDelaysSettings:
     num_iterations: int = 10
 
     @staticmethod
-    def default() -> 'ExtraneousDelaysSettings':
+    def default() -> "ExtraneousDelaysSettings":
         return ExtraneousDelaysSettings(
             optimization_metric=ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD,
             num_iterations=10,
         )
 
     @staticmethod
-    def from_dict(config: Union[dict, None]) -> Union['ExtraneousDelaysSettings', None]:
+    def from_dict(config: Union[dict, None]) -> Union["ExtraneousDelaysSettings", None]:
         if config is None:
             return None
 
-        optimization_metric = config.get('optimization_metric')
+        optimization_metric = config.get("optimization_metric")
         if optimization_metric is not None:
             optimization_metric = ExtraneousDelaysSettings._match_metric(optimization_metric)
         else:
             optimization_metric = ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD
 
-        num_iterations = config.get('num_iterations', 10)
+        num_iterations = config.get("num_iterations", 10)
 
         return ExtraneousDelaysSettings(
             optimization_metric=optimization_metric,
@@ -36,21 +36,21 @@ class ExtraneousDelaysSettings:
 
     def to_dict(self) -> dict:
         return {
-            'optimization_metric': str(self.optimization_metric.name),
-            'num_iterations': self.num_iterations,
+            "optimization_metric": str(self.optimization_metric.name),
+            "num_iterations": self.num_iterations,
         }
 
     @staticmethod
     def _match_metric(metric: str) -> ExtraneousActivityDelaysOptimizationMetric:
         metric = metric.lower()
 
-        if metric == 'absolute_emd':
+        if metric == "absolute_emd":
             return ExtraneousActivityDelaysOptimizationMetric.ABSOLUTE_EMD
-        elif metric == 'cycle_time':
+        elif metric == "cycle_time":
             return ExtraneousActivityDelaysOptimizationMetric.CYCLE_TIME
-        elif metric == 'circadian_emd':
+        elif metric == "circadian_emd":
             return ExtraneousActivityDelaysOptimizationMetric.CIRCADIAN_EMD
-        elif metric == 'relative_emd':
+        elif metric == "relative_emd":
             return ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD
         else:
-            raise ValueError(f'Unknown metric {metric}')
+            raise ValueError(f"Unknown metric {metric}")

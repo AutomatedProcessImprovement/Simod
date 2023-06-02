@@ -9,6 +9,7 @@ from pix_framework.log_ids import EventLogIDs
 @dataclass
 class Resource:
     """Simulation resource compatible with Prosimos."""
+
     id: str
     name: str
     amount: int
@@ -17,20 +18,21 @@ class Resource:
     assigned_tasks: List[str]
 
     @staticmethod
-    def from_dict(resource: dict) -> 'Resource':
+    def from_dict(resource: dict) -> "Resource":
         return Resource(
-            id=resource['id'],
-            name=resource['name'],
-            amount=int(resource['amount']),
-            cost_per_hour=float(resource['cost_per_hour']),
-            calendar_id=resource['calendar'],
-            assigned_tasks=resource['assignedTasks']
+            id=resource["id"],
+            name=resource["name"],
+            amount=int(resource["amount"]),
+            cost_per_hour=float(resource["cost_per_hour"]),
+            calendar_id=resource["calendar"],
+            assigned_tasks=resource["assignedTasks"],
         )
 
 
 @dataclass
 class ResourceProfile:
     """Simulation resource profile compatible with Prosimos."""
+
     id: str
     name: str
     resources: List[Resource]
@@ -40,32 +42,29 @@ class ResourceProfile:
         result = asdict(self)
 
         # renaming for Prosimos
-        result['resource_list'] = result.pop('resources')
-        for resource in result['resource_list']:
-            resource['calendar'] = resource.pop('calendar_id')
-            resource['assignedTasks'] = resource.pop('assigned_tasks')
+        result["resource_list"] = result.pop("resources")
+        for resource in result["resource_list"]:
+            resource["calendar"] = resource.pop("calendar_id")
+            resource["assignedTasks"] = resource.pop("assigned_tasks")
 
         return result
 
     @staticmethod
-    def from_dict(resource_profile: dict) -> 'ResourceProfile':
+    def from_dict(resource_profile: dict) -> "ResourceProfile":
         return ResourceProfile(
-            id=resource_profile['id'],
-            name=resource_profile['name'],
-            resources=[
-                Resource.from_dict(resource)
-                for resource in resource_profile['resource_list']
-            ]
+            id=resource_profile["id"],
+            name=resource_profile["name"],
+            resources=[Resource.from_dict(resource) for resource in resource_profile["resource_list"]],
         )
 
 
 def discover_undifferentiated_resource_profile(
-        event_log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        calendar_id: str = "Undifferentiated_calendar",
-        cost_per_hour: float = 20,
-        keep_log_names: bool = True
-) -> 'ResourceProfile':
+    event_log: pd.DataFrame,
+    log_ids: EventLogIDs,
+    calendar_id: str = "Undifferentiated_calendar",
+    cost_per_hour: float = 20,
+    keep_log_names: bool = True,
+) -> "ResourceProfile":
     """
     Discover undifferentiated resource profile, by either keeping all the resource names observed in the event log
     as resources under that single profile, or by creating a single resource with the number of observed resources
@@ -87,8 +86,12 @@ def discover_undifferentiated_resource_profile(
         # Create a resource for each resource name in the log
         resources = [
             Resource(
-                id=name, name=name, amount=1, cost_per_hour=cost_per_hour,
-                calendar_id=calendar_id, assigned_tasks=assigned_activities
+                id=name,
+                name=name,
+                amount=1,
+                cost_per_hour=cost_per_hour,
+                calendar_id=calendar_id,
+                assigned_tasks=assigned_activities,
             )
             for name in event_log[log_ids.resource].unique()
         ]
@@ -101,22 +104,18 @@ def discover_undifferentiated_resource_profile(
                 amount=event_log[log_ids.resource].nunique(),
                 cost_per_hour=cost_per_hour,
                 calendar_id=calendar_id,
-                assigned_tasks=assigned_activities
+                assigned_tasks=assigned_activities,
             )
         ]
     # Return resource profile with all the single resources
     return ResourceProfile(
-        id="Undifferentiated_resource_profile",
-        name="Undifferentiated_resource_profile",
-        resources=resources
+        id="Undifferentiated_resource_profile", name="Undifferentiated_resource_profile", resources=resources
     )
 
 
 def discover_differentiated_resource_profiles(
-        event_log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        cost_per_hour: float = 20
-) -> List['ResourceProfile']:
+    event_log: pd.DataFrame, log_ids: EventLogIDs, cost_per_hour: float = 20
+) -> List["ResourceProfile"]:
     """
     Discover differentiated resource profiles (one resource profile per resource observed in the log).
 
@@ -144,9 +143,9 @@ def discover_differentiated_resource_profiles(
                         amount=1,
                         cost_per_hour=cost_per_hour,
                         calendar_id=f"{resource_name}_calendar",
-                        assigned_tasks=assigned_activities
+                        assigned_tasks=assigned_activities,
                     )
-                ]
+                ],
             )
         ]
     # Return list of profiles
@@ -154,10 +153,8 @@ def discover_differentiated_resource_profiles(
 
 
 def discover_pool_resource_profiles(
-        event_log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        cost_per_hour: float = 20
-) -> List['ResourceProfile']:
+    event_log: pd.DataFrame, log_ids: EventLogIDs, cost_per_hour: float = 20
+) -> List["ResourceProfile"]:
     """
     Discover resource profiles grouped by pools. Discover pools of resources with the same characteristics, and
     create a resource profile per pool.
@@ -188,10 +185,10 @@ def discover_pool_resource_profiles(
                         amount=1,
                         cost_per_hour=cost_per_hour,
                         calendar_id=f"{pool_id}_calendar",
-                        assigned_tasks=assigned_activities
+                        assigned_tasks=assigned_activities,
                     )
                     for resource_name in pools[pool_id]
-                ]
+                ],
             )
         ]
 

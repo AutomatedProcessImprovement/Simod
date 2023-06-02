@@ -28,13 +28,12 @@ class BPSModel:
         dictionary = {}
         # Add model path if present
         if self.process_model is not None:
-            dictionary |= {'process_model': str(self.process_model)}
+            dictionary |= {"process_model": str(self.process_model)}
         # Add gateway probabilities if present
         if self.gateway_probabilities is not None:
             dictionary |= {
-                'gateway_branching_probabilities': [
-                    gateway_probability.to_dict()
-                    for gateway_probability in self.gateway_probabilities
+                "gateway_branching_probabilities": [
+                    gateway_probability.to_dict() for gateway_probability in self.gateway_probabilities
                 ]
             }
         # Add case arrival model if present
@@ -46,27 +45,31 @@ class BPSModel:
         # Return dictionary with current parameters
         return dictionary
 
-    def deep_copy(self) -> 'BPSModel':
+    def deep_copy(self) -> "BPSModel":
         return BPSModel.from_dict(self.to_dict())
 
     @staticmethod
-    def from_dict(bps_model: dict) -> 'BPSModel':
+    def from_dict(bps_model: dict) -> "BPSModel":
         return BPSModel(
-            process_model=Path(bps_model['process_model']) if 'process_model' in bps_model else None,
+            process_model=Path(bps_model["process_model"]) if "process_model" in bps_model else None,
             gateway_probabilities=[
                 GatewayProbabilities.from_dict(gateway_probability)
-                for gateway_probability in bps_model['gateway_branching_probabilities']
-            ] if 'gateway_branching_probabilities' in bps_model else None,
-            case_arrival_model=CaseArrivalModel.from_dict(bps_model) if (
-                    'arrival_time_distribution' in bps_model and
-                    'arrival_time_calendar' in bps_model
-            ) else None,
-            resource_model=ResourceModel.from_dict(bps_model) if (
-                    'resource_profiles' in bps_model and
-                    'resource_calendars' in bps_model and
-                    'task_resource_distribution' in bps_model
-            ) else None
+                for gateway_probability in bps_model["gateway_branching_probabilities"]
+            ]
+            if "gateway_branching_probabilities" in bps_model
+            else None,
+            case_arrival_model=CaseArrivalModel.from_dict(bps_model)
+            if ("arrival_time_distribution" in bps_model and "arrival_time_calendar" in bps_model)
+            else None,
+            resource_model=ResourceModel.from_dict(bps_model)
+            if (
+                "resource_profiles" in bps_model
+                and "resource_calendars" in bps_model
+                and "task_resource_distribution" in bps_model
+            )
+            else None,
         )
+
 
 # TODO
 #  Implement default method to discover a complete BPS model from scratch.

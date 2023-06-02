@@ -14,11 +14,7 @@ sm2_path: Path = PROJECT_DIR / "external_tools/splitminer2/sm2.jar"
 sm3_path: Path = PROJECT_DIR / "external_tools/splitminer3/bpmtk.jar"
 
 
-def discover_process_model(
-        log_path: Path,
-        output_model_path: Path,
-        params: HyperoptIterationParams
-):
+def discover_process_model(log_path: Path, output_model_path: Path, params: HyperoptIterationParams):
     """
     Run the process model discovery algorithm specified in the [params] to discover
     a process model in [output_model_path] from the (XES) event log in [log_path].
@@ -29,11 +25,7 @@ def discover_process_model(
     """
     if params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
         # Run Split Miner 2
-        discover_process_model_with_split_miner_2(
-            log_path,
-            output_model_path,
-            params.concurrency
-        )
+        discover_process_model_with_split_miner_2(log_path, output_model_path, params.concurrency)
     elif params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
         # Run Split Miner 3
         discover_process_model_with_split_miner_3(
@@ -50,11 +42,7 @@ def discover_process_model(
     assert output_model_path.exists(), f"Error trying to discover the process model in '{output_model_path}'."
 
 
-def discover_process_model_with_split_miner_2(
-        log_path: Path,
-        output_model_path: Path,
-        concurrency: float
-):
+def discover_process_model_with_split_miner_2(log_path: Path, output_model_path: Path, concurrency: float):
     """
     Discover, with Split Miner 2, a process model using the (XES) log in [log_path].
 
@@ -64,9 +52,7 @@ def discover_process_model_with_split_miner_2(
     """
     # Define args depending on the system is running
     args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        sm2_path,
-        log_path,
-        output_model_path
+        sm2_path, log_path, output_model_path
     )
     # Prepare command structure
     args += [
@@ -84,12 +70,12 @@ def discover_process_model_with_split_miner_2(
 
 
 def discover_process_model_with_split_miner_3(
-        log_path: Path,
-        output_model_path: Path,
-        eta: float,
-        epsilon: float,
-        prioritize_parallelism: bool,
-        replace_or_joins: bool
+    log_path: Path,
+    output_model_path: Path,
+    eta: float,
+    epsilon: float,
+    prioritize_parallelism: bool,
+    replace_or_joins: bool,
 ):
     """
     Discover, with Split Miner 3, a process model using the (XES) log in [log_path].
@@ -103,9 +89,7 @@ def discover_process_model_with_split_miner_3(
     """
     # Define args depending on the system is running
     args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        sm3_path,
-        log_path,
-        output_model_path
+        sm3_path, log_path, output_model_path
     )
     # Prepare command structure
     args += [
@@ -127,16 +111,14 @@ def discover_process_model_with_split_miner_3(
 
 
 def _prepare_split_miner_params(
-        split_miner: Path,
-        log_path: Path,
-        output_model_path: Path
+    split_miner: Path, log_path: Path, output_model_path: Path
 ) -> Tuple[List[str], str, str, str]:
     if is_windows():
         # Windows: ';' as separator and escape string with '"'
         args = ["java"]
-        split_miner_path = "\"" + str(split_miner) + ";" + os.path.join(os.path.dirname(split_miner), "lib", "*") + "\""
-        input_log_path = "\"" + str(log_path) + "\""
-        model_output_path = "\"" + str(output_model_path.with_suffix("")) + "\""
+        split_miner_path = '"' + str(split_miner) + ";" + os.path.join(os.path.dirname(split_miner), "lib", "*") + '"'
+        input_log_path = '"' + str(log_path) + '"'
+        model_output_path = '"' + str(output_model_path.with_suffix("")) + '"'
     else:
         # Linux: ':' as separator and add memory specs
         args = ["java", "-Xmx2G", "-Xms1024M"]

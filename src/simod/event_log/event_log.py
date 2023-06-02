@@ -25,15 +25,15 @@ class EventLog:
     test_partition: pd.DataFrame
 
     def __init__(
-            self,
-            log_ids: EventLogIDs,
-            log_train: pd.DataFrame,
-            log_validation: pd.DataFrame,
-            log_train_validation: pd.DataFrame,
-            log_test: pd.DataFrame,
-            process_name: Optional[str] = None,
-            log_path: Optional[Path] = None,
-            csv_log_path: Optional[Path] = None,
+        self,
+        log_ids: EventLogIDs,
+        log_train: pd.DataFrame,
+        log_validation: pd.DataFrame,
+        log_train_validation: pd.DataFrame,
+        log_test: pd.DataFrame,
+        process_name: Optional[str] = None,
+        log_path: Optional[Path] = None,
+        csv_log_path: Optional[Path] = None,
     ):
         self.log_ids = log_ids
         self.log_path = log_path
@@ -48,16 +48,16 @@ class EventLog:
         elif log_path is not None:
             self.process_name = log_path.stem
         else:
-            self.process_name = 'business_process'
+            self.process_name = "business_process"
 
     @staticmethod
     def from_df(
-            log: pd.DataFrame,
-            log_ids: EventLogIDs,
-            test_log: Optional[pd.DataFrame] = None,
-            process_name: Optional[str] = None,
-            log_path: Optional[Path] = None,
-            csv_log_path: Optional[Path] = None,
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        test_log: Optional[pd.DataFrame] = None,
+        process_name: Optional[str] = None,
+        log_path: Optional[Path] = None,
+        csv_log_path: Optional[Path] = None,
     ):
         """
         Creates an EventLog from a DataFrame.
@@ -85,11 +85,11 @@ class EventLog:
 
     @staticmethod
     def from_path(
-            path: Path,
-            log_ids: EventLogIDs,
-            process_name: Optional[str] = None,
-            test_path: Optional[Path] = None,
-    ) -> 'EventLog':
+        path: Path,
+        log_ids: EventLogIDs,
+        process_name: Optional[str] = None,
+        test_path: Optional[Path] = None,
+    ) -> "EventLog":
         """
         Loads an event log from a file and does the log split for training, validation, and test.
         """
@@ -142,29 +142,33 @@ class EventLog:
 
 
 def write_xes(
-        log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        output_path: Path,
+    log: pd.DataFrame,
+    log_ids: EventLogIDs,
+    output_path: Path,
 ):
     """
     Writes the log to a file in XES format.
     """
-    df = log.rename(columns={
-        log_ids.activity: 'concept:name',
-        log_ids.case: 'case:concept:name',
-        log_ids.resource: 'org:resource',
-        log_ids.start_time: 'start_timestamp',
-        log_ids.end_time: 'time:timestamp',
-    })
+    df = log.rename(
+        columns={
+            log_ids.activity: "concept:name",
+            log_ids.case: "case:concept:name",
+            log_ids.resource: "org:resource",
+            log_ids.start_time: "start_timestamp",
+            log_ids.end_time: "time:timestamp",
+        }
+    )
 
-    df = df[[
-        'case:concept:name',
-        'concept:name',
-        'org:resource',
-        'start_timestamp',
-        'time:timestamp',
-    ]]
+    df = df[
+        [
+            "case:concept:name",
+            "concept:name",
+            "org:resource",
+            "start_timestamp",
+            "time:timestamp",
+        ]
+    ]
 
-    df.fillna('UNDEFINED', inplace=True)
+    df.fillna("UNDEFINED", inplace=True)
 
     convert_df_to_xes(df, DEFAULT_XES_IDS, output_path)

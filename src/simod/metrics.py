@@ -20,11 +20,11 @@ from simod.settings.common_settings import Metric
 
 
 def compute_metric(
-        metric: Metric,
-        event_log_1: pd.DataFrame,
-        event_log_1_ids: EventLogIDs,
-        event_log_2: pd.DataFrame,
-        event_log_2_ids: EventLogIDs,
+    metric: Metric,
+    event_log_1: pd.DataFrame,
+    event_log_1_ids: EventLogIDs,
+    event_log_2: pd.DataFrame,
+    event_log_2_ids: EventLogIDs,
 ) -> float:
     """Computes an event log metric for two event logs, e.g., similarity, distance, etc.
 
@@ -39,21 +39,13 @@ def compute_metric(
     if metric is Metric.DL:
         result = get_dl(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     elif metric is Metric.N_GRAM_DISTANCE:
-        result = get_n_grams_distribution_distance(
-            event_log_1, event_log_1_ids, event_log_2, event_log_2_ids
-        )
+        result = get_n_grams_distribution_distance(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     elif metric is Metric.CIRCADIAN_EMD:
-        result = get_circadian_emd(
-            event_log_1, event_log_1_ids, event_log_2, event_log_2_ids
-        )
+        result = get_circadian_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     elif metric is Metric.ABSOLUTE_HOURLY_EMD:
-        result = get_absolute_hourly_emd(
-            event_log_1, event_log_1_ids, event_log_2, event_log_2_ids
-        )
+        result = get_absolute_hourly_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     elif metric is Metric.CYCLE_TIME_EMD:
-        result = get_cycle_time_emd(
-            event_log_1, event_log_1_ids, event_log_2, event_log_2_ids
-        )
+        result = get_cycle_time_emd(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids)
     else:
         raise ValueError(f"Unsupported metric: {metric}")
 
@@ -61,10 +53,10 @@ def compute_metric(
 
 
 def get_absolute_hourly_emd(
-        event_log_1: pd.DataFrame,
-        event_log_1_ids: EventLogIDs,
-        event_log_2: pd.DataFrame,
-        event_log_2_ids: EventLogIDs,
+    event_log_1: pd.DataFrame,
+    event_log_1_ids: EventLogIDs,
+    event_log_2: pd.DataFrame,
+    event_log_2_ids: EventLogIDs,
 ) -> float:
     """Distance measure computing how different the histograms of the timestamps of two event logs are, discretizing
     the timestamps by absolute hour.
@@ -88,10 +80,10 @@ def get_absolute_hourly_emd(
 
 
 def get_cycle_time_emd(
-        event_log_1: pd.DataFrame,
-        event_log_1_ids: EventLogIDs,
-        event_log_2: pd.DataFrame,
-        event_log_2_ids: EventLogIDs,
+    event_log_1: pd.DataFrame,
+    event_log_1_ids: EventLogIDs,
+    event_log_2: pd.DataFrame,
+    event_log_2_ids: EventLogIDs,
 ) -> float:
     """Distance measure computing how different the cycle time discretized histograms of two event logs are.
 
@@ -112,10 +104,10 @@ def get_cycle_time_emd(
 
 
 def get_circadian_emd(
-        event_log_1: pd.DataFrame,
-        event_log_1_ids: EventLogIDs,
-        event_log_2: pd.DataFrame,
-        event_log_2_ids: EventLogIDs,
+    event_log_1: pd.DataFrame,
+    event_log_1_ids: EventLogIDs,
+    event_log_2: pd.DataFrame,
+    event_log_2_ids: EventLogIDs,
 ) -> float:
     """
     Distance measure computing how different the histograms of the timestamps of two event logs are, comparing all
@@ -137,10 +129,10 @@ def get_circadian_emd(
 
 
 def get_n_grams_distribution_distance(
-        event_log_1: pd.DataFrame,
-        event_log_1_ids: EventLogIDs,
-        event_log_2: pd.DataFrame,
-        event_log_2_ids: EventLogIDs,
+    event_log_1: pd.DataFrame,
+    event_log_1_ids: EventLogIDs,
+    event_log_2: pd.DataFrame,
+    event_log_2_ids: EventLogIDs,
 ) -> float:
     """
     Distance measure between two event logs computing the difference in the frequencies of the n-grams observed in
@@ -152,19 +144,15 @@ def get_n_grams_distribution_distance(
     :param event_log_2_ids: IDs of the second event log.
     :return: The MAE between the frequency of trigrams occurring in one log vs the other.
     """
-    mae = n_gram_distribution_distance(
-        event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, 3
-    )
+    mae = n_gram_distribution_distance(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, 3)
     return mae
 
 
 def get_dl(
-        event_log_1: pd.DataFrame,
-        event_log_1_ids: EventLogIDs,
-        event_log_2: pd.DataFrame,
-        event_log_2_ids: EventLogIDs,
+    event_log_1: pd.DataFrame,
+    event_log_1_ids: EventLogIDs,
+    event_log_2: pd.DataFrame,
+    event_log_2_ids: EventLogIDs,
 ) -> float:
-    cfld = control_flow_log_distance(
-        event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, True
-    )
+    cfld = control_flow_log_distance(event_log_1, event_log_1_ids, event_log_2, event_log_2_ids, True)
     return cfld

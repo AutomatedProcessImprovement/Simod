@@ -39,24 +39,26 @@ class ResourceModelOptimizer:
     # Set of trials for the hyperparameter optimization process
     _bayes_trials = Trials
 
-    def __init__(
-            self,
-            event_log: EventLog,
-            bps_model: BPSModel,
-            settings: ResourceModelSettings,
-            base_directory: Path
-    ):
+    def __init__(self, event_log: EventLog, bps_model: BPSModel, settings: ResourceModelSettings, base_directory: Path):
         # Save event log, optimization settings, and output directory
         self.event_log = event_log
         self.initial_bps_model = bps_model.deep_copy()
         self.settings = settings
         self.base_directory = base_directory
         # Initialize table to store quality measures of each iteration
-        self.evaluation_measurements = pd.DataFrame(columns=[
-            'distance', 'metric', 'status', 'discovery_type',
-            'granularity', 'confidence', 'support',
-            'participation', 'output_dir'
-        ])
+        self.evaluation_measurements = pd.DataFrame(
+            columns=[
+                "distance",
+                "metric",
+                "status",
+                "discovery_type",
+                "granularity",
+                "confidence",
+                "support",
+                "participation",
+                "output_dir",
+            ]
+        )
         # Instantiate trials for hyper-optimization process
         self._bayes_trials = Trials()
 
@@ -67,7 +69,7 @@ class ResourceModelOptimizer:
         # Initialize status
         status = STATUS_OK
         # Create folder for this iteration
-        output_dir = self.base_directory / get_random_folder_id(prefix='iteration_')
+        output_dir = self.base_directory / get_random_folder_id(prefix="iteration_")
         create_folder(output_dir)
         # Initialize BPS model for this iteration
         current_bps_model = self.initial_bps_model.deep_copy()
@@ -78,40 +80,28 @@ class ResourceModelOptimizer:
             discovery_type=self.settings.discovery_type,
             output_dir=output_dir,
             model_path=current_bps_model.process_model,
-            project_name=self.event_log.process_name
+            project_name=self.event_log.process_name,
         )
         print_message(f"Parameters: {hyperopt_iteration_params}")
 
         # Discover resource model
         status, current_bps_model.resource_model = hyperopt_step(
-            status,
-            self._discover_resource_model,
-            hyperopt_iteration_params.calendar_discovery_params
+            status, self._discover_resource_model, hyperopt_iteration_params.calendar_discovery_params
         )
 
         # Simulate candidate and evaluate its quality
         status, evaluation_measurements = hyperopt_step(
-            status,
-            self._simulate_bps_model,
-            current_bps_model,
-            hyperopt_iteration_params.output_dir
+            status, self._simulate_bps_model, current_bps_model, hyperopt_iteration_params.output_dir
         )
 
         # Define the response of this iteration
         status, response = self._define_response(
-            status,
-            evaluation_measurements,
-            hyperopt_iteration_params.output_dir,
-            current_bps_model.process_model
+            status, evaluation_measurements, hyperopt_iteration_params.output_dir, current_bps_model.process_model
         )
         print(f"Resource Model optimization iteration response: {response}")
 
         # Save the quality of this evaluation
-        self._process_measurements(
-            hyperopt_iteration_params,
-            status,
-            evaluation_measurements
-        )
+        self._process_measurements(hyperopt_iteration_params, status, evaluation_measurements)
 
         return response
 
@@ -130,12 +120,12 @@ class ResourceModelOptimizer:
             algo=tpe.suggest,
             max_evals=self.settings.max_evaluations,
             trials=self._bayes_trials,
-            show_progressbar=False
+            show_progressbar=False,
         )
         best_hyperopt_params = hyperopt.space_eval(search_space, best_hyperopt_params)
 
         # Process best results
-        results = pd.DataFrame(self._bayes_trials.results).sort_values('loss')
+        results = pd.DataFrame(self._bayes_trials.results).sort_values("loss")
         best_result = results[results.status == STATUS_OK].iloc[0]
 
         # Re-build parameters of best hyperopt iteration
@@ -143,47 +133,39 @@ class ResourceModelOptimizer:
             hyperopt_dict=best_hyperopt_params,
             optimization_metric=self.settings.optimization_metric,
             discovery_type=self.settings.discovery_type,
-            output_dir=best_result['output_dir'],
+            output_dir=best_result["output_dir"],
             project_name=self.event_log.process_name,
-            model_path=self.initial_bps_model.process_model
+            model_path=self.initial_bps_model.process_model,
         )
 
         # Instantiate best BPS model
         self.best_bps_model = self.initial_bps_model.deep_copy()
         # Update best process model (save it in base directory)
         self.best_bps_model.process_model = get_process_model_path(self.base_directory, self.event_log.process_name)
-        shutil.copyfile(best_result['model_path'], self.best_bps_model.process_model)
+        shutil.copyfile(best_result["model_path"], self.best_bps_model.process_model)
         # Update simulation parameters (save them in base directory)
         best_parameters_path = get_simulation_parameters_path(self.base_directory, self.event_log.process_name)
         shutil.copyfile(
-            get_simulation_parameters_path(best_result['output_dir'], self.event_log.process_name),
-            best_parameters_path
+            get_simulation_parameters_path(best_result["output_dir"], self.event_log.process_name), best_parameters_path
         )
         # Update resource model
-        self.best_bps_model.resource_model = ResourceModel.from_dict(
-            json.load(open(best_parameters_path, 'r'))
-        )
+        self.best_bps_model.resource_model = ResourceModel.from_dict(json.load(open(best_parameters_path, "r")))
 
         # Save evaluation measurements
-        self.evaluation_measurements.sort_values('distance', ascending=True, inplace=True)
+        self.evaluation_measurements.sort_values("distance", ascending=True, inplace=True)
         self.evaluation_measurements.to_csv(self.base_directory / "evaluation_measures.csv", index=False)
 
         # Return settings of the best iteration
         return best_hyperopt_parameters
 
-    def _discover_resource_model(
-            self,
-            params: CalendarDiscoveryParams
-    ) -> ResourceModel:
+    def _discover_resource_model(self, params: CalendarDiscoveryParams) -> ResourceModel:
         print_step(f"Discovering resource model with {params}")
         return discover_resource_model(
-            event_log=self.event_log.train_partition,
-            log_ids=self.event_log.log_ids,
-            params=params
+            event_log=self.event_log.train_partition, log_ids=self.event_log.log_ids, params=params
         )
 
     def cleanup(self):
-        print_step(f'Removing {self.base_directory}')
+        print_step(f"Removing {self.base_directory}")
         remove_asset(self.base_directory)
 
     @staticmethod
@@ -193,73 +175,67 @@ class ResourceModelOptimizer:
         if settings.discovery_type in [
             CalendarType.UNDIFFERENTIATED,
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
-            CalendarType.DIFFERENTIATED_BY_POOL
+            CalendarType.DIFFERENTIATED_BY_POOL,
         ]:
             # granularity
             if isinstance(settings.granularity, tuple):
-                space['granularity'] = hp.uniform('granularity', settings.granularity[0], settings.granularity[1])
+                space["granularity"] = hp.uniform("granularity", settings.granularity[0], settings.granularity[1])
             else:
-                space['granularity'] = settings.granularity
+                space["granularity"] = settings.granularity
             # confidence
             if isinstance(settings.confidence, tuple):
-                space['confidence'] = hp.uniform('confidence', settings.confidence[0], settings.confidence[1])
+                space["confidence"] = hp.uniform("confidence", settings.confidence[0], settings.confidence[1])
             else:
-                space['confidence'] = settings.confidence
+                space["confidence"] = settings.confidence
             # support
             if isinstance(settings.support, tuple):
-                space['support'] = hp.uniform('support', settings.support[0], settings.support[1])
+                space["support"] = hp.uniform("support", settings.support[0], settings.support[1])
             else:
-                space['support'] = settings.support
+                space["support"] = settings.support
             # participation
             if isinstance(settings.participation, tuple):
-                space['participation'] = hp.uniform('participation', settings.participation[0], settings.participation[1])
+                space["participation"] = hp.uniform(
+                    "participation", settings.participation[0], settings.participation[1]
+                )
             else:
-                space['participation'] = settings.participation
+                space["participation"] = settings.participation
         # Return space
         return space
 
-    def _process_measurements(
-            self,
-            params: HyperoptIterationParams,
-            status: str,
-            evaluation_measurements: list
-    ):
+    def _process_measurements(self, params: HyperoptIterationParams, status: str, evaluation_measurements: list):
         data = {
-            'output_dir': params.output_dir,
-            'metric': params.optimization_metric,
-            'discovery_type': params.calendar_discovery_params.discovery_type,
-            'granularity': params.calendar_discovery_params.granularity,
-            'confidence': params.calendar_discovery_params.confidence,
-            'support': params.calendar_discovery_params.support,
-            'participation': params.calendar_discovery_params.participation,
-            'status': status
+            "output_dir": params.output_dir,
+            "metric": params.optimization_metric,
+            "discovery_type": params.calendar_discovery_params.discovery_type,
+            "granularity": params.calendar_discovery_params.granularity,
+            "confidence": params.calendar_discovery_params.confidence,
+            "support": params.calendar_discovery_params.support,
+            "participation": params.calendar_discovery_params.participation,
+            "status": status,
         }
         if status == STATUS_OK:
             for measurement in evaluation_measurements:
                 values = {
-                    'distance': measurement['distance'],
-                    'metric': measurement['metric'],
+                    "distance": measurement["distance"],
+                    "metric": measurement["metric"],
                 }
                 values = values | data
                 self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
         else:
             values = {
-                'distance': 0,
-                'metric': params.optimization_metric,
+                "distance": 0,
+                "metric": params.optimization_metric,
             }
             values = values | data
             self.evaluation_measurements = pd.concat([self.evaluation_measurements, pd.DataFrame([values])])
 
     @staticmethod
     def _define_response(
-            status: str,
-            evaluation_measurements: list,
-            output_dir: Path,
-            model_path: Path
+        status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
     ) -> Tuple[str, dict]:
         # Compute mean distance if status is OK
         if status is STATUS_OK:
-            distance = np.mean([x['distance'] for x in evaluation_measurements])
+            distance = np.mean([x["distance"] for x in evaluation_measurements])
             # Change status if distance value is negative
             if distance < 0.0:
                 status = STATUS_FAIL
@@ -267,33 +243,29 @@ class ResourceModelOptimizer:
             distance = 1.0
         # Define response dict
         response = {
-            'loss': distance,  # Loss value for the fmin function
-            'status': status,  # Status of the optimization iteration
-            'output_dir': output_dir,
-            'model_path': model_path,
+            "loss": distance,  # Loss value for the fmin function
+            "status": status,  # Status of the optimization iteration
+            "output_dir": output_dir,
+            "model_path": model_path,
         }
         # Return updated status and processed response
         return status, response
 
-    def _simulate_bps_model(
-            self,
-            bps_model: BPSModel,
-            output_dir: Path
-    ) -> List[dict]:
+    def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path) -> List[dict]:
         # Update activity label -> activity ID mapping of current process model
         activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(bps_model.process_model).as_graph())
         for resource_profile in bps_model.resource_model.resource_profiles:
             for resource in resource_profile.resources:
                 resource.assigned_tasks = [
-                    activity_label_to_id[activity_label]
-                    for activity_label in resource.assigned_tasks
+                    activity_label_to_id[activity_label] for activity_label in resource.assigned_tasks
                 ]
         for activity_resource_distributions in bps_model.resource_model.activity_resource_distributions:
             activity_resource_distributions.activity_id = activity_label_to_id[
-                activity_resource_distributions.activity_id]
+                activity_resource_distributions.activity_id
+            ]
         # Write JSON parameters to file
         json_parameters_path = get_simulation_parameters_path(output_dir, self.event_log.process_name)
-        with json_parameters_path.open('w') as f:
+        with json_parameters_path.open("w") as f:
             json.dump(bps_model.to_dict(), f)
         # Simulate and evaluate BPS model
         evaluation_measures = simulate_and_evaluate(

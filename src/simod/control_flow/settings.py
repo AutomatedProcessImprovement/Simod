@@ -11,6 +11,7 @@ from simod.settings.control_flow_settings import ProcessModelDiscoveryAlgorithm
 @dataclass
 class HyperoptIterationParams:
     """Parameters for a single iteration of the Control-Flow optimization process."""
+
     # General settings
     output_dir: Path  # Directory where to output all the files of the current iteration
     provided_model_path: Optional[Path]  # Provided when no need to discover BPMN model
@@ -31,41 +32,42 @@ class HyperoptIterationParams:
         """Returns a dictionary with the parameters for this run."""
         # Save common params
         optimization_parameters = {
-            'output_dir': str(self.output_dir),
-            'project_name': str(self.project_name),
-            'optimization_metric': str(self.optimization_metric),
-            'gateway_probabilities': self.gateway_probabilities_method.value,
-            'mining_algorithm': str(self.mining_algorithm),
+            "output_dir": str(self.output_dir),
+            "project_name": str(self.project_name),
+            "optimization_metric": str(self.optimization_metric),
+            "gateway_probabilities": self.gateway_probabilities_method.value,
+            "mining_algorithm": str(self.mining_algorithm),
         }
         # Save params related to the discovery
         if self.provided_model_path is None:
             # Save params depending on the discovery algorithm
             if self.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-                optimization_parameters['concurrency'] = self.concurrency
+                optimization_parameters["concurrency"] = self.concurrency
             elif self.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
-                optimization_parameters['epsilon'] = self.epsilon
-                optimization_parameters['eta'] = self.eta
-                optimization_parameters['prioritize_parallelism'] = self.prioritize_parallelism
-                optimization_parameters['replace_or_joins'] = self.replace_or_joins
+                optimization_parameters["epsilon"] = self.epsilon
+                optimization_parameters["eta"] = self.eta
+                optimization_parameters["prioritize_parallelism"] = self.prioritize_parallelism
+                optimization_parameters["replace_or_joins"] = self.replace_or_joins
         else:
             # Save path to provided process model
-            optimization_parameters['provided_model_path'] = str(self.provided_model_path)
+            optimization_parameters["provided_model_path"] = str(self.provided_model_path)
         # Return dict
         return optimization_parameters
 
     @staticmethod
     def from_hyperopt_dict(
-            hyperopt_dict: dict,
-            optimization_metric: Metric,
-            mining_algorithm: ProcessModelDiscoveryAlgorithm,
-            output_dir: Path,
-            provided_model_path: Optional[Path],
-            project_name: str,
-    ) -> 'HyperoptIterationParams':
+        hyperopt_dict: dict,
+        optimization_metric: Metric,
+        mining_algorithm: ProcessModelDiscoveryAlgorithm,
+        output_dir: Path,
+        provided_model_path: Optional[Path],
+        project_name: str,
+    ) -> "HyperoptIterationParams":
         """Create the params for this run from the hyperopt dictionary returned by the fmin function."""
         # Extract gateway probabilities method
         gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.from_str(
-            hyperopt_dict['gateway_probabilities_method'])
+            hyperopt_dict["gateway_probabilities_method"]
+        )
         # Extract model discovery parameters if needed (by default None)
         epsilon = None
         eta = None
@@ -75,12 +77,12 @@ class HyperoptIterationParams:
         # If the model was not provided, extract discovery parameters
         if provided_model_path is None:
             if mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-                concurrency = hyperopt_dict['concurrency']
+                concurrency = hyperopt_dict["concurrency"]
             elif mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
-                epsilon = hyperopt_dict['epsilon']
-                eta = hyperopt_dict['eta']
-                prioritize_parallelism = hyperopt_dict['prioritize_parallelism']
-                replace_or_joins = hyperopt_dict.get('replace_or_joins')
+                epsilon = hyperopt_dict["epsilon"]
+                eta = hyperopt_dict["eta"]
+                prioritize_parallelism = hyperopt_dict["prioritize_parallelism"]
+                replace_or_joins = hyperopt_dict.get("replace_or_joins")
         # Return parameters instance
         return HyperoptIterationParams(
             output_dir=output_dir,

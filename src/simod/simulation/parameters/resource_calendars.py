@@ -10,10 +10,10 @@ from simod.simulation.parameters.resource_profiles import ResourceProfile
 
 
 def discover_resource_calendars_per_profile(
-        event_log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        params: CalendarDiscoveryParams,
-        resource_profiles: List[ResourceProfile]
+    event_log: pd.DataFrame,
+    log_ids: EventLogIDs,
+    params: CalendarDiscoveryParams,
+    resource_profiles: List[ResourceProfile],
 ) -> List[RCalendar]:
     """
     Discover availability calendar for each resource profile in [resource_profiles], updating
@@ -48,11 +48,7 @@ def discover_resource_calendars_per_profile(
         _update_resource_calendars(resource_profiles, working_hours_calendar.calendar_id)
     elif calendar_type == CalendarType.UNDIFFERENTIATED:
         # Discover a resource calendar for all the resources in the log
-        undifferentiated_calendar = _discover_undifferentiated_resource_calendar(
-            event_log,
-            log_ids,
-            params
-        )
+        undifferentiated_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, params)
         # Set default 24/7 if could not discover one
         if undifferentiated_calendar is None:
             undifferentiated_calendar = create_full_day_calendar()
@@ -62,21 +58,16 @@ def discover_resource_calendars_per_profile(
         _update_resource_calendars(resource_profiles, undifferentiated_calendar.calendar_id)
     else:
         # Discover a resource calendar per resource profile
-        resource_calendars = _discover_resource_calendars_per_profile(
-            event_log,
-            log_ids,
-            params,
-            resource_profiles
-        )
+        resource_calendars = _discover_resource_calendars_per_profile(event_log, log_ids, params, resource_profiles)
     # Return discovered resource calendars
     return resource_calendars
 
 
 def _discover_undifferentiated_resource_calendar(
-        event_log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        params: CalendarDiscoveryParams,
-        calendar_id: str = "Undifferentiated_calendar"
+    event_log: pd.DataFrame,
+    log_ids: EventLogIDs,
+    params: CalendarDiscoveryParams,
+    calendar_id: str = "Undifferentiated_calendar",
 ) -> Optional[RCalendar]:
     """
     Discover one availability calendar using all the timestamps in the received event log.
@@ -97,9 +88,7 @@ def _discover_undifferentiated_resource_calendar(
         calendar_factory.check_date_time("Undifferentiated", activity, event[log_ids.end_time])
     # Discover weekly timetables
     discovered_timetables = calendar_factory.build_weekly_calendars(
-        params.confidence,
-        params.support,
-        params.participation
+        params.confidence, params.support, params.participation
     )
     # Get discovered calendar and update ID if discovered
     undifferentiated_calendar = discovered_timetables.get("Undifferentiated")
@@ -110,10 +99,10 @@ def _discover_undifferentiated_resource_calendar(
 
 
 def _discover_resource_calendars_per_profile(
-        event_log: pd.DataFrame,
-        log_ids: EventLogIDs,
-        params: CalendarDiscoveryParams,
-        resource_profiles: List[ResourceProfile]
+    event_log: pd.DataFrame,
+    log_ids: EventLogIDs,
+    params: CalendarDiscoveryParams,
+    resource_profiles: List[ResourceProfile],
 ) -> List[RCalendar]:
     # Revert resource profiles
     resource_to_profile = {
@@ -135,9 +124,7 @@ def _discover_resource_calendars_per_profile(
 
     # Discover weekly timetables
     discovered_timetables = calendar_factory.build_weekly_calendars(
-        params.confidence,
-        params.support,
-        params.participation
+        params.confidence, params.support, params.participation
     )
 
     # Create calendar per resource profile
@@ -157,24 +144,14 @@ def _discover_resource_calendars_per_profile(
     if len(missing_profiles) > 0:
         # Retain events performed by the resources with no calendar
         missing_resource_ids = [
-            resource.id
-            for resource_profile in resource_profiles
-            for resource in resource_profile.resources
+            resource.id for resource_profile in resource_profiles for resource in resource_profile.resources
         ]
         filtered_event_log = event_log[event_log[log_ids.resource].isin(missing_resource_ids)]
         # Discover one resource calendar for all of them
-        missing_resource_calendar = _discover_undifferentiated_resource_calendar(
-            filtered_event_log,
-            log_ids,
-            params
-        )
+        missing_resource_calendar = _discover_undifferentiated_resource_calendar(filtered_event_log, log_ids, params)
         if missing_resource_calendar is None:
             # Could not discover calendar for the missing resources, discover calendar with the entire log
-            missing_resource_calendar = _discover_undifferentiated_resource_calendar(
-                event_log,
-                log_ids,
-                params
-            )
+            missing_resource_calendar = _discover_undifferentiated_resource_calendar(event_log, log_ids, params)
             if missing_resource_calendar is None:
                 # Could not discover calendar for all the resources in the log, assign default 24/7
                 missing_resource_calendar = create_full_day_calendar()
@@ -192,7 +169,7 @@ def _update_resource_calendars(resource_profiles: List[ResourceProfile], calenda
             resource.calendar_id = calendar_id
 
 
-def create_full_day_calendar(schedule_id: str = '24_7_CALENDAR') -> RCalendar:
+def create_full_day_calendar(schedule_id: str = "24_7_CALENDAR") -> RCalendar:
     schedule = RCalendar(schedule_id)
     schedule.add_calendar_item(
         from_day="MONDAY",
@@ -203,7 +180,7 @@ def create_full_day_calendar(schedule_id: str = '24_7_CALENDAR') -> RCalendar:
     return schedule
 
 
-def create_working_hours_calendar(schedule_id: str = '9_5_CALENDAR') -> RCalendar:
+def create_working_hours_calendar(schedule_id: str = "9_5_CALENDAR") -> RCalendar:
     schedule = RCalendar(schedule_id)
     schedule.add_calendar_item(
         from_day="MONDAY",

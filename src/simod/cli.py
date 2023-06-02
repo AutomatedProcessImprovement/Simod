@@ -6,8 +6,8 @@ from pix_framework.filesystem.file_manager import get_random_folder_id
 from simod.event_log.event_log import EventLog
 from simod.event_log.preprocessor import Preprocessor
 from simod.event_log.utilities import read
-from simod.simod import Simod
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
+from simod.simod import Simod
 
 
 @click.group()
@@ -32,8 +32,8 @@ def main():
 
 
 @main.command()
-@click.option('--config_path', default=None, required=True, type=str)
-@click.option('--output_dir', default=None, required=False, type=str)
+@click.option("--config_path", default=None, required=True, type=str)
+@click.option("--output_dir", default=None, required=False, type=str)
 def optimize(config_path: str, output_dir: str) -> Path:
     config_path = PROJECT_DIR / config_path
     settings = SimodSettings.from_path(config_path)
@@ -49,7 +49,7 @@ def optimize(config_path: str, output_dir: str) -> Path:
     processed_log = preprocessor.run(
         multitasking=settings.preprocessing.multitasking,
         enable_time_concurrency_threshold=settings.preprocessing.enable_time_concurrency_threshold,
-        concurrency_thresholds=settings.preprocessing.concurrency_thresholds
+        concurrency_thresholds=settings.preprocessing.concurrency_thresholds,
     )
 
     test_log = None
@@ -66,7 +66,7 @@ def optimize(config_path: str, output_dir: str) -> Path:
     )
 
     if output_dir is None:
-        output_dir = PROJECT_DIR / 'outputs' / get_random_folder_id()
+        output_dir = PROJECT_DIR / "outputs" / get_random_folder_id()
 
     Simod(settings, event_log=event_log, output_dir=output_dir).run()
 

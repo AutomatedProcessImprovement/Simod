@@ -8,9 +8,7 @@ from openxes_cli.lib import xes_to_csv, csv_to_xes
 from pix_framework.log_ids import DEFAULT_XES_IDS, EventLogIDs
 
 
-def convert_xes_to_csv_if_needed(
-    log_path: Path, output_path: Optional[Path] = None
-) -> Path:
+def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
     _, ext = os.path.splitext(log_path)
     if ext == ".xes":
         if output_path:
@@ -23,9 +21,7 @@ def convert_xes_to_csv_if_needed(
         return log_path
 
 
-def read(
-    log_path: Path, log_ids: EventLogIDs = DEFAULT_XES_IDS
-) -> Tuple[pd.DataFrame, Path]:
+def read(log_path: Path, log_ids: EventLogIDs = DEFAULT_XES_IDS) -> Tuple[pd.DataFrame, Path]:
     """Reads an event log from XES or CSV and converts timestamp to UTC.
 
     :param log_path: Path to the event log.
