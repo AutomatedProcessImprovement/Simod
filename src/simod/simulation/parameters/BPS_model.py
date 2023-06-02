@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, List
@@ -5,8 +6,11 @@ from typing import Optional, List
 from pix_framework.discovery.case_arrival import CaseArrivalModel
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 
+from simod.bpm.graph import get_activities_ids_by_name
+from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
 from simod.simulation.parameters.resource_model import ResourceModel
+from simod.utilities import get_simulation_parameters_path
 
 
 @dataclass
@@ -88,6 +92,31 @@ class BPSModel:
             case_arrival_model=case_arrival_model,
             resource_model=resource_model,
         )
+
+    def replace_activity_names_with_ids(self):
+        """
+        Updates activity labels with activity IDs from the current process model.
+
+        In BPSModel, the activities are referenced by their name, Prosimos uses IDs instead from the BPMN model.
+        """
+        activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(self.process_model).as_graph())
+        for resource_profile in self.resource_model.resource_profiles:
+            for resource in resource_profile.resources:
+                resource.assigned_tasks = [
+                    activity_label_to_id[activity_label] for activity_label in resource.assigned_tasks
+                ]
+        for activity_resource_distributions in self.resource_model.activity_resource_distributions:
+            activity_resource_distributions.activity_id = activity_label_to_id[
+                activity_resource_distributions.activity_id
+            ]
+
+    def to_json(self, output_dir: Path, process_name: str) -> Path:
+        json_parameters_path = get_simulation_parameters_path(output_dir, process_name)
+
+        with json_parameters_path.open("w") as f:
+            json.dump(self.to_dict(), f)
+
+        return json_parameters_path
 
 
 # TODO

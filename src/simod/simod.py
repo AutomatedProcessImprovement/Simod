@@ -114,7 +114,6 @@ class Simod:
         print_section("Optimizing extraneous delay timers")
         timers = self.optimize_extraneous_activity_delays()
         self._best_bps_model.extraneous_delays = timers
-        # TODO: write timers to BPMN before simulation
 
         # --- Final evaluation --- #
         print_section("Evaluating final BPS model")

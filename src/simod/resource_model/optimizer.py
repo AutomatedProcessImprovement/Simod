@@ -6,17 +6,21 @@ from typing import Optional, Tuple, List
 import hyperopt
 import numpy as np
 import pandas as pd
+from extraneous_activity_delays.prosimos.simulation_model_enhancer import add_timers_to_simulation_model
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
 
 from .settings import HyperoptIterationParams
-from ..bpm.graph import get_activities_ids_by_name
-from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_subsection, print_step, print_message
 from ..event_log.event_log import EventLog
+from ..extraneous_delays.utilities import make_simulation_model_from_bps_model
 from ..settings.resource_model_settings import CalendarDiscoveryParams, ResourceModelSettings, CalendarType
 from ..simulation.parameters.BPS_model import BPSModel
+from ..simulation.parameters.extraneous_delays import (
+    ExtraneousDelay,
+    convert_extraneous_delays_to_extraneous_package_format,
+)
 from ..simulation.parameters.resource_model import ResourceModel, discover_resource_model
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step, get_simulation_parameters_path, get_process_model_path
@@ -252,22 +256,12 @@ class ResourceModelOptimizer:
         return status, response
 
     def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path) -> List[dict]:
-        # Update activity label -> activity ID mapping of current process model
-        activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(bps_model.process_model).as_graph())
-        for resource_profile in bps_model.resource_model.resource_profiles:
-            for resource in resource_profile.resources:
-                resource.assigned_tasks = [
-                    activity_label_to_id[activity_label] for activity_label in resource.assigned_tasks
-                ]
-        for activity_resource_distributions in bps_model.resource_model.activity_resource_distributions:
-            activity_resource_distributions.activity_id = activity_label_to_id[
-                activity_resource_distributions.activity_id
-            ]
-        # Write JSON parameters to file
-        json_parameters_path = get_simulation_parameters_path(output_dir, self.event_log.process_name)
-        with json_parameters_path.open("w") as f:
-            json.dump(bps_model.to_dict(), f)
-        # Simulate and evaluate BPS model
+        bps_model.replace_activity_names_with_ids()
+
+        self._add_timers_to_bpmn(bps_model, bps_model.extraneous_delays)
+
+        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
+
         evaluation_measures = simulate_and_evaluate(
             model_path=bps_model.process_model,
             parameters_path=json_parameters_path,
@@ -279,5 +273,22 @@ class ResourceModelOptimizer:
             metrics=[self.settings.optimization_metric],
             num_simulations=self.settings.num_evaluations_per_iteration,
         )
-        # Return evaluation measures
+
         return evaluation_measures
+
+    @staticmethod
+    def _add_timers_to_bpmn(bps_model: BPSModel, timers: Optional[List[ExtraneousDelay]]):
+        """
+        Rewrites the BPMN file by adding timers if there are any.
+        """
+        if timers is None or len(timers) == 0:
+            return
+
+        simulation_model = make_simulation_model_from_bps_model(bps_model)
+        timers_ = convert_extraneous_delays_to_extraneous_package_format(timers)
+        enhanced_simulation_model = add_timers_to_simulation_model(
+            simulation_model=simulation_model,
+            timers=timers_,
+        )
+
+        enhanced_simulation_model.bpmn_document.write(bps_model.process_model, pretty_print=True)

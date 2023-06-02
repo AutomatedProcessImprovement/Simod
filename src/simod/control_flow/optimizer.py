@@ -18,8 +18,6 @@ from pix_framework.io.bpm_graph import BPMNGraph
 
 from .discovery import discover_process_model
 from .settings import HyperoptIterationParams
-from ..bpm.graph import get_activities_ids_by_name
-from ..bpm.reader_writer import BPMNReaderWriter
 from ..cli_formatter import print_message, print_subsection, print_step
 from ..event_log.event_log import EventLog
 from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings
@@ -310,22 +308,10 @@ class ControlFlowOptimizer:
         )
 
     def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path) -> List[dict]:
-        # Update activity label -> activity ID mapping of current process model
-        activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(bps_model.process_model).as_graph())
-        for resource_profile in bps_model.resource_model.resource_profiles:
-            for resource in resource_profile.resources:
-                resource.assigned_tasks = [
-                    activity_label_to_id[activity_label] for activity_label in resource.assigned_tasks
-                ]
-        for activity_resource_distributions in bps_model.resource_model.activity_resource_distributions:
-            activity_resource_distributions.activity_id = activity_label_to_id[
-                activity_resource_distributions.activity_id
-            ]
-        # Write JSON parameters to file
-        json_parameters_path = get_simulation_parameters_path(output_dir, self.event_log.process_name)
-        with json_parameters_path.open("w") as f:
-            json.dump(bps_model.to_dict(), f)
-        # Simulate and evaluate BPS model
+        bps_model.replace_activity_names_with_ids()
+
+        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
+
         evaluation_measures = simulate_and_evaluate(
             model_path=bps_model.process_model,
             parameters_path=json_parameters_path,
@@ -337,5 +323,5 @@ class ControlFlowOptimizer:
             metrics=[self.settings.optimization_metric],
             num_simulations=self.settings.num_evaluations_per_iteration,
         )
-        # Return evaluation measures
+
         return evaluation_measures

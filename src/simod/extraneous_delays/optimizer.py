@@ -3,12 +3,11 @@ from typing import Union, List
 
 from extraneous_activity_delays.config import (
     Configuration as ExtraneousActivityDelaysConfiguration,
-    SimulationModel,
 )
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer
-from lxml import etree
 
 from simod.event_log.event_log import EventLog
+from simod.extraneous_delays.utilities import make_simulation_model_from_bps_model
 from simod.settings.extraneous_delays_settings import ExtraneousDelaysSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
@@ -37,11 +36,7 @@ class ExtraneousDelayTimersOptimizer:
             optimization_metric=self.settings.optimization_metric,
         )
 
-        parser = etree.XMLParser(remove_blank_text=True)
-        bpmn_model = etree.parse(self.bps_model.process_model, parser)
-        parameters = self.bps_model.to_dict()
-
-        simulation_model = SimulationModel(bpmn_model, parameters)
+        simulation_model = make_simulation_model_from_bps_model(self.bps_model)
 
         enhancer = HyperOptEnhancer(self.event_log.train_partition, simulation_model, configuration)
 
