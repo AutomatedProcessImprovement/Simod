@@ -35,6 +35,8 @@ openxes-cli-py = "^0.1.14"
 pix-framework = "^0.8.8"
 start-time-estimator = "^1.10.9"
 log-distance-measures = "^1.0.2"
+case-attribute-discovery = "^0.1.6"
+prioritization-discovery = "^0.4.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"

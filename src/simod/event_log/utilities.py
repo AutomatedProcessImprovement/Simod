@@ -6,6 +6,8 @@ import pandas as pd
 import pendulum
 from openxes_cli.lib import xes_to_csv, csv_to_xes
 from pix_framework.log_ids import DEFAULT_XES_IDS, EventLogIDs
+from start_time_estimator.config import Configuration as StartTimeEstimatorConfiguration
+from start_time_estimator.estimator import StartTimeEstimator
 
 
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:
@@ -63,3 +65,13 @@ def convert_df_to_xes(df: pd.DataFrame, log_ids: EventLogIDs, output_path: Path)
     )
     df.to_csv(output_path, index=False)
     csv_to_xes(output_path, output_path)
+
+
+def add_enabled_time_if_missing(log: pd.DataFrame, log_ids: EventLogIDs) -> pd.DataFrame:
+    if log_ids.enabled_time in log.columns:
+        return log
+
+    configuration = StartTimeEstimatorConfiguration(log_ids=log_ids)
+    log = StartTimeEstimator(log, configuration).estimate()
+
+    return log

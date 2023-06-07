@@ -8,6 +8,7 @@ from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 
 from simod.bpm.graph import get_activities_ids_by_name
 from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.prioritization.types import PrioritizationLevel
 from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
 from simod.simulation.parameters.resource_model import ResourceModel
 from simod.utilities import get_simulation_parameters_path
@@ -24,10 +25,11 @@ class BPSModel:
     case_arrival_model: Optional[CaseArrivalModel] = None
     resource_model: Optional[ResourceModel] = None
     extraneous_delays: Optional[List[ExtraneousDelay]] = None
+    # TODO: do wee need case_attributes in BPS model if they only used once in prioritization discovery?
+    # case_attributes: Optional[List[CaseAttribute]] = None
+    prioritization_rules: Optional[List[PrioritizationLevel]] = None
 
-    # case_attributes: Optional[List[CaseAttribute]]
-    # prioritization_rules: Optional[List[PrioritizationRule]]
-    # batching_rules: Optional[List[BatchingRule]]
+    # batching_rules: Optional[List[BatchingRule]] = None
 
     def to_dict(self) -> dict:
         attributes = {}
@@ -49,6 +51,11 @@ class BPSModel:
             attributes |= self.resource_model.to_dict()
 
         # TODO: extraneous delays?
+
+        # TODO: case attributes?
+
+        if self.prioritization_rules is not None:
+            attributes |= {"prioritization_rules": list(map(lambda x: x.to_dict(), self.prioritization_rules))}
 
         return attributes
 
@@ -86,11 +93,23 @@ class BPSModel:
 
         # TODO: extraneous delays?
 
+        # TODO: case attributes?
+
+        prioritization_rules = (
+            [
+                PrioritizationLevel.from_dict(prioritization_rule)
+                for prioritization_rule in bps_model["prioritization_rules"]
+            ]
+            if "prioritization_rules" in bps_model
+            else None
+        )
+
         return BPSModel(
             process_model=process_model_path,
             gateway_probabilities=gateway_probabilities,
             case_arrival_model=case_arrival_model,
             resource_model=resource_model,
+            prioritization_rules=prioritization_rules,
         )
 
     def replace_activity_names_with_ids(self):
