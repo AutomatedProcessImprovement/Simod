@@ -10,11 +10,13 @@ from extraneous_activity_delays.prosimos.simulation_model_enhancer import add_ti
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
+from pix_framework.log_ids import EventLogIDs
 
 from .settings import HyperoptIterationParams
 from ..cli_formatter import print_subsection, print_step, print_message
 from ..event_log.event_log import EventLog
 from ..extraneous_delays.utilities import make_simulation_model_from_bps_model
+from ..prioritization.discovery import discover_prioritization_rules
 from ..settings.resource_model_settings import CalendarDiscoveryParams, ResourceModelSettings, CalendarType
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.parameters.extraneous_delays import (
@@ -260,6 +262,8 @@ class ResourceModelOptimizer:
 
         self._add_timers_to_bpmn(bps_model, bps_model.extraneous_delays)
 
+        bps_model = self._add_prioritization_rules(bps_model, self.event_log.train_partition, self.event_log.log_ids)
+
         json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
 
         evaluation_measures = simulate_and_evaluate(
@@ -292,3 +296,12 @@ class ResourceModelOptimizer:
         )
 
         enhanced_simulation_model.bpmn_document.write(bps_model.process_model, pretty_print=True)
+
+    @staticmethod
+    def _add_prioritization_rules(bps_mode: BPSModel, log: pd.DataFrame, log_ids: EventLogIDs) -> BPSModel:
+        """
+        Adds prioritization rules to the BPS model to pass them later to Primos during simulation.
+        """
+        rules = discover_prioritization_rules(log, log_ids)
+        bps_mode.prioritization_rules = rules
+        return bps_mode
