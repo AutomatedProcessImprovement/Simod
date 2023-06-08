@@ -23,6 +23,7 @@ from simod.control_flow.settings import (
 )
 from simod.event_log.event_log import EventLog
 from simod.extraneous_delays.optimizer import ExtraneousDelayTimersOptimizer
+from simod.prioritization.discovery import discover_prioritization_rules
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.settings import (
     HyperoptIterationParams as ResourceModelHyperoptIterationParams,
@@ -105,6 +106,12 @@ class Simod:
         self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
 
+        # TODO: add extraneous timers to BPMN model
+
+        self._add_prioritization_rules_if_needed()
+
+        # TODO: add batching rules to BPS model
+
         # --- Congestion Model Discovery --- #
         print_section("Optimizing resource model parameters")
         best_resource_model_params = self._optimize_resource_model()
@@ -180,6 +187,22 @@ class Simod:
         )
         best_control_flow_params = self._control_flow_optimizer.run()
         return best_control_flow_params
+
+    def _add_prioritization_rules_if_needed(self) -> BPSModel:
+        """
+        Adds prioritization rules to the BPS model to pass them later to Primos during simulation.
+        """
+        bps_model = self._best_bps_model
+        log = self._event_log.train_partition
+        log_ids = self._event_log.log_ids
+
+        if self._settings.resource_model.discover_prioritization_rules is False:
+            return bps_model
+
+        rules = discover_prioritization_rules(log, log_ids)
+        bps_model.prioritization_rules = rules
+
+        return bps_model
 
     def _optimize_resource_model(self) -> ResourceModelHyperoptIterationParams:
         """
