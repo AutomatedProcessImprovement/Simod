@@ -46,6 +46,12 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Get the version
+        id: versioning
+        run: |
+          pip install poetry
+          echo "version=$(poetry version --short)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push to DockerHub
         uses: docker/build-push-action@v2
         with:
