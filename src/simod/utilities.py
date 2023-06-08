@@ -54,9 +54,11 @@ def nearest_divisor_for_granularity(granularity: int) -> int:
     return closest
 
 
-def parse_single_value_or_interval(value: Union[float, List[float]]) -> Union[float, Tuple[float, float]]:
+def parse_single_value_or_interval(value: Union[float, int, List[float]]) -> Union[float, Tuple[float, float]]:
     if isinstance(value, float):
         return value
+    elif isinstance(value, int):
+        return float(value)
     else:
         return value[0], value[1]
 

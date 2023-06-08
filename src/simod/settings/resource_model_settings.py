@@ -99,7 +99,7 @@ class ResourceModelSettings:
     """
 
     optimization_metric: Metric = Metric.CIRCADIAN_EMD
-    max_evaluations: int = 10
+    max_evaluations: int = 10  # number of iterations for the optimization process
     num_evaluations_per_iteration: int = 3
     discovery_type: CalendarType = CalendarType.UNDIFFERENTIATED
     granularity: Optional[Union[int, Tuple[int, int]]] = (15, 60)  # minutes per granule
@@ -109,11 +109,8 @@ class ResourceModelSettings:
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
-        # Optimization metric
         optimization_metric = Metric.from_str(config.get("optimization_metric", "circadian_emd"))
-        # Number of iterations for the optimization process
-        max_evaluations = config.get("max_evaluations", 10)
-        # Num evaluations per iteration
+        max_iterations = config.get("max_evaluations", 10)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
         # Discovery type
         discovery_type = CalendarType.from_str(config.get("discovery_type", "undifferentiated"))
@@ -123,16 +120,16 @@ class ResourceModelSettings:
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
             CalendarType.DIFFERENTIATED_BY_POOL,
         ]:
-            granularity = parse_single_value_or_interval(config.get("granularity", (15, 60)))
-            confidence = parse_single_value_or_interval(config.get("confidence", (0.5, 0.85)))
-            support = parse_single_value_or_interval(config.get("support", (0.01, 0.3)))
-            participation = parse_single_value_or_interval(config.get("participation", 0.4))
+            granularity = parse_single_value_or_interval(resource_profiles.get("granularity", (15, 60)))
+            confidence = parse_single_value_or_interval(resource_profiles.get("confidence", (0.5, 0.85)))
+            support = parse_single_value_or_interval(resource_profiles.get("support", (0.01, 0.3)))
+            participation = parse_single_value_or_interval(resource_profiles.get("participation", 0.4))
         else:
             granularity, confidence, support, participation = None, None, None, None
 
         return ResourceModelSettings(
             optimization_metric=optimization_metric,
-            max_evaluations=max_evaluations,
+            max_evaluations=max_iterations,
             num_evaluations_per_iteration=num_evaluations_per_iteration,
             discovery_type=discovery_type,
             granularity=granularity,
