@@ -262,7 +262,9 @@ class ResourceModelOptimizer:
 
         self._add_timers_to_bpmn(bps_model, bps_model.extraneous_delays)
 
-        bps_model = self._add_prioritization_rules(bps_model, self.event_log.train_partition, self.event_log.log_ids)
+        bps_model = self._add_prioritization_rules_if_needed(
+            bps_model, self.event_log.train_partition, self.event_log.log_ids
+        )
 
         json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
 
@@ -297,11 +299,15 @@ class ResourceModelOptimizer:
 
         enhanced_simulation_model.bpmn_document.write(bps_model.process_model, pretty_print=True)
 
-    @staticmethod
-    def _add_prioritization_rules(bps_mode: BPSModel, log: pd.DataFrame, log_ids: EventLogIDs) -> BPSModel:
+    def _add_prioritization_rules_if_needed(
+        self, bps_model: BPSModel, log: pd.DataFrame, log_ids: EventLogIDs
+    ) -> BPSModel:
         """
         Adds prioritization rules to the BPS model to pass them later to Primos during simulation.
         """
+        if self.settings.discover_prioritization_rules is False:
+            return bps_model
+
         rules = discover_prioritization_rules(log, log_ids)
-        bps_mode.prioritization_rules = rules
-        return bps_mode
+        bps_model.prioritization_rules = rules
+        return bps_model

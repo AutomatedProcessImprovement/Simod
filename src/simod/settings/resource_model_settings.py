@@ -106,14 +106,18 @@ class ResourceModelSettings:
     confidence: Optional[Union[float, Tuple[float, float]]] = (0.5, 0.85)  # from 0 to 1.0
     support: Optional[Union[float, Tuple[float, float]]] = (0.01, 0.3)  # from 0 to 1.0
     participation: Optional[Union[float, Tuple[float, float]]] = 0.4  # from 0 to 1.0
+    discover_prioritization_rules: Optional[bool] = False
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
         optimization_metric = Metric.from_str(config.get("optimization_metric", "circadian_emd"))
         max_iterations = config.get("max_evaluations", 10)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
-        # Discovery type
-        discovery_type = CalendarType.from_str(config.get("discovery_type", "undifferentiated"))
+        discover_prioritization_rules = config.get("discover_prioritization_rules", False)
+
+        resource_profiles = config.get("resource_profiles", {})
+        discovery_type = CalendarType.from_str(resource_profiles.get("discovery_type", "undifferentiated"))
+
         # Calendar discovery parameters
         if discovery_type in [
             CalendarType.UNDIFFERENTIATED,
@@ -136,6 +140,7 @@ class ResourceModelSettings:
             confidence=confidence,
             support=support,
             participation=participation,
+            discover_prioritization_rules=discover_prioritization_rules,
         )
 
     def to_dict(self) -> dict:
@@ -145,7 +150,9 @@ class ResourceModelSettings:
             "max_evaluations": self.max_evaluations,
             "num_evaluations_per_iteration": self.num_evaluations_per_iteration,
             "discovery_type": self.discovery_type.value,
+            "discover_prioritization_rules": self.discover_prioritization_rules,
         }
+
         # Parse calendar discovery parameters
         if self.discovery_type in [
             CalendarType.UNDIFFERENTIATED,
@@ -156,5 +163,5 @@ class ResourceModelSettings:
             dictionary["confidence"] = self.confidence
             dictionary["support"] = self.support
             dictionary["participation"] = self.participation
-        # Return dictionary
+
         return dictionary
