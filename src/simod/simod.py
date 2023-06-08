@@ -195,6 +195,9 @@ class Simod:
         return best_resource_model_params
 
     def optimize_extraneous_activity_delays(self) -> List[ExtraneousDelay]:
+        if self._settings.extraneous_activity_delays is None:
+            return []
+
         settings = self._settings.extraneous_activity_delays
         self._extraneous_delay_timers_optimizer = ExtraneousDelayTimersOptimizer(
             event_log=self._event_log,
