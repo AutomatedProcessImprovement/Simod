@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional, List
 
 import pandas as pd
+from extraneous_activity_delays.prosimos.simulation_model_enhancer import add_timers_to_simulation_model
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
 from pix_framework.filesystem.file_manager import (
@@ -23,6 +24,7 @@ from simod.control_flow.settings import (
 )
 from simod.event_log.event_log import EventLog
 from simod.extraneous_delays.optimizer import ExtraneousDelayTimersOptimizer
+from simod.extraneous_delays.utilities import make_simulation_model_from_bps_model
 from simod.prioritization.discovery import discover_prioritization_rules
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.settings import (
@@ -31,7 +33,10 @@ from simod.resource_model.settings import (
 from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
-from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
+from simod.simulation.parameters.extraneous_delays import (
+    ExtraneousDelay,
+    convert_extraneous_delays_to_extraneous_package_format,
+)
 from simod.simulation.parameters.resource_model import discover_resource_model
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
@@ -106,8 +111,6 @@ class Simod:
         self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
 
-        # TODO: add extraneous timers to BPMN model
-
         self._add_prioritization_rules_if_needed()
 
         # TODO: add batching rules to BPS model
@@ -121,6 +124,9 @@ class Simod:
         print_section("Optimizing extraneous delay timers")
         timers = self.optimize_extraneous_activity_delays()
         self._best_bps_model.extraneous_delays = timers
+
+        # Update BPMN model on disk
+        self._add_timers_to_bpmn(timers)
 
         # --- Final evaluation --- #
         print_section("Evaluating final BPS model")
@@ -187,6 +193,24 @@ class Simod:
         )
         best_control_flow_params = self._control_flow_optimizer.run()
         return best_control_flow_params
+
+    def _add_timers_to_bpmn(self, timers: Optional[List[ExtraneousDelay]]):
+        """
+        Rewrites the BPMN file by adding timers if there are any.
+        """
+        if timers is None or len(timers) == 0:
+            return
+
+        bps_model = self._best_bps_model
+
+        simulation_model = make_simulation_model_from_bps_model(bps_model)
+        timers_ = convert_extraneous_delays_to_extraneous_package_format(timers)
+        enhanced_simulation_model = add_timers_to_simulation_model(
+            simulation_model=simulation_model,
+            timers=timers_,
+        )
+
+        enhanced_simulation_model.bpmn_document.write(bps_model.process_model, pretty_print=True)
 
     def _add_prioritization_rules_if_needed(self) -> BPSModel:
         """
