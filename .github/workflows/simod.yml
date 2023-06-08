@@ -1,4 +1,4 @@
-name: Build & Test
+name: Build, Test, Release
 
 on:
   workflow_dispatch:
@@ -34,12 +34,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get the version
-        id: versioning
-        run: |
-          pip install poetry
-          echo "version=$(poetry version --short)" >> "$GITHUB_OUTPUT"
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -60,44 +54,6 @@ jobs:
           file: Dockerfile
           context: .
           platforms: linux/amd64,linux/arm64
-
-      - name: Generate licenses.md
-        run: |
-          poetry run pip install pip-licenses
-          poetry run pip-licenses --with-system --with-urls --format=markdown --output-file=licenses.md
-        if: github.ref == 'refs/heads/master'
-
-      - name: Upload licenses.md
-        uses: actions/upload-artifact@v3
-        with:
-          name: licenses.md
-          path: licenses.md
-        if: github.ref == 'refs/heads/master'
-
-      - name: Generate changelog
-        run: |
-          echo "# Changelog" > CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          echo "\`\`\`" >> CHANGELOG.md
-          git log --pretty=format:"%h - %s (%an)" $(git describe --tags --abbrev=0)..HEAD >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          echo "\`\`\`" >> CHANGELOG.md
-        if: github.ref == 'refs/heads/master'
-
-      - name: Assign a version tag
-        run: |
-          git tag ${{ steps.versioning.outputs.version }}
-          git push --tags
-        if: github.ref == 'refs/heads/master'
-
-      - name: Create a release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist/*
-          tag_name: ${{ steps.versioning.outputs.version }}
-          body_path: CHANGELOG.md
-        if: github.ref == 'refs/heads/master'
 
   test:
     needs: [ build ]
@@ -136,3 +92,55 @@ jobs:
           fail_ci_if_error: false
           name: codecov-umbrella
           verbose: true
+
+  release:
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.versioning.outputs.version }}
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install poetry
+        run: pip install poetry
+
+      - name: Generate licenses.md
+        run: |
+          poetry run pip install pip-licenses
+          poetry run pip-licenses --with-system --with-urls --format=markdown --output-file=licenses.md
+
+      - name: Upload licenses.md
+        uses: actions/upload-artifact@v3
+        with:
+          name: licenses.md
+          path: licenses.md
+
+      - name: Generate changelog
+        run: |
+          echo "# Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "\`\`\`" >> CHANGELOG.md
+          git log --pretty=format:"%h - %s (%an)" $(git describe --tags --abbrev=0)..HEAD >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "\`\`\`" >> CHANGELOG.md
+
+      - name: Get the version
+        id: versioning
+        run: echo "version=$(poetry version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: Assign a version tag
+        run: |
+          git tag ${{ steps.versioning.outputs.version }}
+          git push --tags
+
+      - name: Create a release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*
+          tag_name: ${{ steps.versioning.outputs.version }}
+          body_path: CHANGELOG.md
