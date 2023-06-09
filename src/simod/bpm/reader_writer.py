@@ -20,6 +20,7 @@ class BPMNReaderWriter:
     tree: lxml.etree.ElementTree
     namespace: dict
     _root: lxml.etree.Element
+    _activities: Union[None, list[dict[str, str]]] = None
 
     def __init__(self, model_path: Union[str, Path]):
         self.model_path = Path(model_path)
@@ -30,14 +31,25 @@ class BPMNReaderWriter:
     def as_graph(self) -> nx.DiGraph:
         return graph.from_bpmn_reader(self)
 
-    def read_activities(self):
-        """Activities information from the model."""
+    def read_activities(self, force: bool = False) -> list[dict[str, str]]:
+        """
+        Activities information from the model.
+
+        :param force: Force to read the activities from the model.
+        """
+        if self._activities is not None and not force:
+            return self._activities
+
         values = []
+
         for process in self._root.findall("xmlns:process", self.namespace):
             for task in process.findall("xmlns:task", self.namespace):
                 task_id = task.get("id")
                 task_name = task.get("name")
                 values.append(dict(task_id=task_id, task_name=task_name))
+
+        self._activities = values
+
         return values
 
     def read_exclusive_gateways(self):
@@ -177,3 +189,10 @@ class BPMNReaderWriter:
             element["out_path_id"] = seq["target"]
 
         return model_xml
+
+    def get_activities_ids_mapping(self) -> dict[str, str]:
+        """
+        Returns a mapping from activity names to activity ids.
+        """
+        activities = self.read_activities()
+        return {activity["name"]: activity["id"] for activity in activities}
