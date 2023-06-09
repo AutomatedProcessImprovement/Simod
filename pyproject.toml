@@ -37,6 +37,7 @@ start-time-estimator = "^1.10.9"
 log-distance-measures = "^1.0.2"
 case-attribute-discovery = "^0.1.6"
 prioritization-discovery = "^0.4.3"
+batch-processing-discovery = "^0.4.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"
