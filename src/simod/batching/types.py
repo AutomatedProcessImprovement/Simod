@@ -8,6 +8,9 @@ class FiringRule:
     condition: str
     value: str
 
+    def __eq__(self, other: "FiringRule") -> bool:
+        return self.attribute == other.attribute and self.condition == other.condition and self.value == other.value
+
     @staticmethod
     def from_dict(rule: dict) -> "FiringRule":
         return FiringRule(
@@ -23,12 +26,33 @@ class FiringRule:
             "value": self.value,
         }
 
+    @staticmethod
+    def from_prosimos(rule: dict) -> "FiringRule":
+        return FiringRule(
+            attribute=FiringRule._attribute_name_from_prosimos(rule["attribute"]),
+            condition=rule["condition"],
+            value=FiringRule._attribute_value_from_prosimos_if_week_day(rule["attribute"], rule["value"]),
+        )
+
     def to_prosimos(self) -> dict:
         return {
             "attribute": self._attribute_name_to_prosimos(self.attribute),
             "condition": self.condition,
             "value": self._attribute_value_to_prosimos_if_week_day(self.value),
         }
+
+    @staticmethod
+    def _attribute_name_from_prosimos(attribute: str) -> str:
+        if attribute == "size":
+            return "batch_size"
+        elif attribute == "daily_hour":
+            return "daily_hour"
+        elif attribute == "ready_wt":
+            return "batch_ready_wt"
+        elif attribute == "large_wt":
+            return "batch_max_wt"
+        else:
+            raise attribute
 
     @staticmethod
     def _attribute_name_to_prosimos(attribute: str) -> str:
@@ -47,6 +71,31 @@ class FiringRule:
         if self.attribute == "week_day":
             return self._week_day_from_int_to_str(int(value))
         return value
+
+    @staticmethod
+    def _attribute_value_from_prosimos_if_week_day(attribute: str, value: str) -> str:
+        if attribute == "week_day":
+            return str(FiringRule._week_day_from_str_to_int(value))
+        return value
+
+    @staticmethod
+    def _week_day_from_str_to_int(week_day: str) -> int:
+        week_day = week_day.capitalize()
+
+        if week_day == "Monday":
+            return 0
+        elif week_day == "Tuesday":
+            return 1
+        elif week_day == "Wednesday":
+            return 2
+        elif week_day == "Thursday":
+            return 3
+        elif week_day == "Friday":
+            return 4
+        elif week_day == "Saturday":
+            return 5
+        elif week_day == "Sunday":
+            return 6
 
     @staticmethod
     def _week_day_from_int_to_str(week_day: int) -> str:
@@ -78,12 +127,22 @@ class AndRules:
     def __next__(self):
         return next(self._rules)
 
+    def __eq__(self, other: "AndRules"):
+        return self._rules == other._rules
+
+    def __getitem__(self, rule_index: int) -> FiringRule:
+        return self._rules[rule_index]
+
     @staticmethod
     def from_list(and_rules: list[dict]) -> "AndRules":
         return AndRules([FiringRule.from_dict(rule) for rule in and_rules])
 
     def to_list(self) -> list[dict]:
         return [rule.to_dict() for rule in self._rules]
+
+    @staticmethod
+    def from_prosimos(and_rules: list[dict]) -> "AndRules":
+        return AndRules([FiringRule.from_prosimos(rule) for rule in and_rules])
 
     def to_prosimos(self) -> list[dict]:
         result = []
@@ -112,12 +171,22 @@ class OrRules:
     def __next__(self):
         return next(self._rules)
 
+    def __eq__(self, other: "OrRules"):
+        return self._rules == other._rules
+
+    def __getitem__(self, rule_index: int) -> AndRules:
+        return self._rules[rule_index]
+
     @staticmethod
     def from_list(or_rules: list[list[dict]]) -> "OrRules":
         return OrRules([AndRules.from_list(and_rules) for and_rules in or_rules])
 
     def to_list(self) -> list[list[dict]]:
         return [and_rule.to_list() for and_rule in self._rules]
+
+    @staticmethod
+    def from_prosimos(or_rules: list[list[dict]]) -> "OrRules":
+        return OrRules([AndRules.from_prosimos(and_rules) for and_rules in or_rules])
 
     def to_prosimos(self) -> list[list[dict]]:
         return [and_rule.to_prosimos() for and_rule in self._rules]
@@ -128,6 +197,12 @@ class FiringRules:
     confidence: float
     support: float
     rules: OrRules
+
+    def __eq__(self, other: "FiringRules"):
+        return self.confidence == other.confidence and self.support == other.support and self.rules == other.rules
+
+    def __getitem__(self, rule_index: int) -> AndRules:
+        return self.rules[rule_index]
 
     @staticmethod
     def from_dict(rules: dict) -> "FiringRules":
@@ -141,6 +216,12 @@ class FiringRules:
             "support": self.support,
             "rules": self.rules.to_list(),
         }
+
+    @staticmethod
+    def from_prosimos(rules: dict) -> "FiringRules":
+        return FiringRules(
+            confidence=rules["confidence"], support=rules["support"], rules=OrRules.from_prosimos(rules["rules"])
+        )
 
     def to_prosimos(self) -> dict:
         return {
@@ -157,12 +238,23 @@ class BatchingRule:
     """
 
     activity: str
-    resources: list[str]
+    resources: Union[list[str], None]
     type: str
-    batch_frequency: float
+    batch_frequency: Union[float, None]
     size_distribution: dict[str, int]
     duration_distribution: dict[str, float]
     firing_rules: FiringRules
+
+    def __eq__(self, other: "BatchingRule") -> bool:
+        return (
+            self.activity == other.activity
+            and self.resources == other.resources
+            and self.type == other.type
+            and self.batch_frequency == other.batch_frequency
+            and self.size_distribution == other.size_distribution
+            and self.duration_distribution == other.duration_distribution
+            and self.firing_rules == other.firing_rules
+        )
 
     @staticmethod
     def from_dict(rule: dict) -> "BatchingRule":
@@ -180,21 +272,7 @@ class BatchingRule:
             firing_rules=FiringRules(
                 confidence=rule["firing_rules"]["confidence"],
                 support=rule["firing_rules"]["support"],
-                rules=OrRules(
-                    [
-                        AndRules(
-                            [
-                                FiringRule(
-                                    rule["attribute"],
-                                    rule["condition"],
-                                    rule["value"],
-                                )
-                                for rule in and_rule
-                            ]
-                        )
-                        for and_rule in rule["firing_rules"]["rules"]
-                    ]
-                ),
+                rules=OrRules.from_list(rule["firing_rules"]["rules"]),
             ),
         )
 
@@ -211,6 +289,32 @@ class BatchingRule:
             "duration_distribution": self.duration_distribution,
             "firing_rules": self.firing_rules.to_dict(),
         }
+
+    @staticmethod
+    def from_prosimos(rule: dict, activities_names_by_id: dict[str, str]) -> "BatchingRule":
+        """
+        Deserializes a BatchingRule from a dict coming from Prosimos.
+        """
+        return BatchingRule(
+            activity=activities_names_by_id[rule["task_id"]],
+            resources=None,
+            type=rule["type"],
+            batch_frequency=None,
+            size_distribution=BatchingRule._distribution_from_prosimos(rule["size_distrib"]),
+            duration_distribution=BatchingRule._distribution_from_prosimos(rule["duration_distrib"]),
+            firing_rules=FiringRules(
+                confidence=rule["firing_rules"]["confidence"],
+                support=rule["firing_rules"]["support"],
+                rules=OrRules.from_prosimos(rule["firing_rules"]["rules"]),
+            ),
+        )
+
+    @staticmethod
+    def _distribution_from_prosimos(distributions: list[dict[str, Union[int, float]]]) -> dict[str, Union[int, float]]:
+        result = {}
+        for item in distributions:
+            result[str(item["key"])] = item["value"]
+        return result
 
     def to_prosimos(self, activities_ids_by_name: dict[str, str]) -> dict:
         """

@@ -15,7 +15,7 @@ class PrioritizationRule:
             value=rule["value"],
         )
 
-    def to_dict(self) -> dict:
+    def to_prosimos(self) -> dict:
         return {
             "attribute": self.attribute,
             "condition": self.condition,
@@ -34,7 +34,7 @@ class PrioritizationGroup:
         )
 
     def to_list(self) -> list[dict]:
-        return list(map(lambda x: x.to_dict(), self.rules))
+        return list(map(lambda x: x.to_prosimos(), self.rules))
 
 
 @dataclass
@@ -43,13 +43,13 @@ class PrioritizationLevel:
     rules: list[PrioritizationGroup]
 
     @staticmethod
-    def from_dict(level: dict) -> "PrioritizationLevel":
+    def from_prosimos(level: dict) -> "PrioritizationLevel":
         return PrioritizationLevel(
             priority_level=level["priority_level"],
             rules=list(map(PrioritizationGroup.from_list, level["rules"])),
         )
 
-    def to_dict(self) -> dict:
+    def to_prosimos(self) -> dict:
         return {
             "priority_level": self.priority_level,
             "rules": list(map(lambda x: x.to_list(), self.rules)),

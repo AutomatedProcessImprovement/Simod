@@ -25,11 +25,11 @@ def test_prioritization_rules_serialization_deserialization(entry_point):
         ]
     }
 
-    levels = list(map(PrioritizationLevel.from_dict, rules_dict["prioritization_rules"]))
+    levels = list(map(PrioritizationLevel.from_prosimos, rules_dict["prioritization_rules"]))
 
     assert len(levels) == 2
 
-    rules_dict_2 = {"prioritization_rules": list(map(lambda x: x.to_dict(), levels))}
+    rules_dict_2 = {"prioritization_rules": list(map(lambda x: x.to_prosimos(), levels))}
 
     assert rules_dict == rules_dict_2
 

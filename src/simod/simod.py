@@ -14,6 +14,7 @@ from pix_framework.filesystem.file_manager import (
 )
 from pix_framework.io.bpm_graph import BPMNGraph
 
+from simod.batching.discovery import discover_batching_rules
 from simod.bpm.graph import get_activities_ids_by_name
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.cli_formatter import print_section, print_subsection
@@ -113,7 +114,7 @@ class Simod:
 
         self._add_prioritization_rules_if_needed()
 
-        # TODO: add batching rules to BPS model
+        self._add_batching_rules_if_needed()
 
         # --- Congestion Model Discovery --- #
         print_section("Optimizing resource model parameters")
@@ -212,21 +213,26 @@ class Simod:
 
         enhanced_simulation_model.bpmn_document.write(bps_model.process_model, pretty_print=True)
 
-    def _add_prioritization_rules_if_needed(self) -> BPSModel:
+    def _add_prioritization_rules_if_needed(self):
         """
-        Adds prioritization rules to the BPS model to pass them later to Primos during simulation.
+        Adds prioritization _rules to the BPS model to pass them later to Primos during simulation.
         """
-        bps_model = self._best_bps_model
-        log = self._event_log.train_partition
-        log_ids = self._event_log.log_ids
-
         if self._settings.resource_model.discover_prioritization_rules is False:
-            return bps_model
+            return
 
-        rules = discover_prioritization_rules(log, log_ids)
-        bps_model.prioritization_rules = rules
+        rules = discover_prioritization_rules(self._event_log.train_partition, self._event_log.log_ids)
 
-        return bps_model
+        self._best_bps_model.prioritization_rules = rules
+
+    def _add_batching_rules_if_needed(self):
+        """
+        Adds batching _rules to the BPS model to pass them later to Primos during simulation.
+        """
+        if self._settings.resource_model.discover_batching_rules is False:
+            return
+
+        rules = discover_batching_rules(self._event_log.train_partition, self._event_log.log_ids)
+        self._best_bps_model.batching_rules = rules
 
     def _optimize_resource_model(self) -> ResourceModelHyperoptIterationParams:
         """
@@ -282,7 +288,7 @@ class Simod:
         # Write JSON parameters to file
         json_parameters_path = get_simulation_parameters_path(output_dir, self._event_log.process_name)
         with json_parameters_path.open("w") as f:
-            json.dump(bps_model.to_dict(), f)
+            json.dump(bps_model.to_prosimos(), f)
 
         measurements = simulate_and_evaluate(
             model_path=bps_model.process_model,

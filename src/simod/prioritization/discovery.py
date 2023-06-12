@@ -22,7 +22,7 @@ def discover_prioritization_rules(log: pd.DataFrame, log_ids: EventLogIDs) -> li
         attributes=case_attribute_names,
     )
 
-    rules = list(map(PrioritizationLevel.from_dict, rules))
+    rules = list(map(PrioritizationLevel.from_prosimos, rules))
 
     return rules
 

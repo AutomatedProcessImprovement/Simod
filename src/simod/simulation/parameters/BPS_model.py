@@ -1,3 +1,4 @@
+import copy
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -6,6 +7,7 @@ from typing import Optional, List
 from pix_framework.discovery.case_arrival import CaseArrivalModel
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 
+from simod.batching.types import BatchingRule
 from simod.bpm.graph import get_activities_ids_by_name
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.prioritization.types import PrioritizationLevel
@@ -28,10 +30,9 @@ class BPSModel:
     # TODO: do wee need case_attributes in BPS model if they only used once in prioritization discovery?
     # case_attributes: Optional[List[CaseAttribute]] = None
     prioritization_rules: Optional[List[PrioritizationLevel]] = None
+    batching_rules: Optional[List[BatchingRule]] = None
 
-    # batching_rules: Optional[List[BatchingRule]] = None
-
-    def to_dict(self) -> dict:
+    def to_prosimos(self) -> dict:
         attributes = {}
 
         if self.process_model is not None:
@@ -55,15 +56,20 @@ class BPSModel:
         # TODO: case attributes?
 
         if self.prioritization_rules is not None:
-            attributes |= {"prioritization_rules": list(map(lambda x: x.to_dict(), self.prioritization_rules))}
+            attributes |= {"prioritization_rules": list(map(lambda x: x.to_prosimos(), self.prioritization_rules))}
+
+        if self.batching_rules is not None:
+            attributes |= {"batching_rules": list(map(lambda x: x.to_prosimos(), self.batching_rules))}
 
         return attributes
 
     def deep_copy(self) -> "BPSModel":
-        return BPSModel.from_dict(self.to_dict())
+        return copy.deepcopy(self)
 
     @staticmethod
     def from_dict(bps_model: dict) -> "BPSModel":
+        # NOTE: this method is not needed if we use copy.deepcopy in self.deep_copy()
+
         process_model_path = Path(bps_model["process_model"]) if "process_model" in bps_model else None
 
         gateway_probabilities = (
@@ -97,10 +103,21 @@ class BPSModel:
 
         prioritization_rules = (
             [
-                PrioritizationLevel.from_dict(prioritization_rule)
+                PrioritizationLevel.from_prosimos(prioritization_rule)
                 for prioritization_rule in bps_model["prioritization_rules"]
             ]
             if "prioritization_rules" in bps_model
+            else None
+        )
+
+        bpmn_reader = BPMNReaderWriter(process_model_path)
+        activities_names_by_id = bpmn_reader.get_activities_ids_to_names_mapping()
+        batching_rules = (
+            [
+                BatchingRule.from_prosimos(batching_rule, activities_names_by_id)
+                for batching_rule in bps_model["batching_rules"]
+            ]
+            if "batching_rules" in bps_model
             else None
         )
 
@@ -110,6 +127,7 @@ class BPSModel:
             case_arrival_model=case_arrival_model,
             resource_model=resource_model,
             prioritization_rules=prioritization_rules,
+            batching_rules=batching_rules,
         )
 
     def replace_activity_names_with_ids(self):
@@ -133,7 +151,7 @@ class BPSModel:
         json_parameters_path = get_simulation_parameters_path(output_dir, process_name)
 
         with json_parameters_path.open("w") as f:
-            json.dump(self.to_dict(), f)
+            json.dump(self.to_prosimos(), f)
 
         return json_parameters_path
 

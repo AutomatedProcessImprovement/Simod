@@ -190,9 +190,16 @@ class BPMNReaderWriter:
 
         return model_xml
 
-    def get_activities_ids_mapping(self) -> dict[str, str]:
+    def get_activities_names_to_ids_mapping(self) -> dict[str, str]:
         """
         Returns a mapping from activity names to activity ids.
         """
         activities = self.read_activities()
         return {activity["name"]: activity["id"] for activity in activities}
+
+    def get_activities_ids_to_names_mapping(self) -> dict[str, str]:
+        """
+        Returns a mapping from activity ids to activity names.
+        """
+        activities = self.read_activities()
+        return {activity["id"]: activity["name"] for activity in activities}
