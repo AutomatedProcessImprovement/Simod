@@ -1,10 +1,10 @@
 import pandas as pd
-from case_attribute_discovery.discovery import discover_case_attributes
 from pix_framework.log_ids import EventLogIDs
 from prioritization_discovery.discovery import discover_priority_rules
 
 from simod.event_log.utilities import add_enabled_time_if_missing
 from .types import PrioritizationRule
+from ..case_attributes.discovery import discover_case_attributes
 
 
 def discover_prioritization_rules(log: pd.DataFrame, log_ids: EventLogIDs) -> list[PrioritizationRule]:
@@ -14,8 +14,8 @@ def discover_prioritization_rules(log: pd.DataFrame, log_ids: EventLogIDs) -> li
     """
     log = add_enabled_time_if_missing(log, log_ids)
 
-    case_attributes = get_case_attributes(log, log_ids)
-    case_attribute_names = list(map(lambda x: x["name"], case_attributes))
+    case_attributes = discover_case_attributes(log, log_ids)
+    case_attribute_names = list(map(lambda x: x.name, case_attributes))
 
     rules = discover_priority_rules(
         event_log=log,
@@ -25,21 +25,3 @@ def discover_prioritization_rules(log: pd.DataFrame, log_ids: EventLogIDs) -> li
     rules = list(map(PrioritizationRule.from_prosimos, rules))
 
     return rules
-
-
-def get_case_attributes(log: pd.DataFrame, log_ids: EventLogIDs) -> list[dict]:
-    """
-    Discover case attributes from a log ignoring common non-case columns.
-    """
-    return discover_case_attributes(
-        event_log=log,
-        log_ids=log_ids,
-        avoid_columns=[
-            log_ids.case,
-            log_ids.activity,
-            log_ids.enabled_time,
-            log_ids.start_time,
-            log_ids.end_time,
-            log_ids.resource,
-        ],
-    )

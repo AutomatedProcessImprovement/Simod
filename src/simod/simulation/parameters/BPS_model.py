@@ -28,8 +28,7 @@ class BPSModel:
     case_arrival_model: Optional[CaseArrivalModel] = None
     resource_model: Optional[ResourceModel] = None
     extraneous_delays: Optional[List[ExtraneousDelay]] = None
-    # TODO: do wee need case_attributes in BPS model if they only used once in prioritization discovery?
-    # case_attributes: Optional[List[CaseAttribute]] = None
+    case_attributes: Optional[List[CaseAttribute]] = None
     prioritization_rules: Optional[List[PrioritizationRule]] = None
     batching_rules: Optional[List[BatchingRule]] = None
 
