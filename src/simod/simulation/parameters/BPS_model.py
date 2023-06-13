@@ -11,6 +11,7 @@ from prosimos.simulation_properties_parser import PRIORITISATION_RULES_SECTION, 
 from simod.batching.types import BatchingRule
 from simod.bpm.graph import get_activities_ids_by_name
 from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.case_attributes.types import CaseAttribute
 from simod.prioritization.types import PrioritizationRule
 from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
 from simod.simulation.parameters.resource_model import ResourceModel

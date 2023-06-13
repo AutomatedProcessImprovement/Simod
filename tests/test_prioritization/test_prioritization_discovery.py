@@ -1,6 +1,7 @@
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import EventLogIDs
 
+from simod.case_attributes.discovery import discover_case_attributes
 from simod.prioritization.discovery import (
     discover_prioritization_rules,
 )
@@ -38,6 +39,8 @@ def test_discover_prioritization_rules(entry_point):
     )
     log = read_csv_log(log_path, log_ids)
 
-    rules = discover_prioritization_rules(log, log_ids)
+    case_attributes = discover_case_attributes(log, log_ids)
+
+    rules = discover_prioritization_rules(log, log_ids, case_attributes)
 
     assert len(rules) > 0

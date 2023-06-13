@@ -17,6 +17,7 @@ from pix_framework.io.bpm_graph import BPMNGraph
 from simod.batching.discovery import discover_batching_rules
 from simod.bpm.graph import get_activities_ids_by_name
 from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.case_attributes.discovery import discover_case_attributes
 from simod.cli_formatter import print_section, print_subsection
 from simod.control_flow.discovery import discover_process_model
 from simod.control_flow.optimizer import ControlFlowOptimizer
@@ -111,6 +112,8 @@ class Simod:
         best_control_flow_params = self._optimize_control_flow()
         self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
+
+        self._add_case_attributes()
 
         self._add_prioritization_rules_if_needed()
 
@@ -213,6 +216,13 @@ class Simod:
 
         enhanced_simulation_model.bpmn_document.write(bps_model.process_model, pretty_print=True)
 
+    def _add_case_attributes(self):
+        """
+        Adds case attributes to the BPS model to pass them later to prioritization rules discovery and Prosimos.
+        """
+        case_attributes = discover_case_attributes(self._event_log.train_partition, self._event_log.log_ids)
+        self._best_bps_model.case_attributes = case_attributes
+
     def _add_prioritization_rules_if_needed(self):
         """
         Adds prioritization _rules to the BPS model to pass them later to Primos during simulation.
@@ -220,7 +230,9 @@ class Simod:
         if self._settings.resource_model.discover_prioritization_rules is False:
             return
 
-        rules = discover_prioritization_rules(self._event_log.train_partition, self._event_log.log_ids)
+        rules = discover_prioritization_rules(
+            self._event_log.train_partition, self._event_log.log_ids, self._best_bps_model.case_attributes
+        )
 
         self._best_bps_model.prioritization_rules = rules
 
