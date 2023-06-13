@@ -6,6 +6,7 @@ from typing import Optional, List
 
 from pix_framework.discovery.case_arrival import CaseArrivalModel
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
+from prosimos.simulation_properties_parser import PRIORITISATION_RULES_SECTION, BATCH_PROCESSING_SECTION
 
 from simod.batching.types import BatchingRule
 from simod.bpm.graph import get_activities_ids_by_name
@@ -56,10 +57,12 @@ class BPSModel:
         # TODO: case attributes?
 
         if self.prioritization_rules is not None:
-            attributes |= {"prioritization_rules": list(map(lambda x: x.to_prosimos(), self.prioritization_rules))}
+            attributes |= {
+                PRIORITISATION_RULES_SECTION: list(map(lambda x: x.to_prosimos(), self.prioritization_rules))
+            }
 
         if self.batching_rules is not None:
-            attributes |= {"batching_rules": list(map(lambda x: x.to_prosimos(), self.batching_rules))}
+            attributes |= {BATCH_PROCESSING_SECTION: list(map(lambda x: x.to_prosimos(), self.batching_rules))}
 
         return attributes
 
@@ -104,9 +107,9 @@ class BPSModel:
         prioritization_rules = (
             [
                 PrioritizationLevel.from_prosimos(prioritization_rule)
-                for prioritization_rule in bps_model["prioritization_rules"]
+                for prioritization_rule in bps_model[PRIORITISATION_RULES_SECTION]
             ]
-            if "prioritization_rules" in bps_model
+            if PRIORITISATION_RULES_SECTION in bps_model
             else None
         )
 
@@ -115,9 +118,9 @@ class BPSModel:
         batching_rules = (
             [
                 BatchingRule.from_prosimos(batching_rule, activities_names_by_id)
-                for batching_rule in bps_model["batching_rules"]
+                for batching_rule in bps_model[BATCH_PROCESSING_SECTION]
             ]
-            if "batching_rules" in bps_model
+            if BATCH_PROCESSING_SECTION in bps_model
             else None
         )
 
