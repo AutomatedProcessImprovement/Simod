@@ -3,17 +3,17 @@ from typing import Union
 
 
 @dataclass
-class FiringRule:
+class BatchingFiringRule:
     attribute: str
     condition: str
     value: str
 
-    def __eq__(self, other: "FiringRule") -> bool:
+    def __eq__(self, other: "BatchingFiringRule") -> bool:
         return self.attribute == other.attribute and self.condition == other.condition and self.value == other.value
 
     @staticmethod
-    def from_dict(rule: dict) -> "FiringRule":
-        return FiringRule(
+    def from_dict(rule: dict) -> "BatchingFiringRule":
+        return BatchingFiringRule(
             attribute=rule["attribute"],
             condition=rule["condition"],
             value=rule["value"],
@@ -27,11 +27,11 @@ class FiringRule:
         }
 
     @staticmethod
-    def from_prosimos(rule: dict) -> "FiringRule":
-        return FiringRule(
-            attribute=FiringRule._attribute_name_from_prosimos(rule["attribute"]),
+    def from_prosimos(rule: dict) -> "BatchingFiringRule":
+        return BatchingFiringRule(
+            attribute=BatchingFiringRule._attribute_name_from_prosimos(rule["attribute"]),
             condition=rule["condition"],
-            value=FiringRule._attribute_value_from_prosimos_if_week_day(rule["attribute"], rule["value"]),
+            value=BatchingFiringRule._attribute_value_from_prosimos_if_week_day(rule["attribute"], rule["value"]),
         )
 
     def to_prosimos(self) -> dict:
@@ -75,7 +75,7 @@ class FiringRule:
     @staticmethod
     def _attribute_value_from_prosimos_if_week_day(attribute: str, value: str) -> str:
         if attribute == "week_day":
-            return str(FiringRule._week_day_from_str_to_int(value))
+            return str(BatchingFiringRule._week_day_from_str_to_int(value))
         return value
 
     @staticmethod
@@ -116,9 +116,9 @@ class FiringRule:
 
 
 class AndRules:
-    _rules: list[FiringRule]
+    _rules: list[BatchingFiringRule]
 
-    def __init__(self, rules: list[FiringRule]):
+    def __init__(self, rules: list[BatchingFiringRule]):
         self._rules = rules
 
     def __iter__(self):
@@ -130,19 +130,19 @@ class AndRules:
     def __eq__(self, other: "AndRules"):
         return self._rules == other._rules
 
-    def __getitem__(self, rule_index: int) -> FiringRule:
+    def __getitem__(self, rule_index: int) -> BatchingFiringRule:
         return self._rules[rule_index]
 
     @staticmethod
     def from_list(and_rules: list[dict]) -> "AndRules":
-        return AndRules([FiringRule.from_dict(rule) for rule in and_rules])
+        return AndRules([BatchingFiringRule.from_dict(rule) for rule in and_rules])
 
     def to_list(self) -> list[dict]:
         return [rule.to_dict() for rule in self._rules]
 
     @staticmethod
     def from_prosimos(and_rules: list[dict]) -> "AndRules":
-        return AndRules([FiringRule.from_prosimos(rule) for rule in and_rules])
+        return AndRules([BatchingFiringRule.from_prosimos(rule) for rule in and_rules])
 
     def to_prosimos(self) -> list[dict]:
         result = []
@@ -150,8 +150,8 @@ class AndRules:
             if isinstance(rule.value, list) or isinstance(rule.value, tuple):
                 # when there is an interval in the batch output, we transform it to two rules,
                 # one stating "greater than", and the other "lower than"
-                greater_than_rule = FiringRule(rule.attribute, ">", rule.value[0])
-                lower_than_rule = FiringRule(rule.attribute, "<", rule.value[1])
+                greater_than_rule = BatchingFiringRule(rule.attribute, ">", rule.value[0])
+                lower_than_rule = BatchingFiringRule(rule.attribute, "<", rule.value[1])
                 result.append(greater_than_rule.to_prosimos())
                 result.append(lower_than_rule.to_prosimos())
             else:
@@ -193,20 +193,20 @@ class OrRules:
 
 
 @dataclass
-class FiringRules:
+class BatchingFiringRules:
     confidence: float
     support: float
     rules: OrRules
 
-    def __eq__(self, other: "FiringRules"):
+    def __eq__(self, other: "BatchingFiringRules"):
         return self.confidence == other.confidence and self.support == other.support and self.rules == other.rules
 
     def __getitem__(self, rule_index: int) -> AndRules:
         return self.rules[rule_index]
 
     @staticmethod
-    def from_dict(rules: dict) -> "FiringRules":
-        return FiringRules(
+    def from_dict(rules: dict) -> "BatchingFiringRules":
+        return BatchingFiringRules(
             confidence=rules["confidence"], support=rules["support"], rules=OrRules.from_list(rules["rules"])
         )
 
@@ -218,8 +218,8 @@ class FiringRules:
         }
 
     @staticmethod
-    def from_prosimos(rules: dict) -> "FiringRules":
-        return FiringRules(
+    def from_prosimos(rules: dict) -> "BatchingFiringRules":
+        return BatchingFiringRules(
             confidence=rules["confidence"], support=rules["support"], rules=OrRules.from_prosimos(rules["rules"])
         )
 
@@ -243,7 +243,7 @@ class BatchingRule:
     batch_frequency: Union[float, None]
     size_distribution: dict[str, int]
     duration_distribution: dict[str, float]
-    firing_rules: FiringRules
+    firing_rules: BatchingFiringRules
 
     def __eq__(self, other: "BatchingRule") -> bool:
         return (
@@ -269,7 +269,7 @@ class BatchingRule:
             batch_frequency=rule["batch_frequency"],
             size_distribution=rule["size_distribution"],
             duration_distribution=rule["duration_distribution"],
-            firing_rules=FiringRules(
+            firing_rules=BatchingFiringRules(
                 confidence=rule["firing_rules"]["confidence"],
                 support=rule["firing_rules"]["support"],
                 rules=OrRules.from_list(rule["firing_rules"]["rules"]),
@@ -302,7 +302,7 @@ class BatchingRule:
             batch_frequency=None,
             size_distribution=BatchingRule._distribution_from_prosimos(rule["size_distrib"]),
             duration_distribution=BatchingRule._distribution_from_prosimos(rule["duration_distrib"]),
-            firing_rules=FiringRules(
+            firing_rules=BatchingFiringRules(
                 confidence=rule["firing_rules"]["confidence"],
                 support=rule["firing_rules"]["support"],
                 rules=OrRules.from_prosimos(rule["firing_rules"]["rules"]),

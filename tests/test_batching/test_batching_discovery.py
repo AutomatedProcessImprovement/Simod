@@ -4,7 +4,7 @@ from pix_framework.input import read_csv_log
 from pix_framework.log_ids import EventLogIDs
 
 from simod.batching.discovery import discover_batching_rules
-from simod.batching.types import FiringRule
+from simod.batching.types import BatchingFiringRule
 
 assets_dir = Path(__file__).parent / "assets"
 
@@ -40,7 +40,7 @@ def test_discover_batching_rules_loanapp():
         batch_id="batch_instance_id",
         batch_type="batch_instance_type",
     )
-    expected_rules = FiringRule(
+    expected_rules = BatchingFiringRule(
         attribute="batch_size",
         condition="=",
         value="3",

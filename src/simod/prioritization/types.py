@@ -2,14 +2,14 @@ from dataclasses import dataclass
 
 
 @dataclass
-class PrioritizationRule:
+class PrioritizationFiringRule:
     attribute: str
     condition: str
     value: list[str]
 
     @staticmethod
-    def from_dict(rule: dict) -> "PrioritizationRule":
-        return PrioritizationRule(
+    def from_prosimos(rule: dict) -> "PrioritizationFiringRule":
+        return PrioritizationFiringRule(
             attribute=rule["attribute"],
             condition=rule["condition"],
             value=rule["value"],
@@ -23,34 +23,52 @@ class PrioritizationRule:
         }
 
 
-@dataclass
-class PrioritizationGroup:
-    rules: list[PrioritizationRule]
+class AndRules:
+    _rules: list[PrioritizationFiringRule]
+
+    def __init__(self, rules: list[PrioritizationFiringRule]):
+        self._rules = rules
 
     @staticmethod
-    def from_list(group: list[dict]) -> "PrioritizationGroup":
-        return PrioritizationGroup(
-            rules=list(map(PrioritizationRule.from_dict, group)),
+    def from_prosimos(and_rules: list[dict]) -> "AndRules":
+        return AndRules(
+            rules=list(map(PrioritizationFiringRule.from_prosimos, and_rules)),
         )
 
-    def to_list(self) -> list[dict]:
-        return list(map(lambda x: x.to_prosimos(), self.rules))
+    def to_prosimos(self) -> list[dict]:
+        return list(map(lambda x: x.to_prosimos(), self._rules))
+
+
+class OrRules:
+    _rules: list[AndRules]
+
+    def __init__(self, rules: list[AndRules]):
+        self._rules = rules
+
+    @staticmethod
+    def from_prosimos(group: list[list[dict]]) -> "OrRules":
+        return OrRules(
+            rules=list(map(AndRules.from_prosimos, group)),
+        )
+
+    def to_prosimos(self) -> list[dict]:
+        return list(map(lambda x: x.to_prosimos(), self._rules))
 
 
 @dataclass
-class PrioritizationLevel:
+class PrioritizationRule:
     priority_level: int
-    rules: list[PrioritizationGroup]
+    rules: OrRules
 
     @staticmethod
-    def from_prosimos(level: dict) -> "PrioritizationLevel":
-        return PrioritizationLevel(
+    def from_prosimos(level: dict) -> "PrioritizationRule":
+        return PrioritizationRule(
             priority_level=level["priority_level"],
-            rules=list(map(PrioritizationGroup.from_list, level["rules"])),
+            rules=OrRules.from_prosimos(level["rules"]),
         )
 
     def to_prosimos(self) -> dict:
         return {
             "priority_level": self.priority_level,
-            "rules": list(map(lambda x: x.to_list(), self.rules)),
+            "rules": self.rules.to_prosimos(),
         }

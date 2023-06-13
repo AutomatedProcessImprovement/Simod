@@ -5,12 +5,12 @@ from simod.prioritization.discovery import (
     discover_prioritization_rules,
     get_case_attributes,
 )
-from simod.prioritization.types import PrioritizationLevel
+from simod.prioritization.types import PrioritizationRule
 
 
 def test_prioritization_rules_serialization_deserialization(entry_point):
     rules_dict = {
-        "prioritization_rules": [
+        "prioritisation_rules": [
             {
                 "priority_level": 1,
                 "rules": [
@@ -25,12 +25,10 @@ def test_prioritization_rules_serialization_deserialization(entry_point):
         ]
     }
 
-    levels = list(map(PrioritizationLevel.from_prosimos, rules_dict["prioritization_rules"]))
+    rules = list(map(PrioritizationRule.from_prosimos, rules_dict["prioritisation_rules"]))
+    rules_dict_2 = {"prioritisation_rules": list(map(lambda x: x.to_prosimos(), rules))}
 
-    assert len(levels) == 2
-
-    rules_dict_2 = {"prioritization_rules": list(map(lambda x: x.to_prosimos(), levels))}
-
+    assert len(rules) == 2
     assert rules_dict == rules_dict_2
 
 

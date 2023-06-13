@@ -11,7 +11,7 @@ from prosimos.simulation_properties_parser import PRIORITISATION_RULES_SECTION, 
 from simod.batching.types import BatchingRule
 from simod.bpm.graph import get_activities_ids_by_name
 from simod.bpm.reader_writer import BPMNReaderWriter
-from simod.prioritization.types import PrioritizationLevel
+from simod.prioritization.types import PrioritizationRule
 from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
 from simod.simulation.parameters.resource_model import ResourceModel
 from simod.utilities import get_simulation_parameters_path
@@ -30,7 +30,7 @@ class BPSModel:
     extraneous_delays: Optional[List[ExtraneousDelay]] = None
     # TODO: do wee need case_attributes in BPS model if they only used once in prioritization discovery?
     # case_attributes: Optional[List[CaseAttribute]] = None
-    prioritization_rules: Optional[List[PrioritizationLevel]] = None
+    prioritization_rules: Optional[List[PrioritizationRule]] = None
     batching_rules: Optional[List[BatchingRule]] = None
 
     def to_prosimos(self) -> dict:
@@ -106,7 +106,7 @@ class BPSModel:
 
         prioritization_rules = (
             [
-                PrioritizationLevel.from_prosimos(prioritization_rule)
+                PrioritizationRule.from_prosimos(prioritization_rule)
                 for prioritization_rule in bps_model[PRIORITISATION_RULES_SECTION]
             ]
             if PRIORITISATION_RULES_SECTION in bps_model
