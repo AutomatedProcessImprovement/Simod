@@ -33,7 +33,7 @@ def test_prioritization_rules_serialization_deserialization(entry_point):
 
 
 def test_discover_prioritization_rules(entry_point):
-    log_path = entry_point / "Insurance_claims_train.csv"
+    log_path = entry_point / "Insurance_Claims_train.csv"
     log_ids = EventLogIDs(
         case="case_id", activity="activity", start_time="start_time", end_time="end_time", resource="resource"
     )
