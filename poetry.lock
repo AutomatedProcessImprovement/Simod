@@ -441,27 +441,23 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "extraneous-activity-delays"
-version = "2.1.9"
+version = "2.1.10"
 description = ""
 category = "main"
 optional = false
-python-versions = ">=3.9, <3.12"
-files = []
-develop = false
+python-versions = ">=3.9,<3.12"
+files = [
+    {file = "extraneous_activity_delays-2.1.10-py3-none-any.whl", hash = "sha256:3e53b5aa2578e0e0f6b166d036dd864f3e963f8f932e571c55d8794275bdf7b1"},
+    {file = "extraneous_activity_delays-2.1.10.tar.gz", hash = "sha256:97ebd13a0acef8a6e13897dc0c39efb910e009a89abed0f5c09dc7301ee579f9"},
+]
 
 [package.dependencies]
-hyperopt = "^0.2.7"
-log-distance-measures = "^1.0.2"
-lxml = "^4.9.2"
-pix-framework = "^0.8.3"
-prosimos = "^1.2.4"
-start-time-estimator = "^1.10.9"
-
-[package.source]
-type = "git"
-url = "https://github.com/AutomatedProcessImprovement/extraneous-activity-delays.git"
-reference = "HEAD"
-resolved_reference = "db78b729b9844fa9cba3188e0f0d08f6f8053601"
+hyperopt = ">=0.2.7,<0.3.0"
+log-distance-measures = ">=1.0.2,<2.0.0"
+lxml = ">=4.9.2,<5.0.0"
+pix-framework = ">=0.8.3,<0.9.0"
+prosimos = ">=1.2.4,<2.0.0"
+start-time-estimator = ">=1.10.9,<2.0.0"
 
 [[package]]
 name = "fonttools"
@@ -1480,24 +1476,20 @@ description = ""
 category = "main"
 optional = false
 python-versions = ">=3.9,<3.12"
-files = []
-develop = false
+files = [
+    {file = "prosimos-1.2.4-py3-none-any.whl", hash = "sha256:ab49094b76ca9f2ba64d90a059ecf8302bd9226809ec963bb77d2da07a5cb35f"},
+    {file = "prosimos-1.2.4.tar.gz", hash = "sha256:9be97bb89e6e6c2319701939f3a118a18883b49a6320cf4ad603c6f657b858b5"},
+]
 
 [package.dependencies]
-click = "^8.1.3"
-numpy = "^1.24.3"
-pandas = "^2.0.1"
-pix-framework = "^0.8.7"
-pm4py = "^2.7.4"
-python-dateutil = "^2.8.2"
-pytz = "^2023.3"
-scipy = "^1.10.1"
-
-[package.source]
-type = "git"
-url = "https://github.com/AutomatedProcessImprovement/Prosimos.git"
-reference = "main"
-resolved_reference = "e26ca8ddbc9acd4e32dd14261a47e32faaf87e94"
+click = ">=8.1.3,<9.0.0"
+numpy = ">=1.24.3,<2.0.0"
+pandas = ">=2.0.1,<3.0.0"
+pix-framework = ">=0.8.7,<0.9.0"
+pm4py = ">=2.7.4,<3.0.0"
+python-dateutil = ">=2.8.2,<3.0.0"
+pytz = ">=2023.3,<2024.0"
+scipy = ">=1.10.1,<2.0.0"
 
 [[package]]
 name = "psutil"
@@ -2317,4 +2309,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "4eb6fc76f7c601d6e54d9f4ae18cd081042c201d6d91ac8f6a17a469cc5790d4"
+content-hash = "8671f7c05c472d4928b4a1766935b6840136ee44d73b8638d7b05141425700eb"
