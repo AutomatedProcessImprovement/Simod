@@ -5,7 +5,7 @@ from simod.case_attributes.discovery import discover_case_attributes
 
 
 def test_discover_case_attributes(entry_point):
-    log_path = entry_point / "Insurance_claims_train.csv"
+    log_path = entry_point / "Insurance_Claims_train.csv"
     log_ids = EventLogIDs(
         case="case_id", activity="Activity", start_time="start_time", end_time="end_time", resource="Resource"
     )
