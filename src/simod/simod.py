@@ -113,13 +113,16 @@ class Simod:
         self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
 
+        # --- Case Attributes --- #
         self._add_case_attributes()
 
+        # --- Prioritization --- #
         self._add_prioritization_rules_if_needed()
 
+        # --- Batching --- #
         self._add_batching_rules_if_needed()
 
-        # --- Congestion Model Discovery --- #
+        # --- Resource Model Discovery --- #
         print_section("Optimizing resource model parameters")
         best_resource_model_params = self._optimize_resource_model()
         self._best_bps_model.resource_model = self._resource_model_optimizer.best_bps_model.resource_model

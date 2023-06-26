@@ -27,7 +27,7 @@ preprocessing:
   multitasking: false
 control_flow:
   optimization_metric: dl
-  max_evaluations: 1
+  max_evaluations: 3
   mining_algorithm: sm3
   concurrency:
     - 0.0
@@ -48,7 +48,7 @@ control_flow:
     - false
 resource_model:
   optimization_metric: absolute_hourly_emd
-  max_evaluations: 1
+  max_evaluations: 3
   resource_profiles:
     discovery_type: differentiated
     granularity: 
@@ -63,7 +63,7 @@ resource_model:
     participation: 0.4
 extraneous_activity_delays:
   optimization_metric: absolute_emd
-  num_iterations: 1
+  num_iterations: 3
 """
 
 test_cases = [
@@ -76,7 +76,7 @@ test_cases = [
 
 @pytest.mark.system
 @pytest.mark.parametrize("test_data", test_cases, ids=[test_data["name"] for test_data in test_cases])
-def test_optimizer(test_data, entry_point):
+def test_simod(test_data, entry_point):
     settings: SimodSettings = test_data["settings"]
 
     settings.common.log_path = (entry_point / Path(settings.common.log_path).name).absolute()

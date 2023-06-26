@@ -46,7 +46,7 @@ structure_optimizer_test_data = [
 @pytest.mark.integration
 @pytest.mark.parametrize('test_data', structure_optimizer_test_data,
                          ids=[test_data['name'] for test_data in structure_optimizer_test_data])
-def test_miner(entry_point, test_data):
+def test_discover_process_model(entry_point, test_data):
     """Smoke test to check that the structure optimizer can be instantiated and run successfully."""
     log_path = entry_point / 'PurchasingExample.xes'
 
