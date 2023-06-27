@@ -8,14 +8,15 @@ import numpy as np
 import pandas as pd
 from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
+from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
+from pix_framework.discovery.resource_model import ResourceModel, discover_resource_model
 from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
 
 from .settings import HyperoptIterationParams
 from ..cli_formatter import print_subsection, print_step, print_message
 from ..event_log.event_log import EventLog
-from ..settings.resource_model_settings import CalendarDiscoveryParams, ResourceModelSettings, CalendarType
+from ..settings.resource_model_settings import ResourceModelSettings, CalendarType
 from ..simulation.parameters.BPS_model import BPSModel
-from ..simulation.parameters.resource_model import ResourceModel, discover_resource_model
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import hyperopt_step, get_simulation_parameters_path, get_process_model_path
 

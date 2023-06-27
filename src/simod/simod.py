@@ -7,6 +7,8 @@ import pandas as pd
 from extraneous_activity_delays.prosimos.simulation_model_enhancer import add_timers_to_simulation_model
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
+from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
+from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import (
     get_random_folder_id,
     get_random_file_id,
@@ -32,14 +34,12 @@ from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.settings import (
     HyperoptIterationParams as ResourceModelHyperoptIterationParams,
 )
-from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.parameters.extraneous_delays import (
     ExtraneousDelay,
     convert_extraneous_delays_to_extraneous_package_format,
 )
-from simod.simulation.parameters.resource_model import discover_resource_model
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
 

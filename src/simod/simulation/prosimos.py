@@ -9,13 +9,13 @@ from typing import List, Tuple, Optional, Dict
 import pandas as pd
 from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
+from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
+from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_notice, print_step
 from simod.metrics import compute_metric
-from .parameters.resource_activity_performances import ActivityResourceDistribution
-from .parameters.resource_profiles import ResourceProfile
 from ..event_log.utilities import read
 from ..settings.common_settings import Metric
 

@@ -1,5 +1,7 @@
 import pytest
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
+from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
+from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import get_random_folder_id, create_folder
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
@@ -7,10 +9,8 @@ from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams
 from simod.event_log.event_log import EventLog
 from simod.settings.control_flow_settings import ControlFlowSettings
-from simod.settings.resource_model_settings import CalendarDiscoveryParams
 from simod.settings.simod_settings import PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
-from simod.simulation.parameters.resource_model import discover_resource_model
 
 control_flow_config_sm3 = {
     "max_evaluations": 1,
