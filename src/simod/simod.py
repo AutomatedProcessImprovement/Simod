@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Optional, List
 
 import pandas as pd
-from extraneous_activity_delays.prosimos.simulation_model_enhancer import add_timers_to_simulation_model
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
 from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
@@ -28,7 +27,8 @@ from simod.control_flow.settings import (
 )
 from simod.event_log.event_log import EventLog
 from simod.extraneous_delays.optimizer import ExtraneousDelayTimersOptimizer
-from simod.extraneous_delays.utilities import make_simulation_model_from_bps_model
+from simod.extraneous_delays.types import ExtraneousDelay
+from simod.extraneous_delays.utilities import add_timers_to_bpmn_model
 from simod.prioritization.discovery import discover_prioritization_rules
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.settings import (
@@ -36,10 +36,6 @@ from simod.resource_model.settings import (
 )
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
-from simod.simulation.parameters.extraneous_delays import (
-    ExtraneousDelay,
-    convert_extraneous_delays_to_extraneous_package_format,
-)
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
 
@@ -82,12 +78,13 @@ class Simod:
         else:
             self._output_dir = output_dir
         self._control_flow_dir = self._output_dir / "control-flow"
-        self._resource_model_dir = self._output_dir / "resource_model"
-        self._extraneous_delay_timers_dir = self._output_dir / "extraneous-delay-timers"
-        self._best_result_dir = self._output_dir / "best_result"
         create_folder(self._control_flow_dir)
+        self._resource_model_dir = self._output_dir / "resource_model"
         create_folder(self._resource_model_dir)
-        create_folder(self._extraneous_delay_timers_dir)
+        if self._settings.extraneous_activity_delays is not None:
+            self._extraneous_delay_timers_dir = self._output_dir / "extraneous-delay-timers"
+            create_folder(self._extraneous_delay_timers_dir)
+        self._best_result_dir = self._output_dir / "best_result"
         create_folder(self._best_result_dir)
 
     def run(self):
@@ -114,13 +111,28 @@ class Simod:
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
 
         # --- Case Attributes --- #
-        self._add_case_attributes()
+        print_section("Discovering case attributes")
+        case_attributes = discover_case_attributes(
+            self._event_log.train_validation_partition,  # No optimization process here, use train + validation
+            self._event_log.log_ids
+        )
+        self._best_bps_model.case_attributes = case_attributes
 
         # --- Prioritization --- #
-        self._add_prioritization_rules_if_needed()
+        if self._settings.resource_model.discover_prioritization_rules:
+            print_section("Trying to discover prioritization rules")
+            rules = discover_prioritization_rules(
+                self._event_log.train_validation_partition,
+                self._event_log.log_ids,
+                self._best_bps_model.case_attributes
+            )
+            self._best_bps_model.prioritization_rules = rules
 
         # --- Batching --- #
-        self._add_batching_rules_if_needed()
+        if self._settings.resource_model.discover_batching_rules:
+            print_section("Trying to discover batching rules")
+            rules = discover_batching_rules(self._event_log.train_validation_partition, self._event_log.log_ids)
+            self._best_bps_model.batching_rules = rules
 
         # --- Resource Model Discovery --- #
         print_section("Optimizing resource model parameters")
@@ -128,25 +140,26 @@ class Simod:
         self._best_bps_model.resource_model = self._resource_model_optimizer.best_bps_model.resource_model
 
         # --- Extraneous Delays Discovery --- #
-        print_section("Optimizing extraneous delay timers")
-        timers = self.optimize_extraneous_activity_delays()
-        self._best_bps_model.extraneous_delays = timers
-
-        # Update BPMN model on disk
-        self._add_timers_to_bpmn(timers)
+        if self._settings.extraneous_activity_delays is not None:
+            print_section("Discovering extraneous delays")
+            timers = self.optimize_extraneous_activity_delays()
+            self._best_bps_model.extraneous_delays = timers
+            add_timers_to_bpmn_model(self._best_bps_model.process_model, timers)  # Update BPMN model on disk
 
         # --- Final evaluation --- #
         print_section("Evaluating final BPS model")
-        self.final_bps_model = BPSModel(
+        self.final_bps_model = BPSModel(  # Bypass all models already discovered with train+validation
             process_model=get_process_model_path(self._best_result_dir, self._event_log.process_name),
-            case_arrival_model=self._best_bps_model.case_arrival_model
-            # Bypassing case arrival (already used train+valid)
+            case_arrival_model=self._best_bps_model.case_arrival_model,
+            case_attributes=self._best_bps_model.case_attributes,
+            prioritization_rules=self._best_bps_model.prioritization_rules,
+            batching_rules=self._best_bps_model.batching_rules,
         )
-        # Process model
+        # Discover process model with best parameters if needed
         if self._settings.common.model_path is None:
             print_subsection(f"Discovering process model with settings: {best_control_flow_params.to_dict()}")
             # Instantiate event log to discover the process model with
-            xes_log_path = self.final_bps_model.process_model.with_suffix(".xes")
+            xes_log_path = self._best_result_dir / f"{self._event_log.process_name}_train_val.xes"
             self._event_log.train_validation_to_xes(xes_log_path)
             # Discover the process model
             discover_process_model(
@@ -157,9 +170,9 @@ class Simod:
         else:
             print_subsection("Using provided process model")
             shutil.copy(self._settings.common.model_path, self.final_bps_model.process_model)
-        best_bpmn_graph = BPMNGraph.from_bpmn_path(self.final_bps_model.process_model)
         # Gateway probabilities
         print_subsection("Discovering gateway probabilities")
+        best_bpmn_graph = BPMNGraph.from_bpmn_path(self.final_bps_model.process_model)
         self.final_bps_model.gateway_probabilities = compute_gateway_probabilities(
             event_log=self._event_log.train_validation_partition,
             log_ids=self._event_log.log_ids,
@@ -173,6 +186,11 @@ class Simod:
             log_ids=self._event_log.log_ids,
             params=best_resource_model_params.calendar_discovery_params,
         )
+        # Extraneous delays
+        if self._settings.extraneous_activity_delays is not None:
+            # Add discovered delays and update BPMN model on disk
+            self.final_bps_model.extraneous_delays = self._best_bps_model.extraneous_delays
+            add_timers_to_bpmn_model(self.final_bps_model.process_model, self._best_bps_model.extraneous_delays)
         # Evaluate
         print_subsection("Evaluate")
         simulation_dir = self._best_result_dir / "simulation"
@@ -201,54 +219,6 @@ class Simod:
         best_control_flow_params = self._control_flow_optimizer.run()
         return best_control_flow_params
 
-    def _add_timers_to_bpmn(self, timers: Optional[List[ExtraneousDelay]]):
-        """
-        Rewrites the BPMN file by adding timers if there are any.
-        """
-        if timers is None or len(timers) == 0:
-            return
-
-        bps_model = self._best_bps_model
-
-        simulation_model = make_simulation_model_from_bps_model(bps_model)
-        timers_ = convert_extraneous_delays_to_extraneous_package_format(timers)
-        enhanced_simulation_model = add_timers_to_simulation_model(
-            simulation_model=simulation_model,
-            timers=timers_,
-        )
-
-        enhanced_simulation_model.bpmn_document.write(bps_model.process_model, pretty_print=True)
-
-    def _add_case_attributes(self):
-        """
-        Adds case attributes to the BPS model to pass them later to prioritization rules discovery and Prosimos.
-        """
-        case_attributes = discover_case_attributes(self._event_log.train_partition, self._event_log.log_ids)
-        self._best_bps_model.case_attributes = case_attributes
-
-    def _add_prioritization_rules_if_needed(self):
-        """
-        Adds prioritization _rules to the BPS model to pass them later to Primos during simulation.
-        """
-        if self._settings.resource_model.discover_prioritization_rules is False:
-            return
-
-        rules = discover_prioritization_rules(
-            self._event_log.train_partition, self._event_log.log_ids, self._best_bps_model.case_attributes
-        )
-
-        self._best_bps_model.prioritization_rules = rules
-
-    def _add_batching_rules_if_needed(self):
-        """
-        Adds batching _rules to the BPS model to pass them later to Primos during simulation.
-        """
-        if self._settings.resource_model.discover_batching_rules is False:
-            return
-
-        rules = discover_batching_rules(self._event_log.train_partition, self._event_log.log_ids)
-        self._best_bps_model.batching_rules = rules
-
     def _optimize_resource_model(self) -> ResourceModelHyperoptIterationParams:
         """
         Resource Model (resource profiles, calendars an activity performances) discovery.
@@ -263,9 +233,6 @@ class Simod:
         return best_resource_model_params
 
     def optimize_extraneous_activity_delays(self) -> List[ExtraneousDelay]:
-        if self._settings.extraneous_activity_delays is None:
-            return []
-
         settings = self._settings.extraneous_activity_delays
         self._extraneous_delay_timers_optimizer = ExtraneousDelayTimersOptimizer(
             event_log=self._event_log,
@@ -303,7 +270,7 @@ class Simod:
         # Write JSON parameters to file
         json_parameters_path = get_simulation_parameters_path(output_dir, self._event_log.process_name)
         with json_parameters_path.open("w") as f:
-            json.dump(bps_model.to_prosimos(), f)
+            json.dump(bps_model.to_dict(), f)
 
         measurements = simulate_and_evaluate(
             model_path=bps_model.process_model,
@@ -322,9 +289,6 @@ class Simod:
         measurements_df.to_csv(measurements_path, index=False)
 
     def _clean_up(self):
-        if not self._settings.common.clean_intermediate_files:
-            return
-
         print_section("Removing intermediate files")
         self._control_flow_optimizer.cleanup()
         self._resource_model_optimizer.cleanup()

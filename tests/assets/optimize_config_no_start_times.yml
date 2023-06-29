@@ -10,12 +10,9 @@ common:
 preprocessing:
   multitasking: false
 control_flow:
-  optimization_metric: dl
-  max_evaluations: 1
+  optimization_metric: n_gram_distance
+  max_evaluations: 2
   mining_algorithm: sm3
-  concurrency:
-    - 0.0
-    - 1.0
   epsilon:
     - 0.0
     - 1.0
@@ -33,10 +30,14 @@ control_flow:
     - false
 resource_model:
   optimization_metric: absolute_hourly_emd
-  max_evaluations: 1
+  max_evaluations: 2
   resource_profiles:
     discovery_type: pool
     granularity: 60
-    confidence: 0.1
-    support: 0.7
+    confidence:
+      - 0.05
+      - 0.2
+    support:
+      - 0.5
+      - 0.9
     participation: 0.4
