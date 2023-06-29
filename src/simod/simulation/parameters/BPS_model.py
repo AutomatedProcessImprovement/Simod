@@ -7,15 +7,27 @@ from typing import Optional, List
 from pix_framework.discovery.case_arrival import CaseArrivalModel
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 from pix_framework.discovery.resource_model import ResourceModel
-from prosimos.simulation_properties_parser import PRIORITISATION_RULES_SECTION, BATCH_PROCESSING_SECTION
 
 from simod.batching.types import BatchingRule
 from simod.bpm.graph import get_activities_ids_by_name
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.case_attributes.types import CaseAttribute
+from simod.extraneous_delays.types import ExtraneousDelay
 from simod.prioritization.types import PrioritizationRule
-from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
 from simod.utilities import get_simulation_parameters_path
+
+# Keys for serialization
+PROCESS_MODEL_KEY = "process_model"
+GATEWAY_PROBABILITIES_KEY = "gateway_branching_probabilities"
+CASE_ARRIVAL_DISTRIBUTION_KEY = "arrival_time_distribution"
+CASE_ARRIVAL_CALENDAR_KEY = "arrival_time_calendar"
+RESOURCE_PROFILES_KEY = "resource_profiles"
+RESOURCE_CALENDARS_KEY = "resource_calendars"
+RESOURCE_ACTIVITY_PERFORMANCE_KEY = "task_resource_distribution"
+EXTRANEOUS_DELAYS_KEY = "event_distribution"
+CASE_ATTRIBUTES_KEY = "case_attributes"
+PRIORITIZATION_RULES_KEY = "prioritisation_rules"
+BATCHING_RULES_KEY = "batch_processing"
 
 
 @dataclass
@@ -33,15 +45,15 @@ class BPSModel:
     prioritization_rules: Optional[List[PrioritizationRule]] = None
     batching_rules: Optional[List[BatchingRule]] = None
 
-    def to_prosimos(self) -> dict:
+    def to_dict(self) -> dict:
         attributes = {}
 
         if self.process_model is not None:
-            attributes |= {"process_model": str(self.process_model)}
+            attributes |= {PROCESS_MODEL_KEY: str(self.process_model)}
 
         if self.gateway_probabilities is not None:
             attributes |= {
-                "gateway_branching_probabilities": [
+                GATEWAY_PROBABILITIES_KEY: [
                     gateway_probability.to_dict() for gateway_probability in self.gateway_probabilities
                 ]
             }
@@ -52,17 +64,23 @@ class BPSModel:
         if self.resource_model is not None:
             attributes |= self.resource_model.to_dict()
 
-        # TODO: extraneous delays?
+        if self.extraneous_delays is not None:
+            attributes |= {
+                EXTRANEOUS_DELAYS_KEY: [extraneous_delay.to_dict() for extraneous_delay in self.extraneous_delays]
+            }
 
-        # TODO: case attributes?
+        if self.case_attributes is not None:
+            attributes |= {
+                CASE_ATTRIBUTES_KEY: [case_attribute.to_prosimos() for case_attribute in self.case_attributes]
+            }
 
         if self.prioritization_rules is not None:
             attributes |= {
-                PRIORITISATION_RULES_SECTION: list(map(lambda x: x.to_prosimos(), self.prioritization_rules))
+                PRIORITIZATION_RULES_KEY: list(map(lambda x: x.to_prosimos(), self.prioritization_rules))
             }
 
         if self.batching_rules is not None:
-            attributes |= {BATCH_PROCESSING_SECTION: list(map(lambda x: x.to_prosimos(), self.batching_rules))}
+            attributes |= {BATCHING_RULES_KEY: list(map(lambda x: x.to_prosimos(), self.batching_rules))}
 
         return attributes
 
@@ -71,45 +89,57 @@ class BPSModel:
 
     @staticmethod
     def from_dict(bps_model: dict) -> "BPSModel":
-        # NOTE: this method is not needed if we use copy.deepcopy in self.deep_copy()
-
-        process_model_path = Path(bps_model["process_model"]) if "process_model" in bps_model else None
+        process_model_path = Path(bps_model[PROCESS_MODEL_KEY]) if PROCESS_MODEL_KEY in bps_model else None
 
         gateway_probabilities = (
             [
                 GatewayProbabilities.from_dict(gateway_probability)
-                for gateway_probability in bps_model["gateway_branching_probabilities"]
+                for gateway_probability in bps_model[GATEWAY_PROBABILITIES_KEY]
             ]
-            if "gateway_branching_probabilities" in bps_model
+            if GATEWAY_PROBABILITIES_KEY in bps_model
             else None
         )
 
         case_arrival_model = (
             CaseArrivalModel.from_dict(bps_model)
-            if ("arrival_time_distribution" in bps_model and "arrival_time_calendar" in bps_model)
+            if (CASE_ARRIVAL_DISTRIBUTION_KEY in bps_model and CASE_ARRIVAL_CALENDAR_KEY in bps_model)
             else None
         )
 
         resource_model = (
             ResourceModel.from_dict(bps_model)
             if (
-                "resource_profiles" in bps_model
-                and "resource_calendars" in bps_model
-                and "task_resource_distribution" in bps_model
+                    RESOURCE_PROFILES_KEY in bps_model
+                    and RESOURCE_CALENDARS_KEY in bps_model
+                    and RESOURCE_ACTIVITY_PERFORMANCE_KEY in bps_model
             )
             else None
         )
 
-        # TODO: extraneous delays?
+        extraneous_delays = (
+            [
+                ExtraneousDelay.from_dict(extraneous_delay)
+                for extraneous_delay in bps_model[EXTRANEOUS_DELAYS_KEY]
+            ]
+            if EXTRANEOUS_DELAYS_KEY in bps_model
+            else None
+        )
 
-        # TODO: case attributes?
+        case_attributes = (
+            [
+                CaseAttribute.from_dict(case_attribute)
+                for case_attribute in bps_model[CASE_ATTRIBUTES_KEY]
+            ]
+            if CASE_ATTRIBUTES_KEY in bps_model
+            else None
+        )
 
         prioritization_rules = (
             [
                 PrioritizationRule.from_prosimos(prioritization_rule)
-                for prioritization_rule in bps_model[PRIORITISATION_RULES_SECTION]
+                for prioritization_rule in bps_model[PRIORITIZATION_RULES_KEY]
             ]
-            if PRIORITISATION_RULES_SECTION in bps_model
+            if PRIORITIZATION_RULES_KEY in bps_model
             else None
         )
 
@@ -118,9 +148,9 @@ class BPSModel:
         batching_rules = (
             [
                 BatchingRule.from_prosimos(batching_rule, activities_names_by_id)
-                for batching_rule in bps_model[BATCH_PROCESSING_SECTION]
+                for batching_rule in bps_model["batch_processing"]
             ]
-            if BATCH_PROCESSING_SECTION in bps_model
+            if "batch_processing" in bps_model
             else None
         )
 
@@ -129,6 +159,8 @@ class BPSModel:
             gateway_probabilities=gateway_probabilities,
             case_arrival_model=case_arrival_model,
             resource_model=resource_model,
+            extraneous_delays=extraneous_delays,
+            case_attributes=case_attributes,
             prioritization_rules=prioritization_rules,
             batching_rules=batching_rules,
         )
@@ -154,7 +186,7 @@ class BPSModel:
         json_parameters_path = get_simulation_parameters_path(output_dir, process_name)
 
         with json_parameters_path.open("w") as f:
-            json.dump(self.to_prosimos(), f)
+            json.dump(self.to_dict(), f)
 
         return json_parameters_path
 

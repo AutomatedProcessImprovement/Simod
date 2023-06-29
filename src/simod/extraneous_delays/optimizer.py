@@ -10,7 +10,7 @@ from simod.event_log.event_log import EventLog
 from simod.extraneous_delays.utilities import make_simulation_model_from_bps_model
 from simod.settings.extraneous_delays_settings import ExtraneousDelaysSettings
 from simod.simulation.parameters.BPS_model import BPSModel
-from simod.simulation.parameters.extraneous_delays import ExtraneousDelay
+from simod.extraneous_delays.types import ExtraneousDelay
 
 
 class ExtraneousDelayTimersOptimizer:
