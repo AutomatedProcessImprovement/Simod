@@ -82,8 +82,8 @@ class Simod:
         self._resource_model_dir = self._output_dir / "resource_model"
         create_folder(self._resource_model_dir)
         if self._settings.extraneous_activity_delays is not None:
-            self._extraneous_delay_timers_dir = self._output_dir / "extraneous-delay-timers"
-            create_folder(self._extraneous_delay_timers_dir)
+            self._extraneous_delays_dir = self._output_dir / "extraneous-delay-timers"
+            create_folder(self._extraneous_delays_dir)
         self._best_result_dir = self._output_dir / "best_result"
         create_folder(self._best_result_dir)
 
@@ -238,7 +238,7 @@ class Simod:
             event_log=self._event_log,
             bps_model=self._best_bps_model,
             settings=settings,
-            base_directory=self._extraneous_delay_timers_dir,
+            base_directory=self._extraneous_delays_dir,
         )
         timers = self._extraneous_delay_timers_optimizer.run()
         return timers

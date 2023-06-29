@@ -12,14 +12,13 @@ class ExtraneousDelay:
     def to_dict(self) -> dict:
         return {
             "activity": self.activity_name,
-            "event_id": self.activity_name,
-            "duration_distribution": self.duration_distribution.to_prosimos_distribution(),
-        }
+            "event_id": self.delay_id,
+        } | self.duration_distribution.to_prosimos_distribution()
 
     @staticmethod
     def from_dict(delay: dict) -> "ExtraneousDelay":
         return ExtraneousDelay(
             activity_name=delay["activity"],
             delay_id=delay["event_id"],
-            duration_distribution=DurationDistribution.from_dict(delay["duration_distribution"])
+            duration_distribution=DurationDistribution.from_dict(delay)
         )

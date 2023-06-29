@@ -41,7 +41,7 @@ class ControlFlowSettings:
     gateway_probabilities: Union[
         GatewayProbabilitiesDiscoveryMethod, List[GatewayProbabilitiesDiscoveryMethod]
     ] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
-    mining_algorithm: ProcessModelDiscoveryAlgorithm = ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3
+    mining_algorithm: Optional[ProcessModelDiscoveryAlgorithm] = ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3
     concurrency: Optional[Union[float, Tuple[float, float]]] = None
     epsilon: Optional[Union[float, Tuple[float, float]]] = (0.0, 1.0)  # parallelism threshold (epsilon)
     eta: Optional[Union[float, Tuple[float, float]]] = (0.0, 1.0)  # percentile for frequency threshold (eta)
@@ -93,7 +93,6 @@ class ControlFlowSettings:
             "optimization_metric": self.optimization_metric.value,
             "max_evaluations": self.max_evaluations,
             "num_evaluations_per_iteration": self.num_evaluations_per_iteration,
-            "mining_algorithm": self.mining_algorithm.value,
         }
         # Parse gateway probabilities
         if isinstance(self.gateway_probabilities, GatewayProbabilitiesDiscoveryMethod):
@@ -101,14 +100,16 @@ class ControlFlowSettings:
         else:
             dictionary["gateway_probabilities"] = [method.value for method in self.gateway_probabilities]
         # Parse discovery algorithm parameters
-        if self.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-            # Split Miner 2, set concurrency threshold
-            dictionary["concurrency"] = self.concurrency
-        else:
-            # Split Miner 3, set epsilon/eta/replace_or_joins/prioritize_parallelism
-            dictionary["epsilon"] = self.epsilon
-            dictionary["eta"] = self.eta
-            dictionary["replace_or_joins"] = self.replace_or_joins
-            dictionary["prioritize_parallelism"] = self.prioritize_parallelism
+        if self.mining_algorithm is not None:
+            dictionary["mining_algorithm"] = self.mining_algorithm.value
+            if self.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
+                # Split Miner 2, set concurrency threshold
+                dictionary["concurrency"] = self.concurrency
+            else:
+                # Split Miner 3, set epsilon/eta/replace_or_joins/prioritize_parallelism
+                dictionary["epsilon"] = self.epsilon
+                dictionary["eta"] = self.eta
+                dictionary["replace_or_joins"] = self.replace_or_joins
+                dictionary["prioritize_parallelism"] = self.prioritize_parallelism
         # Return dictionary
         return dictionary

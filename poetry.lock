@@ -779,14 +779,14 @@ files = [
 
 [[package]]
 name = "joblib"
-version = "1.3.0"
+version = "1.3.1"
 description = "Lightweight pipelining with Python functions"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "joblib-1.3.0-py3-none-any.whl", hash = "sha256:172d56d4c43dd6bcd953bea213018c4084cf754963bbf54b8dae40faea716b98"},
-    {file = "joblib-1.3.0.tar.gz", hash = "sha256:0b12a65dc76c530dbd790dd92881f75c40932b4254a7c8e608a868df408ca0a3"},
+    {file = "joblib-1.3.1-py3-none-any.whl", hash = "sha256:89cf0529520e01b3de7ac7b74a8102c90d16d54c64b5dd98cafcd14307fdf915"},
+    {file = "joblib-1.3.1.tar.gz", hash = "sha256:1f937906df65329ba98013dc9692fe22a4c5e4a648112de500508b18a21b41e3"},
 ]
 
 [[package]]
@@ -1393,14 +1393,14 @@ tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "pa
 
 [[package]]
 name = "pix-framework"
-version = "0.10.4"
+version = "0.10.5"
 description = "Process Improvement Explorer Framework contains process discovery and improvement modules of the Process Improvement Explorer project."
 category = "main"
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "pix_framework-0.10.4-py3-none-any.whl", hash = "sha256:26a343e478b385b23637c8b06e10b939d38efdd7743213fd9f4753dd37a159d7"},
-    {file = "pix_framework-0.10.4.tar.gz", hash = "sha256:27af4b08fe8e767718c860af07d112c17caa4986b55c06aae9aed77c40778177"},
+    {file = "pix_framework-0.10.5-py3-none-any.whl", hash = "sha256:c064d4f095ae77116b314c8011b71d9ed55390df1f8c178c12d691faf3a1add9"},
+    {file = "pix_framework-0.10.5.tar.gz", hash = "sha256:72ba143b48f74e83a852ead89392fab4fc426032dadcdcb2613d5f1f57a70773"},
 ]
 
 [package.dependencies]
@@ -1731,14 +1731,14 @@ six = ">=1.5"
 
 [[package]]
 name = "python-dotenv"
-version = "0.21.1"
+version = "1.0.0"
 description = "Read key-value pairs from a .env file and set them as environment variables"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "python-dotenv-0.21.1.tar.gz", hash = "sha256:1c93de8f636cde3ce377292818d0e440b6e45a82f215c3744979151fa8151c49"},
-    {file = "python_dotenv-0.21.1-py3-none-any.whl", hash = "sha256:41e12e0318bebc859fcc4d97d4db8d20ad21721a6aa5047dd59f090391cb549a"},
+    {file = "python-dotenv-1.0.0.tar.gz", hash = "sha256:a8df96034aae6d2d50a4ebe8216326c61c3eb64836776504fcca410e5937a3ba"},
+    {file = "python_dotenv-1.0.0-py3-none-any.whl", hash = "sha256:f5971a9226b701070a4bf2c38c89e5a3f0d64de8debda981d1db98583009122a"},
 ]
 
 [package.extras]
@@ -1746,17 +1746,18 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "python-multipart"
-version = "0.0.5"
+version = "0.0.6"
 description = "A streaming multipart parser for Python"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "python-multipart-0.0.5.tar.gz", hash = "sha256:f7bb5f611fc600d15fa47b3974c8aa16e93724513b49b5f95c81e6624c83fa43"},
+    {file = "python_multipart-0.0.6-py3-none-any.whl", hash = "sha256:ee698bab5ef148b0a760751c261902cd096e57e10558e11aca17646b74ee1c18"},
+    {file = "python_multipart-0.0.6.tar.gz", hash = "sha256:e9925a80bb668529f1b67c7fdb0a5dacdd7cbfc6fb0bff3ea443fe22bdd62132"},
 ]
 
-[package.dependencies]
-six = ">=1.4.0"
+[package.extras]
+dev = ["atomicwrites (==1.2.1)", "attrs (==19.2.0)", "coverage (==6.5.0)", "hatch", "invoke (==1.7.3)", "more-itertools (==4.3.0)", "pbr (==4.3.0)", "pluggy (==1.0.0)", "py (==1.11.0)", "pytest (==7.2.0)", "pytest-cov (==4.0.0)", "pytest-timeout (==2.1.0)", "pyyaml (==5.1)"]
 
 [[package]]
 name = "pytz"
@@ -2326,4 +2327,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "30fa76b8f8541f263093ccde0b169cfbb5b38030b6d9a9fbeb97cd9568c1f04a"
+content-hash = "8a261c24ebc9ae0edb6581080c4583de2b9edcfeb9b34dfe8b5cc443e6f37e5d"
