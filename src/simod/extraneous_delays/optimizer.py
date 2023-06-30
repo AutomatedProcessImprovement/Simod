@@ -8,14 +8,16 @@ from extraneous_activity_delays.config import (
 )
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer, DirectEnhancer
 from lxml import etree
+from pix_framework.filesystem.file_manager import remove_asset
 
+from simod.cli_formatter import print_step
 from simod.event_log.event_log import EventLog
 from simod.extraneous_delays.types import ExtraneousDelay
 from simod.settings.extraneous_delays_settings import ExtraneousDelaysSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 
 
-class ExtraneousDelayTimersOptimizer:
+class ExtraneousDelaysOptimizer:
     def __init__(
         self,
         event_log: EventLog,
@@ -42,6 +44,7 @@ class ExtraneousDelayTimersOptimizer:
             timer_placement=TimerPlacement.BEFORE,
             simulation_engine=SimulationEngine.PROSIMOS,
         )
+        configuration.PATH_OUTPUTS = self.base_directory
         # Discover extraneous delays
         simulation_model = _bps_model_to_simulation_model(self.bps_model)
         if self.settings.num_iterations > 1:
@@ -59,6 +62,10 @@ class ExtraneousDelayTimersOptimizer:
                 duration_distribution=best_timers[activity],
             ) for activity in best_timers
         ]
+
+    def cleanup(self):
+        print_step(f"Removing {self.base_directory}")
+        remove_asset(self.base_directory)
 
 
 def _bps_model_to_simulation_model(bps_model: BPSModel) -> SimulationModel:

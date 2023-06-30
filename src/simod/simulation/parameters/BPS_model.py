@@ -189,9 +189,3 @@ class BPSModel:
             json.dump(self.to_dict(), f)
 
         return json_parameters_path
-
-# TODO
-#  Implement default method to discover a complete BPS model from scratch.
-#  It receives the training+validation log and it discovers a first direct
-#  attempt, this would be the Prosimos CRISP method, and then SIMOD iterates
-#  overriding each parameter.

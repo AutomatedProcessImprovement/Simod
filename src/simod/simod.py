@@ -26,7 +26,7 @@ from simod.control_flow.settings import (
     HyperoptIterationParams as ControlFlowHyperoptIterationParams,
 )
 from simod.event_log.event_log import EventLog
-from simod.extraneous_delays.optimizer import ExtraneousDelayTimersOptimizer
+from simod.extraneous_delays.optimizer import ExtraneousDelaysOptimizer
 from simod.extraneous_delays.types import ExtraneousDelay
 from simod.extraneous_delays.utilities import add_timers_to_bpmn_model
 from simod.prioritization.discovery import discover_prioritization_rules
@@ -61,7 +61,7 @@ class Simod:
     # Optimizer for the Resource Model
     _resource_model_optimizer: Optional[ResourceModelOptimizer]
     # Optimizer for the Extraneous Delay Timers
-    _extraneous_delay_timers_optimizer: Optional[ExtraneousDelayTimersOptimizer]
+    _extraneous_delays_optimizer: Optional[ExtraneousDelaysOptimizer]
 
     def __init__(
         self,
@@ -234,13 +234,13 @@ class Simod:
 
     def optimize_extraneous_activity_delays(self) -> List[ExtraneousDelay]:
         settings = self._settings.extraneous_activity_delays
-        self._extraneous_delay_timers_optimizer = ExtraneousDelayTimersOptimizer(
+        self._extraneous_delays_optimizer = ExtraneousDelaysOptimizer(
             event_log=self._event_log,
             bps_model=self._best_bps_model,
             settings=settings,
             base_directory=self._extraneous_delays_dir,
         )
-        timers = self._extraneous_delay_timers_optimizer.run()
+        timers = self._extraneous_delays_optimizer.run()
         return timers
 
     def _evaluate_model(self, bps_model: BPSModel, output_dir: Path):
@@ -292,6 +292,8 @@ class Simod:
         print_section("Removing intermediate files")
         self._control_flow_optimizer.cleanup()
         self._resource_model_optimizer.cleanup()
+        if self._settings.extraneous_activity_delays is not None:
+            self._extraneous_delays_optimizer.cleanup()
 
 
 def _export_canonical_model(

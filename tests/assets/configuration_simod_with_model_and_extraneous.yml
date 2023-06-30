@@ -29,4 +29,4 @@ resource_model:
     participation: 0.4
 extraneous_activity_delays:
   optimization_metric: relative_emd
-  num_iterations: 3
+  num_iterations: 1 # Direct discovery, no optimization

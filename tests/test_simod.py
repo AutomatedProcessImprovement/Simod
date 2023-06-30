@@ -22,14 +22,14 @@ test_cases = [
         "expect_prioritization_rules": False,
     },
     {
-        "name": "Simod extraneous",
+        "name": "Simod with model",
         "config_file": "configuration_simod_with_model.yml",
         "expect_extraneous": False,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
     },
     {
-        "name": "Simod extraneous",
+        "name": "Simod with model & extraneous",
         "config_file": "configuration_simod_with_model_and_extraneous.yml",
         "expect_extraneous": True,
         "expect_batching_rules": False,

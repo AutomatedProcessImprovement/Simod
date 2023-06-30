@@ -80,7 +80,7 @@ class CommonSettings:
                 Metric.CIRCADIAN_EMD,
                 Metric.CYCLE_TIME_EMD,
             ],
-            clean_intermediate_files=False,
+            clean_intermediate_files=True,
         )
 
     @staticmethod
