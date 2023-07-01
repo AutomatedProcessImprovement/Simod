@@ -68,7 +68,7 @@ test_cases = [
 
 
 @pytest.mark.parametrize('test_data', test_cases, ids=list(map(lambda x: x['name'], test_cases)))
-def test_settings(test_data: dict):
+def test_control_flow_settings(test_data: dict):
     settings = ControlFlowSettings.from_dict(test_data['control_flow'])
 
     if test_data['name'] == "Single values SM2":
