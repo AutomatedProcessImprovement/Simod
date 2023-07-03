@@ -3,21 +3,15 @@ from start_time_estimator.config import ConcurrencyThresholds
 
 
 class PreprocessingSettings(BaseModel):
-    multitasking: bool
-    enable_time_concurrency_threshold: float
-    concurrency_thresholds: ConcurrencyThresholds
-
-    @staticmethod
-    def default() -> "PreprocessingSettings":
-        return PreprocessingSettings(
-            multitasking=False, enable_time_concurrency_threshold=0.75, concurrency_thresholds=ConcurrencyThresholds()
-        )
+    multitasking: bool = False
+    enable_time_concurrency_threshold: float = 0.5
+    concurrency_thresholds: ConcurrencyThresholds = ConcurrencyThresholds(df=0.75, l2l=0.9, l1l=0.9)
 
     @staticmethod
     def from_dict(config: dict) -> "PreprocessingSettings":
         return PreprocessingSettings(
             multitasking=config.get("multitasking", False),
-            enable_time_concurrency_threshold=config.get("enable_time_concurrency_threshold", 0.75),
+            enable_time_concurrency_threshold=config.get("enable_time_concurrency_threshold", 0.5),
             concurrency_thresholds=ConcurrencyThresholds(
                 df=config.get("concurrency_df", 0.9),
                 l2l=config.get("concurrency_l2l", 0.9),
