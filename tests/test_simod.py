@@ -42,6 +42,13 @@ test_cases = [
         "expect_batching_rules": False,
         "expect_prioritization_rules": True,
     },
+    # {
+    #     "name": "Simod with model & batching",
+    #     "config_file": "configuration_simod_with_model_and_batching.yml",
+    #     "expect_extraneous": False,
+    #     "expect_batching_rules": True,
+    #     "expect_prioritization_rules": False,
+    # },
 ]
 
 
