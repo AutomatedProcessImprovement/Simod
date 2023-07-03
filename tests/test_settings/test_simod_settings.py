@@ -5,10 +5,10 @@ import yaml
 
 from simod.settings.simod_settings import SimodSettings
 
-config_yaml_C = """
+settings = """
 version: 2
 common:
-  log_path: assets/Production.xes
+  log_path: assets/LoanApp_simplified.csv
   repetitions: 1
   evaluation_metrics: 
     - dl
@@ -52,7 +52,7 @@ resource_model:
 """
 
 
-@pytest.mark.parametrize("test_case", [config_yaml_C])
+@pytest.mark.parametrize("test_case", [settings])
 def test_configuration(test_case):
     config = yaml.safe_load(test_case)
     result = SimodSettings.from_yaml(config)

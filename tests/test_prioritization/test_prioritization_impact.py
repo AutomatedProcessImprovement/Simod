@@ -1,7 +1,7 @@
 config_yaml_A = """
 version: 2
 common:
-  log_path: tests/assets/Production.csv
+  log_path: tests/assets/___.csv
   log_ids:
     case: case_id
     activity: Activity

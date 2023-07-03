@@ -1,19 +1,19 @@
 import pytest
 from pix_framework.input import read_csv_log
-from pix_framework.log_ids import DEFAULT_CSV_IDS, APROMORE_LOG_IDS
+from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.metrics import get_absolute_hourly_emd
 
 test_cases = [
     {
-        'name': 'A',
-        'event_log_1': {
-            'log_name': 'LoanApp_sequential_9-5_diffres_timers.csv',
-            'log_ids': DEFAULT_CSV_IDS
+        'name': 'LoanApp_simplified',
+        'original_log': {
+            'log_name': 'LoanApp_simplified.csv',
+            'log_ids': DEFAULT_XES_IDS
         },
-        'event_log_2': {
-            'log_name': 'simulated_log_0.csv',
-            'log_ids': APROMORE_LOG_IDS
+        'simulated_log': {
+            'log_name': 'LoanApp_simplified_2.csv',
+            'log_ids': DEFAULT_XES_IDS
         },
     }
 ]
@@ -22,15 +22,18 @@ test_cases = [
 @pytest.mark.integration
 @pytest.mark.parametrize('test_data', test_cases, ids=[test_data['name'] for test_data in test_cases])
 def test_absolute_timestamp_emd(entry_point, test_data):
-    event_log_1_path = entry_point / test_data['event_log_1']['log_name']
-    event_log_2_path = entry_point / test_data['event_log_2']['log_name']
+    original_log_path = entry_point / test_data['original_log']['log_name']
+    simulated_log_path = entry_point / test_data['simulated_log']['log_name']
 
-    event_log_1_log_ids = test_data['event_log_1']['log_ids']
-    event_log_2_log_ids = test_data['event_log_2']['log_ids']
+    original_log_ids = test_data['original_log']['log_ids']
+    simulated_log_ids = test_data['simulated_log']['log_ids']
 
-    event_log_1 = read_csv_log(event_log_1_path, event_log_1_log_ids)
-    event_log_2 = read_csv_log(event_log_2_path, event_log_2_log_ids)
+    original_log = read_csv_log(original_log_path, original_log_ids)
+    simulated_log = read_csv_log(simulated_log_path, simulated_log_ids)
 
-    emd = get_absolute_hourly_emd(event_log_1, event_log_1_log_ids, event_log_2, event_log_2_log_ids)
-
-    assert emd > 0
+    # Test different logs
+    emd = get_absolute_hourly_emd(original_log, original_log_ids, simulated_log, simulated_log_ids)
+    assert emd > 0.0
+    # Test similar log
+    emd = get_absolute_hourly_emd(original_log, original_log_ids, original_log, simulated_log_ids)
+    assert emd == 0.0
