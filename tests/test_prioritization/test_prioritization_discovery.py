@@ -1,5 +1,5 @@
 from pix_framework.input import read_csv_log
-from pix_framework.log_ids import EventLogIDs
+from pix_framework.log_ids import DEFAULT_XES_IDS
 
 from simod.case_attributes.discovery import discover_case_attributes
 from simod.prioritization.discovery import (
@@ -15,13 +15,13 @@ def test_prioritization_rules_serialization_deserialization(entry_point):
                 "priority_level": 1,
                 "rules": [
                     [
-                        {"attribute": "loan_amount", "condition": "in", "value": ["1000", "2000"]},
-                        {"attribute": "type", "condition": "=", "value": "BUSINESS"},
+                        {"attribute": "loan_amount", "comparison": "in", "value": ["1000", "2000"]},
+                        {"attribute": "type", "comparison": "=", "value": "BUSINESS"},
                     ],
-                    [{"attribute": "loan_amount", "condition": "in", "value": ["2000", "inf"]}],
+                    [{"attribute": "loan_amount", "comparison": "in", "value": ["2000", "inf"]}],
                 ],
             },
-            {"priority_level": 2, "rules": [[{"attribute": "loan_amount", "condition": ">", "value": "500"}]]},
+            {"priority_level": 2, "rules": [[{"attribute": "loan_amount", "comparison": ">", "value": "500"}]]},
         ]
     }
 
@@ -33,10 +33,8 @@ def test_prioritization_rules_serialization_deserialization(entry_point):
 
 
 def test_discover_prioritization_rules(entry_point):
-    log_path = entry_point / "Insurance_Claims_train.csv"
-    log_ids = EventLogIDs(
-        case="case_id", activity="activity", start_time="start_time", end_time="end_time", resource="resource"
-    )
+    log_path = entry_point / "Simple_log_with_prioritization.csv"
+    log_ids = DEFAULT_XES_IDS
     log = read_csv_log(log_path, log_ids)
 
     case_attributes = discover_case_attributes(log, log_ids)

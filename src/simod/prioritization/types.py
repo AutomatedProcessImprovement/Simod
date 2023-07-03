@@ -4,21 +4,21 @@ from dataclasses import dataclass
 @dataclass
 class PrioritizationFiringRule:
     attribute: str
-    condition: str
+    comparison: str
     value: list[str]
 
     @staticmethod
     def from_prosimos(rule: dict) -> "PrioritizationFiringRule":
         return PrioritizationFiringRule(
             attribute=rule["attribute"],
-            condition=rule["condition"],
+            comparison=rule["comparison"],
             value=rule["value"],
         )
 
     def to_prosimos(self) -> dict:
         return {
             "attribute": self.attribute,
-            "condition": self.condition,
+            "comparison": self.comparison,
             "value": self.value,
         }
 

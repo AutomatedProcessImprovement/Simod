@@ -35,6 +35,13 @@ test_cases = [
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
     },
+    {
+        "name": "Simod with model & prioritization",
+        "config_file": "configuration_simod_with_model_and_prioritization.yml",
+        "expect_extraneous": False,
+        "expect_batching_rules": False,
+        "expect_prioritization_rules": True,
+    },
 ]
 
 
@@ -54,6 +61,7 @@ def test_simod(test_data, entry_point):
         log_ids=settings.common.log_ids,
         process_name=settings.common.log_path.stem,
         test_path=settings.common.test_log_path,
+        preprocessing_settings=settings.preprocessing,
     )
     optimizer = Simod(settings, event_log=event_log)
     optimizer.run()
@@ -62,7 +70,7 @@ def test_simod(test_data, entry_point):
     assert optimizer.final_bps_model.resource_model is not None
     assert optimizer.final_bps_model.case_arrival_model is not None
     assert optimizer.final_bps_model.case_attributes is not None
-    assert len(optimizer.final_bps_model.case_attributes) == 3
+    assert len(optimizer.final_bps_model.case_attributes) > 0
     if test_data["expect_extraneous"]:
         assert optimizer.final_bps_model.extraneous_delays is not None
         assert len(optimizer.final_bps_model.extraneous_delays) == 2
@@ -70,9 +78,11 @@ def test_simod(test_data, entry_point):
         assert optimizer.final_bps_model.extraneous_delays is None
     if test_data["expect_batching_rules"]:
         assert optimizer.final_bps_model.batching_rules is not None
+        assert len(optimizer.final_bps_model.batching_rules) == 1
     else:
         assert optimizer.final_bps_model.batching_rules is None
     if test_data["expect_prioritization_rules"]:
         assert optimizer.final_bps_model.prioritization_rules is not None
+        assert len(optimizer.final_bps_model.prioritization_rules) > 0
     else:
         assert optimizer.final_bps_model.prioritization_rules is None
