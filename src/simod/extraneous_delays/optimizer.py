@@ -71,7 +71,7 @@ class ExtraneousDelaysOptimizer:
 def _bps_model_to_simulation_model(bps_model: BPSModel) -> SimulationModel:
     parser = etree.XMLParser(remove_blank_text=True)
     bpmn_model = etree.parse(bps_model.process_model, parser)
-    parameters = bps_model.to_dict()
+    parameters = bps_model.to_prosimos_format()
 
     simulation_model = SimulationModel(bpmn_model, parameters)
 

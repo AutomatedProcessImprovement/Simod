@@ -104,12 +104,6 @@ class Simod:
             CalendarDiscoveryParams(),
         )
 
-        # --- Control-Flow Optimization --- #
-        print_section("Optimizing control-flow parameters")
-        best_control_flow_params = self._optimize_control_flow()
-        self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
-        self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
-
         # --- Case Attributes --- #
         print_section("Discovering case attributes")
         case_attributes = discover_case_attributes(
@@ -118,8 +112,17 @@ class Simod:
         )
         self._best_bps_model.case_attributes = case_attributes
 
+        # --- Control-Flow Optimization --- #
+        print_section("Optimizing control-flow parameters")
+        best_control_flow_params = self._optimize_control_flow()
+        self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
+        self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
+
         # --- Prioritization --- #
-        if self._settings.resource_model.discover_prioritization_rules:
+        if (
+                self._settings.resource_model.discover_prioritization_rules
+                and len(self._best_bps_model.case_attributes) > 0
+        ):
             print_section("Trying to discover prioritization rules")
             rules = discover_prioritization_rules(
                 self._event_log.train_validation_partition,
@@ -187,7 +190,7 @@ class Simod:
             params=best_resource_model_params.calendar_discovery_params,
         )
         # Extraneous delays
-        if self._settings.extraneous_activity_delays is not None:
+        if self._best_bps_model.extraneous_delays is not None:
             # Add discovered delays and update BPMN model on disk
             self.final_bps_model.extraneous_delays = self._best_bps_model.extraneous_delays
             add_timers_to_bpmn_model(self.final_bps_model.process_model, self._best_bps_model.extraneous_delays)
@@ -270,7 +273,7 @@ class Simod:
         # Write JSON parameters to file
         json_parameters_path = get_simulation_parameters_path(output_dir, self._event_log.process_name)
         with json_parameters_path.open("w") as f:
-            json.dump(bps_model.to_dict(), f)
+            json.dump(bps_model.to_prosimos_format(), f)
 
         measurements = simulate_and_evaluate(
             model_path=bps_model.process_model,
