@@ -22,14 +22,14 @@ wrapt = [
 
 [[package]]
 name = "batch-processing-discovery"
-version = "0.4.2"
+version = "0.4.3"
 description = "Python algorithm to discover, from an event log, activity instances that are executed in a batch."
 category = "main"
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "batch_processing_discovery-0.4.2-py3-none-any.whl", hash = "sha256:4d789dc1a9a6e63abd8751aa08328409c06762dc6cf34e211404ac8c0dfe56c0"},
-    {file = "batch_processing_discovery-0.4.2.tar.gz", hash = "sha256:f2262cc7490b19559d78baa46c5b2d8151ea51985cb76bd0ace887efe4cc7cce"},
+    {file = "batch_processing_discovery-0.4.3-py3-none-any.whl", hash = "sha256:be1e7ecd90482bf2e57fb155e3a82d30b8d183b15e787e72cb03f7f19db7e765"},
+    {file = "batch_processing_discovery-0.4.3.tar.gz", hash = "sha256:b0fc93934d04f7acdd179de341975ce4bc5c9adfdf1fa1ecf296c0a6c4afe3c4"},
 ]
 
 [package.dependencies]

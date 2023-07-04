@@ -42,7 +42,7 @@ def test_discover_batching_rules_loanapp():
     )
     expected_rules = BatchingFiringRule(
         attribute="batch_size",
-        condition="=",
+        comparison="=",
         value="3",
     )
     log = read_csv_log(log_path, log_ids)

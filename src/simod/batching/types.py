@@ -5,24 +5,24 @@ from typing import Union
 @dataclass
 class BatchingFiringRule:
     attribute: str
-    condition: str
+    comparison: str
     value: str
 
     def __eq__(self, other: "BatchingFiringRule") -> bool:
-        return self.attribute == other.attribute and self.condition == other.condition and self.value == other.value
+        return self.attribute == other.attribute and self.comparison == other.comparison and self.value == other.value
 
     @staticmethod
     def from_dict(rule: dict) -> "BatchingFiringRule":
         return BatchingFiringRule(
             attribute=rule["attribute"],
-            condition=rule["condition"],
+            comparison=rule["comparison"],
             value=rule["value"],
         )
 
     def to_dict(self) -> dict:
         return {
             "attribute": self.attribute,
-            "condition": self.condition,
+            "comparison": self.comparison,
             "value": self.value,
         }
 
@@ -30,14 +30,14 @@ class BatchingFiringRule:
     def from_prosimos(rule: dict) -> "BatchingFiringRule":
         return BatchingFiringRule(
             attribute=BatchingFiringRule._attribute_name_from_prosimos(rule["attribute"]),
-            condition=rule["condition"],
+            comparison=rule["comparison"],
             value=BatchingFiringRule._attribute_value_from_prosimos_if_week_day(rule["attribute"], rule["value"]),
         )
 
     def to_prosimos(self) -> dict:
         return {
             "attribute": self._attribute_name_to_prosimos(self.attribute),
-            "condition": self.condition,
+            "comparison": self.comparison,
             "value": self._attribute_value_to_prosimos_if_week_day(self.value),
         }
 
@@ -218,17 +218,13 @@ class BatchingFiringRules:
         }
 
     @staticmethod
-    def from_prosimos(rules: dict) -> "BatchingFiringRules":
+    def from_prosimos(rules: list) -> "BatchingFiringRules":
         return BatchingFiringRules(
-            confidence=rules["confidence"], support=rules["support"], rules=OrRules.from_prosimos(rules["rules"])
+            confidence=-1.0, support=-1.0, rules=OrRules.from_prosimos(rules)
         )
 
-    def to_prosimos(self) -> dict:
-        return {
-            "confidence": self.confidence,
-            "support": self.support,
-            "rules": self.rules.to_prosimos(),
-        }
+    def to_prosimos(self) -> list:
+        return self.rules.to_prosimos()
 
 
 @dataclass
@@ -303,9 +299,9 @@ class BatchingRule:
             size_distribution=BatchingRule._distribution_from_prosimos(rule["size_distrib"]),
             duration_distribution=BatchingRule._distribution_from_prosimos(rule["duration_distrib"]),
             firing_rules=BatchingFiringRules(
-                confidence=rule["firing_rules"]["confidence"],
-                support=rule["firing_rules"]["support"],
-                rules=OrRules.from_prosimos(rule["firing_rules"]["rules"]),
+                confidence=-1.0,
+                support=-1.0,
+                rules=OrRules.from_prosimos(rule["firing_rules"]),
             ),
         )
 

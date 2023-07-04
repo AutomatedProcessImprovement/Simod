@@ -13,11 +13,11 @@ batching_discovery_result = [
             "support": 1.0,
             "rules": [
                 [
-                    {"attribute": "batch_size", "condition": ">", "value": "3"},
-                    {"attribute": "batch_size", "condition": "<", "value": "5"},
+                    {"attribute": "batch_size", "comparison": ">", "value": "3"},
+                    {"attribute": "batch_size", "comparison": "<", "value": "5"},
                 ],
                 [
-                    {"attribute": "batch_size", "condition": ">", "value": "10"},
+                    {"attribute": "batch_size", "comparison": ">", "value": "10"},
                 ],
             ],
         },
@@ -32,7 +32,7 @@ batching_discovery_result = [
         "firing_rules": {
             "confidence": 1.0,
             "support": 1.0,
-            "rules": [[{"attribute": "batch_size", "condition": ">", "value": "3"}]],
+            "rules": [[{"attribute": "batch_size", "comparison": ">", "value": "3"}]],
         },
     },
 ]
@@ -54,9 +54,12 @@ def test_prosimos_serialization():
     rules_prosimos = [rule.to_prosimos(activities_ids_by_name) for rule in rules]
     rules_from_prosimos = [BatchingRule.from_prosimos(rule, activities_names_by_id) for rule in rules_prosimos]
 
-    # Prosimos doesn't use resources and batch_frequency attributes, so we set them to None to compare
+    # Prosimos doesn't use resources and batch_frequency attributes, so we set them
+    # to None to compare. Also the confidence and support of the rules.
     for rule in rules:
         rule.resources = None
         rule.batch_frequency = None
+        rule.firing_rules.confidence = -1.0
+        rule.firing_rules.support = -1.0
 
     assert rules == rules_from_prosimos
