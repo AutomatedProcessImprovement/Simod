@@ -67,7 +67,7 @@ preprocessing: # Event log preprocessing settings.
   concurrency_df: 0.9 # Directly-Follows threshold for the heuristics' concurrency oracle (only used to estimate start times if needed).
   concurrency_l2l: 0.9 # Length 2 loops threshold for the heuristics' concurrency oracle.
   concurrency_l1l: 0.9 # Length 1 loops threshold for the heuristics' concurrency oracle.
-control-flow: # Control-flow model discovery settings.
+control_flow: # Control-flow model discovery settings.
   optimization_metric: n_gram_distance  # Optimization metric for the structure. Options: DL or N_GRAM_DISTANCE.
   num_iterations: 10  # Number of optimization iterations over the search space.
   num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them).

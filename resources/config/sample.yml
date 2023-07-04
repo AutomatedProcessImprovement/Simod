@@ -16,7 +16,7 @@ preprocessing:
   concurrency_df: 0.75  # Concurrency thresholds for the start time (and enabled time) estimations when
   concurrency_l2l: 0.9  # the start time is missing in the train event log. Using the Heuristics Miner
   concurrency_l1l: 0.9  # concurrency oracle.
-control-flow:
+control_flow:
   optimization_metric: n_gram_distance
   num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
   num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them)
