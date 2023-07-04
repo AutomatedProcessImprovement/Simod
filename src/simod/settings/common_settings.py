@@ -57,22 +57,22 @@ class Metric(str, Enum):
 
 @dataclass
 class CommonSettings:
-    log_path: Path
+    train_log_path: Path
     test_log_path: Optional[Path]
     log_ids: Optional[EventLogIDs]
     model_path: Optional[Path]
-    repetitions: int
+    num_final_evaluations: int
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool = True
 
     @staticmethod
     def default() -> "CommonSettings":
         return CommonSettings(
-            log_path=Path("example_log.csv"),
+            train_log_path=Path("example_log.csv"),
             test_log_path=None,
             log_ids=DEFAULT_XES_IDS,
             model_path=None,
-            repetitions=1,
+            num_final_evaluations=1,
             evaluation_metrics=[
                 Metric.DL,
                 Metric.N_GRAM_DISTANCE,
@@ -85,9 +85,9 @@ class CommonSettings:
 
     @staticmethod
     def from_dict(config: dict) -> "CommonSettings":
-        log_path = Path(config["log_path"])
-        if not log_path.is_absolute():
-            log_path = PROJECT_DIR / log_path
+        train_log_path = Path(config["train_log_path"])
+        if not train_log_path.is_absolute():
+            train_log_path = PROJECT_DIR / train_log_path
 
         test_log_path = config.get("test_log_path", None)
         if test_log_path is not None:
@@ -112,22 +112,22 @@ class CommonSettings:
                 model_path = PROJECT_DIR / model_path
 
         return CommonSettings(
-            log_path=log_path,
+            train_log_path=train_log_path,
             test_log_path=test_log_path,
             log_ids=log_ids,
             model_path=model_path,
-            repetitions=config["repetitions"],
+            num_final_evaluations=config["num_final_evaluations"],
             evaluation_metrics=metrics,
             clean_intermediate_files=clean_up,
         )
 
     def to_dict(self) -> dict:
         return {
-            "log_path": str(self.log_path),
+            "train_log_path": str(self.train_log_path),
             "test_log_path": str(self.test_log_path) if self.test_log_path is not None else None,
             "log_ids": self.log_ids.to_dict(),
             "model_path": str(self.model_path) if self.model_path is not None else None,
-            "repetitions": self.repetitions,
+            "num_final_evaluations": self.num_final_evaluations,
             "evaluation_metrics": [str(metric) for metric in self.evaluation_metrics],
             "clean_intermediate_files": self.clean_intermediate_files,
         }

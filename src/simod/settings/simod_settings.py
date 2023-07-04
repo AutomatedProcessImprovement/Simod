@@ -38,7 +38,7 @@ class SimodSettings:
 
         return SimodSettings(
             common=CommonSettings.default(),
-            preprocessing=PreprocessingSettings.default(),
+            preprocessing=PreprocessingSettings(),
             control_flow=ControlFlowSettings(),
             resource_model=ResourceModelSettings(),
             extraneous_activity_delays=ExtraneousDelaysSettings.default(),
@@ -46,7 +46,7 @@ class SimodSettings:
 
     @staticmethod
     def from_yaml(config: dict) -> "SimodSettings":
-        assert config["version"] == 2, "Configuration version must be 2"
+        assert config["version"] == 4, "Configuration version must be 4"
 
         common_settings = CommonSettings.from_dict(config["common"])
         preprocessing_settings = PreprocessingSettings.from_dict(config["preprocessing"])

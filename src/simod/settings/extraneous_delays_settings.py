@@ -7,13 +7,15 @@ from extraneous_activity_delays.config import OptimizationMetric as ExtraneousAc
 @dataclass
 class ExtraneousDelaysSettings:
     optimization_metric: ExtraneousActivityDelaysOptimizationMetric
-    num_iterations: int = 10
+    num_iterations: int = 1
+    num_evaluations_per_iteration: int = 3
 
     @staticmethod
     def default() -> "ExtraneousDelaysSettings":
         return ExtraneousDelaysSettings(
             optimization_metric=ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD,
-            num_iterations=10,
+            num_iterations=1,
+            num_evaluations_per_iteration=3
         )
 
     @staticmethod
@@ -27,17 +29,20 @@ class ExtraneousDelaysSettings:
         else:
             optimization_metric = ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD
 
-        num_iterations = config.get("num_iterations", 10)
+        num_iterations = config.get("num_iterations", 1)
+        num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
 
         return ExtraneousDelaysSettings(
             optimization_metric=optimization_metric,
             num_iterations=num_iterations,
+            num_evaluations_per_iteration=num_evaluations_per_iteration
         )
 
     def to_dict(self) -> dict:
         return {
             "optimization_metric": str(self.optimization_metric.name),
             "num_iterations": self.num_iterations,
+            "num_evaluations_per_iteration": self.num_evaluations_per_iteration,
         }
 
     @staticmethod
