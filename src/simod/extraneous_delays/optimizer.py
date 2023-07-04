@@ -38,6 +38,7 @@ class ExtraneousDelaysOptimizer:
             log_ids=self.event_log.log_ids,
             process_name=self.event_log.process_name,
             num_iterations=self.settings.num_iterations,
+            num_evaluation_simulations=self.settings.num_evaluations_per_iteration,
             training_partition_ratio=0.5,
             optimization_metric=self.settings.optimization_metric,
             discovery_method=DiscoveryMethod.COMPLEX,

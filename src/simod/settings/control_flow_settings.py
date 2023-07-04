@@ -36,7 +36,7 @@ class ControlFlowSettings:
     """
 
     optimization_metric: Metric = Metric.N_GRAM_DISTANCE
-    max_evaluations: int = 10
+    num_iterations: int = 10
     num_evaluations_per_iteration: int = 3
     gateway_probabilities: Union[
         GatewayProbabilitiesDiscoveryMethod, List[GatewayProbabilitiesDiscoveryMethod]
@@ -53,7 +53,7 @@ class ControlFlowSettings:
         # Optimization metric
         optimization_metric = Metric.from_str(config.get("optimization_metric", "n_gram_distance"))
         # Number of iterations for the optimization process
-        max_evaluations = config.get("max_evaluations", 10)
+        num_iterations = config.get("num_iterations", 10)
         # Num evaluations per iteration
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
         # Gateway probabilities discovery method
@@ -76,7 +76,7 @@ class ControlFlowSettings:
         # Instantiate class
         return ControlFlowSettings(
             optimization_metric=optimization_metric,
-            max_evaluations=max_evaluations,
+            num_iterations=num_iterations,
             num_evaluations_per_iteration=num_evaluations_per_iteration,
             gateway_probabilities=gateway_probabilities,
             mining_algorithm=mining_algorithm,
@@ -91,7 +91,7 @@ class ControlFlowSettings:
         # Parse general settings
         dictionary = {
             "optimization_metric": self.optimization_metric.value,
-            "max_evaluations": self.max_evaluations,
+            "num_iterations": self.num_iterations,
             "num_evaluations_per_iteration": self.num_evaluations_per_iteration,
         }
         # Parse gateway probabilities

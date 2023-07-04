@@ -247,7 +247,6 @@ class Simod:
         return timers
 
     def _evaluate_model(self, bps_model: BPSModel, output_dir: Path):
-        num_simulations = 10  # TODO: make this a parameter in configuration
         simulation_cases = self._event_log.test_partition[self._settings.common.log_ids.case].nunique()
         simulation_start_time = self._event_log.test_partition[self._settings.common.log_ids.start_time].min()
 
@@ -283,7 +282,7 @@ class Simod:
             simulation_start_time=simulation_start_time,
             validation_log=self._event_log.test_partition,
             validation_log_ids=self._event_log.log_ids,
-            num_simulations=num_simulations,
+            num_simulations=self._settings.common.num_final_evaluations,
             metrics=metrics,
         )
 

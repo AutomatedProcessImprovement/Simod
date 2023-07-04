@@ -6,17 +6,17 @@ import yaml
 from simod.settings.simod_settings import SimodSettings
 
 settings = """
-version: 2
+version: 4
 common:
-  log_path: assets/LoanApp_simplified.csv
-  repetitions: 1
+  train_log_path: assets/LoanApp_simplified.csv
+  num_final_evaluations: 1
   evaluation_metrics: 
     - dl
     - absolute_hourly_emd
 preprocessing:
   multitasking: false
 control_flow:
-  max_evaluations: 2
+  num_iterations: 2
   mining_algorithm: sm3
   concurrency:
     - 0.0
@@ -37,7 +37,7 @@ control_flow:
     - true
     - false
 resource_model:
-  max_evaluations: 2
+  num_iterations: 2
   discover_prioritization_rules: true
   resource_profiles:
     discovery_type: differentiated_by_pool
@@ -52,7 +52,7 @@ resource_model:
 """
 
 
-@pytest.mark.parametrize("test_case", [settings])
+@pytest.mark.parametrize("test_case", [settings], ids=["default"])
 def test_configuration(test_case):
     config = yaml.safe_load(test_case)
     result = SimodSettings.from_yaml(config)
@@ -68,9 +68,9 @@ def assert_common(config: dict, result: SimodSettings):
     config_common = config["common"]
     result_common = result.common
     for key in config_common:
-        if key in ["log_path", "test_log_path"]:
+        if key in ["train_log_path", "test_log_path"]:
             # path is often modified and expanded internally, so we compare only the last part
-            assert Path(config_common[key]).name == result_common.log_path.name
+            assert Path(config_common[key]).name == result_common.train_log_path.name
             continue
         assert config_common[key] == getattr(result_common, key)
 

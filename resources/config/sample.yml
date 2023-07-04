@@ -1,45 +1,58 @@
-version: 2
-common:
-  log_path: resources/event_logs/PurchasingExample.xes
-  repetitions: 1
-  evaluation_metrics:
-    - dl
-    - absolute_hourly_emd
-    - cycle_time_emd
-    - circadian_emd
+version: 4
+general:
+  train_log_path: resources/event_logs/PurchasingExample_train.csv
+  test_log_path: resources/event_logs/PurchasingExample_test.csv
+  num_final_evaluations: 10  # Number of evaluations of the discovered BPS model.
+  evaluation_metrics:  # Metrics to evaluate the discovered BPS model with.
+    - 3_gram_distance
+    - absolute_event_distribution
+    - relative_event_distribution
+    - circadian_event_distribution
+    - case_arrival_rate
+    - cycle_time_distribution
 preprocessing:
-  multitasking: false
-control_flow:
-  max_evaluations: 1
-  mining_algorithm: sm3
-  optimization_metric: dl
-  concurrency:
-    - 0.0
-    - 1.0
+  multitasking: false  # Reassign activity durations when happening in multitasking.
+  enable_time_concurrency_threshold: 0.5  # Concurrency threshold for the enabled time computation.
+  concurrency_df: 0.75  # Concurrency thresholds for the start time (and enabled time) estimations when
+  concurrency_l2l: 0.9  # the start time is missing in the train event log. Using the Heuristics Miner
+  concurrency_l1l: 0.9  # concurrency oracle.
+control-flow:
+  optimization_metric: n_gram_distance
+  num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
+  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them)
+  gateway_probabilities:  # Methods to discover the probabilities of each gateway
+    - equiprobable
+    - discovery
+  discovery_algorithm: sm3  # Process model discovery algorithm: sm2 (Split Miner v2) or sm3 (Split Miner v3)
   epsilon:
     - 0.0
     - 1.0
   eta:
     - 0.0
     - 1.0
-  gateway_probabilities:
-    - equiprobable
-    - discovery
   replace_or_joins:
     - true
     - false
   prioritize_parallelism:
     - true
     - false
-calendars:
-  max_evaluations: 1
-  optimization_metric: absolute_hourly_emd
+resource_model:
+  optimization_metric: circadian_event_distribution
+  num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
+  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them)
   resource_profiles:
-    discovery_type: differentiated
-    granularity: 60
-    confidence: 0.1
-    support: 0.7
+    discovery_type: differentiated  # Resource discovery type (undifferentiated, pooled, or differentiated)
+    granularity:
+      - 15
+      - 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01
+      - 0.3
     participation: 0.4
 extraneous_activity_delays:
-  num_iterations: 1
-  optimization_metric: relative_emd
+  optimization_metric: relative_event_distribution
+  num_iterations: 1  # Number of iterations of the optimization process (if 1, direct discovery without optimization)
+  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them)

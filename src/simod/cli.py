@@ -25,9 +25,9 @@ def optimize(config_path: str, output_dir: str) -> Path:
     output_dir = Path(output_dir) if output_dir is not None else PROJECT_DIR / "outputs" / get_random_folder_id()
     # Read and preprocess event log
     event_log = EventLog.from_path(
-        path=settings.common.log_path,
+        path=settings.common.train_log_path,
         log_ids=settings.common.log_ids,
-        process_name=settings.common.log_path.stem,
+        process_name=settings.common.train_log_path.stem,
         test_path=settings.common.test_log_path,
         preprocessing_settings=settings.preprocessing,
     )
