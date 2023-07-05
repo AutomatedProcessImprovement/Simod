@@ -1,6 +1,12 @@
 version: 2
 common:
   log_path: resources/event_logs/PurchasingExample.xes
+  log_ids:
+    case: case:concept:name
+    activity: concept:name
+    resource: org:resource
+    start_time: start_timestamp
+    end_time: time:timestamp
   repetitions: 1
   evaluation_metrics:
     - dl
@@ -10,9 +16,9 @@ common:
 preprocessing:
   multitasking: false
 control_flow:
+  optimization_metric: dl
   max_evaluations: 1
   mining_algorithm: sm3
-  optimization_metric: dl
   concurrency:
     - 0.0
     - 1.0
@@ -23,7 +29,6 @@ control_flow:
     - 0.0
     - 1.0
   gateway_probabilities:
-    - equiprobable
     - discovery
   replace_or_joins:
     - true
@@ -31,15 +36,21 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
-calendars:
-  max_evaluations: 1
+resource_model:
   optimization_metric: absolute_hourly_emd
+  max_evaluations: 1
   resource_profiles:
     discovery_type: differentiated
-    granularity: 60
-    confidence: 0.1
-    support: 0.7
+    granularity:
+      - 15
+      - 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01
+      - 0.3
     participation: 0.4
 extraneous_activity_delays:
+  optimization_metric: absolute_emd
   num_iterations: 1
-  optimization_metric: relative_emd
