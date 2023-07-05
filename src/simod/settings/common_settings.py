@@ -64,6 +64,9 @@ class CommonSettings:
     num_final_evaluations: int
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool = True
+    perform_testing: bool = True  # TODO this parameter would denote if we want to perform the last "Evaluation"
+    # stage or not, thus, if it's set to True everything is as it is, if not, we don't split the EventLog into
+    # train+validation+test, just into train+validation, and we skip the final evaluation
 
     @staticmethod
     def default() -> "CommonSettings":

@@ -16,8 +16,6 @@ from pix_framework.filesystem.file_manager import (
 from pix_framework.io.bpm_graph import BPMNGraph
 
 from simod.batching.discovery import discover_batching_rules
-from simod.bpm.graph import get_activities_ids_by_name
-from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.case_attributes.discovery import discover_case_attributes
 from simod.cli_formatter import print_section, print_subsection
 from simod.control_flow.discovery import discover_process_model
@@ -64,10 +62,10 @@ class Simod:
     _extraneous_delays_optimizer: Optional[ExtraneousDelaysOptimizer]
 
     def __init__(
-        self,
-        settings: SimodSettings,
-        event_log: EventLog,
-        output_dir: Optional[Path] = None,
+            self,
+            settings: SimodSettings,
+            event_log: EventLog,
+            output_dir: Optional[Path] = None,
     ):
         self._settings = settings
         self._event_log = event_log
@@ -150,7 +148,7 @@ class Simod:
             add_timers_to_bpmn_model(self._best_bps_model.process_model, timers)  # Update BPMN model on disk
 
         # --- Final evaluation --- #
-        print_section("Evaluating final BPS model")
+        print_section("Discovering final BPS model")
         self.final_bps_model = BPSModel(  # Bypass all models already discovered with train+validation
             process_model=get_process_model_path(self._best_result_dir, self._event_log.process_name),
             case_arrival_model=self._best_bps_model.case_arrival_model,
@@ -160,7 +158,9 @@ class Simod:
         )
         # Discover process model with best parameters if needed
         if self._settings.common.model_path is None:
-            print_subsection(f"Discovering process model with settings: {best_control_flow_params.to_dict()}")
+            print_subsection(
+                f"Discovering process model with best control-flow settings: {best_control_flow_params.to_dict()}"
+            )
             # Instantiate event log to discover the process model with
             xes_log_path = self._best_result_dir / f"{self._event_log.process_name}_train_val.xes"
             self._event_log.train_validation_to_xes(xes_log_path)
@@ -183,7 +183,7 @@ class Simod:
             discovery_method=best_control_flow_params.gateway_probabilities_method,
         )
         # Resource model
-        print_subsection("Discovering resource model")
+        print_subsection("Discovering best resource model")
         self.final_bps_model.resource_model = discover_resource_model(
             event_log=self._event_log.train_validation_partition,
             log_ids=self._event_log.log_ids,
@@ -194,11 +194,21 @@ class Simod:
             # Add discovered delays and update BPMN model on disk
             self.final_bps_model.extraneous_delays = self._best_bps_model.extraneous_delays
             add_timers_to_bpmn_model(self.final_bps_model.process_model, self._best_bps_model.extraneous_delays)
+        # Output json parameters
+        self.final_bps_model.replace_activity_names_with_ids()
+        # Write JSON parameters to file
+        json_parameters_path = get_simulation_parameters_path(self._best_result_dir, self._event_log.process_name)
+        with json_parameters_path.open("w") as f:
+            json.dump(self.final_bps_model.to_prosimos_format(), f)
         # Evaluate
-        print_subsection("Evaluate")
-        simulation_dir = self._best_result_dir / "simulation"
-        simulation_dir.mkdir(parents=True)
-        self._evaluate_model(self.final_bps_model, simulation_dir)
+        if self._settings.common.perform_testing:
+            print_subsection("Evaluate")
+            simulation_dir = self._best_result_dir / "simulation"
+            simulation_dir.mkdir(parents=True)
+            self._evaluate_model(self.final_bps_model.process_model, json_parameters_path, simulation_dir)
+        else:
+            # TODO output the json parameters anyways
+            pass
 
         # --- Export settings and clean temporal files --- #
         canonical_model_path = self._best_result_dir / "canonical_model.json"
@@ -246,7 +256,7 @@ class Simod:
         timers = self._extraneous_delays_optimizer.run()
         return timers
 
-    def _evaluate_model(self, bps_model: BPSModel, output_dir: Path):
+    def _evaluate_model(self, process_model: Path, json_parameters: Path, output_dir: Path):
         simulation_cases = self._event_log.test_partition[self._settings.common.log_ids.case].nunique()
         simulation_start_time = self._event_log.test_partition[self._settings.common.log_ids.start_time].min()
 
@@ -258,25 +268,9 @@ class Simod:
 
         self._event_log.test_partition.to_csv(output_dir / "test_log.csv", index=False)
 
-        # Update activity label -> activity ID mapping of current process model
-        activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(bps_model.process_model).as_graph())
-        for resource_profile in bps_model.resource_model.resource_profiles:
-            for resource in resource_profile.resources:
-                resource.assigned_tasks = [
-                    activity_label_to_id[activity_label] for activity_label in resource.assigned_tasks
-                ]
-        for activity_resource_distributions in bps_model.resource_model.activity_resource_distributions:
-            activity_resource_distributions.activity_id = activity_label_to_id[
-                activity_resource_distributions.activity_id
-            ]
-        # Write JSON parameters to file
-        json_parameters_path = get_simulation_parameters_path(output_dir, self._event_log.process_name)
-        with json_parameters_path.open("w") as f:
-            json.dump(bps_model.to_prosimos_format(), f)
-
         measurements = simulate_and_evaluate(
-            model_path=bps_model.process_model,
-            parameters_path=json_parameters_path,
+            model_path=process_model,
+            parameters_path=json_parameters,
             output_dir=output_dir,
             simulation_cases=simulation_cases,
             simulation_start_time=simulation_start_time,
@@ -299,9 +293,9 @@ class Simod:
 
 
 def _export_canonical_model(
-    file_path: Path,
-    control_flow_settings: ControlFlowHyperoptIterationParams,
-    calendar_settings: ResourceModelHyperoptIterationParams,
+        file_path: Path,
+        control_flow_settings: ControlFlowHyperoptIterationParams,
+        calendar_settings: ResourceModelHyperoptIterationParams,
 ):
     structure = control_flow_settings.to_dict()
 
