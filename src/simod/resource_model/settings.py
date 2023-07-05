@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams, CalendarType
+
 from simod.settings.common_settings import Metric
-from simod.settings.resource_model_settings import CalendarType, CalendarDiscoveryParams
 from simod.utilities import nearest_divisor_for_granularity
 
 

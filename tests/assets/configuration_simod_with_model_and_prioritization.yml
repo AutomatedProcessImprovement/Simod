@@ -1,0 +1,30 @@
+version: 2
+common:
+  log_path: tests/assets/Simple_log_with_prioritization.csv
+  test_log_path: tests/assets/Simple_log_with_prioritization.csv
+  model_path: tests/assets/Control_flow_optimization_test.bpmn
+  repetitions: 1
+  evaluation_metrics:
+    - absolute_hourly_emd
+preprocessing:
+  multitasking: false
+control_flow:
+  optimization_metric: n_gram_distance
+  max_evaluations: 3
+  gateway_probabilities:
+    - discovery
+    - equiprobable
+resource_model:
+  optimization_metric: absolute_hourly_emd
+  max_evaluations: 3
+  discover_prioritization_rules: True
+  resource_profiles:
+    discovery_type: pool
+    granularity: 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01
+      - 0.3
+    participation: 0.4

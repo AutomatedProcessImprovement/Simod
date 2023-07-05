@@ -26,8 +26,15 @@ class CaseAttribute:
         )
 
     def to_prosimos(self) -> dict:
-        return {
-            "name": self.name,
-            "type": self.type.value,
-            "values": self.values,
-        }
+        if self.type == CaseAttributeType.CONTINUOUS:
+            return {
+                "name": self.name,
+                "type": self.type.value,
+                "values": self.values,
+            }
+        else:
+            return {
+                "name": self.name,
+                "type": self.type.value,
+                "values": [{"key": value["key"], "value": value["probability"]} for value in self.values],
+            }

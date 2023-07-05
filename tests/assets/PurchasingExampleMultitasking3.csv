@@ -1,4 +1,0 @@
-concept:name,org:resource,@@startevent_concept:name,@@startevent_org:resource,start_timestamp,time:timestamp,@@duration,case:concept:name,case:variant,case:variant-index,case:creator
-A1,R1,A1,R1,2011-01-01 00:00:00+00:00,2011-01-01 00:00:10+00:00,10.0,1,Variant 2,2,Fluxicon Disco
-A2,R1,A2,R1,2011-01-01 00:00:00+00:00,2011-01-01 00:00:05+00:00,5.0,1,Variant 2,2,Fluxicon Disco
-A3,R1,A3,R1,2011-01-01 00:00:05+00:00,2011-01-01 00:00:10+00:00,5.0,1,Variant 2,2,Fluxicon Disco

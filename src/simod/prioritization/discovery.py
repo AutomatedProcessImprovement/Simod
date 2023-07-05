@@ -2,7 +2,6 @@ import pandas as pd
 from pix_framework.log_ids import EventLogIDs
 from prioritization_discovery.discovery import discover_priority_rules
 
-from simod.event_log.utilities import add_enabled_time_if_missing
 from .types import PrioritizationRule
 from ..case_attributes.types import CaseAttribute
 
@@ -14,12 +13,15 @@ def discover_prioritization_rules(
     Discover prioritization rules from a log.
     The enabled_time column is required. If it is missing, it will be estimated using the start-time-estimator.
     """
-    log = add_enabled_time_if_missing(log, log_ids)
-
     case_attribute_names = list(map(lambda x: x.name, case_attributes))
 
     rules = discover_priority_rules(
-        event_log=log,
+        event_log=log.rename(  # Rename columns for hardcoded discovery package
+            {
+                log_ids.enabled_time: "enabled_time",
+                log_ids.start_time: "start_time",
+                log_ids.resource: "Resource"
+            }, axis=1),
         attributes=case_attribute_names,
     )
 

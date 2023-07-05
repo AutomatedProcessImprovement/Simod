@@ -4,8 +4,6 @@ import click
 from pix_framework.filesystem.file_manager import get_random_folder_id
 
 from simod.event_log.event_log import EventLog
-from simod.event_log.preprocessor import Preprocessor
-from simod.event_log.utilities import read
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simod import Simod
 
@@ -16,60 +14,27 @@ def main():
     pass
 
 
-# @main.command()
-# @click.option('--config_path', default=None, required=True, type=Path)
-# @click.pass_context
-# def discover(ctx, config_path):
-#     repository_dir = get_project_dir()
-#     ctx.params['config_path'] = repository_dir.joinpath(config_path)
-#
-#     config_data = config_data_from_file(config_path)
-#     config_data.update(ctx.params)
-#     config = Configuration(**config_data)
-#
-#     discoverer = Discoverer(config)
-#     discoverer.run()
-
-
 @main.command()
 @click.option("--config_path", default=None, required=True, type=str)
 @click.option("--output_dir", default=None, required=False, type=str)
 def optimize(config_path: str, output_dir: str) -> Path:
+    # Read configuration file
     config_path = PROJECT_DIR / config_path
     settings = SimodSettings.from_path(config_path)
-
-    output_dir = Path(output_dir) if output_dir is not None else None
-
-    # NOTE: EventLog requires start_time column to be present for split_log() to work.
-    #   So, we do pre-processing before creating the EventLog object.
-
-    log, csv_path = read(settings.common.log_path, settings.common.log_ids)
-
-    preprocessor = Preprocessor(log, settings.common.log_ids)
-    processed_log = preprocessor.run(
-        multitasking=settings.preprocessing.multitasking,
-        enable_time_concurrency_threshold=settings.preprocessing.enable_time_concurrency_threshold,
-        concurrency_thresholds=settings.preprocessing.concurrency_thresholds,
-    )
-
-    test_log = None
-    if settings.common.test_log_path is not None:
-        test_log, _ = read(settings.common.test_log_path, settings.common.log_ids)
-
-    event_log = EventLog.from_df(
-        log=processed_log,  # would be split into training and validation if test is provided, otherwise into test too
+    # Instantiate output directory path if specified
+    output_dir = Path(output_dir) if output_dir is not None else PROJECT_DIR / "outputs" / get_random_folder_id()
+    # Read and preprocess event log
+    event_log = EventLog.from_path(
+        path=settings.common.log_path,
         log_ids=settings.common.log_ids,
         process_name=settings.common.log_path.stem,
-        test_log=test_log,
-        log_path=settings.common.log_path,
-        csv_log_path=csv_path,
+        test_path=settings.common.test_log_path,
+        preprocessing_settings=settings.preprocessing,
     )
-
-    if output_dir is None:
-        output_dir = PROJECT_DIR / "outputs" / get_random_folder_id()
-
-    Simod(settings, event_log=event_log, output_dir=output_dir).run()
-
+    # Instantiate and run Simod
+    simod = Simod(settings, event_log=event_log, output_dir=output_dir)
+    simod.run()
+    # Return output directory
     return output_dir
 
 
