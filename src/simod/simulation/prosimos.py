@@ -14,7 +14,7 @@ from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
-from simod.cli_formatter import print_notice, print_step
+from simod.cli_formatter import print_step
 from simod.metrics import compute_metric
 from ..event_log.utilities import read
 from ..settings.common_settings import Metric
@@ -86,12 +86,21 @@ def simulate(settings: ProsimosSettings):
     :param settings: Prosimos settings.
     :return: None.
     """
-    print_notice(f"Number of simulation cases: {settings.num_simulation_cases}")
+    bpmn_path = settings.bpmn_path.__str__()
+    parameters_path = settings.parameters_path.__str__()
+    total_cases = settings.num_simulation_cases
+
+    print_step(
+        f"Simulating the process: "
+        f"total_cases = {total_cases}, "
+        f"bpmn_path = {bpmn_path}, "
+        f"parameters_path = {parameters_path}"
+    )
 
     run_simulation(
-        bpmn_path=settings.bpmn_path.__str__(),
-        json_path=settings.parameters_path.__str__(),
-        total_cases=settings.num_simulation_cases,
+        bpmn_path=bpmn_path,
+        json_path=parameters_path,
+        total_cases=total_cases,
         stat_out_path=None,  # No statistics
         log_out_path=settings.output_log_path.__str__(),
         starting_at=settings.simulation_start.isoformat(),
@@ -222,6 +231,7 @@ def _read_simulated_log(arguments: Tuple):
     log_path, log_ids, simulation_repetition_index = arguments
 
     df, _ = read(log_path, log_ids=log_ids)
+    assert len(df) > 0, f"Simulated log is empty, see {log_path}"
 
     df["role"] = df["resource"]
     df["source"] = "simulation"
@@ -236,6 +246,8 @@ def _evaluate_logs_using_metrics(arguments: Tuple) -> List[dict]:
     simulated_log: pd.DataFrame = arguments[2]
     simulated_log_ids: EventLogIDs = arguments[3]
     metrics: List[Metric] = arguments[4]
+
+    assert len(simulated_log) > 0, "Simulated log is empty"
 
     rep = simulated_log.iloc[0].run_num
 
