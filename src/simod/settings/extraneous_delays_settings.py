@@ -3,6 +3,8 @@ from typing import Union
 
 from extraneous_activity_delays.config import OptimizationMetric as ExtraneousActivityDelaysOptimizationMetric
 
+from simod.settings.common_settings import Metric
+
 
 @dataclass
 class ExtraneousDelaysSettings:
@@ -23,12 +25,9 @@ class ExtraneousDelaysSettings:
         if config is None:
             return None
 
-        optimization_metric = config.get("optimization_metric")
-        if optimization_metric is not None:
-            optimization_metric = ExtraneousDelaysSettings._match_metric(optimization_metric)
-        else:
-            optimization_metric = ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD
-
+        optimization_metric = ExtraneousDelaysSettings._match_metric(
+            config.get("optimization_metric", "relative_event_distribution")
+        )
         num_iterations = config.get("num_iterations", 1)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
 
@@ -47,15 +46,14 @@ class ExtraneousDelaysSettings:
 
     @staticmethod
     def _match_metric(metric: str) -> ExtraneousActivityDelaysOptimizationMetric:
-        metric = metric.lower()
-
-        if metric == "absolute_emd":
+        metric = Metric.from_str(metric)
+        if metric == Metric.ABSOLUTE_EMD:
             return ExtraneousActivityDelaysOptimizationMetric.ABSOLUTE_EMD
-        elif metric == "cycle_time":
+        elif metric == Metric.CYCLE_TIME_EMD:
             return ExtraneousActivityDelaysOptimizationMetric.CYCLE_TIME
-        elif metric == "circadian_emd":
+        elif metric == Metric.CIRCADIAN_EMD:
             return ExtraneousActivityDelaysOptimizationMetric.CIRCADIAN_EMD
-        elif metric == "relative_emd":
+        elif metric == Metric.RELATIVE_EMD:
             return ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD
         else:
             raise ValueError(f"Unknown metric {metric}")
