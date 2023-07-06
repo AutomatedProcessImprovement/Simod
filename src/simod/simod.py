@@ -103,12 +103,16 @@ class Simod:
         )
 
         # --- Case Attributes --- #
-        print_section("Discovering case attributes")
-        case_attributes = discover_case_attributes(
-            self._event_log.train_validation_partition,  # No optimization process here, use train + validation
-            self._event_log.log_ids
-        )
-        self._best_bps_model.case_attributes = case_attributes
+        if (
+                self._settings.common.discover_case_attributes
+                or self._settings.common.discover_prioritization_rules
+        ):
+            print_section("Discovering case attributes")
+            case_attributes = discover_case_attributes(
+                self._event_log.train_validation_partition,  # No optimization process here, use train + validation
+                self._event_log.log_ids
+            )
+            self._best_bps_model.case_attributes = case_attributes
 
         # --- Control-Flow Optimization --- #
         print_section("Optimizing control-flow parameters")
@@ -118,7 +122,7 @@ class Simod:
 
         # --- Prioritization --- #
         if (
-                self._settings.resource_model.discover_prioritization_rules
+                self._settings.common.discover_prioritization_rules
                 and len(self._best_bps_model.case_attributes) > 0
         ):
             print_section("Trying to discover prioritization rules")
@@ -130,7 +134,7 @@ class Simod:
             self._best_bps_model.prioritization_rules = rules
 
         # --- Batching --- #
-        if self._settings.resource_model.discover_batching_rules:
+        if self._settings.common.discover_batching_rules:
             print_section("Trying to discover batching rules")
             rules = discover_batching_rules(self._event_log.train_validation_partition, self._event_log.log_ids)
             self._best_bps_model.batching_rules = rules
@@ -206,9 +210,6 @@ class Simod:
             simulation_dir = self._best_result_dir / "simulation"
             simulation_dir.mkdir(parents=True)
             self._evaluate_model(self.final_bps_model.process_model, json_parameters_path, simulation_dir)
-        else:
-            # TODO output the json parameters anyways
-            pass
 
         # --- Export settings and clean temporal files --- #
         canonical_model_path = self._best_result_dir / "canonical_model.json"

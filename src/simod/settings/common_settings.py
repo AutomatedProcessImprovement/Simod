@@ -75,6 +75,9 @@ class CommonSettings:
     num_final_evaluations: int
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool = True
+    discover_case_attributes: bool = False
+    discover_prioritization_rules: bool = False
+    discover_batching_rules: bool = False
     perform_testing: bool = True  # TODO this parameter would denote if we want to perform the last "Evaluation"
 
     # stage or not, thus, if it's set to True everything is as it is, if not, we don't split the EventLog into
@@ -98,6 +101,9 @@ class CommonSettings:
                 Metric.CYCLE_TIME_EMD,
             ],
             clean_intermediate_files=True,
+            discover_case_attributes=False,
+            discover_prioritization_rules=False,
+            discover_batching_rules=False,
         )
 
     @staticmethod
@@ -121,6 +127,9 @@ class CommonSettings:
             log_ids = DEFAULT_XES_IDS
 
         clean_up = config.get("clean_intermediate_files", True)
+        discover_case_attributes = config.get("discover_case_attributes", False)
+        discover_prioritization_rules = config.get("discover_prioritization_rules", False)
+        discover_batching_rules = config.get("discover_batching_rules", False)
 
         model_path = config.get("model_path", None)
         if model_path is not None:
@@ -136,6 +145,9 @@ class CommonSettings:
             num_final_evaluations=config["num_final_evaluations"],
             evaluation_metrics=metrics,
             clean_intermediate_files=clean_up,
+            discover_case_attributes=discover_case_attributes,
+            discover_prioritization_rules=discover_prioritization_rules,
+            discover_batching_rules=discover_batching_rules,
         )
 
     def to_dict(self) -> dict:
@@ -147,4 +159,7 @@ class CommonSettings:
             "num_final_evaluations": self.num_final_evaluations,
             "evaluation_metrics": [str(metric) for metric in self.evaluation_metrics],
             "clean_intermediate_files": self.clean_intermediate_files,
+            "discover_case_attributes": self.discover_case_attributes,
+            "discover_prioritization_rules": self.discover_prioritization_rules,
+            "discover_batching_rules": self.discover_batching_rules,
         }

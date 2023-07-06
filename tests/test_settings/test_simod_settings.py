@@ -10,6 +10,7 @@ version: 4
 common:
   train_log_path: assets/LoanApp_simplified.csv
   num_final_evaluations: 1
+  discover_prioritization_rules: true
   evaluation_metrics: 
     - dl
     - absolute_event_distribution
@@ -38,7 +39,6 @@ control_flow:
     - false
 resource_model:
   num_iterations: 2
-  discover_prioritization_rules: true
   resource_profiles:
     discovery_type: differentiated_by_pool
     granularity: 60

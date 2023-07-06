@@ -21,8 +21,6 @@ class ResourceModelSettings:
     confidence: Optional[Union[float, Tuple[float, float]]] = (0.5, 0.85)  # from 0 to 1.0
     support: Optional[Union[float, Tuple[float, float]]] = (0.01, 0.3)  # from 0 to 1.0
     participation: Optional[Union[float, Tuple[float, float]]] = 0.4  # from 0 to 1.0
-    discover_prioritization_rules: Optional[bool] = False
-    discover_batching_rules: Optional[bool] = False
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
@@ -57,8 +55,6 @@ class ResourceModelSettings:
             confidence=confidence,
             support=support,
             participation=participation,
-            discover_prioritization_rules=discover_prioritization_rules,
-            discover_batching_rules=discover_batching_rules,
         )
 
     def to_dict(self) -> dict:
@@ -68,8 +64,6 @@ class ResourceModelSettings:
             "num_iterations": self.num_iterations,
             "num_evaluations_per_iteration": self.num_evaluations_per_iteration,
             "discovery_type": self.discovery_type.value,
-            "discover_prioritization_rules": self.discover_prioritization_rules,
-            "discover_batching_rules": self.discover_batching_rules,
         }
 
         # Parse calendar discovery parameters
