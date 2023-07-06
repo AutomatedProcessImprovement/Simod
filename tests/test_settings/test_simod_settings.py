@@ -12,7 +12,7 @@ common:
   num_final_evaluations: 1
   evaluation_metrics: 
     - dl
-    - absolute_hourly_emd
+    - absolute_event_distribution
 preprocessing:
   multitasking: false
 control_flow:

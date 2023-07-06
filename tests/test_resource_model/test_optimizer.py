@@ -104,7 +104,7 @@ def test_resource_model_optimizer(entry_point, test_data):
     assert result.output_dir.exists()
     # Assert discovery parameters depending on the algorithm
     if test_data['name'] == "Single values":
-        assert result.optimization_metric == Metric.ABSOLUTE_HOURLY_EMD
+        assert result.optimization_metric == Metric.ABSOLUTE_EMD
         assert result.calendar_discovery_params.discovery_type == CalendarType.DIFFERENTIATED_BY_POOL
         assert (
                 float(test_data['settings']['resource_profiles']['granularity'][0])

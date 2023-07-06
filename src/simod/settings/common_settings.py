@@ -14,10 +14,12 @@ PROJECT_DIR = get_project_dir()
 
 class Metric(str, Enum):
     DL = "dl"
-    CIRCADIAN_EMD = "circadian_emd"
-    ABSOLUTE_HOURLY_EMD = "absolute_hourly_emd"
-    CYCLE_TIME_EMD = "cycle_time_emd"
     N_GRAM_DISTANCE = "n_gram_distance"
+    CIRCADIAN_EMD = "circadian_event_distribution"
+    ARRIVAL_EMD = "arrival_event_distribution"
+    RELATIVE_EMD = "relative_event_distribution"
+    ABSOLUTE_EMD = "absolute_event_distribution"
+    CYCLE_TIME_EMD = "cycle_time_distribution"
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> "Union[Metric, List[Metric]]":
@@ -32,11 +34,16 @@ class Metric(str, Enum):
             return cls.DL
         elif value.lower() == "n_gram_distance":
             return cls.N_GRAM_DISTANCE
-        elif value.lower() == "circadian_emd":
+        elif value.lower() in ["circadian_event_distribution", "circadian_emd"]:
             return cls.CIRCADIAN_EMD
-        elif value.lower() in ("absolute_hourly_emd", "absolute_hour_emd", "abs_hourly_emd", "abs_hour_emd"):
-            return cls.ABSOLUTE_HOURLY_EMD
-        elif value.lower() == "cycle_time_emd":
+        elif value.lower() in ["arrival_event_distribution", "arrival_emd"]:
+            return cls.ARRIVAL_EMD
+        elif value.lower() in ["relative_event_distribution", "relative_emd"]:
+            return cls.RELATIVE_EMD
+        elif value.lower() in ["absolute_event_distribution", "absolute_hourly_emd",
+                               "absolute_hour_emd", "abs_hourly_emd", "abs_hour_emd"]:
+            return cls.ABSOLUTE_EMD
+        elif value.lower() in ["cycle_time_distribution", "cycle_time_emd"]:
             return cls.CYCLE_TIME_EMD
         else:
             raise ValueError(f"Unknown value {value}")
@@ -47,11 +54,15 @@ class Metric(str, Enum):
         elif self == Metric.N_GRAM_DISTANCE:
             return "N_GRAM_DISTANCE"
         elif self == Metric.CIRCADIAN_EMD:
-            return "CIRCADIAN_EMD"
-        elif self == Metric.ABSOLUTE_HOURLY_EMD:
-            return "ABSOLUTE_HOURLY_EMD"
+            return "CIRCADIAN_EVENT_DISTRIBUTION"
+        elif self == Metric.ARRIVAL_EMD:
+            return "ARRIVAL_EVENT_DISTRIBUTION"
+        elif self == Metric.RELATIVE_EMD:
+            return "RELATIVE_EVENT_DISTRIBUTION"
+        elif self == Metric.ABSOLUTE_EMD:
+            return "ABSOLUTE_EVENT_DISTRIBUTION"
         elif self == Metric.CYCLE_TIME_EMD:
-            return "CYCLE_TIME_EMD"
+            return "CYCLE_TIME_DISTRIBUTION"
         return f"Unknown Metric {str(self)}"
 
 
@@ -65,6 +76,7 @@ class CommonSettings:
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool = True
     perform_testing: bool = True  # TODO this parameter would denote if we want to perform the last "Evaluation"
+
     # stage or not, thus, if it's set to True everything is as it is, if not, we don't split the EventLog into
     # train+validation+test, just into train+validation, and we skip the final evaluation
 
@@ -79,8 +91,10 @@ class CommonSettings:
             evaluation_metrics=[
                 Metric.DL,
                 Metric.N_GRAM_DISTANCE,
-                Metric.ABSOLUTE_HOURLY_EMD,
                 Metric.CIRCADIAN_EMD,
+                Metric.ARRIVAL_EMD,
+                Metric.RELATIVE_EMD,
+                Metric.ABSOLUTE_EMD,
                 Metric.CYCLE_TIME_EMD,
             ],
             clean_intermediate_files=True,

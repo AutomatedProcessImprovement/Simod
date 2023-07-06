@@ -47,7 +47,7 @@ def test_resource_model_settings(test_data: dict):
 
     if test_data['name'] == "Single values":
         assert settings.num_iterations == settings_single_values['num_iterations']
-        assert settings.optimization_metric == Metric.ABSOLUTE_HOURLY_EMD
+        assert settings.optimization_metric == Metric.ABSOLUTE_EMD
         assert settings.discovery_type == CalendarType.DIFFERENTIATED_BY_POOL
         assert settings.granularity == 60
         assert settings.confidence == 0.05

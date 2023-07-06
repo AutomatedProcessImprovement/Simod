@@ -12,7 +12,7 @@ from simod.simulation.prosimos import evaluate_logs
 def test_evaluate_logs(parallel):
     metrics = [
         Metric.CIRCADIAN_EMD,
-        Metric.ABSOLUTE_HOURLY_EMD,
+        Metric.ABSOLUTE_EMD,
         Metric.CYCLE_TIME_EMD,
         Metric.N_GRAM_DISTANCE,
     ]
