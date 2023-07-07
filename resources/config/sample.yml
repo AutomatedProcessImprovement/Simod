@@ -1,15 +1,24 @@
 version: 4
 common:
-  train_log_path: resources/event_logs/PurchasingExample_train.csv
-  test_log_path: resources/event_logs/PurchasingExample_test.csv
+  train_log_path: resources/event_logs/LoanApp_simplified_train.csv
+  test_log_path: resources/event_logs/LoanApp_simplified_test.csv
+  # model_path: resources/models/LoanApp_simplified.bpmn  # Uncomment to use this BPMN model as process model
   num_final_evaluations: 10  # Number of evaluations of the discovered BPS model.
   evaluation_metrics:  # Metrics to evaluate the discovered BPS model with.
-    - 3_gram_distance
+    - n_gram_distance
     - absolute_event_distribution
     - relative_event_distribution
     - circadian_event_distribution
-    - case_arrival_rate
+    - arrival_event_distribution
     - cycle_time_distribution
+  log_ids:
+    case: case_id
+    activity: activity
+    resource: resource
+    start_time: Start_Time
+    end_time: End_Time
+    enabled_time: Enabled_Time
+  clean_intermediate_files: false
 preprocessing:
   multitasking: false  # Reassign activity durations when happening in multitasking.
   enable_time_concurrency_threshold: 0.5  # Concurrency threshold for the enabled time computation.
@@ -19,7 +28,7 @@ preprocessing:
 control_flow:
   optimization_metric: n_gram_distance
   num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
-  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
   gateway_probabilities:  # Methods to discover the probabilities of each gateway
     - equiprobable
     - discovery
@@ -39,7 +48,7 @@ control_flow:
 resource_model:
   optimization_metric: circadian_event_distribution
   num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
-  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
   resource_profiles:
     discovery_type: differentiated  # Resource discovery type (undifferentiated, pooled, or differentiated)
     granularity:

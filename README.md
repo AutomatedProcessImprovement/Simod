@@ -56,11 +56,20 @@ common:
   test_log_path: resources/event_logs/PurchasingExampleTest.xes  # Optional: Path to the test event log in XES or CSV format.
   model_log_path: resources/models/PurchasingExampleTest.bpmn  # Optional: Path to the process model to use for the control-flow.
   num_final_evaluations: 1  # Number of times that the evaluation of the discovered model is done during the optimization. The evaluation metric of the candidate is the average of its evaluations.
+  discover_case_attributes: false
+  discover_prioritization_rules: false
+  discover_batching_rules: false
   evaluation_metrics: # A list of evaluation metrics to use on the final model.
     - dl
     - absolute_hourly_emd
     - cycle_time_emd
     - circadian_emd
+  log_ids:  # Specify the name for each of the columns in the CSV file (XES standard by default) 
+    case_id: "case_id"
+    activity: "activity"
+    resource: "resource"
+    start_time: "start_timestamp"
+    end_time: "end_timestamp"
 preprocessing: # Event log preprocessing settings.
   multitasking: false # If true, remove the multitasking by adjusting the timestamps (start/end) of those activities being executed at the same time by the same resource.
   enable_time_concurrency_threshold: 0.75 # Threshold to consider two activities as concurrent when computing the enabled time.
