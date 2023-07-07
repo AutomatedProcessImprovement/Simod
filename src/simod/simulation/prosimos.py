@@ -14,7 +14,7 @@ from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
-from simod.cli_formatter import print_notice, print_step
+from simod.cli_formatter import print_notice, print_step, print_warning
 from simod.metrics import compute_metric
 from ..event_log.utilities import read
 from ..settings.common_settings import Metric
@@ -237,7 +237,11 @@ def _evaluate_logs_using_metrics(arguments: Tuple) -> List[dict]:
     simulated_log_ids: EventLogIDs = arguments[3]
     metrics: List[Metric] = arguments[4]
 
-    rep = simulated_log.iloc[0].run_num
+    if len(simulated_log) > 0:
+        rep = simulated_log.iloc[0].run_num
+    else:
+        print_warning("Error with the simulation! Trying to evaluate an empty simulated log.")
+        rep = -1
 
     measurements = []
     for metric in metrics:
