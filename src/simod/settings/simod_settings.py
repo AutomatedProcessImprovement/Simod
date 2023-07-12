@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
@@ -38,7 +39,7 @@ class SimodSettings:
 
         return SimodSettings(
             common=CommonSettings.default(),
-            preprocessing=PreprocessingSettings.default(),
+            preprocessing=PreprocessingSettings(),
             control_flow=ControlFlowSettings(),
             resource_model=ResourceModelSettings(),
             extraneous_activity_delays=ExtraneousDelaysSettings.default(),
@@ -46,7 +47,11 @@ class SimodSettings:
 
     @staticmethod
     def from_yaml(config: dict) -> "SimodSettings":
-        assert config["version"] == 2, "Configuration version must be 2"
+        assert config["version"] in [2, 4], "Configuration version must be 2 or 4"
+
+        # Transform from previous version to the latest if needed
+        if config["version"] == 2:
+            config = _parse_legacy_config(config)
 
         common_settings = CommonSettings.from_dict(config["common"])
         preprocessing_settings = PreprocessingSettings.from_dict(config["preprocessing"])
@@ -106,3 +111,43 @@ class SimodSettings:
         with output_path.open("w") as f:
             f.write(data)
         return output_path
+
+
+def _parse_legacy_config(config: dict) -> dict:
+    parsed_config = copy.deepcopy(config)
+    if config["version"] == 2:
+        # Transform dictionary from version 2 to 4
+        parsed_config["version"] = 4
+        # Common elements
+        if "log_path" in parsed_config["common"]:
+            parsed_config["common"]["train_log_path"] = parsed_config["common"]["log_path"]
+            del parsed_config["common"]["log_path"]
+            if "repetitions" in parsed_config["common"]:
+                parsed_config["common"]["num_final_evaluations"] = parsed_config["common"]["repetitions"]
+                del parsed_config["common"]["repetitions"]
+        # Control-flow model
+        if "structure" in parsed_config:
+            parsed_config["control_flow"] = parsed_config["structure"]
+            del parsed_config["structure"]
+        if "control_flow" in parsed_config:
+            if "max_evaluations" in parsed_config["control_flow"]:
+                parsed_config["control_flow"]["num_iterations"] = parsed_config["control_flow"]["max_evaluations"]
+                del parsed_config["control_flow"]["max_evaluations"]
+            if "or_rep" in parsed_config["control_flow"]:
+                parsed_config["control_flow"]["replace_or_joins"] = parsed_config["control_flow"]["or_rep"]
+                del parsed_config["control_flow"]["or_rep"]
+            if "and_prior" in parsed_config["control_flow"]:
+                parsed_config["control_flow"]["prioritize_parallelism"] = parsed_config["control_flow"]["and_prior"]
+                del parsed_config["control_flow"]["and_prior"]
+        # Resource model
+        if "calendars" in parsed_config:
+            parsed_config["resource_model"] = parsed_config["calendars"]
+            del parsed_config["calendars"]
+        if "resource_model" in parsed_config:
+            if "max_evaluations" in parsed_config["resource_model"]:
+                parsed_config["resource_model"]["num_iterations"] = parsed_config["resource_model"]["max_evaluations"]
+                del parsed_config["resource_model"]["max_evaluations"]
+            if "case_arrival" in parsed_config["resource_model"]:
+                del parsed_config["resource_model"]["case_arrival"]
+    # Return parsed configuration
+    return parsed_config

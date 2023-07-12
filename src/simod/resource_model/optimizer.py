@@ -117,7 +117,7 @@ class ResourceModelOptimizer:
             fn=self._hyperopt_iteration,
             space=search_space,
             algo=tpe.suggest,
-            max_evals=self.settings.max_evaluations,
+            max_evals=self.settings.num_iterations,
             trials=self._bayes_trials,
             show_progressbar=False,
         )

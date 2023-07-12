@@ -56,7 +56,7 @@ test_cases = [
 @pytest.mark.parametrize("test_data", test_cases, ids=[test_data["name"] for test_data in test_cases])
 def test_simod(test_data, entry_point):
     settings: SimodSettings = SimodSettings.from_path(entry_point / test_data["config_file"])
-    settings.common.log_path = (entry_point / Path(settings.common.log_path).name).absolute()
+    settings.common.train_log_path = (entry_point / Path(settings.common.train_log_path).name).absolute()
 
     if settings.common.test_log_path:
         settings.common.test_log_path = (entry_point / Path(settings.common.test_log_path).name).absolute()
@@ -64,9 +64,9 @@ def test_simod(test_data, entry_point):
         settings.common.model_path = (entry_point / Path(settings.common.model_path).name).absolute()
 
     event_log = EventLog.from_path(
-        path=settings.common.log_path,
+        path=settings.common.train_log_path,
         log_ids=settings.common.log_ids,
-        process_name=settings.common.log_path.stem,
+        process_name=settings.common.train_log_path.stem,
         test_path=settings.common.test_log_path,
         preprocessing_settings=settings.preprocessing,
     )

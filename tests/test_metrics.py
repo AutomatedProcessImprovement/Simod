@@ -2,7 +2,7 @@ import pytest
 from pix_framework.input import read_csv_log
 from pix_framework.log_ids import DEFAULT_XES_IDS
 
-from simod.metrics import get_absolute_hourly_emd
+from simod.metrics import get_absolute_emd
 
 test_cases = [
     {
@@ -32,8 +32,8 @@ def test_absolute_timestamp_emd(entry_point, test_data):
     simulated_log = read_csv_log(simulated_log_path, simulated_log_ids)
 
     # Test different logs
-    emd = get_absolute_hourly_emd(original_log, original_log_ids, simulated_log, simulated_log_ids)
+    emd = get_absolute_emd(original_log, original_log_ids, simulated_log, simulated_log_ids)
     assert emd > 0.0
     # Test similar log
-    emd = get_absolute_hourly_emd(original_log, original_log_ids, original_log, simulated_log_ids)
+    emd = get_absolute_emd(original_log, original_log_ids, original_log, simulated_log_ids)
     assert emd == 0.0

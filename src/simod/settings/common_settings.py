@@ -14,10 +14,12 @@ PROJECT_DIR = get_project_dir()
 
 class Metric(str, Enum):
     DL = "dl"
-    CIRCADIAN_EMD = "circadian_emd"
-    ABSOLUTE_HOURLY_EMD = "absolute_hourly_emd"
-    CYCLE_TIME_EMD = "cycle_time_emd"
     N_GRAM_DISTANCE = "n_gram_distance"
+    CIRCADIAN_EMD = "circadian_event_distribution"
+    ARRIVAL_EMD = "arrival_event_distribution"
+    RELATIVE_EMD = "relative_event_distribution"
+    ABSOLUTE_EMD = "absolute_event_distribution"
+    CYCLE_TIME_EMD = "cycle_time_distribution"
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> "Union[Metric, List[Metric]]":
@@ -32,11 +34,16 @@ class Metric(str, Enum):
             return cls.DL
         elif value.lower() == "n_gram_distance":
             return cls.N_GRAM_DISTANCE
-        elif value.lower() == "circadian_emd":
+        elif value.lower() in ["circadian_event_distribution", "circadian_emd"]:
             return cls.CIRCADIAN_EMD
-        elif value.lower() in ("absolute_hourly_emd", "absolute_hour_emd", "abs_hourly_emd", "abs_hour_emd"):
-            return cls.ABSOLUTE_HOURLY_EMD
-        elif value.lower() == "cycle_time_emd":
+        elif value.lower() in ["arrival_event_distribution", "arrival_emd"]:
+            return cls.ARRIVAL_EMD
+        elif value.lower() in ["relative_event_distribution", "relative_emd"]:
+            return cls.RELATIVE_EMD
+        elif value.lower() in ["absolute_event_distribution", "absolute_hourly_emd",
+                               "absolute_hour_emd", "abs_hourly_emd", "abs_hour_emd"]:
+            return cls.ABSOLUTE_EMD
+        elif value.lower() in ["cycle_time_distribution", "cycle_time_emd"]:
             return cls.CYCLE_TIME_EMD
         else:
             raise ValueError(f"Unknown value {value}")
@@ -47,47 +54,63 @@ class Metric(str, Enum):
         elif self == Metric.N_GRAM_DISTANCE:
             return "N_GRAM_DISTANCE"
         elif self == Metric.CIRCADIAN_EMD:
-            return "CIRCADIAN_EMD"
-        elif self == Metric.ABSOLUTE_HOURLY_EMD:
-            return "ABSOLUTE_HOURLY_EMD"
+            return "CIRCADIAN_EVENT_DISTRIBUTION"
+        elif self == Metric.ARRIVAL_EMD:
+            return "ARRIVAL_EVENT_DISTRIBUTION"
+        elif self == Metric.RELATIVE_EMD:
+            return "RELATIVE_EVENT_DISTRIBUTION"
+        elif self == Metric.ABSOLUTE_EMD:
+            return "ABSOLUTE_EVENT_DISTRIBUTION"
         elif self == Metric.CYCLE_TIME_EMD:
-            return "CYCLE_TIME_EMD"
+            return "CYCLE_TIME_DISTRIBUTION"
         return f"Unknown Metric {str(self)}"
 
 
 @dataclass
 class CommonSettings:
-    log_path: Path
+    train_log_path: Path
     test_log_path: Optional[Path]
     log_ids: Optional[EventLogIDs]
     model_path: Optional[Path]
-    repetitions: int
+    num_final_evaluations: int
     evaluation_metrics: Union[Metric, List[Metric]]
     clean_intermediate_files: bool = True
+    discover_case_attributes: bool = False
+    discover_prioritization_rules: bool = False
+    discover_batching_rules: bool = False
+    perform_testing: bool = True  # TODO this parameter would denote if we want to perform the last "Evaluation"
+
+    # stage or not, thus, if it's set to True everything is as it is, if not, we don't split the EventLog into
+    # train+validation+test, just into train+validation, and we skip the final evaluation
 
     @staticmethod
     def default() -> "CommonSettings":
         return CommonSettings(
-            log_path=Path("example_log.csv"),
+            train_log_path=Path("example_log.csv"),
             test_log_path=None,
             log_ids=DEFAULT_XES_IDS,
             model_path=None,
-            repetitions=1,
+            num_final_evaluations=1,
             evaluation_metrics=[
                 Metric.DL,
                 Metric.N_GRAM_DISTANCE,
-                Metric.ABSOLUTE_HOURLY_EMD,
                 Metric.CIRCADIAN_EMD,
+                Metric.ARRIVAL_EMD,
+                Metric.RELATIVE_EMD,
+                Metric.ABSOLUTE_EMD,
                 Metric.CYCLE_TIME_EMD,
             ],
             clean_intermediate_files=True,
+            discover_case_attributes=False,
+            discover_prioritization_rules=False,
+            discover_batching_rules=False,
         )
 
     @staticmethod
     def from_dict(config: dict) -> "CommonSettings":
-        log_path = Path(config["log_path"])
-        if not log_path.is_absolute():
-            log_path = PROJECT_DIR / log_path
+        train_log_path = Path(config["train_log_path"])
+        if not train_log_path.is_absolute():
+            train_log_path = PROJECT_DIR / train_log_path
 
         test_log_path = config.get("test_log_path", None)
         if test_log_path is not None:
@@ -104,6 +127,9 @@ class CommonSettings:
             log_ids = DEFAULT_XES_IDS
 
         clean_up = config.get("clean_intermediate_files", True)
+        discover_case_attributes = config.get("discover_case_attributes", False)
+        discover_prioritization_rules = config.get("discover_prioritization_rules", False)
+        discover_batching_rules = config.get("discover_batching_rules", False)
 
         model_path = config.get("model_path", None)
         if model_path is not None:
@@ -112,22 +138,28 @@ class CommonSettings:
                 model_path = PROJECT_DIR / model_path
 
         return CommonSettings(
-            log_path=log_path,
+            train_log_path=train_log_path,
             test_log_path=test_log_path,
             log_ids=log_ids,
             model_path=model_path,
-            repetitions=config["repetitions"],
+            num_final_evaluations=config["num_final_evaluations"],
             evaluation_metrics=metrics,
             clean_intermediate_files=clean_up,
+            discover_case_attributes=discover_case_attributes,
+            discover_prioritization_rules=discover_prioritization_rules,
+            discover_batching_rules=discover_batching_rules,
         )
 
     def to_dict(self) -> dict:
         return {
-            "log_path": str(self.log_path),
+            "train_log_path": str(self.train_log_path),
             "test_log_path": str(self.test_log_path) if self.test_log_path is not None else None,
             "log_ids": self.log_ids.to_dict(),
             "model_path": str(self.model_path) if self.model_path is not None else None,
-            "repetitions": self.repetitions,
+            "num_final_evaluations": self.num_final_evaluations,
             "evaluation_metrics": [str(metric) for metric in self.evaluation_metrics],
             "clean_intermediate_files": self.clean_intermediate_files,
+            "discover_case_attributes": self.discover_case_attributes,
+            "discover_prioritization_rules": self.discover_prioritization_rules,
+            "discover_batching_rules": self.discover_batching_rules,
         }

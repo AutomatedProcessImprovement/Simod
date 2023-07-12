@@ -50,50 +50,62 @@ Different Simod versions are available at https://hub.docker.com/r/nokal/simod/t
 Example configuration with description and possible values:
 
 ```yaml
-version: 2
+version: 4
 common:
-  log_path: resources/event_logs/PurchasingExample.xes  # Path to the event log in XES or CSV format
-  test_log_path: resources/event_logs/PurchasingExampleTest.xes  # Optional: Path to the test event log in XES or CSV format
-  repetitions: 1  # Number of times that the evaluation of each candidate is run (included the final model) during the optimization. The evaluation metric of the candidate is the average of it's repetitions evaluations.
-  evaluation_metrics: # A list of evaluation metrics to use on the final model
+  train_log_path: resources/event_logs/PurchasingExample.xes  # Path to the event log in XES or CSV format.
+  test_log_path: resources/event_logs/PurchasingExampleTest.xes  # Optional: Path to the test event log in XES or CSV format.
+  model_log_path: resources/models/PurchasingExampleTest.bpmn  # Optional: Path to the process model to use for the control-flow.
+  num_final_evaluations: 1  # Number of times that the evaluation of the discovered model is done during the optimization. The evaluation metric of the candidate is the average of its evaluations.
+  discover_case_attributes: false
+  discover_prioritization_rules: false
+  discover_batching_rules: false
+  evaluation_metrics: # A list of evaluation metrics to use on the final model.
     - dl
     - absolute_hourly_emd
     - cycle_time_emd
     - circadian_emd
-preprocessing: # Event log preprocessing settings
+  log_ids:  # Specify the name for each of the columns in the CSV file (XES standard by default) 
+    case_id: "case_id"
+    activity: "activity"
+    resource: "resource"
+    start_time: "start_timestamp"
+    end_time: "end_timestamp"
+preprocessing: # Event log preprocessing settings.
   multitasking: false # If true, remove the multitasking by adjusting the timestamps (start/end) of those activities being executed at the same time by the same resource.
   enable_time_concurrency_threshold: 0.75 # Threshold to consider two activities as concurrent when computing the enabled time.
   concurrency_df: 0.9 # Directly-Follows threshold for the heuristics' concurrency oracle (only used to estimate start times if needed).
   concurrency_l2l: 0.9 # Length 2 loops threshold for the heuristics' concurrency oracle.
   concurrency_l1l: 0.9 # Length 1 loops threshold for the heuristics' concurrency oracle.
-structure: # Structure settings
-  optimization_metric: dl  # Optimization metric for the structure. DL or N_GRAM_DISTANCE
-  max_evaluations: 1  # Number of optimization iterations over the search space. Values between 1 and 50
-  mining_algorithm: sm3  # Process model discovery algorithm. Options: sm1, sm2, sm3 (recommended)
-  concurrency: # Split Miner 2 (sm2) parameter for the number of concurrent relations between events to be captured. Values between 0.0 and 1.0
-    - 0.0
-    - 1.0
-  epsilon: # Split Miner 1 and 3 (sm1, sm3) parameter specifying the number of concurrent relations between events to be captured. Values between 0.0 and 1.0
-    - 0.0
-    - 1.0
-  eta: # Split Miner 1 and 3 (sm1, sm3) parameter specifying the filter over the incoming and outgoing edges. Values between 0.0 and 1.0
-    - 0.0
-    - 1.0
-  gateway_probabilities: # Methods of discovering gateway probabilities. Options: equiprobable, discovery
+control_flow: # Control-flow model discovery settings.
+  optimization_metric: n_gram_distance  # Optimization metric for the structure. Options: DL or N_GRAM_DISTANCE.
+  num_iterations: 10  # Number of optimization iterations over the search space.
+  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them).
+  gateway_probabilities: # Methods for discovering gateway probabilities. Options: equiprobable or discovery.
     - equiprobable
     - discovery
-  replace_or_joins: # Split Miner 3 (sm3) parameter specifying whether to replace non-trivial OR joins or not. Options: true, false
+  mining_algorithm: sm3  # Process model discovery algorithm. Options: sm2 or sm3 (recommended).
+  concurrency: # Split Miner 2 (sm2) parameter for the number of concurrent relations between events to be captured. Values between 0.0 and 1.0.
+    - 0.0
+    - 1.0
+  epsilon: # Split Miner 1 and 3 (sm1, sm3) parameter specifying the number of concurrent relations between events to be captured. Values between 0.0 and 1.0.
+    - 0.0
+    - 1.0
+  eta: # Split Miner 1 and 3 (sm1, sm3) parameter specifying the filter over the incoming and outgoing edges. Values between 0.0 and 1.0.
+    - 0.0
+    - 1.0
+  replace_or_joins: # Split Miner 3 (sm3) parameter specifying whether to replace non-trivial OR joins or not. Options: true, false.
     - true
     - false
-  prioritize_parallelism: # Split Miner 3 (sm3) parameter specifying whether to prioritize parallelism over loops or not. Options: true, false
+  prioritize_parallelism: # Split Miner 3 (sm3) parameter specifying whether to prioritize parallelism over loops or not. Options: true, false.
     - true
     - false
-calendars:
-  optimization_metric: absolute_hourly_emd  # Optimization metric for the calendars. Options: absolute_hourly_emd, cycle_time_emd, circadian_emd
-  max_evaluations: 1  # Number of optimization iterations over the search space. Values between 1 and 50
-  resource_profiles: # Resource profiles settings
-    discovery_type: pool  # Resource profile discovery type. Options: differentiated, pool, undifferentiated
-    granularity: # Time granularity for calendars in minutes. Bigger logs will benefit from smaller granularity
+resource_model: # Resource model discovery settings.
+  optimization_metric: circadian_emd  # Optimization metric for the calendars. Options: absolute_hourly_emd, cycle_time_emd, circadian_emd.
+  num_iterations: 10  # Number of optimization iterations over the search space.
+  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them).
+  resource_profiles: # Resource profiles settings.
+    discovery_type: pool  # Resource profile discovery type. Options: differentiated, pool, undifferentiated.
+    granularity: # Time granularity for calendars in minutes. Bigger logs will benefit from smaller granularity.
       - 15
       - 60
     confidence:
@@ -102,10 +114,11 @@ calendars:
     support:
       - 0.01
       - 0.3
-    participation: 0.4  # Resource participation threshold. Values between 0.0 and 1.0
-extraneous_activity_delays: # Settings for extraneous activity timers discovery
-  num_iterations: 1  # Number of optimization iterations over the search space. Values between 1 and 50
-  optimization_metric: relative_emd # Optimization metric for the extraneous activity timers. Options: relative_emd, absolute_emd, circadian_emd, cycle_time
+    participation: 0.4  # Resource participation threshold. Values between 0.0 and 1.0.
+extraneous_activity_delays: # Settings for extraneous activity timers discovery.
+  optimization_metric: relative_emd # Optimization metric for the extraneous activity timers. Options: relative_emd, absolute_emd, circadian_emd, cycle_time.
+  num_iterations: 1  # Number of optimization iterations over the search space.
+  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them).
 ```
 
 **NB!** Split Miner 1 is not supported anymore. Split Miner 3 will be executed instead.

@@ -6,7 +6,8 @@ from simod.settings.resource_model_settings import ResourceModelSettings
 
 settings_single_values = {
     "optimization_metric": "absolute_hourly_emd",
-    "max_evaluations": 2,
+    "num_iterations": 2,
+    "num_evaluations_per_iteration": 3,
     "resource_profiles": {
         "discovery_type": "pool",
         "granularity": 60,
@@ -17,7 +18,8 @@ settings_single_values = {
 }
 settings_interval_values = {
     "optimization_metric": "circadian_emd",
-    "max_evaluations": 2,
+    "num_iterations": 2,
+    "num_evaluations_per_iteration": 3,
     "resource_profiles": {
         "discovery_type": "differentiated",
         "granularity": [15, 60],
@@ -44,15 +46,15 @@ def test_resource_model_settings(test_data: dict):
     settings = ResourceModelSettings.from_dict(test_data['resource_model'])
 
     if test_data['name'] == "Single values":
-        assert settings.max_evaluations == settings_single_values['max_evaluations']
-        assert settings.optimization_metric == Metric.ABSOLUTE_HOURLY_EMD
+        assert settings.num_iterations == settings_single_values['num_iterations']
+        assert settings.optimization_metric == Metric.ABSOLUTE_EMD
         assert settings.discovery_type == CalendarType.DIFFERENTIATED_BY_POOL
         assert settings.granularity == 60
         assert settings.confidence == 0.05
         assert settings.support == 0.5
         assert settings.participation == 0.4
     elif test_data['name'] == "Intervals":
-        assert settings.max_evaluations == settings_single_values['max_evaluations']
+        assert settings.num_iterations == settings_single_values['num_iterations']
         assert settings.optimization_metric == Metric.CIRCADIAN_EMD
         assert settings.discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE
         assert settings.granularity == (15, 60)
