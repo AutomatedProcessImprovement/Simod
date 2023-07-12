@@ -57,7 +57,7 @@ def test_discover_process_model(entry_point, test_data):
             output_dir=Path(tmp_dir),
             provided_model_path=output_path,
             project_name="PurchasingExample",
-            optimization_metric=Metric.N_GRAM_DISTANCE,
+            optimization_metric=Metric.TWO_GRAM_DISTANCE,
             gateway_probabilities_method=GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE,
             mining_algorithm=ProcessModelDiscoveryAlgorithm.from_str(test_data['config_data']['mining_algorithm']),
             concurrency=test_data['config_data']['concurrency'],

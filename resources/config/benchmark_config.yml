@@ -4,7 +4,8 @@ common:
   test_log_path: resources/event_logs/BPIC_2012_W_test.csv.gz
   num_final_evaluations: 10
   evaluation_metrics:
-    - n_gram_distance
+    - 3_gram_distance
+    - 2_gram_distance
     - absolute_event_distribution
     - relative_event_distribution
     - circadian_event_distribution

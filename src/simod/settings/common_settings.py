@@ -14,7 +14,8 @@ PROJECT_DIR = get_project_dir()
 
 class Metric(str, Enum):
     DL = "dl"
-    N_GRAM_DISTANCE = "n_gram_distance"
+    TWO_GRAM_DISTANCE = "two_gram_distance"
+    THREE_GRAM_DISTANCE = "three_gram_distance"
     CIRCADIAN_EMD = "circadian_event_distribution"
     ARRIVAL_EMD = "arrival_event_distribution"
     RELATIVE_EMD = "relative_event_distribution"
@@ -32,8 +33,10 @@ class Metric(str, Enum):
     def _from_str(cls, value: str) -> "Metric":
         if value.lower() == "dl":
             return cls.DL
-        elif value.lower() == "n_gram_distance":
-            return cls.N_GRAM_DISTANCE
+        elif value.lower() in ["two_gram_distance", "2_gram_distance"]:
+            return cls.TWO_GRAM_DISTANCE
+        elif value.lower() in ["n_gram", "n_gram_distance", "three_gram_distance", "3_gram_distance"]:
+            return cls.THREE_GRAM_DISTANCE
         elif value.lower() in ["circadian_event_distribution", "circadian_emd"]:
             return cls.CIRCADIAN_EMD
         elif value.lower() in ["arrival_event_distribution", "arrival_emd"]:
@@ -51,8 +54,10 @@ class Metric(str, Enum):
     def __str__(self):
         if self == Metric.DL:
             return "DL"
-        elif self == Metric.N_GRAM_DISTANCE:
-            return "N_GRAM_DISTANCE"
+        elif self == Metric.TWO_GRAM_DISTANCE:
+            return "TWO_GRAM_DISTANCE"
+        elif self == Metric.THREE_GRAM_DISTANCE:
+            return "THREE_GRAM_DISTANCE"
         elif self == Metric.CIRCADIAN_EMD:
             return "CIRCADIAN_EVENT_DISTRIBUTION"
         elif self == Metric.ARRIVAL_EMD:
@@ -93,7 +98,8 @@ class CommonSettings:
             num_final_evaluations=1,
             evaluation_metrics=[
                 Metric.DL,
-                Metric.N_GRAM_DISTANCE,
+                Metric.TWO_GRAM_DISTANCE,
+                Metric.THREE_GRAM_DISTANCE,
                 Metric.CIRCADIAN_EMD,
                 Metric.ARRIVAL_EMD,
                 Metric.RELATIVE_EMD,

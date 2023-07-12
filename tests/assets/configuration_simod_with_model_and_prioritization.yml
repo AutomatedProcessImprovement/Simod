@@ -10,7 +10,7 @@ common:
 preprocessing:
   multitasking: false
 control_flow:
-  optimization_metric: n_gram_distance
+  optimization_metric: two_gram_distance
   num_iterations: 3
   num_evaluations_per_iteration: 3
   gateway_probabilities:

@@ -35,7 +35,7 @@ class ControlFlowSettings:
     Control-flow optimization settings.
     """
 
-    optimization_metric: Metric = Metric.N_GRAM_DISTANCE
+    optimization_metric: Metric = Metric.THREE_GRAM_DISTANCE
     num_iterations: int = 10
     num_evaluations_per_iteration: int = 3
     gateway_probabilities: Union[

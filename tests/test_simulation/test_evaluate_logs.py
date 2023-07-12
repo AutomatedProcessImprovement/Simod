@@ -14,7 +14,7 @@ def test_evaluate_logs(parallel):
         Metric.CIRCADIAN_EMD,
         Metric.ABSOLUTE_EMD,
         Metric.CYCLE_TIME_EMD,
-        Metric.N_GRAM_DISTANCE,
+        Metric.TWO_GRAM_DISTANCE,
     ]
 
     assets_dir = Path(__file__).parent / "assets"

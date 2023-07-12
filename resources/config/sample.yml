@@ -5,7 +5,8 @@ common:
   # model_path: resources/models/LoanApp_simplified.bpmn  # Uncomment to use this BPMN model as process model
   num_final_evaluations: 10  # Number of evaluations of the discovered BPS model.
   evaluation_metrics:  # Metrics to evaluate the discovered BPS model with.
-    - n_gram_distance
+    - 3_gram_distance
+    - 2_gram_distance
     - absolute_event_distribution
     - relative_event_distribution
     - circadian_event_distribution

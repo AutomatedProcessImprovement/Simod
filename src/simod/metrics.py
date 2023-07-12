@@ -41,8 +41,10 @@ def compute_metric(
 
     if metric is Metric.DL:
         result = get_dl(original_log, original_log_ids, simulated_log, simulated_log_ids)
-    elif metric is Metric.N_GRAM_DISTANCE:
-        result = get_n_grams_distribution_distance(original_log, original_log_ids, simulated_log, simulated_log_ids)
+    elif metric is Metric.TWO_GRAM_DISTANCE:
+        result = get_n_grams_distribution_distance(original_log, original_log_ids, simulated_log, simulated_log_ids, 2)
+    elif metric is Metric.THREE_GRAM_DISTANCE:
+        result = get_n_grams_distribution_distance(original_log, original_log_ids, simulated_log, simulated_log_ids, 3)
     elif metric is Metric.CIRCADIAN_EMD:
         result = get_circadian_emd(original_log, original_log_ids, simulated_log, simulated_log_ids)
     elif metric is Metric.ARRIVAL_EMD:
@@ -153,13 +155,14 @@ def get_n_grams_distribution_distance(
     original_log_ids: EventLogIDs,
     simulated_log: pd.DataFrame,
     simulated_log_ids: EventLogIDs,
+    n: int = 3
 ) -> float:
     """
     Distance measure between two event logs computing the difference in the frequencies of the n-grams observed in
     the event logs (being the n-grams of an event log all the groups of n consecutive elements observed in it).
     :return: The MAE between the frequency of trigrams occurring in one log vs the other.
     """
-    mae = n_gram_distribution_distance(original_log, original_log_ids, simulated_log, simulated_log_ids, 3)
+    mae = n_gram_distribution_distance(original_log, original_log_ids, simulated_log, simulated_log_ids, n=n)
     return mae
 
 
