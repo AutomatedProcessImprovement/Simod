@@ -196,7 +196,7 @@ previous_results["simod_version"] = "2023.03"
 
 # Both measurements
 both_results = pd.concat([mean_evaluation_measures, previous_results]).reset_index(drop=True)
-both_results.to_csv("results.csv", index=False)
+both_results.to_csv("measurements.csv", index=False)
 
 # Comparison
 comparison = both_results.pivot_table(
