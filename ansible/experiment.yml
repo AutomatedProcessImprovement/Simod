@@ -24,12 +24,6 @@
         dest: ~/simod_experiments/{{ experiment_name }}
         mode: 0775
 
-    - name: Copy the Python script
-      ansible.builtin.copy:
-        src: ../benchmarking/docker_collect_results.py
-        dest: ~/simod_experiments/{{ experiment_name }}
-        mode: 0775
-
 - name: Start the experiments
   hosts: main
 
@@ -39,7 +33,13 @@
       args:
         chdir: ~/simod_experiments/{{ experiment_name }}
 
-    - name: Collect results
-      ansible.builtin.command: "~/miniconda3/bin/python docker_collect_results.py"
-      args:
-        chdir: ~/simod_experiments/{{ experiment_name }}
+#    - name: Copy the Python script
+#      ansible.builtin.copy:
+#        src: ../benchmarking/docker_collect_results.py
+#        dest: ~/simod_experiments/{{ experiment_name }}
+#        mode: 0775
+
+#    - name: Collect results
+#      ansible.builtin.command: "~/miniconda3/bin/python docker_collect_results.py"
+#      args:
+#        chdir: ~/simod_experiments/{{ experiment_name }}

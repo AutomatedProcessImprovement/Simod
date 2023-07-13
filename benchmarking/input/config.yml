@@ -1,7 +1,7 @@
 version: 4
 common:
-  train_log_path: resources/event_logs/BPIC_2012_train.csv.gz
-  test_log_path: resources/event_logs/BPIC_2012_test.csv.gz
+  train_log_path: <train_log_path>
+  test_log_path: <test_log_path>
   num_final_evaluations: 10
   evaluation_metrics:
     - 3_gram_distance
@@ -26,7 +26,7 @@ preprocessing:
   concurrency_l1l: 0.9
 control_flow:
   optimization_metric: n_gram_distance
-  num_iterations: 2
+  num_iterations: 30
   num_evaluations_per_iteration: 5
   gateway_probabilities: discovery
   discovery_algorithm: sm3
@@ -44,7 +44,7 @@ control_flow:
     - false
 resource_model:
   optimization_metric: circadian_event_distribution
-  num_iterations: 2
+  num_iterations: 40
   num_evaluations_per_iteration: 5
   resource_profiles:
     discovery_type: differentiated
