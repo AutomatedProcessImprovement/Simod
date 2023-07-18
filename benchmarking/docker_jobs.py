@@ -24,6 +24,7 @@ class Experiment:
     _configuration_dir: Path = Path("input/configs")
     _logs_dir: Path = Path("input/logs")
     _experiments_output_dir: Path = Path("outputs")
+    _simod_version: str = "3.5.24"  # "3.3.3"
 
     @property
     def assets_dir(self) -> Path:
@@ -45,6 +46,13 @@ class Experiment:
         Path to the configuration file for the experiment on the host machine.
         """
         return self._configuration_dir / f"{self.train_log_path.stem}.yml"
+
+    @property
+    def simod_version(self) -> str:
+        """
+        Version of Simod to use for the experiment.
+        """
+        return self._simod_version
 
     def __post_init__(self):
         assert self._assets_dir.exists()
@@ -77,17 +85,17 @@ def main():
             test_log_path=Path("logs/AcademicCredentials_test.csv.gz"),
         ),
         Experiment(
+            train_log_path=Path("logs/BPIC_2012_train.csv.gz"),
+            test_log_path=Path("logs/BPIC_2012_test.csv.gz"),
+        ),
+        Experiment(
+            train_log_path=Path("logs/BPIC_2017_train.csv.gz"),
+            test_log_path=Path("logs/BPIC_2017_test.csv.gz"),
+        ),
+        Experiment(
             train_log_path=Path("logs/CallCenter_train.csv.gz"),
             test_log_path=Path("logs/CallCenter_test.csv.gz"),
         ),
-        # Experiment(
-        #     train_log_path=Path("logs/BPIC_2012_train.csv.gz"),
-        #     test_log_path=Path("logs/BPIC_2012_test.csv.gz"),
-        # ),
-        # Experiment(
-        #     train_log_path=Path("logs/BPIC_2017_train.csv.gz"),
-        #     test_log_path=Path("logs/BPIC_2017_test.csv.gz"),
-        # ),
     ]
 
     with Path("timing.txt").open("a") as f:
@@ -122,7 +130,7 @@ poetry run simod optimize --config_path {container_input_dir}/configs/{experimen
         f"{experiment.assets_dir.absolute()}:/usr/src/Simod/input",
         "-v",
         f"{experiment.experiments_output_dir.absolute()}:/usr/src/Simod/outputs",
-        "nokal/simod",
+        f"nokal/simod:{experiment.simod_version}",
         "bash",
         docker_run_script_path_in_container.absolute(),
     ]
