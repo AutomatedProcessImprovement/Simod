@@ -9,25 +9,24 @@ from simod.fuzzy_calendars.fuzzy_factory import FuzzyFactory
 from simod.fuzzy_calendars.intervals_frequency_calculator import ProcInfo, Method
 
 
-def build_fuzzy_calendars(csv_log_path, bpmn_path, json_path=None, i_size_minutes=15):
+def build_fuzzy_calendars(csv_log_path, bpmn_path, json_path=None, i_size_minutes=15, angle=0.0, min_prob=0.1):
     traces = event_list_from_csv(csv_log_path)
     bpmn_graph = parse_simulation_model(bpmn_path)
 
-    p_info = ProcInfo(traces, bpmn_graph, i_size_minutes, True, Method.TRAPEZOIDAL, angle=0.0)
+    p_info = ProcInfo(traces, bpmn_graph, i_size_minutes, True, Method.TRAPEZOIDAL, angle=angle)
     f_factory = FuzzyFactory(p_info)
 
     # 1) Discovering Resource Availability (Fuzzy Calendars)
-    fuzzy_calendars = f_factory.compute_resource_availability_calendars()
+    p_info.fuzzy_calendars = f_factory.compute_resource_availability_calendars(min_impact=min_prob)
 
     # 2) Discovering Resource Performance (resource-task distributions ajusted from the fuzzy calendars)
-    res_task_distr = f_factory.compute_processing_times(fuzzy_calendars)
+    res_task_distr = f_factory.compute_processing_times(p_info.fuzzy_calendars)
 
     # 3) Discovering Arrival Time Calendar -- Nothing New, just re-using the original Prosimos approach
     arrival_calend = discover_arrival_calendar(p_info.initial_events, 15, 0.1, 1.0)
 
     # 4) Discovering Arrival Time Distribution -- Nothing New, just re-using the original Prosimos approach
-    use_observed_arrival_times = False
-    arrival_dist = discover_arrival_time_distribution(p_info.initial_events, arrival_calend, use_observed_arrival_times)
+    arrival_dist = discover_arrival_time_distribution(p_info.initial_events, arrival_calend)
 
     # 5) Discovering Gateways Branching Probabilities -- Nothing New, just re-using the original Prosimos approach
     gateways_branching = bpmn_graph.compute_branching_probability(p_info.flow_arcs_frequency)
@@ -38,7 +37,11 @@ def build_fuzzy_calendars(csv_log_path, bpmn_path, json_path=None, i_size_minute
         "arrival_time_calendar": arrival_calend.to_json(),
         "gateway_branching_probabilities": gateway_branching_to_json(gateways_branching),
         "task_resource_distribution": processing_times_json(res_task_distr, p_info.task_resources, p_info.bpmn_graph),
-        "resource_calendars": join_fuzzy_calendar_intervals(fuzzy_calendars, p_info.i_size)
+        "resource_calendars": join_fuzzy_calendar_intervals(p_info.fuzzy_calendars, p_info.i_size),
+        "granule_size": {
+            "value": i_size_minutes,
+            "time_unit": "MINUTES"
+        }
     }
 
     if json_path is not None:
@@ -53,6 +56,8 @@ def processing_times_json(res_task_distr, task_resources, bpmn_graph):
     for t_name in task_resources:
         resources = []
         for r_id in task_resources[t_name]:
+            if r_id not in res_task_distr:
+                continue
             resources.append({
                 "resource_id": r_id,
                 "distribution_name": res_task_distr[r_id][t_name]["distribution_name"],
@@ -86,11 +91,11 @@ def sweep_line_intervals(prob_map, i_size):
         for i in range(1, len(prob_map[w_day])):
             if c_prob != prob_map[w_day][i]:
                 if c_prob != 0:
-                    joint_intervals.append((first_i, i - 1))
+                    joint_intervals.append((first_i, i))
                 first_i = i
                 c_prob = prob_map[w_day][i]
         if c_prob != 0:
-            joint_intervals.append((first_i, len(prob_map[w_day]) - 1))
+            joint_intervals.append((first_i, 0))
         time_periods = []
         for from_i, to_i in joint_intervals:
             time_periods.append({
@@ -116,13 +121,15 @@ def build_resource_profiles(p_info: ProcInfo):
         t_id = p_info.bpmn_graph.from_name[t_name]
         resource_list = []
         for r_id in p_info.task_resources[t_name]:
+            if r_id not in p_info.fuzzy_calendars:
+                continue
             resource_list.append({
                 "id": r_id,
                 "name": r_id,
                 "cost_per_hour": 1,
                 "amount": 1,
                 "calendar": "%s_timetable" % r_id,
-                "assigned_tasks": list(p_info.resource_tasks[r_id])
+                "assigned_tasks": [p_info.bpmn_graph.from_name[t_n] for t_n in p_info.resource_tasks[r_id]]
             })
         resource_profiles.append({
             "id": t_id,

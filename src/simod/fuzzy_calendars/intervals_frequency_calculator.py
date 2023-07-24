@@ -35,6 +35,7 @@ class ProcInfo:
         self.allocation_prob = dict()
         self.res_busy = dict()
         self.compute_resource_frequencies(with_negative_cases, method)
+        self.fuzzy_calendars = None
 
     def init_weekly_intervals_count(self):
         weekly_interval_freq = dict()
@@ -188,6 +189,25 @@ class ProcInfo:
 
     def get_interval(self, i_index):
         return i_index * self.i_size, (i_index + 1) * self.i_size
+
+    def testing_event_processing_times(self):
+        # Test ------------------------------------------------------------
+        idle_proc_times = dict()
+        total_events = dict()
+        for r_id in self.r_t_events:
+            for t_id in self.r_t_events[r_id]:
+                if t_id not in idle_proc_times:
+                    idle_proc_times[t_id] = 0
+                    total_events[t_id] = 0
+                for ev in self.r_t_events[r_id][t_id]:
+                    idle_proc_times[t_id] += (ev.completed_at - ev.started_at).total_seconds()
+                    total_events[t_id] += 1
+
+        for t_id in idle_proc_times:
+            print("Task: %s (%d)" % (t_id, total_events[t_id]))
+            print("Ave Idle Times: %s" % (str(timedelta(seconds=(idle_proc_times[t_id] / total_events[t_id])))))
+            print("************************************************************")
+        # -----------------------------------------------------------------
 
 
 def _update_interval_boundaries(c_date, from_date, to_date):

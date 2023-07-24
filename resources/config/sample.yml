@@ -1,18 +1,24 @@
 version: 2
 common:
-  log_path: resources/event_logs/PurchasingExample.xes
+  log_path: resources/event_logs/PurchasingExample.csv
+  model_path: resources/event_logs/PurchasingExample.bpmn
   repetitions: 1
   evaluation_metrics:
-    - dl
     - absolute_hourly_emd
     - cycle_time_emd
     - circadian_emd
+  log_ids:
+    case: case_id
+    activity: Activity
+    resource: Resource
+    start_time: start_time
+    end_time: end_time
 preprocessing:
   multitasking: false
 structure:
-  max_evaluations: 1
+  max_evaluations: 2
   mining_algorithm: sm3
-  optimization_metric: dl
+  optimization_metric: n_gram_distance
   concurrency:
     - 0.0
     - 1.0
@@ -32,14 +38,15 @@ structure:
     - true
     - false
 calendars:
-  max_evaluations: 1
+  max_evaluations: 10
   optimization_metric: absolute_hourly_emd
   resource_profiles:
     discovery_type: differentiated
     granularity: 60
-    confidence: 0.1
-    support: 0.7
+    confidence:
+      - 0.1
+      - 0.4
+    support:
+      - 0.6
+      - 1.0
     participation: 0.4
-extraneous_activity_delays:
-  num_iterations: 1
-  optimization_metric: relative_emd
