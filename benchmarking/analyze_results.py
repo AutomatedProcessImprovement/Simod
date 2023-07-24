@@ -6,7 +6,8 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-results_dir = Path("results")
+simod_version = "3.5.24"
+results_dir = Path(__file__).parent / Path(f"results/{simod_version}/pooled")
 
 metric_names_mapping = {
     "absolute_event_distribution": "AED",
@@ -65,7 +66,7 @@ class DiscoveryResult:
 # Current measurements
 results = [DiscoveryResult(result_dir / "best_result") for result_dir in results_dir.iterdir() if result_dir.is_dir()]
 mean_evaluation_measures = pd.concat([result.mean_evaluation_measures for result in results]).reset_index(drop=True)
-mean_evaluation_measures["simod_version"] = "3.5.24"
+mean_evaluation_measures["simod_version"] = simod_version
 
 # Previous measurements
 previous_results = pd.DataFrame(
@@ -208,7 +209,7 @@ comparison = both_results.pivot_table(
 
 comparison.columns = ["_".join(col).strip() for col in comparison.columns.values]
 comparison = comparison.rename(columns={"name_": "name", "metric_": "metric"})
-comparison["distance_diff"] = comparison["distance_3.5.24"] - comparison["distance_2023.03"]
+comparison["distance_diff"] = comparison[f"distance_{simod_version}"] - comparison["distance_2023.03"]
 comparison.to_csv("comparison.csv", index=False)
 
 # Plot
@@ -216,6 +217,6 @@ fig, ax = plt.subplots(figsize=(10, 5))
 sns.barplot(data=comparison, x="metric", y="distance_diff", hue="name", ax=ax)
 ax.set_xlabel("Metric")
 ax.set_ylabel("Distance difference")
-ax.set_title("Distance difference between Simod 3.5.24 and 2023.03")
+ax.set_title(f"Distance difference between Simod {simod_version} and 2023.03")
 plt.tight_layout()
 plt.savefig("comparison.png")

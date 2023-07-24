@@ -26,10 +26,10 @@ htmlcov/
 resources/private
 build/
 vendor/
-benchmarking/logs
 benchmarking/*.csv
 benchmarking/*.yaml
 benchmarking/*.yml
+benchmarking/input/logs
 benchmarking/results
 tests/test_benchmarking/logs
 sandbox
