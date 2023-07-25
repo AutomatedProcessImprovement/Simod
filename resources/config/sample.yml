@@ -51,7 +51,7 @@ resource_model:
   num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
   num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
   resource_profiles:
-    discovery_type: differentiated  # Resource discovery type (undifferentiated, pooled, or differentiated)
+    discovery_type: differentiated  # Resource discovery type ('undifferentiated', 'pool', or 'differentiated')
     granularity:
       - 15
       - 60

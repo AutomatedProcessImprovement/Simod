@@ -1,3 +1,4 @@
+import copy
 import json
 import shutil
 from pathlib import Path
@@ -10,6 +11,7 @@ from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
 from hyperopt import tpe
 from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
 from pix_framework.discovery.resource_model import ResourceModel, discover_resource_model
+from pix_framework.discovery.resource_profiles import discover_pool_resource_profiles
 from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
 
 from .settings import HyperoptIterationParams
@@ -60,6 +62,14 @@ class ResourceModelOptimizer:
         )
         # Instantiate trials for hyper-optimization process
         self._bayes_trials = Trials()
+        # Discover resource pools (performance purposes) if needed
+        if self.settings.discovery_type is CalendarType.DIFFERENTIATED_BY_POOL:
+            self._resource_pools = discover_pool_resource_profiles(
+                self.event_log.train_partition,
+                self.event_log.log_ids
+            )
+        else:
+            self._resource_pools = None
 
     def _hyperopt_iteration(self, hyperopt_iteration_dict: dict):
         # Report new iteration
@@ -160,7 +170,10 @@ class ResourceModelOptimizer:
     def _discover_resource_model(self, params: CalendarDiscoveryParams) -> ResourceModel:
         print_step(f"Discovering resource model with {params}")
         return discover_resource_model(
-            event_log=self.event_log.train_partition, log_ids=self.event_log.log_ids, params=params
+            event_log=self.event_log.train_partition,
+            log_ids=self.event_log.log_ids,
+            params=params,
+            provided_profiles=copy.deepcopy(self._resource_pools),
         )
 
     def cleanup(self):
@@ -230,7 +243,7 @@ class ResourceModelOptimizer:
 
     @staticmethod
     def _define_response(
-        status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
+            status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
     ) -> Tuple[str, dict]:
         # Compute mean distance if status is OK
         if status is STATUS_OK:
