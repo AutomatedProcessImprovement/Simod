@@ -54,11 +54,12 @@ class Preprocessor:
 
         :param multitasking: Whether to adjust the timestamps for multitasking.
         :param concurrency_thresholds: Thresholds for the Heuristics Miner to estimate start/enabled times.
+        :param enable_time_concurrency_threshold: Threshold for the Heuristics Miner to estimate enabled times.
         :return: The pre-processed event log.
         """
         print_section("Pre-processing")
 
-        if self._log_ids.start_time not in self._log.columns:
+        if self._log_ids.start_time not in self._log.columns or self._log[self._log_ids.start_time].isnull().any():
             self._add_start_times(concurrency_thresholds)
 
         if multitasking:
