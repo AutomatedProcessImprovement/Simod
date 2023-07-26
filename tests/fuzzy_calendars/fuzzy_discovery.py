@@ -11,7 +11,6 @@ experiment_logs = {
 
 process_files = {
     "loan_SC_LU": {
-        "xes_log": "./../assets/fuzzy/in/xes_logs/loan_SC_LU.xes",
         "csv_log": "./../assets/fuzzy/in/csv_logs/loan_SC_LU.csv",
         "bpmn_model": "./../assets/fuzzy/in/bpmn_models/LoanOriginationModel.bpmn",
         "json": "./../assets/fuzzy/out/json/loan_SC_LU.json",
@@ -21,7 +20,6 @@ process_files = {
         "total_cases": 1000,
     },
     "loan_SC_HU": {
-        "xes_log": "./../assets/fuzzy/in/xes_logs/loan_SC_HU.xes",
         "csv_log": "./../assets/fuzzy/in/csv_logs/loan_SC_HU.csv",
         "bpmn_model": "./../assets/fuzzy/in/bpmn_models/LoanOriginationModel.bpmn",
         "json": "./../assets/fuzzy/out/json/loan_SC_HU.json",
@@ -31,7 +29,6 @@ process_files = {
         "total_cases": 1000,
     },
     "loan_MC_LU": {
-        "xes_log": "./../assets/fuzzy/in/xes_logs/loan_MC_LU.xes",
         "csv_log": "./../assets/fuzzy/in/csv_logs/loan_MC_LU.csv",
         "bpmn_model": "./../assets/fuzzy/in/bpmn_models/LoanOriginationModel.bpmn",
         "json": "./../assets/fuzzy/out/json/loan_MC_LU.json",
@@ -41,7 +38,6 @@ process_files = {
         "total_cases": 1000,
     },
     "loan_MC_HU": {
-        "xes_log": "./../assets/fuzzy/in/xes_logs/loan_MC_HU.xes",
         "csv_log": "./../assets/fuzzy/in/csv_logs/loan_MC_HU.csv",
         "bpmn_model": "./../assets/fuzzy/in/bpmn_models/LoanOriginationModel.bpmn",
         "json": "./../assets/fuzzy/out/json/loan_MC_HU.json",
