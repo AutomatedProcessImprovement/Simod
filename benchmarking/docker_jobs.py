@@ -24,7 +24,7 @@ class Experiment:
     _configuration_dir: Path = Path("input/configs")
     _logs_dir: Path = Path("input/logs")
     _experiments_output_dir: Path = Path("outputs")
-    _simod_version: str = "3.5.24"  # "3.3.3"
+    _simod_version: str = "3.5.25"  # "3.3.3"
 
     @property
     def assets_dir(self) -> Path:
