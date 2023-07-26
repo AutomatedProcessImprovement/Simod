@@ -155,8 +155,14 @@ class FuzzyFactory:
                     n = len(intervals) - 1
                     for j in range(1, n):
                         (_, week_day, i) = intervals[j]
-                        adj_dur += p_info.i_size * 60 * max(fuzzy_calendars[r_id].res_absolute_prob[week_day][i],
-                                                            fuzzy_calendars[r_id].res_relative_prob[week_day][i])
+                        adj_dur += (
+                            p_info.i_size
+                            * 60
+                            * max(
+                                fuzzy_calendars[r_id].res_absolute_prob[week_day][i],
+                                fuzzy_calendars[r_id].res_relative_prob[week_day][i],
+                            )
+                        )
 
                     if n == 0:
                         adj_dur += (ev.completed_at - ev.started_at).total_seconds()
@@ -164,8 +170,8 @@ class FuzzyFactory:
                         i_0 = (s_size - self._diff_from_start(ev.started_at, intervals[0][2])) - ev.started_at.second
                         i_n = (self._diff_from_start(ev.completed_at, intervals[n][2])) + ev.completed_at.second
 
-                        adj_dur += (i_0 * self._probability(r_id, fuzzy_calendars, intervals[0]))
-                        adj_dur += (i_n * self._probability(r_id, fuzzy_calendars, intervals[n]))
+                        adj_dur += i_0 * self._probability(r_id, fuzzy_calendars, intervals[0])
+                        adj_dur += i_n * self._probability(r_id, fuzzy_calendars, intervals[n])
 
                     if adj_dur < 0:
                         continue
@@ -175,8 +181,10 @@ class FuzzyFactory:
 
     @staticmethod
     def _probability(r_id, fuzzy_calendar, interval):
-        return max(fuzzy_calendar[r_id].res_absolute_prob[interval[1]][interval[2]],
-                   fuzzy_calendar[r_id].res_relative_prob[interval[1]][interval[2]])
+        return max(
+            fuzzy_calendar[r_id].res_absolute_prob[interval[1]][interval[2]],
+            fuzzy_calendar[r_id].res_relative_prob[interval[1]][interval[2]],
+        )
 
     def _diff_from_start(self, b_date, i):
         diff_interval = list()
