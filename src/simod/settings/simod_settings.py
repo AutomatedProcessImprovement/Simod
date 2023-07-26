@@ -21,7 +21,8 @@ PROJECT_DIR = get_project_dir()
 @dataclass
 class SimodSettings:
     """
-    Simod configuration with the settings for all the stages and optimizations.
+    Simod configuration v4 with the settings for all the stages and optimizations.
+    If configuration is provided in v2, is transformed to v4.
     """
 
     common: CommonSettings
@@ -29,6 +30,7 @@ class SimodSettings:
     control_flow: ControlFlowSettings
     resource_model: ResourceModelSettings
     extraneous_activity_delays: Union[ExtraneousDelaysSettings, None] = None
+    version: int = 4
 
     @staticmethod
     def default() -> "SimodSettings":
@@ -72,6 +74,7 @@ class SimodSettings:
             control_flow_settings.concurrency = None
 
         return SimodSettings(
+            version=config["version"],
             common=common_settings,
             preprocessing=preprocessing_settings,
             control_flow=control_flow_settings,
@@ -93,7 +96,7 @@ class SimodSettings:
 
     def to_dict(self) -> dict:
         return {
-            "version": 2,
+            "version": self.version,
             "common": self.common.to_dict(),
             "preprocessing": self.preprocessing.to_dict(),
             "control_flow": self.control_flow.to_dict(),
