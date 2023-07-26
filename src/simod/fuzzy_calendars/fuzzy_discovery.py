@@ -1,5 +1,7 @@
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Optional
 
 from bpdfr_discovery.log_parser import (
     event_list_from_csv,
@@ -12,7 +14,9 @@ from simod.fuzzy_calendars.fuzzy_factory import FuzzyFactory
 from simod.fuzzy_calendars.intervals_frequency_calculator import ProcInfo, Method
 
 
-def build_fuzzy_calendars(csv_log_path, bpmn_path, json_path=None, i_size_minutes=15, angle=0.0, min_prob=0.1):
+def build_fuzzy_calendars(
+    csv_log_path: Path, bpmn_path: Path, json_path: Optional[Path] = None, i_size_minutes=15, angle=0.0, min_prob=0.1
+):
     traces = event_list_from_csv(csv_log_path)
     bpmn_graph = parse_simulation_model(bpmn_path)
 
@@ -45,8 +49,9 @@ def build_fuzzy_calendars(csv_log_path, bpmn_path, json_path=None, i_size_minute
     }
 
     if json_path is not None:
-        with open(json_path, "w") as file_writter:
-            json.dump(simulation_params, file_writter)
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        with json_path.open("w") as f:
+            json.dump(simulation_params, f)
 
     return simulation_params
 
