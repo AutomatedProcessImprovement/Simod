@@ -1,11 +1,5 @@
 import os
 
-from datetime import datetime, timedelta
-import pandas as pd
-
-from scipy.spatial import distance
-import numpy as np
-
 from simod.fuzzy_calendars.fuzzy_discovery import build_fuzzy_calendars
 
 experiment_logs = {

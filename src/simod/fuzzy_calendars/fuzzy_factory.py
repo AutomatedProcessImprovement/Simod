@@ -1,8 +1,6 @@
-from datetime import datetime, timedelta
-
 from numpy import percentile
+from pix_framework.statistics.distribution import get_best_fitting_distribution
 
-from simod.discovery.distribution import get_best_distribution
 from simod.fuzzy_calendars.intervals_frequency_calculator import ProcInfo
 
 
@@ -81,7 +79,7 @@ class FuzzyFactory:
             for t_id in adjusted_durations[r_id]:
                 res_task_distribution[r_id][t_id] = None
                 if len(adjusted_durations[r_id][t_id]) >= min_obs:
-                    res_task_distribution[r_id][t_id] = get_best_distribution(adjusted_durations[r_id][t_id])
+                    res_task_distribution[r_id][t_id] = get_best_fitting_distribution(adjusted_durations[r_id][t_id])
                 else:
                     pending_distr.append((r_id, t_id))
 
@@ -107,7 +105,7 @@ class FuzzyFactory:
                     if r_candidate not in fuzzy_calendars:
                         continue
                     joint_durations.extend(adjusted_durations[r_candidate][t_id])
-                joint_distribution = get_best_distribution(joint_durations)
+                joint_distribution = get_best_fitting_distribution(joint_durations)
                 for r_joint in p_info.task_resources[t_id]:
                     if r_joint not in fuzzy_calendars:
                         continue

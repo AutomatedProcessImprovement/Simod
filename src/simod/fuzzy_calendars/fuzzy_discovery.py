@@ -6,7 +6,7 @@ from bpdfr_discovery.log_parser import (
     discover_arrival_calendar,
     discover_arrival_time_distribution,
 )
-from bpdfr_simulation_engine.simulation_properties_parser import parse_simulation_model
+from prosimos.simulation_properties_parser import parse_simulation_model
 
 from simod.fuzzy_calendars.fuzzy_factory import FuzzyFactory
 from simod.fuzzy_calendars.intervals_frequency_calculator import ProcInfo, Method

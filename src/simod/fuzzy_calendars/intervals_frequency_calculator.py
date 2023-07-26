@@ -1,11 +1,10 @@
+from datetime import datetime, timedelta
 from enum import Enum
 
 import pytz
-from datetime import datetime, timedelta
-
 from bpdfr_discovery.log_comparison_metrics import compute_enabling_processing_times
 from bpdfr_discovery.log_parser import sort_by_completion_times
-from bpdfr_simulation_engine.execution_info import TaskEvent
+from prosimos.execution_info import TaskEvent
 
 
 class Method(Enum):
