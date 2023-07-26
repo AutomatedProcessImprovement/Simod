@@ -2,6 +2,7 @@ outputs
 *.pyc
 *.stats
 venv*
+.venv
 .idea
 *.egg-info
 .DS_Store
