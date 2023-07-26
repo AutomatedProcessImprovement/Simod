@@ -2,12 +2,13 @@ import math
 import os
 import platform
 import subprocess
+import time
 import traceback
 from builtins import float
 from pathlib import Path
-from typing import Tuple, Union, List
+from typing import List, Tuple, Union
 
-from hyperopt import STATUS_OK, STATUS_FAIL
+from hyperopt import STATUS_FAIL, STATUS_OK
 
 
 def get_project_dir() -> Path:
@@ -69,3 +70,25 @@ def get_process_model_path(base_dir: Path, process_name: str) -> Path:
 
 def get_simulation_parameters_path(base_dir: Path, process_name: str) -> Path:
     return base_dir / f"{process_name}.json"
+
+
+def measure_runtime(output_file: str = "runtime.txt"):
+    """
+    Decorator for measuring runtime of a function and writing it to a file.
+    :param output_file: Path to the output file relative to the project root.
+    """
+
+    def decorator(func: callable):
+        def wrapper(*args, **kwargs):
+            start = time.time()
+            result = func(*args, **kwargs)
+            end = time.time() - start
+            with open(output_file, "a") as f:
+                module_name = func.__module__.split(".")[-1]
+                func_name = func.__name__
+                f.write(f"{module_name}.{func_name}: {end} s\n")
+            return result
+
+        return wrapper
+
+    return decorator
