@@ -84,7 +84,7 @@ class ProcInfo:
                         self._observed_timestamps(ev.enabled_at, ev.started_at, ev.resource_id, ev.task_id, False)
                     self._observed_timestamps(ev.started_at, ev.completed_at, ev.resource_id, ev.task_id, True)
                 self.update_interval_boundaries(ev)
-        self._count_total_inervals_explored()
+        self._count_total_intervals_explored()
 
     def _compute_resource_busy_intervals(self):
         self.res_busy = dict()
@@ -153,7 +153,7 @@ class ProcInfo:
             self.r_expected[r_id][week_day][i] += 1
             self.max_freq_i[week_day][i] = max(self.max_freq_i[week_day][i], self.r_worked[r_id][week_day][i])
 
-    def _count_total_inervals_explored(self):
+    def _count_total_intervals_explored(self):
         self.week_days_total = self.init_weekly_intervals_count()
         for d in range((self.to_date - self.from_date).days):
             w_day = (self.from_date + timedelta(days=d + 1)).weekday()
@@ -188,25 +188,6 @@ class ProcInfo:
 
     def get_interval(self, i_index):
         return i_index * self.i_size, (i_index + 1) * self.i_size
-
-    def testing_event_processing_times(self):
-        # Test ------------------------------------------------------------
-        idle_proc_times = dict()
-        total_events = dict()
-        for r_id in self.r_t_events:
-            for t_id in self.r_t_events[r_id]:
-                if t_id not in idle_proc_times:
-                    idle_proc_times[t_id] = 0
-                    total_events[t_id] = 0
-                for ev in self.r_t_events[r_id][t_id]:
-                    idle_proc_times[t_id] += (ev.completed_at - ev.started_at).total_seconds()
-                    total_events[t_id] += 1
-
-        for t_id in idle_proc_times:
-            print("Task: %s (%d)" % (t_id, total_events[t_id]))
-            print("Ave Idle Times: %s" % (str(timedelta(seconds=(idle_proc_times[t_id] / total_events[t_id])))))
-            print("************************************************************")
-        # -----------------------------------------------------------------
 
 
 def _update_interval_boundaries(c_date, from_date, to_date):
