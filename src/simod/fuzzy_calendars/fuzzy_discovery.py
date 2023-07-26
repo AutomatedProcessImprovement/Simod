@@ -8,6 +8,7 @@ from bpdfr_discovery.log_parser import (
     discover_arrival_calendar,
     discover_arrival_time_distribution,
 )
+from pix_framework.statistics.distribution import DurationDistribution
 from prosimos.simulation_properties_parser import parse_simulation_model
 
 from simod.fuzzy_calendars.fuzzy_factory import FuzzyFactory
@@ -58,19 +59,26 @@ def build_fuzzy_calendars(
 
 def processing_times_json(res_task_distr, task_resources, bpmn_graph):
     distributions = []
+
     for t_name in task_resources:
         resources = []
         for r_id in task_resources[t_name]:
             if r_id not in res_task_distr:
                 continue
+
+            distribution: DurationDistribution = res_task_distr[r_id][t_name]
+            distribution_prosimos = distribution.to_prosimos_distribution()
+
             resources.append(
                 {
                     "resource_id": r_id,
-                    "distribution_name": res_task_distr[r_id][t_name]["distribution_name"],
-                    "distribution_params": res_task_distr[r_id][t_name]["distribution_params"],
+                    "distribution_name": distribution_prosimos["distribution_name"],
+                    "distribution_params": distribution_prosimos["distribution_params"],
                 }
             )
+
         distributions.append({"task_id": bpmn_graph.from_name[t_name], "resources": resources})
+
     return distributions
 
 
