@@ -1143,13 +1143,13 @@ files = [
 
 [[package]]
 name = "openxes-cli-py"
-version = "0.1.14"
+version = "0.1.15"
 description = ""
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "openxes_cli_py-0.1.14-py3-none-any.whl", hash = "sha256:9771200f89d9a5b0fd8185f864c08443081a91ec55097f7f3fef3bd6f254fd78"},
-    {file = "openxes_cli_py-0.1.14.tar.gz", hash = "sha256:4bd1d902f0c87ab09489c37c74ecb433546b927b6e37af53fd4da5961c23f78e"},
+    {file = "openxes_cli_py-0.1.15-py3-none-any.whl", hash = "sha256:49c8fbc3e80eb9d6dae1f1682eab33e6227d5cb18a445fca67ff56f3d1224b29"},
+    {file = "openxes_cli_py-0.1.15.tar.gz", hash = "sha256:23e843884e13c8176a409bb5ba6ddd60d015c6f3b4655320f272399eead88afa"},
 ]
 
 [[package]]
@@ -1573,17 +1573,17 @@ pyparsing = ">=2.0.1"
 
 [[package]]
 name = "pylint"
-version = "2.17.4"
+version = "2.17.5"
 description = "python code static checker"
 optional = false
 python-versions = ">=3.7.2"
 files = [
-    {file = "pylint-2.17.4-py3-none-any.whl", hash = "sha256:7a1145fb08c251bdb5cca11739722ce64a63db479283d10ce718b2460e54123c"},
-    {file = "pylint-2.17.4.tar.gz", hash = "sha256:5dcf1d9e19f41f38e4e85d10f511e5b9c35e1aa74251bf95cdd8cb23584e2db1"},
+    {file = "pylint-2.17.5-py3-none-any.whl", hash = "sha256:73995fb8216d3bed149c8d51bba25b2c52a8251a2c8ac846ec668ce38fab5413"},
+    {file = "pylint-2.17.5.tar.gz", hash = "sha256:f7b601cbc06fef7e62a754e2b41294c2aa31f1cb659624b9a85bcba29eaf8252"},
 ]
 
 [package.dependencies]
-astroid = ">=2.15.4,<=2.17.0-dev0"
+astroid = ">=2.15.6,<=2.17.0-dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
 dill = [
     {version = ">=0.2", markers = "python_version < \"3.11\""},
@@ -2261,4 +2261,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "0a55a1860a2b0879dd4f6a8195a3526e44b22398e0c48806e92adc4c5f7607ac"
+content-hash = "c9f34dc7f69caf432a010a75f9255215dbca33dd09b2a8be9e7e41a5874f89a3"
