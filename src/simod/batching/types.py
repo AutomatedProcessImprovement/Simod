@@ -52,7 +52,7 @@ class BatchingFiringRule:
         elif attribute == "large_wt":
             return "batch_max_wt"
         else:
-            raise attribute
+            raise Exception(f"Unknown batching firing rule attribute {attribute}")
 
     @staticmethod
     def _attribute_name_to_prosimos(attribute: str) -> str:
@@ -65,7 +65,7 @@ class BatchingFiringRule:
         elif attribute == "batch_max_wt":
             return "large_wt"
         else:
-            raise attribute
+            raise Exception(f"Unknown batching firing rule attribute {attribute}")
 
     def _attribute_value_to_prosimos_if_week_day(self, value: str) -> str:
         if self.attribute == "week_day":
@@ -219,9 +219,7 @@ class BatchingFiringRules:
 
     @staticmethod
     def from_prosimos(rules: list) -> "BatchingFiringRules":
-        return BatchingFiringRules(
-            confidence=-1.0, support=-1.0, rules=OrRules.from_prosimos(rules)
-        )
+        return BatchingFiringRules(confidence=-1.0, support=-1.0, rules=OrRules.from_prosimos(rules))
 
     def to_prosimos(self) -> list:
         return self.rules.to_prosimos()
