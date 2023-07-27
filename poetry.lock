@@ -21,13 +21,13 @@ wrapt = [
 
 [[package]]
 name = "batch-processing-discovery"
-version = "0.4.3"
+version = "0.4.4"
 description = "Python algorithm to discover, from an event log, activity instances that are executed in a batch."
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "batch_processing_discovery-0.4.3-py3-none-any.whl", hash = "sha256:be1e7ecd90482bf2e57fb155e3a82d30b8d183b15e787e72cb03f7f19db7e765"},
-    {file = "batch_processing_discovery-0.4.3.tar.gz", hash = "sha256:b0fc93934d04f7acdd179de341975ce4bc5c9adfdf1fa1ecf296c0a6c4afe3c4"},
+    {file = "batch_processing_discovery-0.4.4-py3-none-any.whl", hash = "sha256:3136dbe2a025077c1f1e6d3a79e3f67a04163b77fdd434f6c7e69ff8acca0e13"},
+    {file = "batch_processing_discovery-0.4.4.tar.gz", hash = "sha256:976efd353b0314cc352163c160a83117e304c32ca6cb1538265ecaca0371c8ca"},
 ]
 
 [package.dependencies]
@@ -2065,13 +2065,13 @@ files = [
 
 [[package]]
 name = "tomlkit"
-version = "0.11.8"
+version = "0.12.0"
 description = "Style preserving TOML library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "tomlkit-0.11.8-py3-none-any.whl", hash = "sha256:8c726c4c202bdb148667835f68d68780b9a003a9ec34167b6c673b38eff2a171"},
-    {file = "tomlkit-0.11.8.tar.gz", hash = "sha256:9330fc7faa1db67b541b28e62018c17d20be733177d290a13b24c62d1614e0c3"},
+    {file = "tomlkit-0.12.0-py3-none-any.whl", hash = "sha256:926f1f37a1587c7a4f6c7484dae538f1345d96d793d9adab5d3675957b1d0766"},
+    {file = "tomlkit-0.12.0.tar.gz", hash = "sha256:01f0477981119c7d8ee0f67ebe0297a7c95b14cf9f4b102b45486deb77018716"},
 ]
 
 [[package]]
@@ -2261,4 +2261,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "c9f34dc7f69caf432a010a75f9255215dbca33dd09b2a8be9e7e41a5874f89a3"
+content-hash = "c73b457d0719728aeda2c62a01b10816ca6f4cd8c6ec49e650c84552a4c71283"
