@@ -3,8 +3,8 @@
 ![Simod](https://github.com/AutomatedProcessImprovement/Simod/actions/workflows/simod.yml/badge.svg)
 ![version](https://img.shields.io/github/v/tag/AutomatedProcessImprovement/simod)
 
-Simod combines several process mining techniques to automate the generation and validation of BPS models. The only input
-required by the Simod method is an event log in XES, or CSV format, and a configuration file.
+Simod combines process mining and machine learning techniques to automate the discovery and tuning of Business Process Simulation models from event logs extracted from enterprise information systems (ERPs, CRM, case management systems, etc.).
+Simod takes as input an event log in CSV format, a configuration file, and (optionally) a BPMN process model, and returns a business process simulation scenario that can be simulated using the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulator, which is embedded in Simod. 
 
 ## Simod
 
