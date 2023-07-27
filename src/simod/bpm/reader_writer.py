@@ -10,7 +10,7 @@ from simod.bpm import graph
 from simod.settings.simod_settings import BPMN_NAMESPACE_URI, QBP_NAMESPACE_URI
 
 
-class BPMNReaderWriter:
+class BPMNReaderWriter:  # TODO: unused class except in tests
     """
     BPMN 2.0 model reader and writer.
     """

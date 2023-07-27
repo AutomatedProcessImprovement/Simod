@@ -4,6 +4,7 @@ outputs
 venv*
 .venv
 .idea
+.vscode
 *.egg-info
 .DS_Store
 tests/assets/validation_*

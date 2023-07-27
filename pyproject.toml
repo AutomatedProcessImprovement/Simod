@@ -50,6 +50,7 @@ memory-profiler = "^0.61.0"
 pylint = "^2.17.4"
 setuptools = "^67.8.0"
 seaborn = "^0.12.2"
+pytest-benchmark = "^4.0.0"
 
 [tool.poetry.scripts]
 simod = "simod.cli:main"
@@ -65,4 +66,5 @@ markers = [
     "integration",
     "system",
     "manual",
+    "benchmark",
 ]

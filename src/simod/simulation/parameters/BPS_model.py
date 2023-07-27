@@ -9,8 +9,7 @@ from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 from pix_framework.discovery.resource_model import ResourceModel
 
 from simod.batching.types import BatchingRule
-from simod.bpm.graph import get_activities_ids_by_name
-from simod.bpm.reader_writer import BPMNReaderWriter
+from simod.bpm.graph import get_activities_ids_by_name_from_bpmn
 from simod.case_attributes.types import CaseAttribute
 from simod.extraneous_delays.types import ExtraneousDelay
 from simod.prioritization.types import PrioritizationRule
@@ -47,7 +46,7 @@ class BPSModel:
 
     def to_prosimos_format(self) -> dict:
         # Get map activity label -> node ID
-        activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(self.process_model).as_graph())
+        activity_label_to_id = get_activities_ids_by_name_from_bpmn(self.process_model)
         # Add elements to dictionary translating those needed
         attributes = {}
         if self.process_model is not None:
@@ -94,7 +93,7 @@ class BPSModel:
         In BPSModel, the activities are referenced by their name, Prosimos uses IDs instead from the BPMN model.
         """
         # Get map activity label -> node ID
-        activity_label_to_id = get_activities_ids_by_name(BPMNReaderWriter(self.process_model).as_graph())
+        activity_label_to_id = get_activities_ids_by_name_from_bpmn(self.process_model)
         # Update activity labels in resource profiles
         if self.resource_model.resource_profiles is not None:
             for resource_profile in self.resource_model.resource_profiles:

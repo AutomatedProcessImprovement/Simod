@@ -75,7 +75,7 @@ jobs:
           Xvfb :99 &>/dev/null & disown
           cd /usr/src/Simod
           poetry install
-          poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x -k "not test_build_fuzzy_calendars"
+          poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x -k "not test_build_fuzzy_calendars" -m "not benchmark"
 
       - name: PyLint
         shell: bash
