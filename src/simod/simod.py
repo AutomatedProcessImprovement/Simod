@@ -97,7 +97,7 @@ class Simod:
             self._event_log.log_ids,
         )
         self._best_bps_model.resource_model = discover_resource_model(
-            self._event_log.train_validation_partition,  # No optimization process here, use train + validation
+            self._event_log.train_partition,  # Only train to not discover tasks that won't exist for control-flow opt.
             self._event_log.log_ids,
             CalendarDiscoveryParams(),
         )
