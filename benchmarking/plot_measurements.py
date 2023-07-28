@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-measurements_path = Path(__file__).parent / "results/3.5.24/measurements.csv"
+measurements_path = Path(__file__).parent / "results/measurements.csv"
 
 df = pd.read_csv(measurements_path).sort_values(by=["metric", "name", "simod_version"])
 

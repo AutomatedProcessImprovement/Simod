@@ -62,10 +62,10 @@ class Simod:
     _extraneous_delays_optimizer: Optional[ExtraneousDelaysOptimizer]
 
     def __init__(
-            self,
-            settings: SimodSettings,
-            event_log: EventLog,
-            output_dir: Optional[Path] = None,
+        self,
+        settings: SimodSettings,
+        event_log: EventLog,
+        output_dir: Optional[Path] = None,
     ):
         self._settings = settings
         self._event_log = event_log
@@ -103,14 +103,11 @@ class Simod:
         )
 
         # --- Case Attributes --- #
-        if (
-                self._settings.common.discover_case_attributes
-                or self._settings.common.discover_prioritization_rules
-        ):
+        if self._settings.common.discover_case_attributes or self._settings.common.discover_prioritization_rules:
             print_section("Discovering case attributes")
             case_attributes = discover_case_attributes(
                 self._event_log.train_validation_partition,  # No optimization process here, use train + validation
-                self._event_log.log_ids
+                self._event_log.log_ids,
             )
             self._best_bps_model.case_attributes = case_attributes
 
@@ -121,15 +118,12 @@ class Simod:
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
 
         # --- Prioritization --- #
-        if (
-                self._settings.common.discover_prioritization_rules
-                and len(self._best_bps_model.case_attributes) > 0
-        ):
+        if self._settings.common.discover_prioritization_rules and len(self._best_bps_model.case_attributes) > 0:
             print_section("Trying to discover prioritization rules")
             rules = discover_prioritization_rules(
                 self._event_log.train_validation_partition,
                 self._event_log.log_ids,
-                self._best_bps_model.case_attributes
+                self._best_bps_model.case_attributes,
             )
             self._best_bps_model.prioritization_rules = rules
 
@@ -160,7 +154,7 @@ class Simod:
             prioritization_rules=self._best_bps_model.prioritization_rules,
             batching_rules=self._best_bps_model.batching_rules,
         )
-        # Discover process model with best parameters if needed
+        # Discover process model with the best parameters if needed
         if self._settings.common.model_path is None:
             print_subsection(
                 f"Discovering process model with best control-flow settings: {best_control_flow_params.to_dict()}"
@@ -294,9 +288,9 @@ class Simod:
 
 
 def _export_canonical_model(
-        file_path: Path,
-        control_flow_settings: ControlFlowHyperoptIterationParams,
-        calendar_settings: ResourceModelHyperoptIterationParams,
+    file_path: Path,
+    control_flow_settings: ControlFlowHyperoptIterationParams,
+    calendar_settings: ResourceModelHyperoptIterationParams,
 ):
     structure = control_flow_settings.to_dict()
 
