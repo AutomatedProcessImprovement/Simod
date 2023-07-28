@@ -65,8 +65,7 @@ class ResourceModelOptimizer:
         # Discover resource pools (performance purposes) if needed
         if self.settings.discovery_type is CalendarType.DIFFERENTIATED_BY_POOL:
             self._resource_pools = discover_pool_resource_profiles(
-                self.event_log.train_partition,
-                self.event_log.log_ids
+                self.event_log.train_partition, self.event_log.log_ids
             )
         else:
             self._resource_pools = None
@@ -243,7 +242,7 @@ class ResourceModelOptimizer:
 
     @staticmethod
     def _define_response(
-            status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
+        status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
     ) -> Tuple[str, dict]:
         # Compute mean distance if status is OK
         if status is STATUS_OK:

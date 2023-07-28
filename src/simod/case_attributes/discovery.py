@@ -20,7 +20,7 @@ def discover_case_attributes(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Ca
             log_ids.end_time,
             log_ids.resource,
         ],
-        confidence_threshold=0.95
+        confidence_threshold=0.95,
     )
 
     attributes = list(map(CaseAttribute.from_dict, attributes))
