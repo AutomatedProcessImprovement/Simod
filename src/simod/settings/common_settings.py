@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Union, List, Optional
 
-from pix_framework.log_ids import EventLogIDs, DEFAULT_XES_IDS
+from pix_framework.io.event_log import EventLogIDs, DEFAULT_XES_IDS
 
 from ..utilities import get_project_dir
 

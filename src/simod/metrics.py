@@ -16,7 +16,7 @@ from log_distance_measures.cycle_time_distribution import (
 )
 from log_distance_measures.n_gram_distribution import n_gram_distribution_distance
 from log_distance_measures.relative_event_distribution import relative_event_distribution_distance
-from pix_framework.log_ids import EventLogIDs
+from pix_framework.io.event_log import EventLogIDs
 
 from simod.settings.common_settings import Metric
 
@@ -139,7 +139,7 @@ def get_relative_emd(
     simulated_log_ids: EventLogIDs,
 ) -> float:
     """Distance measure computing how different the distribution of the events with each case (i.e., relative to their
-     start) of two event logs are."""
+    start) of two event logs are."""
     emd = relative_event_distribution_distance(
         original_log,
         original_log_ids,
@@ -155,7 +155,7 @@ def get_n_grams_distribution_distance(
     original_log_ids: EventLogIDs,
     simulated_log: pd.DataFrame,
     simulated_log_ids: EventLogIDs,
-    n: int = 3
+    n: int = 3,
 ) -> float:
     """
     Distance measure between two event logs computing the difference in the frequencies of the n-grams observed in

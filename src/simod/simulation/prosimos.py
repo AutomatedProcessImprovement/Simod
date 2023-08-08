@@ -4,18 +4,19 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor as Pool
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
 from pix_framework.discovery.resource_profiles import ResourceProfile
-from pix_framework.log_ids import PROSIMOS_LOG_IDS, EventLogIDs
+from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_notice, print_step, print_warning
 from simod.metrics import compute_metric
+
 from ..event_log.utilities import read
 from ..settings.common_settings import Metric
 

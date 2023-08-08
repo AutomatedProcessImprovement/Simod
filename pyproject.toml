@@ -33,15 +33,11 @@ scipy = "^1.9.2"
 statistics = "^1.0.3.5"
 tqdm = "^4.64.1"
 xmltodict = "^0.13.0"
-prosimos = "^1.2.6"
-extraneous-activity-delays = "^2.1.13"
+prosimos = "^1.2.8"
+extraneous-activity-delays = "^2.1.17"
 openxes-cli-py = "^0.1.15"
-pix-framework = "^0.10.8"
-start-time-estimator = "^1.10.9"
+pix-framework = "^0.11.3"
 log-distance-measures = "^1.0.2"
-case-attribute-discovery = "^0.1.8"
-prioritization-discovery = "^0.4.3"
-batch-processing-discovery = "^0.4.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"
@@ -62,9 +58,4 @@ line-length = 120
 line-length = 120
 
 [tool.pytest.ini_options]
-markers = [
-    "integration",
-    "system",
-    "manual",
-    "benchmark",
-]
+markers = ["integration", "system", "manual", "benchmark"]

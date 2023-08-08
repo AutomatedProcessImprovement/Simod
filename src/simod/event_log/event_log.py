@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from pix_framework.log_ids import EventLogIDs, DEFAULT_XES_IDS
-from pix_framework.log_split.log_split import split_log_training_validation_trace_wise as split_log
+from pix_framework.io.event_log import DEFAULT_XES_IDS, EventLogIDs
+from pix_framework.io.event_log import split_log_training_validation_trace_wise as split_log
 
-from .preprocessor import Preprocessor
-from .utilities import read, convert_df_to_xes
 from ..settings.preprocessing_settings import PreprocessingSettings
+from .preprocessor import Preprocessor
+from .utilities import convert_df_to_xes, read
 
 
 class EventLog:

@@ -1,6 +1,8 @@
 import pandas as pd
-from case_attribute_discovery.discovery import discover_case_attributes as discover_case_attributes_
-from pix_framework.log_ids import EventLogIDs
+from pix_framework.discovery.case_attribute_discovery.discovery import (
+    discover_case_attributes as discover_case_attributes_,
+)
+from pix_framework.io.event_log import EventLogIDs
 
 from simod.case_attributes.types import CaseAttribute
 
@@ -20,7 +22,7 @@ def discover_case_attributes(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Ca
             log_ids.end_time,
             log_ids.resource,
         ],
-        confidence_threshold=0.95
+        confidence_threshold=0.95,
     )
 
     attributes = list(map(CaseAttribute.from_dict, attributes))
