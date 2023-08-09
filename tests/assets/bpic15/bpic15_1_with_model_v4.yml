@@ -1,0 +1,60 @@
+version: 4
+common:
+  train_log_path: tests/assets/bpic15/BPIC15_1.csv.gz
+  model_path: tests/assets/bpic15/BPIC15_1.bpmn
+  num_final_evaluations: 1  # Number of evaluations of the discovered BPS model.
+  evaluation_metrics: # Metrics to evaluate the discovered BPS model with.
+    - 3_gram_distance
+    - 2_gram_distance
+    - absolute_event_distribution
+    - relative_event_distribution
+    - circadian_event_distribution
+    - arrival_event_distribution
+    - cycle_time_distribution
+  clean_intermediate_files: false
+preprocessing:
+  multitasking: false  # Reassign activity durations when happening in multitasking.
+  enable_time_concurrency_threshold: 0.5  # Concurrency threshold for the enabled time computation.
+  concurrency_df: 0.75  # Concurrency thresholds for the start time (and enabled time) estimations when
+  concurrency_l2l: 0.9  # the start time is missing in the train event log. Using the Heuristics Miner
+  concurrency_l1l: 0.9  # concurrency oracle.
+control_flow:
+  optimization_metric: n_gram_distance
+  num_iterations: 1  # Number of iterations to run the hyper-optimization process for control-flow discovery
+  num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
+  gateway_probabilities: # Methods to discover the probabilities of each gateway
+    - equiprobable
+    - discovery
+  discovery_algorithm: sm3  # Process model discovery algorithm: sm2 (Split Miner v2) or sm3 (Split Miner v3)
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
+  replace_or_joins:
+    - true
+    - false
+  prioritize_parallelism:
+    - true
+    - false
+resource_model:
+  optimization_metric: circadian_event_distribution
+  num_iterations: 1  # Number of iterations to run the hyper-optimization process for control-flow discovery
+  num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
+  resource_profiles:
+    discovery_type: differentiated  # Resource discovery type ('undifferentiated', 'pool', or 'differentiated')
+    granularity:
+      - 15
+      - 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01
+      - 0.3
+    participation: 0.4
+extraneous_activity_delays:
+  optimization_metric: relative_event_distribution
+  num_iterations: 1  # Number of iterations of the optimization process (if 1, direct discovery without optimization)
+  num_evaluations_per_iteration: 3  # Number of times to evaluate each iteration (using the mean of all of them)
