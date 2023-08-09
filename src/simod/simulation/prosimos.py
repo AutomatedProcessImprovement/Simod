@@ -14,7 +14,7 @@ from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
-from simod.cli_formatter import print_notice, print_step, print_warning
+from simod.cli_formatter import print_message, print_notice, print_warning
 from simod.metrics import compute_metric
 
 from ..event_log.utilities import read
@@ -87,7 +87,7 @@ def simulate(settings: ProsimosSettings):
     :param settings: Prosimos settings.
     :return: None.
     """
-    print_notice(f"Number of simulation cases: {settings.num_simulation_cases}")
+    print_message(f"Simulation settings: {settings}")
 
     run_simulation(
         bpmn_path=settings.bpmn_path.__str__(),
@@ -170,7 +170,7 @@ def simulate_in_parallel(
         for rep in range(num_simulations)
     ]
 
-    print_step(f"Simulating {len(simulation_arguments)} times with {w_count} workers")
+    print_notice(f"Simulating {len(simulation_arguments)} times with {w_count} workers")
 
     with Pool(w_count) as pool:
         pool.map(simulate, simulation_arguments)
@@ -199,7 +199,7 @@ def evaluate_logs(
         (simulation_log_paths[index], PROSIMOS_LOG_IDS, index) for index in range(len(simulation_log_paths))
     ]
 
-    print_step(f"Reading {len(read_arguments)} simulated logs with {w_count} workers")
+    print_notice(f"Reading {len(read_arguments)} simulated logs with {w_count} workers")
 
     with Pool(w_count) as pool:
         simulated_logs = pool.map(_read_simulated_log, read_arguments)
@@ -210,7 +210,7 @@ def evaluate_logs(
         (validation_log, validation_log_ids, log, PROSIMOS_LOG_IDS, metrics) for log in simulated_logs
     ]
 
-    print_step(f"Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers")
+    print_notice(f"Evaluating {len(evaluation_arguments)} simulated logs with {w_count} workers")
 
     with Pool(w_count) as pool:
         evaluation_measurements = pool.map(_evaluate_logs_using_metrics, evaluation_arguments)
