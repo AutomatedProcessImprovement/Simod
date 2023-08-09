@@ -3,7 +3,7 @@ import pandas as pd
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution, ResourceDistribution
 from pix_framework.discovery.resource_model import ResourceModel
 from pix_framework.io.event_log import EventLogIDs
-from pix_framework.statistics.distribution import get_best_fitting_distribution, DurationDistribution
+from pix_framework.statistics.distribution import DurationDistribution, get_best_fitting_distribution
 
 from simod.cli_formatter import print_message
 
@@ -25,8 +25,7 @@ def repair_with_missing_activities(
     # add missing activities to each resource's assigned_tasks
     for resource_profile in resource_model.resource_profiles:
         for resource in resource_profile.resources:
-            for activity in missing_activities:
-                resource.assigned_tasks += [activity]
+            resource.assigned_tasks += missing_activities
 
     # estimate the duration distribution of the activity from all its occurrences in event_log
     duration_distributions_per_activity = {}
@@ -36,7 +35,9 @@ def repair_with_missing_activities(
         )
 
     # add the missing activity resource distributions to the resource model for all the resources
-    resource_names = event_log[log_ids.resource].unique()
+    resource_names = [
+        resource.id for resource_profile in resource_model.resource_profiles for resource in resource_profile.resources
+    ]
     for activity, duration_distribution in duration_distributions_per_activity.items():
         resource_distributions = [
             ResourceDistribution(

@@ -14,7 +14,7 @@ from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs
 from prosimos.simulation_engine import run_simulation
 
-from simod.cli_formatter import print_notice, print_warning
+from simod.cli_formatter import print_message, print_notice, print_warning
 from simod.metrics import compute_metric
 
 from ..event_log.utilities import read
@@ -87,7 +87,7 @@ def simulate(settings: ProsimosSettings):
     :param settings: Prosimos settings.
     :return: None.
     """
-    print_notice(f"Simulation settings: {settings}")
+    print_message(f"Simulation settings: {settings}")
 
     run_simulation(
         bpmn_path=settings.bpmn_path.__str__(),
