@@ -1,8 +1,10 @@
 from pathlib import Path
 
 import pytest
-
+from pix_framework.filesystem.file_manager import get_random_folder_id
+from pix_framework.io.event_log import DEFAULT_XES_IDS, PROSIMOS_LOG_IDS, read_csv_log
 from simod.event_log.event_log import EventLog
+from simod.settings.common_settings import PROJECT_DIR
 from simod.settings.simod_settings import SimodSettings
 from simod.simod import Simod
 
@@ -93,3 +95,48 @@ def test_simod(test_data, entry_point):
         assert len(optimizer.final_bps_model.prioritization_rules) > 0
     else:
         assert optimizer.final_bps_model.prioritization_rules is None
+
+
+@pytest.mark.system
+def test_missing_activities_repaired(entry_point):
+    """
+    Tests if missing activities are repaired when a model is provided.
+    Issue #129.
+    """
+    bpmn_path = entry_point / "LoanApp_simplified.bpmn"
+    log_path = entry_point / "LoanApp_simplified_without_approve_loan_offer.csv"
+    settings = SimodSettings.default()
+    settings.common.train_log_path = log_path
+    settings.common.model_path = bpmn_path
+    settings.common.log_ids = DEFAULT_XES_IDS
+    event_log = EventLog.from_path(
+        path=settings.common.train_log_path,
+        log_ids=settings.common.log_ids,
+        process_name=settings.common.train_log_path.stem,
+        test_path=settings.common.test_log_path,
+        preprocessing_settings=settings.preprocessing,
+    )
+    output_dir = PROJECT_DIR / "outputs" / get_random_folder_id()
+
+    simod = Simod(settings, event_log=event_log, output_dir=output_dir)
+    simod.run()
+
+    # Assert not failing
+    assert len(simod.final_bps_model.resource_model.activity_resource_distributions) > 0
+    # The removed activity (Approve Loan Offer) is part of the simulated logs
+    activity_name = "Approve loan offer"
+    activity_id = "Activity_1y2vzu0"
+    simulated_log_path = output_dir / "best_result/simulation/simulated_log_0.csv"
+    df = read_csv_log(simulated_log_path, PROSIMOS_LOG_IDS)
+    assert activity_name in df[PROSIMOS_LOG_IDS.activity].unique()
+    # The removed activity is part of the simulation parameters
+    # (all the resources can perform it,
+    resource_model = simod.final_bps_model.resource_model
+    for profile in resource_model.resource_profiles:
+        for resource in profile.resources:
+            assert activity_id in resource.assigned_tasks
+    # and there is an entry for it in the activity_resource_distributions)
+    activity_distributions = list(
+        filter(lambda x: x.activity_id == activity_id, resource_model.activity_resource_distributions)
+    )
+    assert len(activity_distributions) == 1

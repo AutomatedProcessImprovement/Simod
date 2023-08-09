@@ -14,6 +14,7 @@ from pix_framework.discovery.resource_model import ResourceModel, discover_resou
 from pix_framework.discovery.resource_profiles import discover_pool_resource_profiles
 from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
 
+from .repair import repair_with_missing_activities
 from .settings import HyperoptIterationParams
 from ..cli_formatter import print_subsection, print_step, print_message
 from ..event_log.event_log import EventLog
@@ -40,12 +41,20 @@ class ResourceModelOptimizer:
     # Set of trials for the hyperparameter optimization process
     _bayes_trials = Trials
 
-    def __init__(self, event_log: EventLog, bps_model: BPSModel, settings: ResourceModelSettings, base_directory: Path):
+    def __init__(
+        self,
+        event_log: EventLog,
+        bps_model: BPSModel,
+        settings: ResourceModelSettings,
+        base_directory: Path,
+        model_activities: Optional[list[str]] = None,
+    ):
         # Save event log, optimization settings, and output directory
         self.event_log = event_log
         self.initial_bps_model = bps_model.deep_copy()
         self.settings = settings
         self.base_directory = base_directory
+        self.model_activities = model_activities
         # Initialize table to store quality measures of each iteration
         self.evaluation_measurements = pd.DataFrame(
             columns=[
@@ -65,8 +74,7 @@ class ResourceModelOptimizer:
         # Discover resource pools (performance purposes) if needed
         if self.settings.discovery_type is CalendarType.DIFFERENTIATED_BY_POOL:
             self._resource_pools = discover_pool_resource_profiles(
-                self.event_log.train_partition,
-                self.event_log.log_ids
+                self.event_log.train_partition, self.event_log.log_ids
             )
         else:
             self._resource_pools = None
@@ -97,6 +105,14 @@ class ResourceModelOptimizer:
         status, current_bps_model.resource_model = hyperopt_step(
             status, self._discover_resource_model, hyperopt_iteration_params.calendar_discovery_params
         )
+
+        if self.model_activities is not None:
+            repair_with_missing_activities(
+                resource_model=current_bps_model.resource_model,
+                model_activities=self.model_activities,
+                event_log=self.event_log.train_validation_partition,
+                log_ids=self.event_log.log_ids,
+            )
 
         # Simulate candidate and evaluate its quality
         status, evaluation_measurements = hyperopt_step(
@@ -243,7 +259,7 @@ class ResourceModelOptimizer:
 
     @staticmethod
     def _define_response(
-            status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
+        status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
     ) -> Tuple[str, dict]:
         # Compute mean distance if status is OK
         if status is STATUS_OK:

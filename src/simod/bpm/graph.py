@@ -22,6 +22,23 @@ def get_activities_ids_by_name_from_bpmn(model_path: Path) -> dict:
     return values
 
 
+def get_activities_names_from_bpmn(model_path: Path) -> list[str]:
+    """
+    Returns activities' names from the model.
+
+    Sample output: ['Register Order', 'Verify Order']
+    """
+    xml = etree.parse(str(model_path))
+    root = xml.getroot()
+    namespace = {"xmlns": "http://www.omg.org/spec/BPMN/20100524/MODEL"}
+    values = []
+    for process in root.findall("xmlns:process", namespace):
+        for task in process.findall("xmlns:task", namespace):
+            task_name = task.get("name")
+            values.append(task_name)
+    return values
+
+
 def from_bpmn_reader(bpmn, verbose=True) -> nx.DiGraph:
     """Creates a process graph from a BPMNReader instance."""
     g = _load_process_structure(bpmn, verbose)
