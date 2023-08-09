@@ -3,7 +3,10 @@ from pathlib import Path
 from typing import List
 
 from extraneous_activity_delays.config import (
-    Configuration as ExtraneousActivityDelaysConfiguration, DiscoveryMethod, TimerPlacement, SimulationEngine,
+    Configuration as ExtraneousActivityDelaysConfiguration,
+    DiscoveryMethod,
+    TimerPlacement,
+    SimulationEngine,
     SimulationModel,
 )
 from extraneous_activity_delays.enhance_with_delays import HyperOptEnhancer, DirectEnhancer
@@ -61,7 +64,8 @@ class ExtraneousDelaysOptimizer:
                 activity_name=activity,
                 delay_id=f"Event_{str(uuid.uuid4())}",
                 duration_distribution=best_timers[activity],
-            ) for activity in best_timers
+            )
+            for activity in best_timers
         ]
 
     def cleanup(self):

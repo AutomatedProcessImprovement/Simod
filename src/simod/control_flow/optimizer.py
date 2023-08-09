@@ -163,7 +163,7 @@ class ControlFlowOptimizer:
         best_result = results[results.status == STATUS_OK].iloc[0]
         assert best_result["model_path"].exists(), f"Best model path {best_result['model_path']} does not exist"
 
-        # Re-build parameters of best hyperopt iteration
+        # Re-build parameters of the best hyperopt iteration
         best_hyperopt_parameters = HyperoptIterationParams.from_hyperopt_dict(
             hyperopt_dict=best_hyperopt_params,
             optimization_metric=self.settings.optimization_metric,

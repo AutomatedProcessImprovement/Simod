@@ -20,5 +20,5 @@ class ExtraneousDelay:
         return ExtraneousDelay(
             activity_name=delay["activity"],
             delay_id=delay["event_id"],
-            duration_distribution=DurationDistribution.from_dict(delay)
+            duration_distribution=DurationDistribution.from_dict(delay),
         )

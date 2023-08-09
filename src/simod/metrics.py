@@ -67,8 +67,10 @@ def get_absolute_emd(
     simulated_log: pd.DataFrame,
     simulated_log_ids: EventLogIDs,
 ) -> float:
-    """Distance measure computing how different the histograms of the timestamps of two event logs are, discretizing
-    the timestamps by absolute hour."""
+    """
+    Distance measure computing how different the histograms of the timestamps of two event logs are, discretizing
+    the timestamps by absolute hour.
+    """
 
     emd = absolute_event_distribution_distance(
         original_log,
@@ -87,7 +89,9 @@ def get_cycle_time_emd(
     simulated_log: pd.DataFrame,
     simulated_log_ids: EventLogIDs,
 ) -> float:
-    """Distance measure computing how different the cycle time discretized histograms of two event logs are."""
+    """
+    Distance measure computing how different the cycle time discretized histograms of two event logs are.
+    """
     emd = cycle_time_distribution_distance(
         original_log,
         original_log_ids,
@@ -104,8 +108,10 @@ def get_circadian_emd(
     simulated_log: pd.DataFrame,
     simulated_log_ids: EventLogIDs,
 ) -> float:
-    """Distance measure computing how different the histograms of the timestamps of two event logs are, comparing all
-    the instants recorded in the same weekday together (e.g., Monday), and discretizing them to the hour in the day."""
+    """
+    Distance measure computing how different the histograms of the timestamps of two event logs are, comparing all
+    the instants recorded in the same weekday together (e.g., Monday), and discretizing them to the hour in the day.
+    """
     emd = circadian_event_distribution_distance(
         original_log,
         original_log_ids,
@@ -122,7 +128,9 @@ def get_arrival_emd(
     simulated_log: pd.DataFrame,
     simulated_log_ids: EventLogIDs,
 ) -> float:
-    """Distance measure computing how different the histograms of the case arrivals of two event logs are."""
+    """
+    Distance measure computing how different the histograms of the case arrivals of two event logs are.
+    """
     emd = case_arrival_distribution_distance(
         original_log,
         original_log_ids,
@@ -138,8 +146,10 @@ def get_relative_emd(
     simulated_log: pd.DataFrame,
     simulated_log_ids: EventLogIDs,
 ) -> float:
-    """Distance measure computing how different the distribution of the events with each case (i.e., relative to their
-    start) of two event logs are."""
+    """
+    Distance measure computing how different the distribution of the events with each case (i.e., relative to their
+    start) of two event logs are.
+    """
     emd = relative_event_distribution_distance(
         original_log,
         original_log_ids,

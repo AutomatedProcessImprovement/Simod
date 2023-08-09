@@ -43,8 +43,13 @@ class Metric(str, Enum):
             return cls.ARRIVAL_EMD
         elif value.lower() in ["relative_event_distribution", "relative_emd"]:
             return cls.RELATIVE_EMD
-        elif value.lower() in ["absolute_event_distribution", "absolute_hourly_emd",
-                               "absolute_hour_emd", "abs_hourly_emd", "abs_hour_emd"]:
+        elif value.lower() in [
+            "absolute_event_distribution",
+            "absolute_hourly_emd",
+            "absolute_hour_emd",
+            "abs_hourly_emd",
+            "abs_hour_emd",
+        ]:
             return cls.ABSOLUTE_EMD
         elif value.lower() in ["cycle_time_distribution", "cycle_time_emd"]:
             return cls.CYCLE_TIME_EMD

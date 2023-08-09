@@ -17,7 +17,7 @@ class ExtraneousDelaysSettings:
         return ExtraneousDelaysSettings(
             optimization_metric=ExtraneousActivityDelaysOptimizationMetric.RELATIVE_EMD,
             num_iterations=1,
-            num_evaluations_per_iteration=3
+            num_evaluations_per_iteration=3,
         )
 
     @staticmethod
@@ -34,7 +34,7 @@ class ExtraneousDelaysSettings:
         return ExtraneousDelaysSettings(
             optimization_metric=optimization_metric,
             num_iterations=num_iterations,
-            num_evaluations_per_iteration=num_evaluations_per_iteration
+            num_evaluations_per_iteration=num_evaluations_per_iteration,
         )
 
     def to_dict(self) -> dict:
