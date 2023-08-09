@@ -53,8 +53,7 @@ class BPSModel:
             attributes[PROCESS_MODEL_KEY] = str(self.process_model)
         if self.gateway_probabilities is not None:
             attributes[GATEWAY_PROBABILITIES_KEY] = [
-                gateway_probability.to_dict()
-                for gateway_probability in self.gateway_probabilities
+                gateway_probability.to_dict() for gateway_probability in self.gateway_probabilities
             ]
         if self.case_arrival_model is not None:
             attributes |= self.case_arrival_model.to_dict()
@@ -62,23 +61,17 @@ class BPSModel:
             attributes |= self.resource_model.to_dict()
         if self.extraneous_delays is not None:
             attributes[EXTRANEOUS_DELAYS_KEY] = [
-                extraneous_delay.to_dict()
-                for extraneous_delay in self.extraneous_delays
+                extraneous_delay.to_dict() for extraneous_delay in self.extraneous_delays
             ]
         if self.case_attributes is not None:
-            attributes[CASE_ATTRIBUTES_KEY] = [
-                case_attribute.to_prosimos()
-                for case_attribute in self.case_attributes
-            ]
+            attributes[CASE_ATTRIBUTES_KEY] = [case_attribute.to_prosimos() for case_attribute in self.case_attributes]
         if self.prioritization_rules is not None:
             attributes[PRIORITIZATION_RULES_KEY] = [
-                priority_rule.to_prosimos()
-                for priority_rule in self.prioritization_rules
+                priority_rule.to_prosimos() for priority_rule in self.prioritization_rules
             ]
         if self.batching_rules is not None:
             attributes[BATCHING_RULES_KEY] = [
-                batching_rule.to_prosimos(activity_label_to_id)
-                for batching_rule in self.batching_rules
+                batching_rule.to_prosimos(activity_label_to_id) for batching_rule in self.batching_rules
             ]
         # Return dictionary in Prosimos format
         return attributes

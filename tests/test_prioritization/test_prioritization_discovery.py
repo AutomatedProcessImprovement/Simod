@@ -1,6 +1,4 @@
-from pix_framework.input import read_csv_log
-from pix_framework.log_ids import DEFAULT_XES_IDS
-
+from pix_framework.io.event_log import DEFAULT_XES_IDS, read_csv_log
 from simod.case_attributes.discovery import discover_case_attributes
 from simod.prioritization.discovery import (
     discover_prioritization_rules,

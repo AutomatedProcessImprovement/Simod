@@ -3,16 +3,18 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from pix_framework.enhancement.multitasking import adjust_durations
-from pix_framework.log_ids import EventLogIDs
-from start_time_estimator.concurrency_oracle import OverlappingConcurrencyOracle
-from start_time_estimator.config import (
-    Configuration as StartTimeEstimatorConfiguration,
+from pix_framework.discovery.start_time_estimator.concurrency_oracle import OverlappingConcurrencyOracle
+from pix_framework.discovery.start_time_estimator.config import (
     ConcurrencyThresholds,
 )
-from start_time_estimator.estimator import StartTimeEstimator
+from pix_framework.discovery.start_time_estimator.config import (
+    Configuration as StartTimeEstimatorConfiguration,
+)
+from pix_framework.discovery.start_time_estimator.estimator import StartTimeEstimator
+from pix_framework.enhancement.multitasking import adjust_durations
+from pix_framework.io.event_log import EventLogIDs
 
-from simod.cli_formatter import print_step, print_section
+from simod.cli_formatter import print_section, print_step
 
 
 @dataclass

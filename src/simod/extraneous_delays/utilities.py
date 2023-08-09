@@ -10,9 +10,9 @@ from simod.extraneous_delays.types import ExtraneousDelay
 
 
 def add_timers_to_bpmn_model(
-        process_model: Path,
-        delays: List[ExtraneousDelay],
-        timer_placement: TimerPlacement = TimerPlacement.BEFORE,
+    process_model: Path,
+    delays: List[ExtraneousDelay],
+    timer_placement: TimerPlacement = TimerPlacement.BEFORE,
 ):
     """
     Enhance the BPMN model received by adding a timer previous (or after) to each activity denoted by [timers].
@@ -41,11 +41,11 @@ def add_timers_to_bpmn_model(
 
 
 def _add_timer_to_bpmn_model(
-        task,
-        timer_id,
-        process,
-        namespace,
-        timer_placement: TimerPlacement,
+    task,
+    timer_id,
+    process,
+    namespace,
+    timer_placement: TimerPlacement,
 ):
     # The activity has a prepared timer -> add it!
     task_id = task.attrib["id"]

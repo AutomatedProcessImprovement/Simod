@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-simod_version = "3.5.24"
+simod_version = "3.5.25"
 results_dir = Path(__file__).parent / Path(f"results/{simod_version}/pooled")
 
 metric_names_mapping = {

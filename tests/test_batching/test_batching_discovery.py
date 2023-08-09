@@ -1,8 +1,6 @@
 from pathlib import Path
 
-from pix_framework.input import read_csv_log
-from pix_framework.log_ids import EventLogIDs
-
+from pix_framework.io.event_log import EventLogIDs, read_csv_log
 from simod.batching.discovery import discover_batching_rules
 from simod.batching.types import BatchingFiringRule
 

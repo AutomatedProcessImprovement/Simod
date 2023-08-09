@@ -1,6 +1,4 @@
-from pix_framework.input import read_csv_log
-from pix_framework.log_ids import EventLogIDs
-
+from pix_framework.io.event_log import EventLogIDs, read_csv_log
 from simod.case_attributes.discovery import discover_case_attributes
 
 

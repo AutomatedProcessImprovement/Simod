@@ -4,8 +4,8 @@ from typing import Optional, Tuple
 
 import pandas as pd
 import pendulum
-from openxes_cli.lib import xes_to_csv, csv_to_xes
-from pix_framework.log_ids import DEFAULT_XES_IDS, EventLogIDs
+from openxes_cli.lib import csv_to_xes, xes_to_csv
+from pix_framework.io.event_log import DEFAULT_XES_IDS, EventLogIDs
 
 
 def convert_xes_to_csv_if_needed(log_path: Path, output_path: Optional[Path] = None) -> Path:

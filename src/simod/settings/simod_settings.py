@@ -65,7 +65,7 @@ class SimodSettings:
 
         # If the model is provided, we don't execute SplitMiner. Then, ignore the mining_algorithm setting
         if common_settings.model_path is not None:
-            print_notice(f"Ignoring process model discovery settings (the model is provided)")
+            print_notice("Ignoring process model discovery settings (the model is provided)")
             control_flow_settings.mining_algorithm = None
             control_flow_settings.epsilon = None
             control_flow_settings.eta = None
