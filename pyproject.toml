@@ -58,4 +58,4 @@ line-length = 120
 line-length = 120
 
 [tool.pytest.ini_options]
-markers = ["integration", "system", "manual", "benchmark"]
+markers = ["integration", "system", "manual", "benchmark", "smoke"]

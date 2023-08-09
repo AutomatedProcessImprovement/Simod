@@ -1,7 +1,6 @@
 import shutil
 
 import pytest
-
 from simod.fuzzy_calendars.fuzzy_discovery import build_fuzzy_calendars
 
 process_files = {
@@ -55,9 +54,9 @@ def main():
         break
 
 
-@pytest.mark.integration
+@pytest.mark.smoke
 @pytest.mark.parametrize("test_data", process_files, ids=[model_name for model_name in process_files])
-def test_build_fuzzy_calendars(entry_point, test_data):
+def test_fuzzy_calendar_discovery_runs(entry_point, test_data):
     result = build_fuzzy_calendars(
         entry_point / process_files[test_data]["csv_log"],
         entry_point / process_files[test_data]["bpmn_model"],
@@ -75,3 +74,13 @@ def test_build_fuzzy_calendars(entry_point, test_data):
 
     output_dir = entry_point / "fuzzy/out"
     shutil.rmtree(output_dir)
+
+
+def test_fuzzy_calendar_discovery(entry_point):
+    log_path = entry_point / "fuzzy/csv_logs/Fuzzy_calendars_test.csv"
+    bpmn_path = entry_point / "fuzzy/bpmn_models/Control_flow_optimization_test.bpmn"
+    output_path = entry_point / "fuzzy/out/json/Fuzzy_calendars_test.json"
+
+    result = build_fuzzy_calendars(log_path, bpmn_path, output_path, 15)
+
+    assert result is not None
