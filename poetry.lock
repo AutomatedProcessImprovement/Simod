@@ -1318,13 +1318,13 @@ tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "pa
 
 [[package]]
 name = "pix-framework"
-version = "0.11.4"
+version = "0.11.5"
 description = "Process Improvement Explorer Framework contains process discovery and improvement modules of the Process Improvement Explorer project."
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "pix_framework-0.11.4-py3-none-any.whl", hash = "sha256:d7efb3d621b5c2468394af26dd6088313ca1bc6674ce7e15b10ed211e3245838"},
-    {file = "pix_framework-0.11.4.tar.gz", hash = "sha256:9e04c657351e74c51d548af40a66916b10ab5b00682d92e3b0843846960b5dd1"},
+    {file = "pix_framework-0.11.5-py3-none-any.whl", hash = "sha256:97b06b0af00c561d407a53ea99a71dcf56aef2b173c8e6d56e29a2b15fbcae9c"},
+    {file = "pix_framework-0.11.5.tar.gz", hash = "sha256:d40307c03fb8dff4f92bea692cb636563915c59423ef73de66ac64dd8417a852"},
 ]
 
 [package.dependencies]
@@ -2234,4 +2234,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "86e2541ec0d24e3d5e05388b941fce6294ea2d886c7857284ff68a3e04609090"
+content-hash = "046e01e3120ed4494f2ffa706975b87cf1e817293c9b460b69e4ee13279159d1"
