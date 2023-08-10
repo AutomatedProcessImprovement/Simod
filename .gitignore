@@ -10,6 +10,7 @@ venv*
 tests/assets/validation_*
 input_files
 log/
+.pytest_cache/
 
 *.dat
 *.log

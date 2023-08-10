@@ -1,7 +1,13 @@
 import shutil
 
 import pytest
-from simod.fuzzy_calendars.fuzzy_discovery import build_fuzzy_calendars
+from pix_framework.io.event_log import PROSIMOS_LOG_IDS, read_csv_log
+from simod.fuzzy_calendars.discovery import (
+    build_fuzzy_calendars,
+    discovery_fuzzy_simulation_parameters,
+    event_list_from_csv,
+    event_list_from_df,
+)
 
 process_files = {
     "loan_SC_LU": {
@@ -43,17 +49,6 @@ process_files = {
 }
 
 
-def main():
-    for model_name in process_files:
-        build_fuzzy_calendars(
-            process_files[model_name]["csv_log"],
-            process_files[model_name]["bpmn_model"],
-            process_files[model_name]["json"],
-            15,
-        )
-        break
-
-
 @pytest.mark.smoke
 @pytest.mark.parametrize("test_data", process_files, ids=[model_name for model_name in process_files])
 def test_fuzzy_calendar_discovery_runs(entry_point, test_data):
@@ -76,11 +71,136 @@ def test_fuzzy_calendar_discovery_runs(entry_point, test_data):
     shutil.rmtree(output_dir)
 
 
-def test_fuzzy_calendar_discovery(entry_point):
-    log_path = entry_point / "fuzzy/csv_logs/Fuzzy_calendars_test.csv"
-    bpmn_path = entry_point / "fuzzy/bpmn_models/Control_flow_optimization_test.bpmn"
-    output_path = entry_point / "fuzzy/out/json/Fuzzy_calendars_test.json"
+def test_event_list_from_csv(entry_point):
+    log_path = entry_point / "fuzzy/csv_logs/loan_MC_HU.csv"
 
-    result = build_fuzzy_calendars(log_path, bpmn_path, output_path, 15)
+    result_1 = event_list_from_csv(log_path)
 
-    assert result is not None
+    log = read_csv_log(log_path, PROSIMOS_LOG_IDS)
+    log[PROSIMOS_LOG_IDS.case] = log[PROSIMOS_LOG_IDS.case].astype(str)
+
+    result_2 = event_list_from_df(log, PROSIMOS_LOG_IDS)
+
+    # sort lists
+    result_1 = sorted(result_1, key=lambda x: x.p_case)
+    for trace in result_1:
+        trace.event_list = sorted(trace.event_list, key=lambda x: x.started_at)
+    result_2 = sorted(result_2, key=lambda x: x.p_case)
+    for trace in result_2:
+        trace.event_list = sorted(trace.event_list, key=lambda x: x.started_at)
+
+    # compare lists
+    for i in range(len(result_1)):
+        assert result_1[i].p_case == result_2[i].p_case
+        assert result_1[i].started_at == result_2[i].started_at
+        assert result_1[i].completed_at == result_2[i].completed_at
+        assert result_1[i].completed_at == result_2[i].completed_at
+        for ii in range(len(result_1[i].event_list)):
+            assert result_1[i].event_list[ii].__dict__ == result_2[i].event_list[ii].__dict__
+
+
+@pytest.mark.parametrize(
+    "test_data",
+    [
+        {
+            "log_path": "fuzzy/csv_logs/fuzzy_calendars_log.csv.gz",
+            "bpmn_path": "fuzzy/bpmn_models/fuzzy_calendars_model.bpmn",
+            "error_threshold": 0.95,
+        },
+        {
+            "log_path": "fuzzy/csv_logs/LoanApp_simplified.csv.gz",
+            "bpmn_path": "fuzzy/bpmn_models/LoanApp_simplified.bpmn",
+            "error_threshold": 0.05,
+        },
+    ],
+    ids=["fuzzy_calendars_log.csv.gz", "LoanApp_simplified.csv.gz"],
+)
+def test_fuzzy_calendar_discovery(entry_point, test_data):
+    """
+    Checks if the fuzzy discovery technique doesn't discover any fuzziness in the classic log (LoanApp_simplified.csv),
+    and if it discovers fuzziness in the fuzzy log (fuzzy_calendars_log.csv).
+    """
+    log_path = entry_point / test_data["log_path"]
+    bpmn_path = entry_point / test_data["bpmn_path"]
+    output_path = entry_point / "fuzzy/out/json" / log_path.with_suffix(".json").name
+
+    # preprocess timestamps for fuzzy calendar discovery
+    log = read_csv_log(log_path, PROSIMOS_LOG_IDS)
+    log[PROSIMOS_LOG_IDS.start_time] = log[PROSIMOS_LOG_IDS.start_time].dt.tz_convert("UTC")
+    log[PROSIMOS_LOG_IDS.end_time] = log[PROSIMOS_LOG_IDS.end_time].dt.tz_convert("UTC")
+    log_path_processed = (
+        entry_point / "fuzzy/csv_logs" / log_path.with_stem(f"{log_path.stem}_processed").with_suffix(".csv").name
+    )
+    log = log[log[PROSIMOS_LOG_IDS.resource] != "Applicant-000001"]  # avoiding the applicant with low workload
+    log.to_csv(log_path_processed, index=False)
+
+    # discover fuzzy calendars
+    result = build_fuzzy_calendars(log_path_processed, bpmn_path, output_path, 15)
+
+    # calculate error
+    numerator = 0
+    denominator = 0
+    for calendar in result["resource_calendars"]:
+        for week_day in calendar["availability_probabilities"]:
+            for interval in week_day["fuzzy_intervals"]:
+                if interval["probability"] < 0.8:
+                    numerator += 1
+                denominator += 1
+    error = numerator / denominator
+
+    # check error
+    assert error <= test_data["error_threshold"], f"Error: {error} > {test_data['error_threshold']}"
+
+    # clean up
+    log_path_processed.unlink()
+    output_dir = entry_point / "fuzzy/out"
+    shutil.rmtree(output_dir)
+
+
+@pytest.mark.parametrize(
+    "test_data",
+    [
+        {
+            "log_path": "fuzzy/csv_logs/fuzzy_calendars_log.csv.gz",
+            "bpmn_path": "fuzzy/bpmn_models/fuzzy_calendars_model.bpmn",
+            "error_threshold": 0.95,
+        },
+        {
+            "log_path": "fuzzy/csv_logs/LoanApp_simplified.csv.gz",
+            "bpmn_path": "fuzzy/bpmn_models/LoanApp_simplified.bpmn",
+            "error_threshold": 0.05,
+        },
+    ],
+    ids=["fuzzy_calendars_log.csv.gz", "LoanApp_simplified.csv.gz"],
+)
+def test_fuzzy_calendar_discovery_from_df(entry_point, test_data):
+    """
+    Checks if the fuzzy discovery technique doesn't discover any fuzziness in the classic log (LoanApp_simplified.csv),
+    and if it discovers fuzziness in the fuzzy log (fuzzy_calendars_log.csv).
+    """
+    log_path = entry_point / test_data["log_path"]
+    bpmn_path = entry_point / test_data["bpmn_path"]
+    log = read_csv_log(log_path, PROSIMOS_LOG_IDS)
+    # avoiding the applicant with low workload
+    log = log[log[PROSIMOS_LOG_IDS.resource] != "Applicant-000001"]
+
+    # discover fuzzy calendars
+    result, _ = discovery_fuzzy_simulation_parameters(
+        log=log,
+        log_ids=PROSIMOS_LOG_IDS,
+        bpmn_path=bpmn_path,
+    )
+
+    # calculate error
+    numerator = 0
+    denominator = 0
+    for calendar in result:
+        for week_day in calendar["availability_probabilities"]:
+            for interval in week_day["fuzzy_intervals"]:
+                if interval["probability"] < 0.8:
+                    numerator += 1
+                denominator += 1
+    error = numerator / denominator
+
+    # check error
+    assert error <= test_data["error_threshold"], f"Error: {error} > {test_data['error_threshold']}"

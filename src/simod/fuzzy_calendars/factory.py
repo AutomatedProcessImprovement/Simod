@@ -1,7 +1,7 @@
 from numpy import percentile
 from pix_framework.statistics.distribution import get_best_fitting_distribution
 
-from simod.fuzzy_calendars.intervals_frequency_calculator import ProcInfo
+from simod.fuzzy_calendars.proccess_info import ProcInfo
 
 
 class IFuzzy:
