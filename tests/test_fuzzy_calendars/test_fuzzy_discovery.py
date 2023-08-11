@@ -195,9 +195,9 @@ def test_fuzzy_calendar_discovery_from_df(entry_point, test_data):
     numerator = 0
     denominator = 0
     for calendar in result:
-        for week_day in calendar["availability_probabilities"]:
-            for interval in week_day["fuzzy_intervals"]:
-                if interval["probability"] < 0.8:
+        for week_day in calendar.intervals:
+            for in_day_interval in week_day.in_day_intervals:
+                if in_day_interval.probability < 0.8:
                     numerator += 1
                 denominator += 1
     error = numerator / denominator
