@@ -71,7 +71,7 @@ def test_fuzzy_calendar_discovery_runs(entry_point, test_data):
     shutil.rmtree(output_dir)
 
 
-def test_event_list_from_csv(entry_point):
+def test_event_list_from_csv_and_df(entry_point):
     log_path = entry_point / "fuzzy/csv_logs/loan_MC_HU.csv"
 
     result_1 = event_list_from_csv(log_path)

@@ -132,17 +132,19 @@ def event_list_from_df(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Trace]:
 
     def compose_event_from_row(row) -> TaskEvent:
         task_event = TaskEvent(
-            p_case=row[log_ids.case], task_id=row[log_ids.activity], resource_id=row[log_ids.resource]
+            p_case=getattr(row, log_ids.case),
+            task_id=getattr(row, log_ids.activity),
+            resource_id=getattr(row, log_ids.resource),
         )
-        task_event.started_at = row[log_ids.start_time]
-        task_event.completed_at = row[log_ids.end_time]
-        if log_ids.enabled_time in log.columns and len(row[log_ids.enabled_time]) > 0:
-            task_event.enabled_at = row[log_ids.enabled_time]
+        task_event.started_at = getattr(row, log_ids.start_time)
+        task_event.completed_at = getattr(row, log_ids.end_time)
+        if log_ids.enabled_time in log.columns and len(getattr(row, log_ids.enabled_time)) > 0:
+            task_event.enabled_at = getattr(row, log_ids.enabled_time)
         return task_event
 
     for case in cases:
         events = log[log[log_ids.case] == case]
-        task_events = [compose_event_from_row(row) for _, row in events.iterrows()]
+        task_events = [compose_event_from_row(row) for row in events.itertuples()]
         trace = traces[case]
         trace.event_list = task_events
 
