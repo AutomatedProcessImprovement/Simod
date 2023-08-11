@@ -12,10 +12,10 @@ from bpdfr_discovery.log_parser import (
 )
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
 from pix_framework.statistics.distribution import DurationDistribution
+from pix_framework.io.event_log import EventLogIDs
 from prosimos.execution_info import TaskEvent, Trace
 from prosimos.simulation_properties_parser import parse_simulation_model
 
-from benchmarking.docker_collect_results import EventLogIDs
 from simod.fuzzy_calendars.factory import FuzzyFactory
 from simod.fuzzy_calendars.proccess_info import Method, ProcInfo
 
@@ -92,14 +92,14 @@ def discovery_fuzzy_simulation_parameters(
     log: pd.DataFrame,
     log_ids: EventLogIDs,
     bpmn_path: Path,
-    i_size_minutes=15,
+    granularity=15,
     angle=0.0,
     min_prob=0.1,
 ) -> tuple[list[FuzzyResourceCalendar], list[ActivityResourceDistribution]]:
     traces = event_list_from_df(log, log_ids)
     bpmn_graph = parse_simulation_model(bpmn_path)
 
-    p_info = ProcInfo(traces, bpmn_graph, i_size_minutes, True, Method.TRAPEZOIDAL, angle=angle)
+    p_info = ProcInfo(traces, bpmn_graph, granularity, True, Method.TRAPEZOIDAL, angle=angle)
     f_factory = FuzzyFactory(p_info)
 
     # discovery
