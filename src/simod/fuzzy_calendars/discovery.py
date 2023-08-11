@@ -1,18 +1,11 @@
-import csv
-import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
-from bpdfr_discovery.log_parser import (
-    discover_arrival_calendar,
-    discover_arrival_time_distribution,
-)
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
-from pix_framework.statistics.distribution import DurationDistribution
 from pix_framework.io.event_log import EventLogIDs
+from pix_framework.statistics.distribution import DurationDistribution
 from prosimos.execution_info import TaskEvent, Trace
 from prosimos.simulation_properties_parser import parse_simulation_model
 
@@ -119,82 +112,6 @@ def discovery_fuzzy_simulation_parameters(
     return resource_calendars_typed, activity_resource_distributions_typed
 
 
-def build_fuzzy_calendars(
-    csv_log_path: Path, bpmn_path: Path, json_path: Optional[Path] = None, i_size_minutes=15, angle=0.0, min_prob=0.1
-):
-    traces = event_list_from_csv(csv_log_path)
-    bpmn_graph = parse_simulation_model(bpmn_path)
-
-    p_info = ProcInfo(traces, bpmn_graph, i_size_minutes, True, Method.TRAPEZOIDAL, angle=angle)
-    f_factory = FuzzyFactory(p_info)
-
-    # 1) Discovering Resource Availability (Fuzzy Calendars)
-    p_info.fuzzy_calendars = f_factory.compute_resource_availability_calendars(min_impact=min_prob)
-
-    # 2) Discovering Resource Performance (resource-task distributions adjusted from the fuzzy calendars)
-    res_task_distr = f_factory.compute_processing_times(p_info.fuzzy_calendars)
-
-    # 3) Discovering Arrival Time Calendar -- Nothing New, just re-using the original Prosimos approach
-    arrival_calend = discover_arrival_calendar(p_info.initial_events, 15, 0.1, 1.0)
-
-    # 4) Discovering Arrival Time Distribution -- Nothing New, just re-using the original Prosimos approach
-    arrival_dist = discover_arrival_time_distribution(p_info.initial_events, arrival_calend)
-
-    # 5) Discovering Gateways Branching Probabilities -- Nothing New, just re-using the original Prosimos approach
-    gateways_branching = bpmn_graph.compute_branching_probability(p_info.flow_arcs_frequency)
-
-    simulation_params = {
-        "resource_profiles": _build_resource_profiles(p_info),
-        "arrival_time_distribution": _distribution_to_json(arrival_dist),
-        "arrival_time_calendar": arrival_calend.to_json(),
-        "gateway_branching_probabilities": _gateway_branching_to_json(gateways_branching),
-        "task_resource_distribution": _processing_times_json(res_task_distr, p_info.task_resources, p_info.bpmn_graph),
-        "resource_calendars": _join_fuzzy_calendar_intervals(p_info.fuzzy_calendars, p_info.i_size),
-        "granule_size": {"value": i_size_minutes, "time_unit": "MINUTES"},
-    }
-
-    if json_path is not None:
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        with json_path.open("w") as f:
-            json.dump(simulation_params, f)
-
-    return simulation_params
-
-
-def event_list_from_csv(log_path) -> list[Trace]:
-    def find_index(csv_row):
-        i_map = dict()
-        for i in range(0, len(csv_row)):
-            i_map[csv_row[i]] = i
-        return i_map
-
-    try:
-        with open(log_path, mode="r") as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=",")
-            trace_list = list()
-            trace_map = dict()
-            i_map = dict()
-            row_count = 0
-            for row in csv_reader:
-                if row_count > 0:
-                    case_id = row[i_map["case_id"]]
-                    event_info = TaskEvent(case_id, row[i_map["activity"]], row[i_map["resource"]])
-                    if "enable_time" in i_map and len(row[i_map["enable_time"]]) > 0:
-                        event_info.enabled_at = pd.to_datetime(row[i_map["enable_time"]])
-                    event_info.started_at = pd.to_datetime(row[i_map["start_time"]])
-                    event_info.completed_at = pd.to_datetime(row[i_map["end_time"]])
-                    if case_id not in trace_map:
-                        trace_map[case_id] = len(trace_list)
-                        trace_list.append(Trace(case_id))
-                    trace_list[trace_map[case_id]].event_list.append(event_info)
-                else:
-                    i_map = find_index(row)
-                row_count += 1
-            return trace_list
-    except IOError:
-        return list()
-
-
 def event_list_from_df(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Trace]:
     """
     Creates a list of Prosimos traces from an event log.
@@ -297,57 +214,3 @@ def _sweep_line_intervals(prob_map, i_size):
 def _interval_index_to_time(i_index, i_size, is_start):
     from_time = datetime.strptime("00:00:00", "%H:%M:%S") + timedelta(minutes=(i_index * i_size))
     return from_time if is_start else from_time + timedelta(minutes=i_size)
-
-
-def _build_resource_profiles(p_info: ProcInfo):
-    resource_profiles = []
-    for t_name in p_info.task_resources:
-        t_id = p_info.bpmn_graph.from_name[t_name]
-        resource_list = []
-        for r_id in p_info.task_resources[t_name]:
-            if r_id not in p_info.fuzzy_calendars:
-                continue
-            resource_list.append(
-                {
-                    "id": r_id,
-                    "name": r_id,
-                    "cost_per_hour": 1,
-                    "amount": 1,
-                    "calendar": "%s_timetable" % r_id,
-                    "assigned_tasks": [p_info.bpmn_graph.from_name[t_n] for t_n in p_info.resource_tasks[r_id]],
-                }
-            )
-        resource_profiles.append({"id": t_id, "name": t_name, "resource_list": resource_list})
-    return resource_profiles
-
-
-def _distribution_to_json(distribution):
-    distribution_params = []
-    for d_param in distribution["distribution_params"]:
-        distribution_params.append({"value": d_param})
-    return {"distribution_name": distribution["distribution_name"], "distribution_params": distribution_params}
-
-
-def _gateway_branching_to_json(gateways_branching):
-    gateways_json = []
-    for g_id in gateways_branching:
-        probabilities = []
-        g_prob = gateways_branching[g_id]
-        for flow_arc in g_prob:
-            probabilities.append({"path_id": flow_arc, "value": g_prob[flow_arc]})
-
-        gateways_json.append({"gateway_id": g_id, "probabilities": probabilities})
-    return gateways_json
-
-
-def _check_probabilities_range(fuzzy_calendars):
-    for r_id in fuzzy_calendars:
-        i_fuzzy = fuzzy_calendars[r_id]
-        for wd in i_fuzzy.res_relative_prob:
-            for p in i_fuzzy.res_relative_prob[wd]:
-                if p < 0 or p > 1:
-                    print("Wrong Relative")
-        for wd in i_fuzzy.res_absolute_prob:
-            for p in i_fuzzy.res_absolute_prob[wd]:
-                if p < 0 or p > 1:
-                    print("Wrong Absolute")

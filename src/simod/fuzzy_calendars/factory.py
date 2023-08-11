@@ -1,4 +1,3 @@
-from numpy import percentile
 from pix_framework.statistics.distribution import get_best_fitting_distribution
 
 from simod.fuzzy_calendars.proccess_info import ProcInfo
@@ -41,11 +40,8 @@ class FuzzyFactory:
                     if freq.r_worked[r_id][wd][i] > 0:
                         r_f.res_absolute_prob[wd][i] = freq.r_worked[r_id][wd][i] / freq.r_expected[r_id][wd][i]
                         r_f.res_relative_prob[wd][i] = freq.r_worked[r_id][wd][i] / freq.max_freq_i[wd][i]
-            # r_f.trim_narrow_probabilities(min_prob_threshold)
             f_calendars[r_id] = r_f
-        # self.calculate_resource_impact(f_calendars)
         return f_calendars
-        # return self.filter_by_resource_impact(f_calendars, min_impact)
 
     def filter_by_resource_impact(self, f_calendars: dict, min_impact: float):
         r_cumul_abs_prob = dict()
@@ -111,28 +107,6 @@ class FuzzyFactory:
                         continue
                     res_task_distribution[r_joint][t_id] = joint_distribution
         return res_task_distribution
-
-    def _filter_outliers(self, k):
-        p_info = self.proc_info
-        filtered_events = dict()
-        for r_id in p_info.r_t_events:
-            filtered_events[r_id] = dict()
-            for t_id in p_info.r_t_events[r_id]:
-                events = p_info.r_t_events[r_id][t_id]
-                data = self._get_event_durations(r_id, t_id)
-                q25, q75 = percentile(data, 25), percentile(data, 75)
-                iqr = q75 - q25
-                # calculate the outlier cutoff
-                cut_off = iqr * k
-                lower, upper = q25 - cut_off, q75 + cut_off
-                # identify outliers
-                # outliers = [x for x in events if self._duration(x) < lower or self._duration(x) > upper]
-                # remove outliers
-                filtered_events[r_id][t_id] = []
-                for ev in events:
-                    ev_duration = self._duration(ev)
-                    filtered_events[r_id][t_id].append(ev)
-        return filtered_events
 
     def _adjust_processing_times(self, filtered_events, fuzzy_calendars):
         p_info = self.proc_info
