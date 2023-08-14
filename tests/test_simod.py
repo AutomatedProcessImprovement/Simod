@@ -68,7 +68,6 @@ def test_simod(test_data, entry_point):
     event_log = EventLog.from_path(
         train_log_path=settings.common.train_log_path,
         log_ids=settings.common.log_ids,
-        process_name=settings.common.train_log_path.stem,
         test_log_path=settings.common.test_log_path,
         preprocessing_settings=settings.preprocessing,
     )
@@ -112,7 +111,6 @@ def test_missing_activities_repaired(entry_point):
     event_log = EventLog.from_path(
         train_log_path=settings.common.train_log_path,
         log_ids=settings.common.log_ids,
-        process_name=settings.common.train_log_path.stem,
         test_log_path=settings.common.test_log_path,
         preprocessing_settings=settings.preprocessing,
     )

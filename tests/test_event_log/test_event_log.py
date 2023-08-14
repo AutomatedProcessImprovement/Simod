@@ -9,7 +9,7 @@ test_cases = [
         "log_ids": APROMORE_LOG_IDS
     },
     {
-        "log_name": "LoanApp_simplified.csv",
+        "log_name": "LoanApp_simplified.csv.gz",
         "log_ids": DEFAULT_XES_IDS,
     },
 ]

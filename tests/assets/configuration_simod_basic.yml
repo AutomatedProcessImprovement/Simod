@@ -1,7 +1,7 @@
 version: 4
 common:
-  train_log_path: tests/assets/LoanApp_simplified.csv
-  test_log_path: tests/assets/LoanApp_simplified.csv
+  train_log_path: tests/assets/LoanApp_simplified.csv.gz
+  test_log_path: tests/assets/LoanApp_simplified.csv.gz
   num_final_evaluations: 1
   discover_case_attributes: true
   evaluation_metrics:
