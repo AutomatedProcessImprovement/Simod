@@ -9,7 +9,7 @@ def test_bpic15(entry_point):
     settings = SimodSettings.from_path(entry_point / "bpic15/bpic15_1_with_model_v4.yml")
 
     event_log = EventLog.from_path(
-        path=settings.common.train_log_path,
+        train_log_path=settings.common.train_log_path,
         log_ids=settings.common.log_ids,
         process_name=settings.common.train_log_path.stem,
         preprocessing_settings=settings.preprocessing,

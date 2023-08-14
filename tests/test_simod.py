@@ -66,10 +66,10 @@ def test_simod(test_data, entry_point):
         settings.common.model_path = (entry_point / Path(settings.common.model_path).name).absolute()
 
     event_log = EventLog.from_path(
-        path=settings.common.train_log_path,
+        train_log_path=settings.common.train_log_path,
         log_ids=settings.common.log_ids,
         process_name=settings.common.train_log_path.stem,
-        test_path=settings.common.test_log_path,
+        test_log_path=settings.common.test_log_path,
         preprocessing_settings=settings.preprocessing,
     )
     optimizer = Simod(settings, event_log=event_log)
@@ -110,10 +110,10 @@ def test_missing_activities_repaired(entry_point):
     settings.common.model_path = bpmn_path
     settings.common.log_ids = DEFAULT_XES_IDS
     event_log = EventLog.from_path(
-        path=settings.common.train_log_path,
+        train_log_path=settings.common.train_log_path,
         log_ids=settings.common.log_ids,
         process_name=settings.common.train_log_path.stem,
-        test_path=settings.common.test_log_path,
+        test_log_path=settings.common.test_log_path,
         preprocessing_settings=settings.preprocessing,
     )
     output_dir = PROJECT_DIR / "outputs" / get_random_folder_id()

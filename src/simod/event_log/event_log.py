@@ -8,6 +8,7 @@ from pix_framework.io.event_log import split_log_training_validation_trace_wise 
 from ..settings.preprocessing_settings import PreprocessingSettings
 from .preprocessor import Preprocessor
 from .utilities import convert_df_to_xes, read
+from ..utilities import get_process_name_from_log_path
 
 
 class EventLog:
@@ -46,18 +47,26 @@ class EventLog:
 
     @staticmethod
     def from_path(
-        path: Path,
+        train_log_path: Path,
         log_ids: EventLogIDs,
-        process_name: Optional[str] = None,
-        test_path: Optional[Path] = None,
         preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
+        process_name: Optional[str] = None,
+        test_log_path: Optional[Path] = None,
         split_ratio: float = 0.8,
     ) -> "EventLog":
         """
         Loads an event log from a file and does the log split for training, validation, and test.
         """
+        # Check event log prerequisites
+        if not train_log_path.name.endswith(".csv") and not train_log_path.name.endswith(".csv.gz"):
+            raise ValueError(f"The specified training log has an unsupported extension ({train_log_path.name}). "
+                             f"Only 'csv' and 'csv.gz' supported.")
+        if test_log_path is not None:
+            if not test_log_path.name.endswith(".csv") and not test_log_path.name.endswith(".csv.gz"):
+                raise ValueError(f"The specified test log has an unsupported extension ({test_log_path.name}). "
+                                 f"Only 'csv' and 'csv.gz' supported.")
         # Read training event log
-        event_log, _ = read(path, log_ids)
+        event_log, _ = read(train_log_path, log_ids)
         # Preprocess training event log
         preprocessor = Preprocessor(event_log, log_ids)
         processed_event_log = preprocessor.run(
@@ -66,13 +75,13 @@ class EventLog:
             concurrency_thresholds=preprocessing_settings.concurrency_thresholds,
         )
         # Split train+validation and test if needed
-        if test_path is None:
+        if test_log_path is None:
             train_validation_df, test_df = split_log(processed_event_log, log_ids, training_percentage=split_ratio)
             train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
         else:
             train_validation_df = processed_event_log
             train_df, validation_df = split_log(processed_event_log, log_ids, training_percentage=split_ratio)
-            test_df, _ = read(test_path, log_ids)
+            test_df, _ = read(test_log_path, log_ids)
         # Return EventLog instance with different partitions
         return EventLog(
             log_train=train_df,
@@ -80,7 +89,7 @@ class EventLog:
             log_train_validation=train_validation_df,
             log_test=test_df,
             log_ids=log_ids,
-            process_name=process_name,
+            process_name=get_process_name_from_log_path(train_log_path) if process_name is None else process_name,
         )
 
     def train_to_xes(self, path: Path):

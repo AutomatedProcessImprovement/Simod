@@ -64,6 +64,16 @@ def parse_single_value_or_interval(value: Union[float, int, List[float]]) -> Uni
         return value[0], value[1]
 
 
+def get_process_name_from_log_path(log_path: Path) -> str:
+    # Get name of the file (last component)
+    name = log_path.name
+    # Remove each of the suffixes, if any
+    for suffix in log_path.suffixes:
+        name = name.removesuffix(suffix)
+    # Return remaining name
+    return name
+
+
 def get_process_model_path(base_dir: Path, process_name: str) -> Path:
     return base_dir / f"{process_name}.bpmn"
 
