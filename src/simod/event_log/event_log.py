@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from pix_framework.io.event_log import DEFAULT_XES_IDS, EventLogIDs
+from pix_framework.io.event_log import DEFAULT_XES_IDS, EventLogIDs, read_csv_log
 from pix_framework.io.event_log import split_log_training_validation_trace_wise as split_log
 
-from ..settings.preprocessing_settings import PreprocessingSettings
 from .preprocessor import Preprocessor
-from .utilities import convert_df_to_xes, read
+from .utilities import convert_df_to_xes
+from ..settings.preprocessing_settings import PreprocessingSettings
 from ..utilities import get_process_name_from_log_path
 
 
@@ -66,7 +66,7 @@ class EventLog:
                 raise ValueError(f"The specified test log has an unsupported extension ({test_log_path.name}). "
                                  f"Only 'csv' and 'csv.gz' supported.")
         # Read training event log
-        event_log, _ = read(train_log_path, log_ids)
+        event_log = read_csv_log(train_log_path, log_ids)
         # Preprocess training event log
         preprocessor = Preprocessor(event_log, log_ids)
         processed_event_log = preprocessor.run(
@@ -81,7 +81,7 @@ class EventLog:
         else:
             train_validation_df = processed_event_log
             train_df, validation_df = split_log(processed_event_log, log_ids, training_percentage=split_ratio)
-            test_df, _ = read(test_log_path, log_ids)
+            test_df = read_csv_log(test_log_path, log_ids)
         # Return EventLog instance with different partitions
         return EventLog(
             log_train=train_df,
