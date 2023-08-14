@@ -68,7 +68,7 @@ def get_process_name_from_log_path(log_path: Path) -> str:
     # Get name of the file (last component)
     name = log_path.name
     # Remove each of the suffixes, if any
-    for suffix in log_path.suffixes:
+    for suffix in reversed(log_path.suffixes):
         name = name.removesuffix(suffix)
     # Return remaining name
     return name
