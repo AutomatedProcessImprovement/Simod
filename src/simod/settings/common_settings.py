@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Union, List, Optional
 
-from pix_framework.io.event_log import EventLogIDs, DEFAULT_CSV_IDS
+from pix_framework.io.event_log import EventLogIDs, DEFAULT_XES_IDS
 
 from ..utilities import get_project_dir
 
@@ -86,7 +86,7 @@ class CommonSettings:
     # Final evaluation parameters
     perform_final_evaluation: bool = False
     num_final_evaluations: int = 10
-    evaluation_metrics: Optional[Union[Metric, List[Metric]]] = None
+    evaluation_metrics: List[Metric] = field(default_factory=list)
     # Common config
     clean_intermediate_files: bool = True
     discover_case_attributes: bool = False
@@ -97,7 +97,7 @@ class CommonSettings:
     def default() -> "CommonSettings":
         return CommonSettings(
             train_log_path=Path("default_path.csv"),
-            log_ids=DEFAULT_CSV_IDS,
+            log_ids=DEFAULT_XES_IDS,
         )
 
     @staticmethod
@@ -110,7 +110,7 @@ class CommonSettings:
         if "log_ids" in config:
             log_ids = EventLogIDs.from_dict(config["log_ids"])
         else:
-            log_ids = DEFAULT_CSV_IDS
+            log_ids = DEFAULT_XES_IDS
         # Test log path
         if "test_log_path" in config:
             test_log_path = Path(config["test_log_path"])
@@ -148,7 +148,7 @@ class CommonSettings:
                 ]
         else:
             num_final_evaluations = 0
-            metrics = None
+            metrics = []
         # Quality check
         if perform_final_evaluation and num_final_evaluations == 0:
             print("Wrong configuration! perform_final_evaluation=True but "
