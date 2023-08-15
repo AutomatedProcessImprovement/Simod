@@ -12,7 +12,7 @@ class Method(Enum):
     UNFIXED_INTERVALS = 2
 
 
-class ProcInfo:
+class Process:
     def __init__(
         self,
         i_size,
@@ -29,29 +29,29 @@ class ProcInfo:
         self.angle = angle
         self.i_size = i_size
         self.max_interval_length = 0
-        self.r_expected = dict()
-        self.r_worked = dict()
+        self.r_expected = {}
+        self.r_worked = {}
         self.max_freq_i = self.init_weekly_intervals_count()
         self.total_intervals = self.init_weekly_intervals_count()
         self.from_date = pytz.utc.localize(datetime.max)
         self.to_date = pytz.utc.localize(datetime.min)
-        self.r_t_events = dict()
-        self.flow_arcs_frequency = dict()
-        self.initial_events = dict()
+        self.r_t_events = {}
+        self.flow_arcs_frequency = {}
+        self.initial_events = {}
         self.task_resources = activity_resources
-        self._update_a_bunch_of_internal_fields()  # position of this function call matters
-        self.allocation_prob = dict()
-        self.res_busy = dict()
+        self._update_a_bunch_of_resource_related_internal_fields()  # position of this function call matters
+        self.allocation_prob = {}
+        self.res_busy = {}
         self.compute_resource_frequencies(with_negative_cases, method)
         self.fuzzy_calendars = None
 
     def init_weekly_intervals_count(self):
-        weekly_interval_freq = dict()
+        weekly_interval_freq = {}
         for i in range(0, 7):
             weekly_interval_freq[i] = [0] * (1440 // self.i_size)
         return weekly_interval_freq
 
-    def _update_a_bunch_of_internal_fields(self):
+    def _update_a_bunch_of_resource_related_internal_fields(self):
         # initialize case start times
         for case_id, case_df in self.log.groupby(self.log_ids.case):
             # initial_events are the starting times of each case
@@ -146,7 +146,7 @@ class ProcInfo:
 
     def get_interval_indexes(self, from_date, to_date):
         c_date = from_date
-        intervals = list()
+        intervals = []
 
         while c_date <= to_date:
             str_date = str(c_date.date())

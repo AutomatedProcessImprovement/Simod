@@ -7,16 +7,16 @@ from pix_framework.discovery.resource_activity_performances import ActivityResou
 from pix_framework.io.event_log import EventLogIDs
 from pix_framework.statistics.distribution import DurationDistribution
 
-from simod.fuzzy_calendars.factory import FuzzyFactory
-from simod.fuzzy_calendars.proccess_info import Method, ProcInfo
+from .factory import FuzzyFactory
+from .proccess import Method, Process
 
 # Type aliases for readability
 ActivityID = str
 ActivityName = str
-ResourceID = str
 ResourceName = str
-ActivityResourceDistributionOrlenys = dict[ResourceID, dict[ActivityName, DurationDistribution]]
+ActivityResourceDistributionOrlenys = dict[ResourceName, dict[ActivityName, DurationDistribution]]
 ActivityResources = dict[ActivityID, set[ResourceName]]
+ActivityNameToIDMapping = dict[ActivityName, ActivityID]
 
 
 class FuzzyTimeInterval:
@@ -88,7 +88,7 @@ class FuzzyResourceCalendar:
 
 
 def _get_activities_resources(
-    log: pd.DataFrame, log_ids: EventLogIDs, activities_ids_by_name: Optional[dict[ActivityName, ActivityID]] = None
+    log: pd.DataFrame, log_ids: EventLogIDs, activities_ids_by_name: Optional[ActivityNameToIDMapping] = None
 ) -> ActivityResources:
     activities_resources = {activity_name: set() for activity_name in log[log_ids.activity].unique()}
     for activity_name in activities_resources:
@@ -109,10 +109,9 @@ def _get_activities_resources(
 def discovery_fuzzy_simulation_parameters(
     log: pd.DataFrame,
     log_ids: EventLogIDs,
-    task_ids_by_name: dict[ActivityName, ActivityID],
+    task_ids_by_name: ActivityNameToIDMapping,
     granularity=15,
     angle=0.0,
-    min_prob=0.1,
 ) -> tuple[list[FuzzyResourceCalendar], list[ActivityResourceDistribution]]:
     """
     Discovers fuzzy simulation parameters from an event log.
@@ -120,53 +119,53 @@ def discovery_fuzzy_simulation_parameters(
     """
     activity_resources = _get_activities_resources(log, log_ids)
 
-    p_info = ProcInfo(granularity, activity_resources, log, log_ids, True, Method.TRAPEZOIDAL, angle=angle)
-    f_factory = FuzzyFactory(p_info)
+    process = Process(granularity, activity_resources, log, log_ids, True, Method.TRAPEZOIDAL, angle=angle)
+    fuzzy_factory = FuzzyFactory(process)
 
     # discovery
-    p_info.fuzzy_calendars = f_factory.compute_resource_availability_calendars(min_impact=min_prob)
-    res_task_distr = f_factory.compute_processing_times(p_info.fuzzy_calendars)
+    process.fuzzy_calendars = fuzzy_factory.compute_resource_availability_calendars()
+    activity_resource_distributions_orlenys = fuzzy_factory.compute_processing_times(process.fuzzy_calendars)
 
     # transform
-    resource_calendars = _join_fuzzy_calendar_intervals(p_info.fuzzy_calendars, p_info.i_size)
-    activity_resource_distributions = _convert_fuzzy_activity_resource_distributions_to_pix(
-        res_task_distr, activity_resources, task_ids_by_name
+    resource_calendars = _join_fuzzy_calendar_intervals(process.fuzzy_calendars, process.i_size)
+    activity_resource_distributions_prosimos = _convert_fuzzy_activity_resource_distributions_to_prosimos(
+        activity_resource_distributions_orlenys, activity_resources, task_ids_by_name
     )
 
     # convert to readable types
     resource_calendars_typed = [FuzzyResourceCalendar.from_prosimos(c) for c in resource_calendars]
-    activity_resource_distributions_typed = [
-        ActivityResourceDistribution.from_dict(d) for d in activity_resource_distributions
+    activity_resource_distributions = [
+        ActivityResourceDistribution.from_dict(d) for d in activity_resource_distributions_prosimos
     ]
 
-    return resource_calendars_typed, activity_resource_distributions_typed
+    return resource_calendars_typed, activity_resource_distributions
 
 
-def _convert_fuzzy_activity_resource_distributions_to_pix(
-    res_task_distr: ActivityResourceDistributionOrlenys,
-    task_resources: ActivityResources,
-    task_ids_by_name: dict[ActivityName, ActivityID],
+def _convert_fuzzy_activity_resource_distributions_to_prosimos(
+    activity_resource_distributions: ActivityResourceDistributionOrlenys,
+    activity_resources: ActivityResources,
+    activities_names_to_ids: ActivityNameToIDMapping,
 ):
     distributions = []
 
-    for t_name in task_resources:
+    for activity_name in activity_resources:
         resources = []
-        for r_id in task_resources[t_name]:
-            if r_id not in res_task_distr:
+        for resource_name in activity_resources[activity_name]:
+            if resource_name not in activity_resource_distributions:
                 continue
 
-            distribution: DurationDistribution = res_task_distr[r_id][t_name]
+            distribution: DurationDistribution = activity_resource_distributions[resource_name][activity_name]
             distribution_prosimos = distribution.to_prosimos_distribution()
 
             resources.append(
                 {
-                    "resource_id": r_id,
+                    "resource_id": resource_name,
                     "distribution_name": distribution_prosimos["distribution_name"],
                     "distribution_params": distribution_prosimos["distribution_params"],
                 }
             )
 
-        distributions.append({"task_id": task_ids_by_name[t_name], "resources": resources})
+        distributions.append({"task_id": activities_names_to_ids[activity_name], "resources": resources})
 
     return distributions
 

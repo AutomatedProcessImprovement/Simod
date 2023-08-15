@@ -1,10 +1,10 @@
 from pix_framework.statistics.distribution import get_best_fitting_distribution
 
-from simod.fuzzy_calendars.proccess_info import ProcInfo
+from simod.fuzzy_calendars.proccess import Process
 
 
 class IFuzzy:
-    def __init__(self, p_info: ProcInfo):
+    def __init__(self, p_info: Process):
         self.res_absolute_prob = p_info.init_weekly_intervals_count()
         self.res_relative_prob = p_info.init_weekly_intervals_count()
         self.impact = 0
@@ -27,10 +27,10 @@ class IFuzzy:
 
 
 class FuzzyFactory:
-    def __init__(self, freq_info: ProcInfo = None):
+    def __init__(self, freq_info: Process = None):
         self.proc_info = freq_info
 
-    def compute_resource_availability_calendars(self, min_impact: float):
+    def compute_resource_availability_calendars(self):
         freq = self.proc_info
         f_calendars = dict()
         for r_id in freq.r_worked:
