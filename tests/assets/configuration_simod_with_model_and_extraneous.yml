@@ -1,10 +1,9 @@
 version: 4
 common:
   train_log_path: tests/assets/LoanApp_simplified.csv.gz
-  test_log_path: tests/assets/LoanApp_simplified.csv.gz
   model_path: tests/assets/LoanApp_simplified.bpmn
-  num_final_evaluations: 1
   discover_case_attributes: true
+  num_final_evaluations: 1
   evaluation_metrics:
     - absolute_hourly_emd
 preprocessing:

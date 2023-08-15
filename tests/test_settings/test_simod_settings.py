@@ -9,6 +9,7 @@ settings = """
 version: 4
 common:
   train_log_path: assets/LoanApp_simplified.csv.gz
+  perform_final_evaluation: true
   num_final_evaluations: 1
   discover_prioritization_rules: true
   evaluation_metrics: 
