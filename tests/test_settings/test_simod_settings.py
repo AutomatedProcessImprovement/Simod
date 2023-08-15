@@ -8,7 +8,7 @@ from simod.settings.simod_settings import SimodSettings
 settings = """
 version: 4
 common:
-  train_log_path: assets/LoanApp_simplified.csv
+  train_log_path: assets/LoanApp_simplified.csv.gz
   num_final_evaluations: 1
   discover_prioritization_rules: true
   evaluation_metrics: 

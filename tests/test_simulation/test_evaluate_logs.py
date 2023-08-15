@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-from pix_framework.io.event_log import EventLogIDs
-from simod.event_log.utilities import read
+from pix_framework.io.event_log import EventLogIDs, read_csv_log
+
 from simod.settings.common_settings import Metric
 from simod.simulation.prosimos import evaluate_logs
 
@@ -32,7 +32,7 @@ def test_evaluate_logs(parallel):
         estimated_start_time="estimated_start_time",
     )
 
-    validation_log, _ = read(assets_dir / "validation_log.csv", log_ids)
+    validation_log = read_csv_log(assets_dir / "validation_log.csv", log_ids)
 
     results = evaluate_logs(
         metrics=metrics,
