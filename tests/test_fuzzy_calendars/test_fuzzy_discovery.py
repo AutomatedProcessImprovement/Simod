@@ -59,19 +59,30 @@ def test_fuzzy_calendar_discovery_from_df(entry_point, test_data):
     numerator = 0
     denominator = 0
     for calendar in result:
-        for week_day in calendar.intervals:
-            for in_day_interval in week_day.in_day_intervals:
-                if in_day_interval.probability < 0.8:
-                    numerator += 1
-                denominator += 1
+        for interval in calendar.intervals:
+            if interval.probability < 0.8:
+                numerator += 1
+            denominator += 1
     error = numerator / denominator
 
     # check error
     assert error <= test_data["error_threshold"], f"Error: {error} > {test_data['error_threshold']}"
 
 
-# TODO: integrate fuzzy discovery into Simod as an option
-# TODO: integrate fuzzy discovery into Simod into optimization pipeline
+# TODO: integrate fuzzy discovery into Simod as an option.
+# TODO: integrate fuzzy discovery into Simod optimization pipeline.
+#     There is one missing thing from the FUZZY format that is not
+#     here: when outputting to JSON parameters, the FUZZY version
+#     generates two extra attributes ('model_type' and 'granule_size'),
+#     discuss if this makes sense there, and how to represent it in
+#     PIX_FRAMEWORK model.
+#     What I would like to do, is keep the BPS model classes from our
+#     framework pure, without details that only make sense in Prosimos,
+#     and then transform to Prosimos format when needed to output JSON.
+#     For example, instead of storing this 'model_type=FUZZY' as part of
+#     the BPS model, we store the BPS model as it is, and when we create
+#     the JSON parameters, we check that the calendars are fuzzy, so we
+#     append this parameter to the output.
 
 
 def _add_enabled_times(log: pd.DataFrame, log_ids: EventLogIDs):
