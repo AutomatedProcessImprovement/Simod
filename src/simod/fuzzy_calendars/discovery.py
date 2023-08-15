@@ -6,7 +6,6 @@ import pandas as pd
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
 from pix_framework.io.event_log import EventLogIDs
 from pix_framework.statistics.distribution import DurationDistribution
-from prosimos.execution_info import TaskEvent, Trace
 
 from simod.fuzzy_calendars.factory import FuzzyFactory
 from simod.fuzzy_calendars.proccess_info import Method, ProcInfo
@@ -119,11 +118,9 @@ def discovery_fuzzy_simulation_parameters(
     Discovers fuzzy simulation parameters from an event log.
     NOTE: Enabled time must be present in the event log.
     """
-    traces = event_list_from_df(log, log_ids)
-
     activity_resources = _get_activities_resources(log, log_ids)
 
-    p_info = ProcInfo(traces, granularity, activity_resources, log, log_ids, True, Method.TRAPEZOIDAL, angle=angle)
+    p_info = ProcInfo(granularity, activity_resources, log, log_ids, True, Method.TRAPEZOIDAL, angle=angle)
     f_factory = FuzzyFactory(p_info)
 
     # discovery
@@ -143,38 +140,6 @@ def discovery_fuzzy_simulation_parameters(
     ]
 
     return resource_calendars_typed, activity_resource_distributions_typed
-
-
-def event_list_from_df(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Trace]:
-    """
-    Creates a list of Prosimos traces from an event log. Enabled time must be present in the log.
-    """
-
-    traces = {}
-    cases = log[log_ids.case].unique()
-    for case in cases:
-        traces[case] = Trace(case)
-
-    def compose_event_from_row(row) -> TaskEvent:
-        task_event = TaskEvent(
-            p_case=getattr(row, log_ids.case),
-            task_id=getattr(row, log_ids.activity),
-            resource_id=getattr(row, log_ids.resource),
-        )
-        task_event.started_at = getattr(row, log_ids.start_time)
-        task_event.completed_at = getattr(row, log_ids.end_time)
-        task_event.enabled_at = getattr(row, log_ids.enabled_time)
-        return task_event
-
-    for case in cases:
-        events = log[log[log_ids.case] == case]
-        task_events = [compose_event_from_row(row) for row in events.itertuples()]
-        trace = traces[case]
-        trace.event_list = task_events
-
-    trace_list = [trace for trace in traces.values() if trace is not None]
-
-    return trace_list
 
 
 def _convert_fuzzy_activity_resource_distributions_to_pix(

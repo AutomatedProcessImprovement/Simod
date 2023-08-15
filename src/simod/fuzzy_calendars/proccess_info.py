@@ -4,7 +4,6 @@ from enum import Enum
 import pandas as pd
 import pytz
 from pix_framework.io.event_log import EventLogIDs
-from prosimos.execution_info import TaskEvent
 
 
 class Method(Enum):
@@ -16,7 +15,6 @@ class Method(Enum):
 class ProcInfo:
     def __init__(
         self,
-        traces,
         i_size,
         activity_resources: dict[str, set[str]],  # {activity_id: set[resource_name]}
         log: pd.DataFrame,
@@ -27,7 +25,6 @@ class ProcInfo:
     ):
         self.log = log
         self.log_ids = log_ids
-        self.traces = traces
         self.method = method
         self.angle = angle
         self.i_size = i_size
@@ -82,38 +79,34 @@ class ProcInfo:
                 )  # fuzzy factory uses this format
                 self.r_t_events[resource_name] = self.r_t_events[resource_name] | {activity_name: activity_events}
 
-        # resource_tasks = {}
-        # for trace in self.traces:
-        #     for ev in trace.event_list:
-        #         if ev.resource_id not in resource_tasks:
-        #             resource_tasks[ev.resource_id] = None  # just register the resource, we don't use values
-        #         if ev.task_id not in self.r_t_events[ev.resource_id]:
-        #             self.r_t_events[ev.resource_id][ev.task_id] = list()
-        #         self.r_t_events[ev.resource_id][ev.task_id].append(ev)
-
     def compute_resource_frequencies(self, with_negative_cases=True, method=Method.TRAPEZOIDAL):
         self._compute_resource_busy_intervals()
-        for trace in self.traces:
-            trace.sort_by_completion_date(True)
-            for ev in trace.event_list:
-                if method == Method.TRAPEZOIDAL:
-                    if with_negative_cases and ev.enabled_at < ev.started_at:
-                        self._trapezoidal_intervals(ev.enabled_at, ev.started_at, ev.resource_id, ev.task_id, False)
-                    self._trapezoidal_intervals(ev.started_at, ev.completed_at, ev.resource_id, ev.task_id, True)
-                elif method == Method.POINT and ev.enabled_at < ev.started_at:
-                    if with_negative_cases:
-                        self._observed_timestamps(ev.enabled_at, ev.started_at, ev.resource_id, ev.task_id, False)
-                    self._observed_timestamps(ev.started_at, ev.completed_at, ev.resource_id, ev.task_id, True)
-                self.update_interval_boundaries(ev)
+
+        for event in self.log.sort_values(by=self.log_ids.end_time).itertuples():
+            enabled_at = getattr(event, self.log_ids.enabled_time)
+            started_at = getattr(event, self.log_ids.start_time)
+            completed_at = getattr(event, self.log_ids.end_time)
+            resource_id = getattr(event, self.log_ids.resource)
+            task_id = getattr(event, self.log_ids.activity)
+
+            if method == Method.TRAPEZOIDAL:
+                if with_negative_cases and enabled_at < started_at:
+                    self._trapezoidal_intervals(enabled_at, started_at, resource_id, task_id, False)
+                self._trapezoidal_intervals(started_at, completed_at, resource_id, task_id, True)
+            elif method == Method.POINT and enabled_at < started_at:
+                if with_negative_cases:
+                    self._observed_timestamps(enabled_at, started_at, resource_id, task_id, False)
+                self._observed_timestamps(started_at, completed_at, resource_id, task_id, True)
+
+            self.update_interval_boundaries(enabled_at, completed_at)
+
         self._count_total_intervals_explored()
 
     def _compute_resource_busy_intervals(self):
-        self.res_busy = dict()
-        for trace in self.traces:
-            for ev in trace.event_list:
-                if ev.resource_id not in self.res_busy:
-                    self.res_busy[ev.resource_id] = dict()
-                self._check_busy_intervals(ev.started_at, ev.completed_at, self.res_busy[ev.resource_id])
+        self.res_busy = {resource_name: {} for resource_name in self.log[self.log_ids.resource].unique()}
+
+        for event in self.log[[self.log_ids.resource, self.log_ids.start_time, self.log_ids.end_time]].itertuples():
+            self._check_busy_intervals(event.start_time, event.end_time, self.res_busy[event.resource])
 
     def _observed_timestamps(self, from_date, to_date, r_id, t_id, is_working):
         if not is_working:
@@ -197,8 +190,8 @@ class ProcInfo:
             dates_map[str_dt] = [False] * (1440 // self.i_size)
         dates_map[str_dt][i] = True
 
-    def update_interval_boundaries(self, evt_inf: TaskEvent):
-        self.expand_interval_boundaries(evt_inf.enabled_at, evt_inf.completed_at)
+    def update_interval_boundaries(self, enabled_at, completed_at):
+        self.expand_interval_boundaries(enabled_at, completed_at)
 
     def expand_interval_boundaries(self, from_date, to_date):
         self.from_date = min(self.from_date, from_date)
