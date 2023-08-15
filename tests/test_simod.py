@@ -1,8 +1,11 @@
+import os
 from pathlib import Path
 
 import pytest
 from pix_framework.filesystem.file_manager import get_random_folder_id
 from pix_framework.io.event_log import DEFAULT_XES_IDS, PROSIMOS_LOG_IDS, read_csv_log
+
+from simod.bpm.graph import get_activities_names_from_bpmn
 from simod.event_log.event_log import EventLog
 from simod.settings.common_settings import PROJECT_DIR
 from simod.settings.simod_settings import SimodSettings
@@ -15,6 +18,7 @@ test_cases = [
         "expect_extraneous": False,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
+        "perform_final_evaluation": True,
     },
     {
         "name": "Simod extraneous",
@@ -22,6 +26,7 @@ test_cases = [
         "expect_extraneous": True,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
+        "perform_final_evaluation": False,
     },
     {
         "name": "Simod with model",
@@ -29,6 +34,7 @@ test_cases = [
         "expect_extraneous": False,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
+        "perform_final_evaluation": True,
     },
     {
         "name": "Simod with model & extraneous",
@@ -36,6 +42,7 @@ test_cases = [
         "expect_extraneous": True,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
+        "perform_final_evaluation": False,
     },
     {
         "name": "Simod with model & prioritization",
@@ -43,6 +50,7 @@ test_cases = [
         "expect_extraneous": False,
         "expect_batching_rules": False,
         "expect_prioritization_rules": True,
+        "perform_final_evaluation": True,
     },
     {
         "name": "Simod with model & batching",
@@ -50,6 +58,7 @@ test_cases = [
         "expect_extraneous": False,
         "expect_batching_rules": True,
         "expect_prioritization_rules": False,
+        "perform_final_evaluation": True,
     },
 ]
 
@@ -70,6 +79,7 @@ def test_simod(test_data, entry_point):
         log_ids=settings.common.log_ids,
         test_log_path=settings.common.test_log_path,
         preprocessing_settings=settings.preprocessing,
+        need_test_partition=settings.common.perform_final_evaluation,
     )
     optimizer = Simod(settings, event_log=event_log)
     optimizer.run()
@@ -94,6 +104,11 @@ def test_simod(test_data, entry_point):
         assert len(optimizer.final_bps_model.prioritization_rules) > 0
     else:
         assert optimizer.final_bps_model.prioritization_rules is None
+    if test_data["perform_final_evaluation"]:
+        assert (optimizer._best_result_dir / "simulation").exists()
+        assert len(os.listdir(optimizer._best_result_dir / "simulation")) > 1
+    else:
+        assert not (optimizer._best_result_dir / "simulation").exists()
 
 
 @pytest.mark.system
@@ -121,12 +136,11 @@ def test_missing_activities_repaired(entry_point):
 
     # Assert not failing
     assert len(simod.final_bps_model.resource_model.activity_resource_distributions) > 0
-    # The removed activity (Approve Loan Offer) is part of the simulated logs
+    # The removed activity (Approve Loan Offer) is part of the simulation model
     activity_name = "Approve loan offer"
     activity_id = "Activity_1y2vzu0"
-    simulated_log_path = output_dir / "best_result/simulation/simulated_log_0.csv"
-    df = read_csv_log(simulated_log_path, PROSIMOS_LOG_IDS)
-    assert activity_name in df[PROSIMOS_LOG_IDS.activity].unique()
+    model_activities = get_activities_names_from_bpmn(simod.final_bps_model.process_model)
+    assert activity_name in model_activities
     # The removed activity is part of the simulation parameters
     # (all the resources can perform it,
     resource_model = simod.final_bps_model.resource_model

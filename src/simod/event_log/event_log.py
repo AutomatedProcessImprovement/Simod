@@ -50,6 +50,7 @@ class EventLog:
         train_log_path: Path,
         log_ids: EventLogIDs,
         preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
+        need_test_partition: Optional[bool] = False,
         process_name: Optional[str] = None,
         test_log_path: Optional[Path] = None,
         split_ratio: float = 0.8,
@@ -74,14 +75,19 @@ class EventLog:
             enable_time_concurrency_threshold=preprocessing_settings.enable_time_concurrency_threshold,
             concurrency_thresholds=preprocessing_settings.concurrency_thresholds,
         )
-        # Split train+validation and test if needed
-        if test_log_path is None:
-            train_validation_df, test_df = split_log(processed_event_log, log_ids, training_percentage=split_ratio)
-            train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
-        else:
+        # Get test if needed, and split train+validation
+        if test_log_path is not None:
+            # Test log provided, the input log is train+validation
             train_validation_df = processed_event_log
-            train_df, validation_df = split_log(processed_event_log, log_ids, training_percentage=split_ratio)
             test_df = read_csv_log(test_log_path, log_ids)
+        elif need_test_partition:
+            # Test log not provided but needed, split input into test and train+validation
+            train_validation_df, test_df = split_log(processed_event_log, log_ids, training_percentage=split_ratio)
+        else:
+            # Test log not provided and not needed, the input log is train+validation
+            train_validation_df = processed_event_log
+            test_df = None
+        train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
         # Return EventLog instance with different partitions
         return EventLog(
             log_train=train_df,
