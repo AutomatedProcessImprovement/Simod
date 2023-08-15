@@ -2,8 +2,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 import pytz
-from bpdfr_discovery.log_comparison_metrics import compute_enabling_processing_times
-from bpdfr_discovery.log_parser import sort_by_completion_times
 from prosimos.execution_info import TaskEvent
 
 
@@ -14,9 +12,9 @@ class Method(Enum):
 
 
 class ProcInfo:
-    def __init__(self, traces, bpmn_graph, i_size, with_negative_cases=True, method=Method.TRAPEZOIDAL, angle=1.0):
+    def __init__(self, traces, i_size, with_negative_cases=True, method=Method.TRAPEZOIDAL, angle=1.0):
         self.traces = traces
-        self.bpmn_graph = bpmn_graph
+        # self.bpmn_graph = bpmn_graph
         self.method = method
         self.angle = angle
         self.i_size = i_size
@@ -48,8 +46,8 @@ class ProcInfo:
         for trace in self.traces:
             case_id = trace.p_case
             self.initial_events[case_id] = datetime(9999, 12, 31, tzinfo=pytz.UTC)
-            task_sequence = sort_by_completion_times(trace)
-            self.bpmn_graph.reply_trace(task_sequence, self.flow_arcs_frequency, True, trace.event_list)
+            # task_sequence = sort_by_completion_times(trace)
+            # self.bpmn_graph.reply_trace(task_sequence, self.flow_arcs_frequency, True, trace.event_list)
             for ev in trace.event_list:
                 self.initial_events[case_id] = min(self.initial_events[case_id], ev.started_at)
                 if ev.resource_id not in resource_tasks:
@@ -68,12 +66,12 @@ class ProcInfo:
         return task_resources, resource_tasks
 
     def compute_resource_frequencies(self, with_negative_cases=True, method=Method.TRAPEZOIDAL):
-        max_waiting, max_processing = dict(), dict()
+        # max_waiting, max_processing = dict(), dict()
         self._compute_resource_busy_intervals()
         for trace in self.traces:
             trace.sort_by_completion_date(True)
-            if self.bpmn_graph is not None:
-                compute_enabling_processing_times(trace, self.bpmn_graph, max_waiting, max_processing)
+            # if self.bpmn_graph is not None:
+            #     compute_enabling_processing_times(trace, self.bpmn_graph, max_waiting, max_processing)
             for ev in trace.event_list:
                 if method == Method.TRAPEZOIDAL:
                     if with_negative_cases and ev.enabled_at < ev.started_at:
@@ -198,3 +196,34 @@ def _update_interval_boundaries(c_date, from_date, to_date):
     if c_date.date() == to_date.date():
         to_minute = to_date.hour * 60 + to_date.minute
     return from_minute, to_minute
+
+
+def compute_enabling_processing_times(trace_info, bpmn_graph, max_waiting, max_processing):
+    flow_arcs_frequency = dict()
+    task_sequence = list()
+    for ev_info in trace_info.event_list:
+        if ev_info.task_id not in max_waiting:
+            max_waiting[ev_info.task_id] = 0
+            max_processing[ev_info.task_id] = 0
+        task_sequence.append(ev_info.task_id)
+
+    _, _, _, enabling_times = bpmn_graph.reply_trace(task_sequence, flow_arcs_frequency, True, trace_info.event_list)
+    for i in range(0, len(enabling_times)):
+        ev_info = trace_info.event_list[i]
+        if ev_info.started_at < enabling_times[i]:
+            fix_enablement_from_incorrect_models(i, enabling_times, trace_info.event_list)
+        ev_info.update_enabling_times(enabling_times[i])
+        max_waiting[ev_info.task_id] = max(max_waiting[ev_info.task_id], ev_info.waiting_time)
+        max_processing[ev_info.task_id] = max(max_processing[ev_info.task_id], ev_info.waiting_time)
+
+
+def fix_enablement_from_incorrect_models(from_i: int, task_enablement: list, trace: list):
+    started_at = trace[from_i].started_at
+    enabled_at = task_enablement[from_i]
+    i = from_i
+    while i > 0:
+        i -= 1
+        if enabled_at == trace[i].completed_at:
+            task_enablement[from_i] = started_at
+            return True
+    return False

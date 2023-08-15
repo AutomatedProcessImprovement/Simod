@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import pandas as pd
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
 from pix_framework.io.event_log import EventLogIDs
 from pix_framework.statistics.distribution import DurationDistribution
 from prosimos.execution_info import TaskEvent, Trace
-from prosimos.simulation_properties_parser import parse_simulation_model
 
 from simod.fuzzy_calendars.factory import FuzzyFactory
 from simod.fuzzy_calendars.proccess_info import Method, ProcInfo
@@ -81,18 +79,30 @@ class FuzzyResourceCalendar:
         )
 
 
+# Type aliases for readability
+ActivityID = str
+ActivityName = str
+ResourceID = str
+ResourceName = str
+ActivityResourceDistributionOrlenys = dict[ResourceID, dict[ActivityName, DurationDistribution]]
+
+
 def discovery_fuzzy_simulation_parameters(
     log: pd.DataFrame,
     log_ids: EventLogIDs,
-    bpmn_path: Path,
+    task_ids_by_name: dict[ActivityName, ActivityID],
     granularity=15,
     angle=0.0,
     min_prob=0.1,
 ) -> tuple[list[FuzzyResourceCalendar], list[ActivityResourceDistribution]]:
+    """
+    Discovers fuzzy simulation parameters from an event log.
+    NOTE: Enabled time must be present in the event log.
+    """
     traces = event_list_from_df(log, log_ids)
-    bpmn_graph = parse_simulation_model(bpmn_path)
+    # bpmn_graph = parse_simulation_model(bpmn_path)
 
-    p_info = ProcInfo(traces, bpmn_graph, granularity, True, Method.TRAPEZOIDAL, angle=angle)
+    p_info = ProcInfo(traces, granularity, True, Method.TRAPEZOIDAL, angle=angle)
     f_factory = FuzzyFactory(p_info)
 
     # discovery
@@ -101,7 +111,11 @@ def discovery_fuzzy_simulation_parameters(
 
     # transform
     resource_calendars = _join_fuzzy_calendar_intervals(p_info.fuzzy_calendars, p_info.i_size)
-    activity_resource_distributions = _processing_times_json(res_task_distr, p_info.task_resources, p_info.bpmn_graph)
+    # TODO: mine activity resources without using "traces"
+    task_resources: dict[ActivityName, set[ResourceName]] = p_info.task_resources
+    activity_resource_distributions = _convert_fuzzy_activity_resource_distributions_to_pix(
+        res_task_distr, task_resources, task_ids_by_name
+    )
 
     # convert to readable types
     resource_calendars_typed = [FuzzyResourceCalendar.from_prosimos(c) for c in resource_calendars]
@@ -114,7 +128,7 @@ def discovery_fuzzy_simulation_parameters(
 
 def event_list_from_df(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Trace]:
     """
-    Creates a list of Prosimos traces from an event log.
+    Creates a list of Prosimos traces from an event log. Enabled time must be present in the log.
     """
 
     traces = {}
@@ -130,8 +144,7 @@ def event_list_from_df(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Trace]:
         )
         task_event.started_at = getattr(row, log_ids.start_time)
         task_event.completed_at = getattr(row, log_ids.end_time)
-        if log_ids.enabled_time in log.columns and len(getattr(row, log_ids.enabled_time)) > 0:
-            task_event.enabled_at = getattr(row, log_ids.enabled_time)
+        task_event.enabled_at = getattr(row, log_ids.enabled_time)
         return task_event
 
     for case in cases:
@@ -145,7 +158,11 @@ def event_list_from_df(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Trace]:
     return trace_list
 
 
-def _processing_times_json(res_task_distr, task_resources, bpmn_graph):
+def _convert_fuzzy_activity_resource_distributions_to_pix(
+    res_task_distr: ActivityResourceDistributionOrlenys,
+    task_resources: dict[ActivityName, set[ResourceName]],
+    task_ids_by_name: dict[ActivityName, ActivityID],
+):
     distributions = []
 
     for t_name in task_resources:
@@ -165,7 +182,7 @@ def _processing_times_json(res_task_distr, task_resources, bpmn_graph):
                 }
             )
 
-        distributions.append({"task_id": bpmn_graph.from_name[t_name], "resources": resources})
+        distributions.append({"task_id": task_ids_by_name[t_name], "resources": resources})
 
     return distributions
 
