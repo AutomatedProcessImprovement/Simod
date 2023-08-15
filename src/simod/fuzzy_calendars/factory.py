@@ -122,7 +122,7 @@ class FuzzyFactory:
                 adjusted_durations[r_id][t_id] = list()
                 cumulative_durations[r_id][t_id] = 0
                 for ev in filtered_events[r_id][t_id]:
-                    intervals = p_info.get_interval_indexes(ev.started_at, ev.completed_at)
+                    intervals = p_info.get_interval_indexes(ev["started_at"], ev["completed_at"])
                     adj_dur = 0
                     n = len(intervals) - 1
                     for j in range(1, n):
@@ -137,10 +137,12 @@ class FuzzyFactory:
                         )
 
                     if n == 0:
-                        adj_dur += (ev.completed_at - ev.started_at).total_seconds()
+                        adj_dur += (ev["completed_at"] - ev["started_at"]).total_seconds()
                     else:
-                        i_0 = (s_size - self._diff_from_start(ev.started_at, intervals[0][2])) - ev.started_at.second
-                        i_n = (self._diff_from_start(ev.completed_at, intervals[n][2])) + ev.completed_at.second
+                        i_0 = (s_size - self._diff_from_start(ev["started_at"], intervals[0][2])) - ev[
+                            "started_at"
+                        ].second
+                        i_n = (self._diff_from_start(ev["completed_at"], intervals[n][2])) + ev["completed_at"].second
 
                         adj_dur += i_0 * self._probability(r_id, fuzzy_calendars, intervals[0])
                         adj_dur += i_n * self._probability(r_id, fuzzy_calendars, intervals[n])

@@ -29,7 +29,10 @@ from simod.fuzzy_calendars.discovery import (
             "error_threshold": 0.05,
         },
     ],
-    ids=["fuzzy_calendars_log.csv.gz", "LoanApp_simplified.csv.gz"],
+    ids=[
+        "fuzzy_calendars_log.csv.gz",
+        "LoanApp_simplified.csv.gz",
+    ],
 )
 def test_fuzzy_calendar_discovery_from_df(entry_point, test_data):
     """

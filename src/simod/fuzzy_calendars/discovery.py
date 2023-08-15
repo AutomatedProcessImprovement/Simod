@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
@@ -9,6 +10,14 @@ from prosimos.execution_info import TaskEvent, Trace
 
 from simod.fuzzy_calendars.factory import FuzzyFactory
 from simod.fuzzy_calendars.proccess_info import Method, ProcInfo
+
+# Type aliases for readability
+ActivityID = str
+ActivityName = str
+ResourceID = str
+ResourceName = str
+ActivityResourceDistributionOrlenys = dict[ResourceID, dict[ActivityName, DurationDistribution]]
+ActivityResources = dict[ActivityID, set[ResourceName]]
 
 
 class FuzzyTimeInterval:
@@ -79,12 +88,23 @@ class FuzzyResourceCalendar:
         )
 
 
-# Type aliases for readability
-ActivityID = str
-ActivityName = str
-ResourceID = str
-ResourceName = str
-ActivityResourceDistributionOrlenys = dict[ResourceID, dict[ActivityName, DurationDistribution]]
+def _get_activities_resources(
+    log: pd.DataFrame, log_ids: EventLogIDs, activities_ids_by_name: Optional[dict[ActivityName, ActivityID]] = None
+) -> ActivityResources:
+    activities_resources = {activity_name: set() for activity_name in log[log_ids.activity].unique()}
+    for activity_name in activities_resources:
+        activities_resources[activity_name] = set(
+            log[log[log_ids.activity] == activity_name][log_ids.resource].unique()
+        )
+
+    # Use the provided mapping to convert activity names to activity IDs if it is provided
+    if activities_ids_by_name is not None:
+        activities_resources = {
+            activities_ids_by_name[activity_name]: resources
+            for activity_name, resources in activities_resources.items()
+        }
+
+    return activities_resources
 
 
 def discovery_fuzzy_simulation_parameters(
@@ -100,9 +120,10 @@ def discovery_fuzzy_simulation_parameters(
     NOTE: Enabled time must be present in the event log.
     """
     traces = event_list_from_df(log, log_ids)
-    # bpmn_graph = parse_simulation_model(bpmn_path)
 
-    p_info = ProcInfo(traces, granularity, True, Method.TRAPEZOIDAL, angle=angle)
+    activity_resources = _get_activities_resources(log, log_ids)
+
+    p_info = ProcInfo(traces, granularity, activity_resources, log, log_ids, True, Method.TRAPEZOIDAL, angle=angle)
     f_factory = FuzzyFactory(p_info)
 
     # discovery
@@ -111,10 +132,8 @@ def discovery_fuzzy_simulation_parameters(
 
     # transform
     resource_calendars = _join_fuzzy_calendar_intervals(p_info.fuzzy_calendars, p_info.i_size)
-    # TODO: mine activity resources without using "traces"
-    task_resources: dict[ActivityName, set[ResourceName]] = p_info.task_resources
     activity_resource_distributions = _convert_fuzzy_activity_resource_distributions_to_pix(
-        res_task_distr, task_resources, task_ids_by_name
+        res_task_distr, activity_resources, task_ids_by_name
     )
 
     # convert to readable types
@@ -160,7 +179,7 @@ def event_list_from_df(log: pd.DataFrame, log_ids: EventLogIDs) -> list[Trace]:
 
 def _convert_fuzzy_activity_resource_distributions_to_pix(
     res_task_distr: ActivityResourceDistributionOrlenys,
-    task_resources: dict[ActivityName, set[ResourceName]],
+    task_resources: ActivityResources,
     task_ids_by_name: dict[ActivityName, ActivityID],
 ):
     distributions = []

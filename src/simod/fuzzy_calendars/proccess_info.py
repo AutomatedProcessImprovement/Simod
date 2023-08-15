@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 from enum import Enum
 
+import pandas as pd
 import pytz
+from pix_framework.io.event_log import EventLogIDs
 from prosimos.execution_info import TaskEvent
 
 
@@ -12,9 +14,20 @@ class Method(Enum):
 
 
 class ProcInfo:
-    def __init__(self, traces, i_size, with_negative_cases=True, method=Method.TRAPEZOIDAL, angle=1.0):
+    def __init__(
+        self,
+        traces,
+        i_size,
+        activity_resources: dict[str, set[str]],  # {activity_id: set[resource_name]}
+        log: pd.DataFrame,
+        log_ids: EventLogIDs,
+        with_negative_cases=True,
+        method=Method.TRAPEZOIDAL,
+        angle=1.0,
+    ):
+        self.log = log
+        self.log_ids = log_ids
         self.traces = traces
-        # self.bpmn_graph = bpmn_graph
         self.method = method
         self.angle = angle
         self.i_size = i_size
@@ -28,7 +41,8 @@ class ProcInfo:
         self.r_t_events = dict()
         self.flow_arcs_frequency = dict()
         self.initial_events = dict()
-        self.task_resources, self.resource_tasks = self.find_task_resource_assoc()
+        self.task_resources = activity_resources
+        self._update_a_bunch_of_internal_fields()  # position of this function call matters
         self.allocation_prob = dict()
         self.res_busy = dict()
         self.compute_resource_frequencies(with_negative_cases, method)
@@ -40,38 +54,47 @@ class ProcInfo:
             weekly_interval_freq[i] = [0] * (1440 // self.i_size)
         return weekly_interval_freq
 
-    def find_task_resource_assoc(self):
-        task_resources = dict()
-        resource_tasks = dict()
-        for trace in self.traces:
-            case_id = trace.p_case
-            self.initial_events[case_id] = datetime(9999, 12, 31, tzinfo=pytz.UTC)
-            # task_sequence = sort_by_completion_times(trace)
-            # self.bpmn_graph.reply_trace(task_sequence, self.flow_arcs_frequency, True, trace.event_list)
-            for ev in trace.event_list:
-                self.initial_events[case_id] = min(self.initial_events[case_id], ev.started_at)
-                if ev.resource_id not in resource_tasks:
-                    resource_tasks[ev.resource_id] = set()
-                    self.r_worked[ev.resource_id] = self.init_weekly_intervals_count()
-                    self.r_expected[ev.resource_id] = self.init_weekly_intervals_count()
-                    self.r_t_events[ev.resource_id] = dict()
-                if ev.task_id not in task_resources:
-                    task_resources[ev.task_id] = set()
-                if ev.task_id not in self.r_t_events[ev.resource_id]:
-                    self.r_t_events[ev.resource_id][ev.task_id] = list()
-                task_resources[ev.task_id].add(ev.resource_id)
-                resource_tasks[ev.resource_id].add(ev.task_id)
-                self.r_t_events[ev.resource_id][ev.task_id].append(ev)
+    def _update_a_bunch_of_internal_fields(self):
+        # initialize case start times
+        for case_id, case_df in self.log.groupby(self.log_ids.case):
+            # initial_events are the starting times of each case
+            self.initial_events[case_id] = min(case_df[self.log_ids.start_time])
 
-        return task_resources, resource_tasks
+        # initialize resource related fields
+        for resource_name in self.log[self.log_ids.resource].unique():
+            self.r_worked[resource_name] = self.init_weekly_intervals_count()
+            self.r_expected[resource_name] = self.init_weekly_intervals_count()
+            self.r_t_events[resource_name] = {}
+            resource_events = self.log[self.log[self.log_ids.resource] == resource_name]
+            resource_activities = resource_events[self.log_ids.activity].unique()
+            for activity_name in resource_activities:
+                activity_events = resource_events[resource_events[self.log_ids.activity] == activity_name]
+                activity_events = (
+                    activity_events[[self.log_ids.start_time, self.log_ids.end_time, self.log_ids.enabled_time]]
+                    .rename(
+                        columns={
+                            self.log_ids.start_time: "started_at",
+                            self.log_ids.end_time: "completed_at",
+                            self.log_ids.enabled_time: "enabled_at",
+                        }
+                    )
+                    .to_dict("records")
+                )  # fuzzy factory uses this format
+                self.r_t_events[resource_name] = self.r_t_events[resource_name] | {activity_name: activity_events}
+
+        # resource_tasks = {}
+        # for trace in self.traces:
+        #     for ev in trace.event_list:
+        #         if ev.resource_id not in resource_tasks:
+        #             resource_tasks[ev.resource_id] = None  # just register the resource, we don't use values
+        #         if ev.task_id not in self.r_t_events[ev.resource_id]:
+        #             self.r_t_events[ev.resource_id][ev.task_id] = list()
+        #         self.r_t_events[ev.resource_id][ev.task_id].append(ev)
 
     def compute_resource_frequencies(self, with_negative_cases=True, method=Method.TRAPEZOIDAL):
-        # max_waiting, max_processing = dict(), dict()
         self._compute_resource_busy_intervals()
         for trace in self.traces:
             trace.sort_by_completion_date(True)
-            # if self.bpmn_graph is not None:
-            #     compute_enabling_processing_times(trace, self.bpmn_graph, max_waiting, max_processing)
             for ev in trace.event_list:
                 if method == Method.TRAPEZOIDAL:
                     if with_negative_cases and ev.enabled_at < ev.started_at:
@@ -196,34 +219,3 @@ def _update_interval_boundaries(c_date, from_date, to_date):
     if c_date.date() == to_date.date():
         to_minute = to_date.hour * 60 + to_date.minute
     return from_minute, to_minute
-
-
-def compute_enabling_processing_times(trace_info, bpmn_graph, max_waiting, max_processing):
-    flow_arcs_frequency = dict()
-    task_sequence = list()
-    for ev_info in trace_info.event_list:
-        if ev_info.task_id not in max_waiting:
-            max_waiting[ev_info.task_id] = 0
-            max_processing[ev_info.task_id] = 0
-        task_sequence.append(ev_info.task_id)
-
-    _, _, _, enabling_times = bpmn_graph.reply_trace(task_sequence, flow_arcs_frequency, True, trace_info.event_list)
-    for i in range(0, len(enabling_times)):
-        ev_info = trace_info.event_list[i]
-        if ev_info.started_at < enabling_times[i]:
-            fix_enablement_from_incorrect_models(i, enabling_times, trace_info.event_list)
-        ev_info.update_enabling_times(enabling_times[i])
-        max_waiting[ev_info.task_id] = max(max_waiting[ev_info.task_id], ev_info.waiting_time)
-        max_processing[ev_info.task_id] = max(max_processing[ev_info.task_id], ev_info.waiting_time)
-
-
-def fix_enablement_from_incorrect_models(from_i: int, task_enablement: list, trace: list):
-    started_at = trace[from_i].started_at
-    enabled_at = task_enablement[from_i]
-    i = from_i
-    while i > 0:
-        i -= 1
-        if enabled_at == trace[i].completed_at:
-            task_enablement[from_i] = started_at
-            return True
-    return False
