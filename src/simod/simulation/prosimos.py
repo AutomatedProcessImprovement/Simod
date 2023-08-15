@@ -11,13 +11,11 @@ from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
 from pix_framework.discovery.resource_profiles import ResourceProfile
-from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs
+from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs, read_csv_log
 from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_message, print_notice, print_warning
 from simod.metrics import compute_metric
-
-from ..event_log.utilities import read
 from ..settings.common_settings import Metric
 
 cpu_count = multiprocessing.cpu_count()
@@ -222,7 +220,7 @@ def evaluate_logs(
 def _read_simulated_log(arguments: Tuple):
     log_path, log_ids, simulation_repetition_index = arguments
 
-    df, _ = read(log_path, log_ids=log_ids)
+    df = read_csv_log(log_path, log_ids=log_ids)
 
     df["role"] = df["resource"]
     df["source"] = "simulation"

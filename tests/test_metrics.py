@@ -5,8 +5,8 @@ from simod.metrics import get_absolute_emd
 test_cases = [
     {
         "name": "LoanApp_simplified",
-        "original_log": {"log_name": "LoanApp_simplified.csv", "log_ids": DEFAULT_XES_IDS},
-        "simulated_log": {"log_name": "LoanApp_simplified_2.csv", "log_ids": DEFAULT_XES_IDS},
+        "original_log": {"log_name": "LoanApp_simplified.csv.gz", "log_ids": DEFAULT_XES_IDS},
+        "simulated_log": {"log_name": "LoanApp_simplified_2.csv.gz", "log_ids": DEFAULT_XES_IDS},
     }
 ]
 
