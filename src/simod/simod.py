@@ -104,6 +104,7 @@ class Simod:
         self._best_bps_model.case_arrival_model = discover_case_arrival_model(
             self._event_log.train_validation_partition,  # No optimization process here, use train + validation
             self._event_log.log_ids,
+            use_observed_arrival_distribution=self._settings.common.use_observed_arrival_distribution,
         )
         self._best_bps_model.resource_model = discover_resource_model(
             self._event_log.train_partition,  # Only train to not discover tasks that won't exist for control-flow opt.
