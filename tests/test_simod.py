@@ -105,10 +105,10 @@ def test_simod(test_data, entry_point):
     else:
         assert optimizer.final_bps_model.prioritization_rules is None
     if test_data["perform_final_evaluation"]:
-        assert (optimizer._best_result_dir / "simulation").exists()
-        assert len(os.listdir(optimizer._best_result_dir / "simulation")) > 1
+        assert (optimizer._best_result_dir / "evaluation").exists()
+        assert len(os.listdir(optimizer._best_result_dir / "evaluation")) > 1
     else:
-        assert not (optimizer._best_result_dir / "simulation").exists()
+        assert not (optimizer._best_result_dir / "evaluation").exists()
 
 
 @pytest.mark.system
