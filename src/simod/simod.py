@@ -11,7 +11,7 @@ from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import (
     get_random_folder_id,
     get_random_file_id,
-    create_folder,
+    create_folder, remove_asset,
 )
 from pix_framework.io.bpm_graph import BPMNGraph
 
@@ -311,6 +311,9 @@ class Simod:
         self._resource_model_optimizer.cleanup()
         if self._settings.extraneous_activity_delays is not None:
             self._extraneous_delays_optimizer.cleanup()
+        if self._settings.common.model_path is None:
+            final_xes_log_path = self._best_result_dir / f"{self._event_log.process_name}_train_val.xes"
+            remove_asset(final_xes_log_path)
 
 
 def _export_canonical_model(
