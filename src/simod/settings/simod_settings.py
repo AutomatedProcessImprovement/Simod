@@ -55,15 +55,32 @@ class SimodSettings:
         if config["version"] == 2:
             config = _parse_legacy_config(config)
 
-        common_settings = CommonSettings.from_dict(config["common"])
-        preprocessing_settings = PreprocessingSettings.from_dict(config["preprocessing"])
-        control_flow_settings = ControlFlowSettings.from_dict(config["control_flow"])
-        resource_model_settings = ResourceModelSettings.from_dict(config["resource_model"])
-        extraneous_activity_delays_settings = ExtraneousDelaysSettings.from_dict(
-            config.get("extraneous_activity_delays")
-        )
+        # Get each of the settings components if present, default otherwise
+        if "common" in config:
+            common_settings = CommonSettings.from_dict(config["common"])
+        else:
+            print_notice("No 'common' settings provided, running Simod with default values.")
+            common_settings = CommonSettings.default()
+        if "preprocessing" in config:
+            preprocessing_settings = PreprocessingSettings.from_dict(config["preprocessing"])
+        else:
+            preprocessing_settings = PreprocessingSettings()
+        if "control_flow" in config:
+            control_flow_settings = ControlFlowSettings.from_dict(config["control_flow"])
+        else:
+            print_notice("No 'control_flow' settings provided, running Simod with default values.")
+            control_flow_settings = ControlFlowSettings()
+        if "resource_model" in config:
+            resource_model_settings = ResourceModelSettings.from_dict(config["resource_model"])
+        else:
+            print_notice("No 'resource_model' settings provided, running Simod with default values.")
+            resource_model_settings = ResourceModelSettings()
+        if "extraneous_activity_delays" in config:
+            extraneous_delays_settings = ExtraneousDelaysSettings.from_dict(config["extraneous_activity_delays"])
+        else:
+            extraneous_delays_settings = None
 
-        # If the model is provided, we don't execute SplitMiner. Then, ignore the mining_algorithm setting
+        # If the model is provided, we don't execute SplitMiner, ignore mining_algorithm settings
         if common_settings.model_path is not None:
             print_notice("Ignoring process model discovery settings (the model is provided)")
             control_flow_settings.mining_algorithm = None
@@ -79,7 +96,7 @@ class SimodSettings:
             preprocessing=preprocessing_settings,
             control_flow=control_flow_settings,
             resource_model=resource_model_settings,
-            extraneous_activity_delays=extraneous_activity_delays_settings,
+            extraneous_activity_delays=extraneous_delays_settings,
         )
 
     @staticmethod
