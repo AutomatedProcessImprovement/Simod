@@ -3,7 +3,7 @@ common:
   train_log_path: tests/assets/LoanApp_simplified.csv.gz
   test_log_path: tests/assets/LoanApp_simplified.csv.gz
   model_path: tests/assets/LoanApp_simplified.bpmn
-  num_final_evaluations: 1
+  num_final_evaluations: 0  # On purpose so it is corrected to 10
   discover_case_attributes: true
   discover_batching_rules: True
   evaluation_metrics:

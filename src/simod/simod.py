@@ -161,7 +161,7 @@ class Simod:
             self._best_bps_model.extraneous_delays = timers
             add_timers_to_bpmn_model(self._best_bps_model.process_model, timers)  # Update BPMN model on disk
 
-        # --- Final evaluation --- #
+        # --- Discover final BPS model --- #
         print_section("Discovering final BPS model")
         self.final_bps_model = BPSModel(  # Bypass all models already discovered with train+validation
             process_model=get_process_model_path(self._best_result_dir, self._event_log.process_name),
@@ -170,9 +170,9 @@ class Simod:
             prioritization_rules=self._best_bps_model.prioritization_rules,
             batching_rules=self._best_bps_model.batching_rules,
         )
-
-        # Discover process model with the best parameters if needed
+        # Process model
         if self._settings.common.model_path is None:
+            # Discover process model with best control-flow parameters
             print_subsection(
                 f"Discovering process model with best control-flow settings: {best_control_flow_params.to_dict()}"
             )
@@ -186,6 +186,7 @@ class Simod:
                 params=best_control_flow_params,
             )
         else:
+            # Copy provided process model to best result folder
             print_subsection("Using provided process model")
             shutil.copy(self._settings.common.model_path, self.final_bps_model.process_model)
         # Gateway probabilities
@@ -211,20 +212,18 @@ class Simod:
                 event_log=self._event_log.train_validation_partition,
                 log_ids=self._event_log.log_ids,
             )
-
         # Extraneous delays
         if self._best_bps_model.extraneous_delays is not None:
             # Add discovered delays and update BPMN model on disk
             self.final_bps_model.extraneous_delays = self._best_bps_model.extraneous_delays
             add_timers_to_bpmn_model(self.final_bps_model.process_model, self._best_bps_model.extraneous_delays)
-        # Output json parameters
         self.final_bps_model.replace_activity_names_with_ids()
         # Write JSON parameters to file
         json_parameters_path = get_simulation_parameters_path(self._best_result_dir, self._event_log.process_name)
         with json_parameters_path.open("w") as f:
             json.dump(self.final_bps_model.to_prosimos_format(), f)
         # Evaluate
-        if self._settings.common.perform_testing:
+        if self._settings.common.perform_final_evaluation:
             print_subsection("Evaluate")
             simulation_dir = self._best_result_dir / "simulation"
             simulation_dir.mkdir(parents=True)
@@ -236,7 +235,6 @@ class Simod:
         _export_canonical_model(canonical_model_path, best_control_flow_params, best_resource_model_params)
         if self._settings.common.clean_intermediate_files:
             self._clean_up()
-
         self._settings.to_yaml(self._best_result_dir)
 
     def _optimize_control_flow(self) -> ControlFlowHyperoptIterationParams:

@@ -20,7 +20,7 @@ def test_optimizer(test_data, entry_point):
     path = (entry_point / test_data["log_name"]).absolute()
     log_ids = test_data["log_ids"]
 
-    event_log = EventLog.from_path(path, log_ids)
+    event_log = EventLog.from_path(path, log_ids, need_test_partition=True)
 
     assert event_log.log_ids == log_ids
     assert event_log.train_partition is not None

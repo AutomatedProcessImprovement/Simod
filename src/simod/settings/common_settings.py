@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Union, List, Optional
@@ -78,82 +78,95 @@ class Metric(str, Enum):
 
 @dataclass
 class CommonSettings:
+    # Log & Model parameters
     train_log_path: Path
-    test_log_path: Optional[Path]
-    log_ids: Optional[EventLogIDs]
-    model_path: Optional[Path]
-    num_final_evaluations: int
-    evaluation_metrics: Union[Metric, List[Metric]]
+    log_ids: EventLogIDs
+    test_log_path: Optional[Path] = None
+    model_path: Optional[Path] = None
+    # Final evaluation parameters
+    perform_final_evaluation: bool = False
+    num_final_evaluations: int = 10
+    evaluation_metrics: List[Metric] = field(default_factory=list)
+    # Common config
     clean_intermediate_files: bool = True
     discover_case_attributes: bool = False
     discover_prioritization_rules: bool = False
     discover_batching_rules: bool = False
-    perform_testing: bool = True  # TODO this parameter would denote if we want to perform the last "Evaluation"
-
-    # stage or not, thus, if it's set to True everything is as it is, if not, we don't split the EventLog into
-    # train+validation+test, just into train+validation, and we skip the final evaluation
 
     @staticmethod
     def default() -> "CommonSettings":
         return CommonSettings(
-            train_log_path=Path("example_log.csv"),
-            test_log_path=None,
+            train_log_path=Path("default_path.csv"),
             log_ids=DEFAULT_XES_IDS,
-            model_path=None,
-            num_final_evaluations=1,
-            evaluation_metrics=[
-                Metric.DL,
-                Metric.TWO_GRAM_DISTANCE,
-                Metric.THREE_GRAM_DISTANCE,
-                Metric.CIRCADIAN_EMD,
-                Metric.ARRIVAL_EMD,
-                Metric.RELATIVE_EMD,
-                Metric.ABSOLUTE_EMD,
-                Metric.CYCLE_TIME_EMD,
-            ],
-            clean_intermediate_files=True,
-            discover_case_attributes=False,
-            discover_prioritization_rules=False,
-            discover_batching_rules=False,
         )
 
     @staticmethod
     def from_dict(config: dict) -> "CommonSettings":
+        # Training log path
         train_log_path = Path(config["train_log_path"])
         if not train_log_path.is_absolute():
             train_log_path = PROJECT_DIR / train_log_path
-
-        test_log_path = config.get("test_log_path", None)
-        if test_log_path is not None:
-            test_log_path = Path(test_log_path)
-            if not test_log_path.is_absolute():
-                test_log_path = PROJECT_DIR / test_log_path
-
-        metrics = [Metric.from_str(metric) for metric in config["evaluation_metrics"]]
-
-        mapping = config.get("log_ids", None)
-        if mapping is not None:
-            log_ids = EventLogIDs.from_dict(mapping)
+        # Log IDs
+        if "log_ids" in config:
+            log_ids = EventLogIDs.from_dict(config["log_ids"])
         else:
             log_ids = DEFAULT_XES_IDS
-
+        # Test log path
+        if "test_log_path" in config:
+            test_log_path = Path(config["test_log_path"])
+            if not test_log_path.is_absolute():
+                test_log_path = PROJECT_DIR / test_log_path
+        else:
+            test_log_path = None
+        # Process model path
+        if "model_path" in config:
+            model_path = Path(config["model_path"])
+            if not model_path.is_absolute():
+                model_path = PROJECT_DIR / model_path
+        else:
+            model_path = None
+        # Flag to perform final evaluation (set to true if there is a test log)
+        if test_log_path is not None:
+            perform_final_evaluation = True
+        else:
+            perform_final_evaluation = config.get("perform_final_evaluation", False)
+        # Number of final evaluations & metrics to evaluate
+        if perform_final_evaluation:
+            num_final_evaluations = config.get("num_final_evaluations", 10)
+            if "evaluation_metrics" in config:
+                metrics = [Metric.from_str(metric) for metric in config["evaluation_metrics"]]
+            else:
+                metrics = [
+                    Metric.DL,
+                    Metric.TWO_GRAM_DISTANCE,
+                    Metric.THREE_GRAM_DISTANCE,
+                    Metric.CIRCADIAN_EMD,
+                    Metric.ARRIVAL_EMD,
+                    Metric.RELATIVE_EMD,
+                    Metric.ABSOLUTE_EMD,
+                    Metric.CYCLE_TIME_EMD,
+                ]
+        else:
+            num_final_evaluations = 0
+            metrics = []
+        # Quality check
+        if perform_final_evaluation and num_final_evaluations == 0:
+            print("Wrong configuration! perform_final_evaluation=True but "
+                  "num_final_evaluations=0. Setting to 10 by default.")
+            num_final_evaluations = 10
+        # Common config
         clean_up = config.get("clean_intermediate_files", True)
         discover_case_attributes = config.get("discover_case_attributes", False)
         discover_prioritization_rules = config.get("discover_prioritization_rules", False)
         discover_batching_rules = config.get("discover_batching_rules", False)
-
-        model_path = config.get("model_path", None)
-        if model_path is not None:
-            model_path = Path(model_path)
-            if not model_path.is_absolute():
-                model_path = PROJECT_DIR / model_path
-
+        # Return common configuration
         return CommonSettings(
             train_log_path=train_log_path,
-            test_log_path=test_log_path,
             log_ids=log_ids,
+            test_log_path=test_log_path,
             model_path=model_path,
-            num_final_evaluations=config["num_final_evaluations"],
+            perform_final_evaluation=perform_final_evaluation,
+            num_final_evaluations=num_final_evaluations,
             evaluation_metrics=metrics,
             clean_intermediate_files=clean_up,
             discover_case_attributes=discover_case_attributes,
