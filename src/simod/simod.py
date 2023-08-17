@@ -11,7 +11,7 @@ from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import (
     get_random_folder_id,
     get_random_file_id,
-    create_folder,
+    create_folder, remove_asset,
 )
 from pix_framework.io.bpm_graph import BPMNGraph
 
@@ -104,6 +104,7 @@ class Simod:
         self._best_bps_model.case_arrival_model = discover_case_arrival_model(
             self._event_log.train_validation_partition,  # No optimization process here, use train + validation
             self._event_log.log_ids,
+            use_observed_arrival_distribution=self._settings.common.use_observed_arrival_distribution,
         )
         self._best_bps_model.resource_model = discover_resource_model(
             self._event_log.train_partition,  # Only train to not discover tasks that won't exist for control-flow opt.
@@ -222,10 +223,11 @@ class Simod:
         json_parameters_path = get_simulation_parameters_path(self._best_result_dir, self._event_log.process_name)
         with json_parameters_path.open("w") as f:
             json.dump(self.final_bps_model.to_prosimos_format(), f)
-        # Evaluate
+
+        # --- Evaluate final BPS model --- #
         if self._settings.common.perform_final_evaluation:
             print_subsection("Evaluate")
-            simulation_dir = self._best_result_dir / "simulation"
+            simulation_dir = self._best_result_dir / "evaluation"
             simulation_dir.mkdir(parents=True)
             self._evaluate_model(self.final_bps_model.process_model, json_parameters_path, simulation_dir)
 
@@ -301,7 +303,7 @@ class Simod:
             metrics=metrics,
         )
 
-        measurements_path = output_dir.parent / get_random_file_id(extension="csv", prefix="evaluation_")
+        measurements_path = output_dir / "evaluation_metrics.csv"
         measurements_df = pd.DataFrame.from_records(measurements)
         measurements_df.to_csv(measurements_path, index=False)
 
@@ -311,6 +313,9 @@ class Simod:
         self._resource_model_optimizer.cleanup()
         if self._settings.extraneous_activity_delays is not None:
             self._extraneous_delays_optimizer.cleanup()
+        if self._settings.common.model_path is None:
+            final_xes_log_path = self._best_result_dir / f"{self._event_log.process_name}_train_val.xes"
+            remove_asset(final_xes_log_path)
 
 
 def _export_canonical_model(

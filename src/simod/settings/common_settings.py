@@ -88,6 +88,7 @@ class CommonSettings:
     num_final_evaluations: int = 10
     evaluation_metrics: List[Metric] = field(default_factory=list)
     # Common config
+    use_observed_arrival_distribution: bool = False
     clean_intermediate_files: bool = True
     discover_case_attributes: bool = False
     discover_prioritization_rules: bool = False
@@ -155,6 +156,7 @@ class CommonSettings:
                   "num_final_evaluations=0. Setting to 10 by default.")
             num_final_evaluations = 10
         # Common config
+        use_observed_arrival_distribution = config.get("use_observed_arrival_distribution", False)
         clean_up = config.get("clean_intermediate_files", True)
         discover_case_attributes = config.get("discover_case_attributes", False)
         discover_prioritization_rules = config.get("discover_prioritization_rules", False)
@@ -168,6 +170,7 @@ class CommonSettings:
             perform_final_evaluation=perform_final_evaluation,
             num_final_evaluations=num_final_evaluations,
             evaluation_metrics=metrics,
+            use_observed_arrival_distribution=use_observed_arrival_distribution,
             clean_intermediate_files=clean_up,
             discover_case_attributes=discover_case_attributes,
             discover_prioritization_rules=discover_prioritization_rules,
@@ -182,6 +185,7 @@ class CommonSettings:
             "model_path": str(self.model_path) if self.model_path is not None else None,
             "num_final_evaluations": self.num_final_evaluations,
             "evaluation_metrics": [str(metric) for metric in self.evaluation_metrics],
+            "use_observed_arrival_distribution": self.use_observed_arrival_distribution,
             "clean_intermediate_files": self.clean_intermediate_files,
             "discover_case_attributes": self.discover_case_attributes,
             "discover_prioritization_rules": self.discover_prioritization_rules,

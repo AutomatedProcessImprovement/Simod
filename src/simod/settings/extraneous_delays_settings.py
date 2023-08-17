@@ -21,10 +21,7 @@ class ExtraneousDelaysSettings:
         )
 
     @staticmethod
-    def from_dict(config: Union[dict, None]) -> Union["ExtraneousDelaysSettings", None]:
-        if config is None:
-            return None
-
+    def from_dict(config: dict) -> "ExtraneousDelaysSettings":
         optimization_metric = ExtraneousDelaysSettings._match_metric(
             config.get("optimization_metric", "relative_event_distribution")
         )
