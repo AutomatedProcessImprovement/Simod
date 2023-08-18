@@ -8,11 +8,7 @@ from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
 from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
 from pix_framework.discovery.resource_model import discover_resource_model
-from pix_framework.filesystem.file_manager import (
-    get_random_folder_id,
-    get_random_file_id,
-    create_folder, remove_asset,
-)
+from pix_framework.filesystem.file_manager import get_random_folder_id, create_folder, remove_asset
 from pix_framework.io.bpm_graph import BPMNGraph
 
 from simod.batching.discovery import discover_batching_rules
@@ -21,9 +17,7 @@ from simod.case_attributes.discovery import discover_case_attributes
 from simod.cli_formatter import print_section, print_subsection
 from simod.control_flow.discovery import discover_process_model
 from simod.control_flow.optimizer import ControlFlowOptimizer
-from simod.control_flow.settings import (
-    HyperoptIterationParams as ControlFlowHyperoptIterationParams,
-)
+from simod.control_flow.settings import HyperoptIterationParams as ControlFlowHyperoptIterationParams
 from simod.event_log.event_log import EventLog
 from simod.extraneous_delays.optimizer import ExtraneousDelaysOptimizer
 from simod.extraneous_delays.types import ExtraneousDelay
@@ -31,9 +25,7 @@ from simod.extraneous_delays.utilities import add_timers_to_bpmn_model
 from simod.prioritization.discovery import discover_prioritization_rules
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.repair import repair_with_missing_activities
-from simod.resource_model.settings import (
-    HyperoptIterationParams as ResourceModelHyperoptIterationParams,
-)
+from simod.resource_model.settings import HyperoptIterationParams as ResourceModelHyperoptIterationParams
 from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.prosimos import simulate_and_evaluate
@@ -119,8 +111,15 @@ class Simod:
                 log_ids=self._event_log.log_ids,
             )
 
+        # --- Control-Flow Optimization --- #
+        print_section("Optimizing control-flow parameters")
+        best_control_flow_params = self._optimize_control_flow()
+        self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
+        self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
+
         # --- Case Attributes --- #
-        if self._settings.common.discover_case_attributes or self._settings.common.discover_prioritization_rules:
+        if (self._settings.common.discover_case_attributes or
+                self._settings.resource_model.discover_prioritization_rules):
             print_section("Discovering case attributes")
             case_attributes = discover_case_attributes(
                 self._event_log.train_validation_partition,  # No optimization process here, use train + validation
@@ -128,32 +127,12 @@ class Simod:
             )
             self._best_bps_model.case_attributes = case_attributes
 
-        # --- Control-Flow Optimization --- #
-        print_section("Optimizing control-flow parameters")
-        best_control_flow_params = self._optimize_control_flow()
-        self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
-        self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
-
-        # --- Prioritization --- #
-        if self._settings.common.discover_prioritization_rules and len(self._best_bps_model.case_attributes) > 0:
-            print_section("Trying to discover prioritization rules")
-            rules = discover_prioritization_rules(
-                self._event_log.train_validation_partition,
-                self._event_log.log_ids,
-                self._best_bps_model.case_attributes,
-            )
-            self._best_bps_model.prioritization_rules = rules
-
-        # --- Batching --- #
-        if self._settings.common.discover_batching_rules:
-            print_section("Trying to discover batching rules")
-            rules = discover_batching_rules(self._event_log.train_validation_partition, self._event_log.log_ids)
-            self._best_bps_model.batching_rules = rules
-
         # --- Resource Model Discovery --- #
         print_section("Optimizing resource model parameters")
         best_resource_model_params = self._optimize_resource_model(model_activities)
         self._best_bps_model.resource_model = self._resource_model_optimizer.best_bps_model.resource_model
+        self._best_bps_model.prioritization_rules = self._resource_model_optimizer.best_bps_model.prioritization_rules
+        self._best_bps_model.batching_rules = self._resource_model_optimizer.best_bps_model.batching_rules
 
         # --- Extraneous Delays Discovery --- #
         if self._settings.extraneous_activity_delays is not None:
@@ -168,8 +147,6 @@ class Simod:
             process_model=get_process_model_path(self._best_result_dir, self._event_log.process_name),
             case_arrival_model=self._best_bps_model.case_arrival_model,
             case_attributes=self._best_bps_model.case_attributes,
-            prioritization_rules=self._best_bps_model.prioritization_rules,
-            batching_rules=self._best_bps_model.batching_rules,
         )
         # Process model
         if self._settings.common.model_path is None:
@@ -212,6 +189,21 @@ class Simod:
                 model_activities=model_activities,
                 event_log=self._event_log.train_validation_partition,
                 log_ids=self._event_log.log_ids,
+            )
+        # Prioritization
+        if best_resource_model_params.discover_prioritization_rules:
+            print_subsection("Discovering prioritization rules")
+            self.final_bps_model.prioritization_rules = discover_prioritization_rules(
+                self._event_log.train_validation_partition,
+                self._event_log.log_ids,
+                self._best_bps_model.case_attributes,
+            )
+        # Batching
+        if best_resource_model_params.discover_batching_rules:
+            print_subsection("Discovering batching rules")
+            self.final_bps_model.batching_rules = discover_batching_rules(
+                self._event_log.train_validation_partition,
+                self._event_log.log_ids
             )
         # Extraneous delays
         if self._best_bps_model.extraneous_delays is not None:
