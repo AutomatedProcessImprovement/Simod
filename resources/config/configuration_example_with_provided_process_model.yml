@@ -14,10 +14,8 @@ common:
     end_time: "end_time"
   # Use this process model and skip its discovery
   model_path: resources/models/LoanApp_simplified.bpmn
-  # Whether to discover case attributes, prioritization rules, or batching rules
+  # Whether to discover case attributes or not
   discover_case_attributes: false
-  discover_prioritization_rules: false
-  discover_batching_rules: false
 #################
 # Preprocessing #
 #################
@@ -48,6 +46,9 @@ resource_model:
   num_iterations: 10
   # Number of times to evaluate each iteration (using the mean of all of them)
   num_evaluations_per_iteration: 3
+  # Whether to discover prioritization or batching behavior
+  discover_prioritization_rules: false
+  discover_batching_rules: false
   # Resource profiles configuration
   resource_profiles:
     # Resource profile discovery type

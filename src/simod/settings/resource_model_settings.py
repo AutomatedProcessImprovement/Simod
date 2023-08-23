@@ -21,13 +21,14 @@ class ResourceModelSettings:
     confidence: Optional[Union[float, Tuple[float, float]]] = (0.5, 0.85)  # from 0 to 1.0
     support: Optional[Union[float, Tuple[float, float]]] = (0.01, 0.3)  # from 0 to 1.0
     participation: Optional[Union[float, Tuple[float, float]]] = 0.4  # from 0 to 1.0
+    discover_prioritization_rules: bool = False
+    discover_batching_rules: bool = False
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
         optimization_metric = Metric.from_str(config.get("optimization_metric", "circadian_emd"))
         num_iterations = config.get("num_iterations", 10)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
-        # TODO: options below are present in common settings, do we need them here?
         discover_prioritization_rules = config.get("discover_prioritization_rules", False)
         discover_batching_rules = config.get("discover_batching_rules", False)
 
@@ -56,6 +57,8 @@ class ResourceModelSettings:
             confidence=confidence,
             support=support,
             participation=participation,
+            discover_prioritization_rules=discover_prioritization_rules,
+            discover_batching_rules=discover_batching_rules,
         )
 
     def to_dict(self) -> dict:
@@ -65,6 +68,8 @@ class ResourceModelSettings:
             "num_iterations": self.num_iterations,
             "num_evaluations_per_iteration": self.num_evaluations_per_iteration,
             "discovery_type": self.discovery_type.value,
+            "discover_prioritization_rules": self.discover_prioritization_rules,
+            "discover_batching_rules": self.discover_batching_rules,
         }
 
         # Parse calendar discovery parameters

@@ -91,8 +91,6 @@ class CommonSettings:
     use_observed_arrival_distribution: bool = False
     clean_intermediate_files: bool = True
     discover_case_attributes: bool = False
-    discover_prioritization_rules: bool = False
-    discover_batching_rules: bool = False
 
     @staticmethod
     def default() -> "CommonSettings":
@@ -159,8 +157,6 @@ class CommonSettings:
         use_observed_arrival_distribution = config.get("use_observed_arrival_distribution", False)
         clean_up = config.get("clean_intermediate_files", True)
         discover_case_attributes = config.get("discover_case_attributes", False)
-        discover_prioritization_rules = config.get("discover_prioritization_rules", False)
-        discover_batching_rules = config.get("discover_batching_rules", False)
         # Return common configuration
         return CommonSettings(
             train_log_path=train_log_path,
@@ -173,8 +169,6 @@ class CommonSettings:
             use_observed_arrival_distribution=use_observed_arrival_distribution,
             clean_intermediate_files=clean_up,
             discover_case_attributes=discover_case_attributes,
-            discover_prioritization_rules=discover_prioritization_rules,
-            discover_batching_rules=discover_batching_rules,
         )
 
     def to_dict(self) -> dict:
@@ -188,6 +182,4 @@ class CommonSettings:
             "use_observed_arrival_distribution": self.use_observed_arrival_distribution,
             "clean_intermediate_files": self.clean_intermediate_files,
             "discover_case_attributes": self.discover_case_attributes,
-            "discover_prioritization_rules": self.discover_prioritization_rules,
-            "discover_batching_rules": self.discover_batching_rules,
         }

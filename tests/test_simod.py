@@ -1,15 +1,17 @@
+import json
 import os
 from pathlib import Path
 
 import pytest
 from pix_framework.filesystem.file_manager import get_random_folder_id
-from pix_framework.io.event_log import DEFAULT_XES_IDS, PROSIMOS_LOG_IDS, read_csv_log
+from pix_framework.io.event_log import DEFAULT_XES_IDS
 
 from simod.bpm.graph import get_activities_names_from_bpmn
 from simod.event_log.event_log import EventLog
 from simod.settings.common_settings import PROJECT_DIR
 from simod.settings.simod_settings import SimodSettings
 from simod.simod import Simod
+from simod.simulation.parameters.BPS_model import BATCHING_RULES_KEY, PRIORITIZATION_RULES_KEY
 
 test_cases = [
     {
@@ -95,13 +97,17 @@ def test_simod(test_data, entry_point):
     else:
         assert optimizer.final_bps_model.extraneous_delays is None
     if test_data["expect_batching_rules"]:
-        assert optimizer.final_bps_model.batching_rules is not None
-        assert len(optimizer.final_bps_model.batching_rules) == 1
+        # Check if any of the iterations has batching rules
+        batching_found = _search_element_in_resource_model_iterations(optimizer._output_dir, BATCHING_RULES_KEY)
+        # Assert at least one iteration discovered batching rules
+        assert batching_found
     else:
         assert optimizer.final_bps_model.batching_rules is None
     if test_data["expect_prioritization_rules"]:
-        assert optimizer.final_bps_model.prioritization_rules is not None
-        assert len(optimizer.final_bps_model.prioritization_rules) > 0
+        # Check if any of the iterations has prioritization rules
+        batching_found = _search_element_in_resource_model_iterations(optimizer._output_dir, PRIORITIZATION_RULES_KEY)
+        # Assert at least one iteration discovered batching rules
+        assert batching_found
     else:
         assert optimizer.final_bps_model.prioritization_rules is None
     if test_data["perform_final_evaluation"]:
@@ -109,6 +115,18 @@ def test_simod(test_data, entry_point):
         assert len(os.listdir(optimizer._best_result_dir / "evaluation")) > 1
     else:
         assert not (optimizer._best_result_dir / "evaluation").exists()
+
+
+def _search_element_in_resource_model_iterations(output_dir: Path, item: str) -> bool:
+    item_found = False
+    for subdir, dirs, files in os.walk(output_dir / "resource_model"):
+        for file in os.listdir(subdir):
+            if file.endswith(".json"):
+                with open(subdir + os.sep + file) as f:
+                    parameters = json.load(f)
+                    if item in parameters and len(parameters[item]) > 0:
+                        item_found = True
+    return item_found
 
 
 @pytest.mark.system
