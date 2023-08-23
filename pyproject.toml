@@ -33,10 +33,10 @@ scipy = "^1.9.2"
 statistics = "^1.0.3.5"
 tqdm = "^4.64.1"
 xmltodict = "^0.13.0"
-prosimos = "^1.2.10"
-extraneous-activity-delays = "^2.1.18"
+prosimos = "^2.0.0"
+extraneous-activity-delays = "^2.1.19"
 openxes-cli-py = "^0.1.15"
-pix-framework = "^0.12.1"
+pix-framework = "^0.13.0"
 log-distance-measures = "^1.0.2"
 
 [tool.poetry.group.dev.dependencies]
