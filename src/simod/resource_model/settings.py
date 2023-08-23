@@ -18,6 +18,8 @@ class HyperoptIterationParams:
 
     optimization_metric: Metric  # Metric to evaluate the candidate of this iteration
     calendar_discovery_params: CalendarDiscoveryParams  # Parameters for the calendar discovery
+    discover_prioritization_rules: bool = False  # Whether to try to add prioritization or not
+    discover_batching_rules: bool = False  # Whether to try to add batching or not
 
     def to_dict(self) -> dict:
         """Returns a dictionary with the parameters for this run."""
@@ -27,6 +29,8 @@ class HyperoptIterationParams:
             "model_path": str(self.model_path),
             "project_name": str(self.project_name),
             "optimization_metric": str(self.optimization_metric),
+            "discover_prioritization_rules": str(self.discover_prioritization_rules),
+            "discover_batching_rules": str(self.discover_batching_rules),
         } | self.calendar_discovery_params.to_dict()
         # Return dict
         return optimization_parameters
@@ -59,6 +63,9 @@ class HyperoptIterationParams:
             confidence = hyperopt_dict["confidence"]
             support = hyperopt_dict["support"]
             participation = hyperopt_dict["participation"]
+        # Prioritization and batching
+        discover_prioritization_rules = hyperopt_dict["discover_prioritization_rules"]
+        discover_batching_rules = hyperopt_dict["discover_batching_rules"]
         # Return parameters instance
         return HyperoptIterationParams(
             output_dir=output_dir,
@@ -72,4 +79,6 @@ class HyperoptIterationParams:
                 support=support,
                 participation=participation,
             ),
+            discover_prioritization_rules=discover_prioritization_rules,
+            discover_batching_rules=discover_batching_rules,
         )

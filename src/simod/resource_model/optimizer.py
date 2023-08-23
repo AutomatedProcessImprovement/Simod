@@ -16,8 +16,10 @@ from pix_framework.filesystem.file_manager import get_random_folder_id, remove_a
 
 from .repair import repair_with_missing_activities
 from .settings import HyperoptIterationParams
+from ..batching.discovery import discover_batching_rules
 from ..cli_formatter import print_subsection, print_step, print_message
 from ..event_log.event_log import EventLog
+from ..prioritization.discovery import discover_prioritization_rules
 from ..settings.resource_model_settings import ResourceModelSettings, CalendarType
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.prosimos import simulate_and_evaluate
@@ -78,6 +80,25 @@ class ResourceModelOptimizer:
             )
         else:
             self._resource_pools = None
+        # Prioritization
+        if self.settings.discover_prioritization_rules and len(self.initial_bps_model.case_attributes) > 0:
+            print_subsection("Discovering prioritization rules")
+            self._prioritization_rules = discover_prioritization_rules(
+                self.event_log.train_partition,
+                self.event_log.log_ids,
+                self.initial_bps_model.case_attributes,
+            )
+        elif self.settings.discover_prioritization_rules:
+            print_subsection("0 case attributes discovered, turning off prioritization discovery.")
+            self._prioritization_rules = []
+        else:
+            self._prioritization_rules = None
+        # Batching
+        if self.settings.discover_batching_rules:
+            print_subsection("Discovering batching rules")
+            self._batching_rules = discover_batching_rules(self.event_log.train_partition, self.event_log.log_ids)
+        else:
+            self._batching_rules = None
 
     def _hyperopt_iteration(self, hyperopt_iteration_dict: dict):
         # Report new iteration
@@ -113,6 +134,14 @@ class ResourceModelOptimizer:
                 event_log=self.event_log.train_validation_partition,
                 log_ids=self.event_log.log_ids,
             )
+
+        # Add prioritization if needed
+        if hyperopt_iteration_params.discover_prioritization_rules:
+            current_bps_model.prioritization_rules = self._prioritization_rules
+
+        # Add batching rules if needed
+        if hyperopt_iteration_params.discover_batching_rules:
+            current_bps_model.batching_rules = self._batching_rules
 
         # Simulate candidate and evaluate its quality
         status, evaluation_measurements = hyperopt_step(
@@ -196,8 +225,7 @@ class ResourceModelOptimizer:
         print_step(f"Removing {self.base_directory}")
         remove_asset(self.base_directory)
 
-    @staticmethod
-    def _define_search_space(settings: ResourceModelSettings):
+    def _define_search_space(self, settings: ResourceModelSettings):
         space = {}
         # If discovery type requires discovery, create space for parameters
         if settings.discovery_type in [
@@ -227,6 +255,16 @@ class ResourceModelOptimizer:
                 )
             else:
                 space["participation"] = settings.participation
+            # prioritization
+            if settings.discover_prioritization_rules and len(self._prioritization_rules) > 0:
+                space["discover_prioritization_rules"] = hp.choice("discover_prioritization_rules", [True, False])
+            else:
+                space["discover_prioritization_rules"] = False
+            # batching
+            if settings.discover_batching_rules and len(self._batching_rules) > 0:
+                space["discover_batching_rules"] = hp.choice("discover_batching_rules", [True, False])
+            else:
+                space["discover_batching_rules"] = False
         # Return space
         return space
 
@@ -239,6 +277,8 @@ class ResourceModelOptimizer:
             "confidence": params.calendar_discovery_params.confidence,
             "support": params.calendar_discovery_params.support,
             "participation": params.calendar_discovery_params.participation,
+            "discover_prioritization_rules": params.discover_prioritization_rules,
+            "discover_batching_rules": params.discover_batching_rules,
             "status": status,
         }
         if status == STATUS_OK:

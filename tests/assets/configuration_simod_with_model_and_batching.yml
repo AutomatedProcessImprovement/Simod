@@ -4,8 +4,8 @@ common:
   test_log_path: tests/assets/LoanApp_simplified.csv.gz
   model_path: tests/assets/LoanApp_simplified.bpmn
   num_final_evaluations: 0  # On purpose so it is corrected to 10
+  clean_intermediate_files: false
   discover_case_attributes: true
-  discover_batching_rules: True
   evaluation_metrics:
     - absolute_hourly_emd
 preprocessing:
@@ -19,8 +19,9 @@ control_flow:
     - equiprobable
 resource_model:
   optimization_metric: absolute_hourly_emd
-  num_iterations: 3
+  num_iterations: 5
   num_evaluations_per_iteration: 3
+  discover_batching_rules: true
   resource_profiles:
     discovery_type: pool
     granularity: 60
