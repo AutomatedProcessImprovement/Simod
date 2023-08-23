@@ -5,6 +5,7 @@ from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
 from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import CalendarType
 from pix_framework.discovery.resource_calendar_and_performance.crisp.resource_calendar import RCalendar
+from pix_framework.discovery.resource_calendar_and_performance.fuzzy.resource_calendar import FuzzyResourceCalendar
 from pix_framework.discovery.resource_calendar_and_performance.resource_activity_performance import (
     ActivityResourceDistribution,
 )
@@ -45,6 +46,18 @@ resource_model_config_intervals = {
     },
 }
 
+resource_model_config_fuzzy = {
+    "optimization_metric": "circadian_emd",
+    "max_evaluations": 5,
+    "resource_profiles": {
+        "discovery_type": "differentiated_fuzzy",
+        "granularity": [15, 60],
+        "confidence": [0.05, 0.4],
+        "support": [0.5, 0.8],
+        "participation": [0.2, 0.6],
+    },
+}
+
 test_cases = [
     {
         "name": "Single values",
@@ -55,6 +68,12 @@ test_cases = [
     {
         "name": "Intervals",
         "settings": resource_model_config_intervals,
+        "event_log": "Resource_model_optimization_test.csv",
+        "process_model": "Resource_model_optimization_test.bpmn",
+    },
+    {
+        "name": "Fuzzy",
+        "settings": resource_model_config_fuzzy,
         "event_log": "Resource_model_optimization_test.csv",
         "process_model": "Resource_model_optimization_test.bpmn",
     },
@@ -134,6 +153,14 @@ def test_resource_model_optimizer(entry_point, test_data):
             <= result.calendar_discovery_params.participation
             <= float(test_data["settings"]["resource_profiles"]["participation"][1])
         )
+    elif test_data["name"] == "Fuzzy":
+        assert result.optimization_metric == Metric.CIRCADIAN_EMD
+        assert result.calendar_discovery_params.discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY
+        assert (
+            float(test_data["settings"]["resource_profiles"]["granularity"][0])
+            <= result.calendar_discovery_params.granularity
+            <= float(test_data["settings"]["resource_profiles"]["granularity"][1])
+        )
     else:
         assert False
     # Assert the discovered resource model contains all the elements
@@ -144,7 +171,9 @@ def test_resource_model_optimizer(entry_point, test_data):
     assert type(optimizer.best_bps_model.resource_model.resource_profiles[0]) == ResourceProfile
     assert optimizer.best_bps_model.resource_model.resource_calendars is not None
     assert len(optimizer.best_bps_model.resource_model.resource_calendars) > 0
-    assert type(optimizer.best_bps_model.resource_model.resource_calendars[0]) == RCalendar
+    assert (type(optimizer.best_bps_model.resource_model.resource_calendars[0]) == RCalendar) or (
+        type(optimizer.best_bps_model.resource_model.resource_calendars[0]) == FuzzyResourceCalendar
+    )
     assert optimizer.best_bps_model.resource_model.activity_resource_distributions is not None
     assert len(optimizer.best_bps_model.resource_model.activity_resource_distributions) > 0
     assert (

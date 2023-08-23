@@ -53,23 +53,29 @@ class HyperoptIterationParams:
         confidence = None
         support = None
         participation = None
-        # If the discovery type implies a discovery, parse parameters
+        fuzzy_angle = 1.0
+
+        def safe_granularity(granularity: int) -> int:
+            if 1440 % granularity != 0:
+                return nearest_divisor_for_granularity(granularity)
+            return granularity
+
         if discovery_type in [
             CalendarType.UNDIFFERENTIATED,
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
             CalendarType.DIFFERENTIATED_BY_POOL,
         ]:
-            if 1440 % hyperopt_dict["granularity"] != 0:
-                granularity = nearest_divisor_for_granularity(hyperopt_dict["granularity"])
-            else:
-                granularity = hyperopt_dict["granularity"]
+            granularity = safe_granularity(hyperopt_dict["granularity"])
             confidence = hyperopt_dict["confidence"]
             support = hyperopt_dict["support"]
             participation = hyperopt_dict["participation"]
-        # Prioritization and batching
-        discover_prioritization_rules = hyperopt_dict["discover_prioritization_rules"]
-        discover_batching_rules = hyperopt_dict["discover_batching_rules"]
-        # Return parameters instance
+        elif discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
+            granularity = safe_granularity(hyperopt_dict["granularity"])
+            fuzzy_angle = hyperopt_dict["fuzzy_angle"]
+
+        discover_prioritization_rules = hyperopt_dict.get("discover_prioritization_rules", False)
+        discover_batching_rules = hyperopt_dict.get("discover_batching_rules", False)
+
         return HyperoptIterationParams(
             output_dir=output_dir,
             model_path=model_path,
@@ -81,6 +87,7 @@ class HyperoptIterationParams:
                 confidence=confidence,
                 support=support,
                 participation=participation,
+                angle=fuzzy_angle,
             ),
             discover_prioritization_rules=discover_prioritization_rules,
             discover_batching_rules=discover_batching_rules,

@@ -23,6 +23,7 @@ class ResourceModelSettings:
     participation: Optional[Union[float, Tuple[float, float]]] = 0.4  # from 0 to 1.0
     discover_prioritization_rules: bool = False
     discover_batching_rules: bool = False
+    fuzzy_angle: float = 1.0
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
@@ -36,6 +37,7 @@ class ResourceModelSettings:
         discovery_type = CalendarType.from_str(resource_profiles.get("discovery_type", "undifferentiated"))
 
         # Calendar discovery parameters
+        granularity, confidence, support, participation = None, None, None, None
         if discovery_type in [
             CalendarType.UNDIFFERENTIATED,
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
@@ -45,8 +47,8 @@ class ResourceModelSettings:
             confidence = parse_single_value_or_interval(resource_profiles.get("confidence", (0.5, 0.85)))
             support = parse_single_value_or_interval(resource_profiles.get("support", (0.01, 0.3)))
             participation = parse_single_value_or_interval(resource_profiles.get("participation", 0.4))
-        else:
-            granularity, confidence, support, participation = None, None, None, None
+        elif discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
+            granularity = parse_single_value_or_interval(resource_profiles.get("granularity", (15, 60)))
 
         return ResourceModelSettings(
             optimization_metric=optimization_metric,

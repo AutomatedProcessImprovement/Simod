@@ -146,7 +146,11 @@ class ResourceModelOptimizer:
 
         # Simulate candidate and evaluate its quality
         status, evaluation_measurements = hyperopt_step(
-            status, self._simulate_bps_model, current_bps_model, hyperopt_iteration_params.output_dir
+            status,
+            self._simulate_bps_model,
+            current_bps_model,
+            hyperopt_iteration_params.output_dir,
+            hyperopt_iteration_params.calendar_discovery_params.granularity,
         )
 
         # Define the response of this iteration
@@ -228,45 +232,55 @@ class ResourceModelOptimizer:
 
     def _define_search_space(self, settings: ResourceModelSettings):
         space = {}
-        # If discovery type requires discovery, create space for parameters
+
+        # If discovery type requires discovery, create search space for parameters
         if settings.discovery_type in [
             CalendarType.UNDIFFERENTIATED,
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
             CalendarType.DIFFERENTIATED_BY_POOL,
         ]:
-            # granularity
             if isinstance(settings.granularity, tuple):
                 space["granularity"] = hp.uniform("granularity", settings.granularity[0], settings.granularity[1])
             else:
                 space["granularity"] = settings.granularity
-            # confidence
+
             if isinstance(settings.confidence, tuple):
                 space["confidence"] = hp.uniform("confidence", settings.confidence[0], settings.confidence[1])
             else:
                 space["confidence"] = settings.confidence
-            # support
+
             if isinstance(settings.support, tuple):
                 space["support"] = hp.uniform("support", settings.support[0], settings.support[1])
             else:
                 space["support"] = settings.support
-            # participation
+
             if isinstance(settings.participation, tuple):
                 space["participation"] = hp.uniform(
                     "participation", settings.participation[0], settings.participation[1]
                 )
             else:
                 space["participation"] = settings.participation
-            # prioritization
+
             if settings.discover_prioritization_rules and len(self._prioritization_rules) > 0:
                 space["discover_prioritization_rules"] = hp.choice("discover_prioritization_rules", [True, False])
             else:
                 space["discover_prioritization_rules"] = False
-            # batching
+
             if settings.discover_batching_rules and len(self._batching_rules) > 0:
                 space["discover_batching_rules"] = hp.choice("discover_batching_rules", [True, False])
             else:
                 space["discover_batching_rules"] = False
-        # Return space
+        elif settings.discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
+            if isinstance(settings.granularity, tuple):
+                space["granularity"] = hp.uniform("granularity", settings.granularity[0], settings.granularity[1])
+            else:
+                space["granularity"] = settings.granularity
+
+            if isinstance(settings.fuzzy_angle, tuple):
+                space["fuzzy_angle"] = hp.uniform("fuzzy_angle", settings.fuzzy_angle[0], settings.fuzzy_angle[1])
+            else:
+                space["fuzzy_angle"] = settings.fuzzy_angle
+
         return space
 
     def _process_measurements(self, params: HyperoptIterationParams, status: str, evaluation_measurements: list):
@@ -320,10 +334,10 @@ class ResourceModelOptimizer:
         # Return updated status and processed response
         return status, response
 
-    def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path) -> List[dict]:
+    def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path, granularity: int) -> List[dict]:
         bps_model.replace_activity_names_with_ids()
 
-        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
+        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name, granule_size=granularity)
 
         evaluation_measures = simulate_and_evaluate(
             model_path=bps_model.process_model,
