@@ -1,5 +1,5 @@
 import pandas as pd
-from pix_framework.discovery.prioritization_discovery.discovery import discover_priority_rules
+from pix_framework.discovery.prioritization.discovery import discover_priority_rules
 from pix_framework.io.event_log import EventLogIDs
 
 from ..case_attributes.types import CaseAttribute

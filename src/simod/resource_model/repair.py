@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
-from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution, ResourceDistribution
+from pix_framework.discovery.resource_calendar_and_performance.resource_activity_performance import (
+    ActivityResourceDistribution,
+    ResourceDistribution,
+)
 from pix_framework.discovery.resource_model import ResourceModel
 from pix_framework.io.event_log import EventLogIDs
 from pix_framework.statistics.distribution import DurationDistribution, get_best_fitting_distribution

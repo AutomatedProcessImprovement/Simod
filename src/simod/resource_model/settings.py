@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams, CalendarType
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import (
+    CalendarDiscoveryParameters,
+    CalendarType,
+)
 
 from simod.settings.common_settings import Metric
 from simod.utilities import nearest_divisor_for_granularity
@@ -17,7 +20,7 @@ class HyperoptIterationParams:
     project_name: str  # Name of the project for file naming
 
     optimization_metric: Metric  # Metric to evaluate the candidate of this iteration
-    calendar_discovery_params: CalendarDiscoveryParams  # Parameters for the calendar discovery
+    calendar_discovery_params: CalendarDiscoveryParameters  # Parameters for the calendar discovery
     discover_prioritization_rules: bool = False  # Whether to try to add prioritization or not
     discover_batching_rules: bool = False  # Whether to try to add batching or not
 
@@ -72,7 +75,7 @@ class HyperoptIterationParams:
             model_path=model_path,
             project_name=project_name,
             optimization_metric=optimization_metric,
-            calendar_discovery_params=CalendarDiscoveryParams(
+            calendar_discovery_params=CalendarDiscoveryParameters(
                 discovery_type=discovery_type,
                 granularity=granularity,
                 confidence=confidence,

@@ -1,11 +1,13 @@
 import pandas as pd
 import pytest
 from hyperopt import STATUS_OK
-from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
-from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
-from pix_framework.discovery.resource_calendars import CalendarType
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import CalendarType
+from pix_framework.discovery.resource_calendar_and_performance.crisp.resource_calendar import RCalendar
+from pix_framework.discovery.resource_calendar_and_performance.resource_activity_performance import (
+    ActivityResourceDistribution,
+)
 from pix_framework.discovery.resource_model import ResourceModel
 from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id

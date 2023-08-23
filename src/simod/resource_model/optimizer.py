@@ -2,28 +2,29 @@ import copy
 import json
 import shutil
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import hyperopt
 import numpy as np
 import pandas as pd
-from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
-from hyperopt import tpe
-from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
+from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, tpe
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import (
+    CalendarDiscoveryParameters,
+)
 from pix_framework.discovery.resource_model import ResourceModel, discover_resource_model
 from pix_framework.discovery.resource_profiles import discover_pool_resource_profiles
-from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
+from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 
-from .repair import repair_with_missing_activities
-from .settings import HyperoptIterationParams
 from ..batching.discovery import discover_batching_rules
-from ..cli_formatter import print_subsection, print_step, print_message
+from ..cli_formatter import print_message, print_step, print_subsection
 from ..event_log.event_log import EventLog
 from ..prioritization.discovery import discover_prioritization_rules
-from ..settings.resource_model_settings import ResourceModelSettings, CalendarType
+from ..settings.resource_model_settings import CalendarType, ResourceModelSettings
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.prosimos import simulate_and_evaluate
-from ..utilities import hyperopt_step, get_simulation_parameters_path, get_process_model_path
+from ..utilities import get_process_model_path, get_simulation_parameters_path, hyperopt_step
+from .repair import repair_with_missing_activities
+from .settings import HyperoptIterationParams
 
 
 class ResourceModelOptimizer:
@@ -212,7 +213,7 @@ class ResourceModelOptimizer:
         # Return settings of the best iteration
         return best_hyperopt_parameters
 
-    def _discover_resource_model(self, params: CalendarDiscoveryParams) -> ResourceModel:
+    def _discover_resource_model(self, params: CalendarDiscoveryParameters) -> ResourceModel:
         print_step(f"Discovering resource model with {params}")
         return discover_resource_model(
             event_log=self.event_log.train_partition,
