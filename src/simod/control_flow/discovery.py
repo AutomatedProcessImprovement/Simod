@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
@@ -8,10 +9,11 @@ from simod.settings.control_flow_settings import (
     ProcessModelDiscoveryAlgorithm,
 )
 from simod.settings.simod_settings import PROJECT_DIR
-from simod.utilities import is_windows, execute_external_command
+from simod.utilities import execute_external_command, is_windows
 
 sm2_path: Path = PROJECT_DIR / "external_tools/splitminer2/sm2.jar"
 sm3_path: Path = PROJECT_DIR / "external_tools/splitminer3/bpmtk.jar"
+split_miner_jar_path: Path = PROJECT_DIR / "external_tools/splitminer-1.5-all.jar"
 
 
 def discover_process_model(log_path: Path, output_model_path: Path, params: HyperoptIterationParams):
@@ -24,10 +26,8 @@ def discover_process_model(log_path: Path, output_model_path: Path, params: Hype
     :param params: configuration class specifying the process model discovery algorithm and its parameters.
     """
     if params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-        # Run Split Miner 2
         discover_process_model_with_split_miner_2(log_path, output_model_path, params.concurrency)
     elif params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
-        # Run Split Miner 3
         discover_process_model_with_split_miner_3(
             log_path,
             output_model_path,
@@ -36,12 +36,108 @@ def discover_process_model(log_path: Path, output_model_path: Path, params: Hype
             params.prioritize_parallelism,
             params.replace_or_joins,
         )
+    elif params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
+        discover_process_model_with_split_miner_v1(
+            SplitMinerV1Settings(
+                log_path,
+                output_model_path,
+                params.eta,
+                params.epsilon,
+                params.prioritize_parallelism,
+                params.replace_or_joins,
+            )
+        )
+    elif params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
+        discover_process_model_with_split_miner_v2(SplitMinerV2Settings(log_path, output_model_path, params.epsilon))
     else:
         raise ValueError(f"Unknown process model discovery algorithm: {params.mining_algorithm}")
-    # Assert that the process model was discovered
+
     assert output_model_path.exists(), f"Error trying to discover the process model in '{output_model_path}'."
 
 
+@dataclass
+class SplitMinerV1Settings:
+    log_path: Path
+    output_model_path: Path
+    eta: float
+    epsilon: float
+    parallelism_first: bool  # Prioritize parallelism over loops
+    replace_or_joins: bool  # Replace non-trivial OR joins
+    remove_loop_activity_markers: bool = False  # False increases model complexity
+
+
+@dataclass
+class SplitMinerV2Settings:
+    """
+    Original author of Split Miner hardcoded eta, parallelism_first, replace_or_joins, and remove_loop_activity_markers
+    values into the algorithm. It might have been done because it gives better results, but it is not clear.
+    We pass only epsilon to Split Miner 2 for now.
+    """
+
+    log_path: Path
+    output_model_path: Path
+    epsilon: float
+
+
+def discover_process_model_with_split_miner_v1(settings: SplitMinerV1Settings):
+    global split_miner_jar_path
+
+    args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
+        split_miner_jar_path, settings.log_path, settings.output_model_path, lib_dir=False, strip_output_suffix=False
+    )
+
+    args += [
+        "-jar",
+        split_miner_path,
+        "--logPath",
+        input_log_path,
+        "--outputPath",
+        model_output_path,
+        "--eta",
+        str(settings.eta),
+        "--epsilon",
+        str(settings.epsilon),
+    ]
+
+    if settings.parallelism_first:
+        args += ["--parallelismFirst"]
+
+    if settings.replace_or_joins:
+        args += ["--replaceIORs"]
+
+    if settings.remove_loop_activity_markers:
+        args += ["--removeLoopActivityMarkers"]
+
+    print_step(f"SplitMiner v1 is running with the following arguments: {args}")
+    execute_external_command(args)
+
+
+def discover_process_model_with_split_miner_v2(settings: SplitMinerV2Settings):
+    global split_miner_jar_path
+
+    assert settings.epsilon is not None, "Epsilon must be provided for Split Miner v2."
+
+    args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
+        split_miner_jar_path, settings.log_path, settings.output_model_path, lib_dir=False, strip_output_suffix=False
+    )
+
+    args += [
+        "-jar",
+        split_miner_path,
+        "--logPath",
+        input_log_path,
+        "--outputPath",
+        model_output_path,
+        "--epsilon",
+        str(settings.epsilon),
+        "--splitminer2",
+    ]
+
+    print_step(f"SplitMiner v2 is running with the following arguments: {args}")
+    execute_external_command(args)
+
+
+# TODO: concurrency is named "epsilon" in Split Miner 2
 def discover_process_model_with_split_miner_2(log_path: Path, output_model_path: Path, concurrency: float):
     """
     Discover, with Split Miner 2, a process model using the (XES) log in [log_path].
@@ -111,19 +207,33 @@ def discover_process_model_with_split_miner_3(
 
 
 def _prepare_split_miner_params(
-    split_miner: Path, log_path: Path, output_model_path: Path
+    split_miner: Path, log_path: Path, output_model_path: Path, lib_dir: bool = True, strip_output_suffix: bool = True
 ) -> Tuple[List[str], str, str, str]:
     if is_windows():
         # Windows: ';' as separator and escape string with '"'
         args = ["java"]
-        split_miner_path = '"' + str(split_miner) + ";" + os.path.join(os.path.dirname(split_miner), "lib", "*") + '"'
+        split_miner_path = '"' + str(split_miner)
+        if lib_dir:
+            split_miner_path += ";" + os.path.join(os.path.dirname(split_miner), "lib", "*") + '"'
         input_log_path = '"' + str(log_path) + '"'
-        model_output_path = '"' + str(output_model_path.with_suffix("")) + '"'
+        if strip_output_suffix:
+            model_output_path = '"' + str(output_model_path.with_suffix("")) + '"'
+        else:
+            if ".bpmn" not in str(output_model_path):
+                model_output_path = str(output_model_path.with_suffix(".bpmn"))
+            model_output_path = '"' + str(output_model_path) + '"'
     else:
         # Linux: ':' as separator and add memory specs
         args = ["java", "-Xmx2G", "-Xms1024M"]
-        split_miner_path = str(split_miner) + ":" + os.path.join(os.path.dirname(split_miner), "lib", "*")
+        split_miner_path = str(split_miner)
+        if lib_dir:
+            split_miner_path += ":" + os.path.join(os.path.dirname(split_miner), "lib", "*")
         input_log_path = str(log_path)
-        model_output_path = str(output_model_path.with_suffix(""))
+        if strip_output_suffix:
+            model_output_path = str(output_model_path.with_suffix(""))
+        else:
+            if ".bpmn" not in str(output_model_path):
+                model_output_path = str(output_model_path.with_suffix(".bpmn"))
+            model_output_path = str(output_model_path)
     # Return params
     return args, split_miner_path, input_log_path, model_output_path

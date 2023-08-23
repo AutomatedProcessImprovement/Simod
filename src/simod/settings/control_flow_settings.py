@@ -11,6 +11,8 @@ from ..utilities import parse_single_value_or_interval
 class ProcessModelDiscoveryAlgorithm(str, Enum):
     SPLIT_MINER_2 = "sm2"
     SPLIT_MINER_3 = "sm3"
+    SPLIT_MINER_V1 = "split_miner_v1"
+    SPLIT_MINER_V2 = "split_miner_v2"
 
     @classmethod
     def from_str(cls, value: str) -> "ProcessModelDiscoveryAlgorithm":
@@ -18,6 +20,10 @@ class ProcessModelDiscoveryAlgorithm(str, Enum):
             return cls.SPLIT_MINER_2
         elif value.lower() in ["sm3", "splitminer3", "split miner 3", "split_miner_3", "split-miner-3"]:
             return cls.SPLIT_MINER_3
+        elif value.lower() in ["split_miner_v1", "split-miner-v1", "splitminer-v1", "split miner v1"]:
+            return cls.SPLIT_MINER_V1
+        elif value.lower() in ["split_miner_v2", "split-miner-v2", "splitminer-v2", "split miner v2"]:
+            return cls.SPLIT_MINER_V2
         else:
             raise ValueError(f"Unknown process model discovery algorithm: {value}")
 
@@ -26,6 +32,10 @@ class ProcessModelDiscoveryAlgorithm(str, Enum):
             return "Split Miner 2"
         elif self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
             return "Split Miner 3"
+        elif self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
+            return "Split Miner v1"
+        elif self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
+            return "Split Miner v2"
         return f"Unknown ProcessModelDiscoveryAlgorithm {str(self)}"
 
 
