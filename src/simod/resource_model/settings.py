@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams, CalendarType
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import (
+    CalendarDiscoveryParameters,
+    CalendarType,
+)
 
 from simod.settings.common_settings import Metric
 from simod.utilities import nearest_divisor_for_granularity
@@ -17,7 +20,7 @@ class HyperoptIterationParams:
     project_name: str  # Name of the project for file naming
 
     optimization_metric: Metric  # Metric to evaluate the candidate of this iteration
-    calendar_discovery_params: CalendarDiscoveryParams  # Parameters for the calendar discovery
+    calendar_discovery_params: CalendarDiscoveryParameters  # Parameters for the calendar discovery
     discover_prioritization_rules: bool = False  # Whether to try to add prioritization or not
     discover_batching_rules: bool = False  # Whether to try to add batching or not
 
@@ -50,34 +53,41 @@ class HyperoptIterationParams:
         confidence = None
         support = None
         participation = None
-        # If the discovery type implies a discovery, parse parameters
+        fuzzy_angle = 1.0
+
+        def safe_granularity(granularity: int) -> int:
+            if 1440 % granularity != 0:
+                return nearest_divisor_for_granularity(granularity)
+            return granularity
+
         if discovery_type in [
             CalendarType.UNDIFFERENTIATED,
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
             CalendarType.DIFFERENTIATED_BY_POOL,
         ]:
-            if 1440 % hyperopt_dict["granularity"] != 0:
-                granularity = nearest_divisor_for_granularity(hyperopt_dict["granularity"])
-            else:
-                granularity = hyperopt_dict["granularity"]
+            granularity = safe_granularity(hyperopt_dict["granularity"])
             confidence = hyperopt_dict["confidence"]
             support = hyperopt_dict["support"]
             participation = hyperopt_dict["participation"]
-        # Prioritization and batching
-        discover_prioritization_rules = hyperopt_dict["discover_prioritization_rules"]
-        discover_batching_rules = hyperopt_dict["discover_batching_rules"]
-        # Return parameters instance
+        elif discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
+            granularity = safe_granularity(hyperopt_dict["granularity"])
+            fuzzy_angle = hyperopt_dict["fuzzy_angle"]
+
+        discover_prioritization_rules = hyperopt_dict.get("discover_prioritization_rules", False)
+        discover_batching_rules = hyperopt_dict.get("discover_batching_rules", False)
+
         return HyperoptIterationParams(
             output_dir=output_dir,
             model_path=model_path,
             project_name=project_name,
             optimization_metric=optimization_metric,
-            calendar_discovery_params=CalendarDiscoveryParams(
+            calendar_discovery_params=CalendarDiscoveryParameters(
                 discovery_type=discovery_type,
                 granularity=granularity,
                 confidence=confidence,
                 support=support,
                 participation=participation,
+                fuzzy_angle=fuzzy_angle,
             ),
             discover_prioritization_rules=discover_prioritization_rules,
             discover_batching_rules=discover_batching_rules,

@@ -4,11 +4,11 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "simod"
-version = "3.5.33"
+version = "3.6.0"
 authors = [
     "David Chapela <david.chapela@ut.ee>",
     "Ihar Suvorau <ihar.suvorau@gmail.com>",
-    "Manuel Camargo <manuel.camargo@ut.ee>"
+    "Manuel Camargo <manuel.camargo@ut.ee>",
 ]
 description = "Simod is a Python tool for automated discovery of business process simulation models from event logs."
 
@@ -33,10 +33,10 @@ scipy = "^1.9.2"
 statistics = "^1.0.3.5"
 tqdm = "^4.64.1"
 xmltodict = "^0.13.0"
-prosimos = "^1.2.9"
-extraneous-activity-delays = "^2.1.17"
+prosimos = "^2.0.1"
+extraneous-activity-delays = "^2.1.19"
 openxes-cli-py = "^0.1.15"
-pix-framework = "^0.11.5"
+pix-framework = "^0.13.4"
 log-distance-measures = "^1.0.2"
 
 [tool.poetry.group.dev.dependencies]
@@ -47,6 +47,7 @@ pylint = "^2.17.4"
 setuptools = "^67.8.0"
 seaborn = "^0.12.2"
 pytest-benchmark = "^4.0.0"
+snakeviz = "^2.2.0"
 
 [tool.poetry.scripts]
 simod = "simod.cli:main"
@@ -58,4 +59,4 @@ line-length = 120
 line-length = 120
 
 [tool.pytest.ini_options]
-markers = ["integration", "system", "manual", "benchmark"]
+markers = ["integration", "system", "manual", "benchmark", "smoke"]

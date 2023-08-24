@@ -1,14 +1,16 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 import pandas as pd
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import compute_gateway_probabilities
-from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import (
+    CalendarDiscoveryParameters,
+)
 from pix_framework.discovery.resource_model import discover_resource_model
-from pix_framework.filesystem.file_manager import get_random_folder_id, create_folder, remove_asset
+from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 from pix_framework.io.bpm_graph import BPMNGraph
 
 from simod.batching.discovery import discover_batching_rules
@@ -26,7 +28,7 @@ from simod.prioritization.discovery import discover_prioritization_rules
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.repair import repair_with_missing_activities
 from simod.resource_model.settings import HyperoptIterationParams as ResourceModelHyperoptIterationParams
-from simod.settings.simod_settings import SimodSettings, PROJECT_DIR
+from simod.settings.simod_settings import PROJECT_DIR, SimodSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
@@ -101,7 +103,7 @@ class Simod:
         self._best_bps_model.resource_model = discover_resource_model(
             self._event_log.train_partition,  # Only train to not discover tasks that won't exist for control-flow opt.
             self._event_log.log_ids,
-            CalendarDiscoveryParams(),
+            CalendarDiscoveryParameters(),
         )
         if model_activities is not None:
             repair_with_missing_activities(
@@ -118,8 +120,10 @@ class Simod:
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
 
         # --- Case Attributes --- #
-        if (self._settings.common.discover_case_attributes or
-                self._settings.resource_model.discover_prioritization_rules):
+        if (
+            self._settings.common.discover_case_attributes
+            or self._settings.resource_model.discover_prioritization_rules
+        ):
             print_section("Discovering case attributes")
             case_attributes = discover_case_attributes(
                 self._event_log.train_validation_partition,  # No optimization process here, use train + validation
@@ -202,8 +206,7 @@ class Simod:
         if best_resource_model_params.discover_batching_rules:
             print_subsection("Discovering batching rules")
             self.final_bps_model.batching_rules = discover_batching_rules(
-                self._event_log.train_validation_partition,
-                self._event_log.log_ids
+                self._event_log.train_validation_partition, self._event_log.log_ids
             )
         # Extraneous delays
         if self._best_bps_model.extraneous_delays is not None:

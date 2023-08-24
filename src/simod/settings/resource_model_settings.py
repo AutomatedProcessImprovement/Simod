@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
-from pix_framework.discovery.resource_calendars import CalendarType
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import CalendarType
 
 from simod.settings.common_settings import Metric
 from simod.utilities import parse_single_value_or_interval
@@ -23,6 +23,7 @@ class ResourceModelSettings:
     participation: Optional[Union[float, Tuple[float, float]]] = 0.4  # from 0 to 1.0
     discover_prioritization_rules: bool = False
     discover_batching_rules: bool = False
+    fuzzy_angle: float = 1.0
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
@@ -36,6 +37,7 @@ class ResourceModelSettings:
         discovery_type = CalendarType.from_str(resource_profiles.get("discovery_type", "undifferentiated"))
 
         # Calendar discovery parameters
+        granularity, confidence, support, participation, fuzzy_angle = None, None, None, None, None
         if discovery_type in [
             CalendarType.UNDIFFERENTIATED,
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
@@ -45,8 +47,9 @@ class ResourceModelSettings:
             confidence = parse_single_value_or_interval(resource_profiles.get("confidence", (0.5, 0.85)))
             support = parse_single_value_or_interval(resource_profiles.get("support", (0.01, 0.3)))
             participation = parse_single_value_or_interval(resource_profiles.get("participation", 0.4))
-        else:
-            granularity, confidence, support, participation = None, None, None, None
+        elif discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
+            granularity = parse_single_value_or_interval(resource_profiles.get("granularity", (15, 60)))
+            fuzzy_angle = parse_single_value_or_interval(resource_profiles.get("fuzzy_angle", (0.1, 1.0)))
 
         return ResourceModelSettings(
             optimization_metric=optimization_metric,
@@ -57,6 +60,7 @@ class ResourceModelSettings:
             confidence=confidence,
             support=support,
             participation=participation,
+            fuzzy_angle=fuzzy_angle,
             discover_prioritization_rules=discover_prioritization_rules,
             discover_batching_rules=discover_batching_rules,
         )
@@ -82,5 +86,8 @@ class ResourceModelSettings:
             dictionary["confidence"] = self.confidence
             dictionary["support"] = self.support
             dictionary["participation"] = self.participation
+        elif self.discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
+            dictionary["granularity"] = self.granularity
+            dictionary["fuzzy_angle"] = self.fuzzy_angle
 
         return dictionary

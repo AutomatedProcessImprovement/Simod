@@ -2,10 +2,11 @@ import copy
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 from pix_framework.discovery.case_arrival import CaseArrivalModel
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
+from pix_framework.discovery.resource_calendar_and_performance.fuzzy.resource_calendar import FuzzyResourceCalendar
 from pix_framework.discovery.resource_model import ResourceModel
 
 from simod.batching.types import BatchingRule
@@ -44,10 +45,10 @@ class BPSModel:
     prioritization_rules: Optional[List[PrioritizationRule]] = None
     batching_rules: Optional[List[BatchingRule]] = None
 
-    def to_prosimos_format(self) -> dict:
+    def to_prosimos_format(self, granule_size: int = 15) -> dict:
         # Get map activity label -> node ID
         activity_label_to_id = get_activities_ids_by_name_from_bpmn(self.process_model)
-        # Add elements to dictionary translating those needed
+
         attributes = {}
         if self.process_model is not None:
             attributes[PROCESS_MODEL_KEY] = str(self.process_model)
@@ -73,7 +74,12 @@ class BPSModel:
             attributes[BATCHING_RULES_KEY] = [
                 batching_rule.to_prosimos(activity_label_to_id) for batching_rule in self.batching_rules
             ]
-        # Return dictionary in Prosimos format
+        if isinstance(self.resource_model.resource_calendars[0], FuzzyResourceCalendar):
+            attributes["model_type"] = "FUZZY"
+        else:
+            attributes["model_type"] = "CRISP"
+        attributes["granule_size"] = {"value": granule_size, "time_unit": "MINUTES"}
+
         return attributes
 
     def deep_copy(self) -> "BPSModel":
@@ -101,10 +107,10 @@ class BPSModel:
                     activity_resource_distributions.activity_id
                 ]
 
-    def to_json(self, output_dir: Path, process_name: str) -> Path:
+    def to_json(self, output_dir: Path, process_name: str, granule_size: int = 15) -> Path:
         json_parameters_path = get_simulation_parameters_path(output_dir, process_name)
 
         with json_parameters_path.open("w") as f:
-            json.dump(self.to_prosimos_format(), f)
+            json.dump(self.to_prosimos_format(granule_size=granule_size), f)
 
         return json_parameters_path

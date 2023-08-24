@@ -1,29 +1,28 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Tuple, Optional, List
+from typing import List, Optional, Tuple
 
 import hyperopt
 import numpy as np
 import pandas as pd
-from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
-from hyperopt import tpe
+from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, tpe
 from pix_framework.discovery.gateway_probabilities import (
-    compute_gateway_probabilities,
-    GatewayProbabilitiesDiscoveryMethod,
     GatewayProbabilities,
+    GatewayProbabilitiesDiscoveryMethod,
+    compute_gateway_probabilities,
 )
-from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
+from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 from pix_framework.io.bpm_graph import BPMNGraph
 
-from .discovery import discover_process_model
-from .settings import HyperoptIterationParams
-from ..cli_formatter import print_message, print_subsection, print_step
+from ..cli_formatter import print_message, print_step, print_subsection
 from ..event_log.event_log import EventLog
-from ..settings.control_flow_settings import ProcessModelDiscoveryAlgorithm, ControlFlowSettings
+from ..settings.control_flow_settings import ControlFlowSettings, ProcessModelDiscoveryAlgorithm
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.prosimos import simulate_and_evaluate
-from ..utilities import hyperopt_step, get_simulation_parameters_path, get_process_model_path
+from ..utilities import get_process_model_path, get_simulation_parameters_path, hyperopt_step
+from .discovery import discover_process_model
+from .settings import HyperoptIterationParams
 
 
 class ControlFlowOptimizer:

@@ -1,7 +1,5 @@
 import pandas as pd
-from pix_framework.discovery.batch_processing_discovery.batch_characteristics import (
-    discover_batch_processing_and_characteristics,
-)
+from pix_framework.discovery.batch_processing.batch_characteristics import discover_batch_processing_and_characteristics
 from pix_framework.io.event_log import EventLogIDs
 
 from simod.batching.types import BatchingRule
