@@ -141,7 +141,7 @@ class Simod:
         # --- Extraneous Delays Discovery --- #
         if self._settings.extraneous_activity_delays is not None:
             print_section("Discovering extraneous delays")
-            timers = self.optimize_extraneous_activity_delays()
+            timers = self._optimize_extraneous_activity_delays()
             self._best_bps_model.extraneous_delays = timers
             add_timers_to_bpmn_model(self._best_bps_model.process_model, timers)  # Update BPMN model on disk
 
@@ -263,7 +263,7 @@ class Simod:
         best_resource_model_params = self._resource_model_optimizer.run()
         return best_resource_model_params
 
-    def optimize_extraneous_activity_delays(self) -> List[ExtraneousDelay]:
+    def _optimize_extraneous_activity_delays(self) -> List[ExtraneousDelay]:
         settings = self._settings.extraneous_activity_delays
         self._extraneous_delays_optimizer = ExtraneousDelaysOptimizer(
             event_log=self._event_log,

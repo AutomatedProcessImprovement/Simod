@@ -10,24 +10,20 @@ from simod.control_flow.settings import HyperoptIterationParams
 from simod.settings.common_settings import Metric
 from simod.settings.control_flow_settings import ProcessModelDiscoveryAlgorithm
 
-structure_config_sm2 = {
+control_flow_config_sm2 = {
     "mining_algorithm": "sm2",
-    "max_eval_s": 2,
     "concurrency": 0.5,
     "epsilon": 0.15,
     "eta": 0.87,
-    "gate_management": "discovery",
     "replace_or_joins": True,
     "prioritize_parallelism": True
 }
 
-structure_config_sm3 = {
+control_flow_config_sm3 = {
     "mining_algorithm": "sm3",
-    "max_eval_s": 2,
     "concurrency": 0.5,
     "epsilon": 0.15,
     "eta": 0.87,
-    "gate_management": "discovery",
     "replace_or_joins": True,
     "prioritize_parallelism": True
 }
@@ -35,11 +31,11 @@ structure_config_sm3 = {
 structure_optimizer_test_data = [
     {
         'name': 'Split Miner 2',
-        'config_data': structure_config_sm2
+        'config_data': control_flow_config_sm2
     },
     {
         'name': 'Split Miner 3',
-        'config_data': structure_config_sm3
+        'config_data': control_flow_config_sm3
     },
 ]
 
@@ -55,7 +51,7 @@ def test_discover_process_model(entry_point, test_data):
         output_path = Path(tmp_dir) / 'model.bpmn'
         params = HyperoptIterationParams(
             output_dir=Path(tmp_dir),
-            provided_model_path=output_path,
+            provided_model_path=None,
             project_name="PurchasingExample",
             optimization_metric=Metric.TWO_GRAM_DISTANCE,
             gateway_probabilities_method=GatewayProbabilitiesDiscoveryMethod.EQUIPROBABLE,
