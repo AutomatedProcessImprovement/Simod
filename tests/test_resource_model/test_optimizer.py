@@ -24,7 +24,7 @@ from simod.simulation.parameters.BPS_model import BPSModel
 
 resource_model_config_single_values = {
     "optimization_metric": "absolute_hourly_emd",
-    "max_evaluations": 5,
+    "num_iterations": 5,
     "resource_profiles": {
         "discovery_type": "pool",
         "granularity": [15, 60],
@@ -36,7 +36,7 @@ resource_model_config_single_values = {
 
 resource_model_config_intervals = {
     "optimization_metric": "circadian_emd",
-    "max_evaluations": 5,
+    "num_iterations": 5,
     "resource_profiles": {
         "discovery_type": "differentiated",
         "granularity": [15, 60],
@@ -48,13 +48,11 @@ resource_model_config_intervals = {
 
 resource_model_config_fuzzy = {
     "optimization_metric": "circadian_emd",
-    "max_evaluations": 5,
+    "num_iterations": 5,
     "resource_profiles": {
         "discovery_type": "differentiated_fuzzy",
         "granularity": [15, 60],
-        "confidence": [0.05, 0.4],
-        "support": [0.5, 0.8],
-        "participation": [0.2, 0.6],
+        "fuzzy_angle": [0.2, 0.8],
     },
 }
 
@@ -160,6 +158,11 @@ def test_resource_model_optimizer(entry_point, test_data):
             float(test_data["settings"]["resource_profiles"]["granularity"][0])
             <= result.calendar_discovery_params.granularity
             <= float(test_data["settings"]["resource_profiles"]["granularity"][1])
+        )
+        assert (
+            float(test_data["settings"]["resource_profiles"]["fuzzy_angle"][0])
+            <= result.calendar_discovery_params.angle
+            <= float(test_data["settings"]["resource_profiles"]["fuzzy_angle"][1])
         )
     else:
         assert False
