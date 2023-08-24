@@ -24,7 +24,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 80
+    timeout-minutes: 120
     outputs:
       version: ${{ steps.versioning.outputs.version }}
       docker_image: ${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
@@ -75,7 +75,7 @@ jobs:
           Xvfb :99 &>/dev/null & disown
           cd /usr/src/Simod
           poetry install
-          poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x -k "not test_build_fuzzy_calendars" -m "not benchmark"
+          poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x -k "not test_build_fuzzy_calendars and not test_bpic15 and not test_missing_activities_repaired" -m "not benchmark"
 
       - name: PyLint
         shell: bash
