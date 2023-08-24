@@ -23,7 +23,7 @@ class ResourceModelSettings:
     participation: Optional[Union[float, Tuple[float, float]]] = 0.4  # from 0 to 1.0
     discover_prioritization_rules: bool = False
     discover_batching_rules: bool = False
-    fuzzy_angle: float = 1.0
+    fuzzy_angle: Optional[Union[float, Tuple[float, float]]] = (0.1, 0.9)
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
