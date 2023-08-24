@@ -161,7 +161,7 @@ def test_resource_model_optimizer(entry_point, test_data):
         )
         assert (
             float(test_data["settings"]["resource_profiles"]["fuzzy_angle"][0])
-            <= result.calendar_discovery_params.angle
+            <= result.calendar_discovery_params.fuzzy_angle
             <= float(test_data["settings"]["resource_profiles"]["fuzzy_angle"][1])
         )
     else:
