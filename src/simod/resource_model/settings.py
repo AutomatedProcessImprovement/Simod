@@ -87,7 +87,7 @@ class HyperoptIterationParams:
                 confidence=confidence,
                 support=support,
                 participation=participation,
-                angle=fuzzy_angle,
+                fuzzy_angle=fuzzy_angle,
             ),
             discover_prioritization_rules=discover_prioritization_rules,
             discover_batching_rules=discover_batching_rules,
