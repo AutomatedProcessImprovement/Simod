@@ -47,17 +47,13 @@ resource_model:
   num_iterations: 40
   num_evaluations_per_iteration: 5
   resource_profiles:
-    discovery_type: differentiated
+    discovery_type: differentiated_fuzzy
     granularity:
       - 15
       - 60
-    confidence:
+    fuzzy_angle: 
       - 0.1
-      - 1.0
-    support:
-      - 0.1
-      - 1.0
-    participation: 0.4
+      - 0.9
 extraneous_activity_delays:
   optimization_metric: relative_event_distribution
   num_iterations: 1
