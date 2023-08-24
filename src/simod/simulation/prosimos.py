@@ -7,15 +7,18 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
-from pix_framework.calendar.resource_calendar import RCalendar
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
-from pix_framework.discovery.resource_activity_performances import ActivityResourceDistribution
+from pix_framework.discovery.resource_calendar_and_performance.crisp.resource_calendar import RCalendar
+from pix_framework.discovery.resource_calendar_and_performance.resource_activity_performance import (
+    ActivityResourceDistribution,
+)
 from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs, read_csv_log
 from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_message, print_notice, print_warning
 from simod.metrics import compute_metric
+
 from ..settings.common_settings import Metric
 
 cpu_count = multiprocessing.cpu_count()

@@ -2,28 +2,29 @@ import copy
 import json
 import shutil
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import hyperopt
 import numpy as np
 import pandas as pd
-from hyperopt import Trials, hp, fmin, STATUS_OK, STATUS_FAIL
-from hyperopt import tpe
-from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
+from hyperopt import STATUS_FAIL, STATUS_OK, Trials, fmin, hp, tpe
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import (
+    CalendarDiscoveryParameters,
+)
 from pix_framework.discovery.resource_model import ResourceModel, discover_resource_model
 from pix_framework.discovery.resource_profiles import discover_pool_resource_profiles
-from pix_framework.filesystem.file_manager import get_random_folder_id, remove_asset, create_folder
+from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 
-from .repair import repair_with_missing_activities
-from .settings import HyperoptIterationParams
 from ..batching.discovery import discover_batching_rules
-from ..cli_formatter import print_subsection, print_step, print_message
+from ..cli_formatter import print_message, print_step, print_subsection
 from ..event_log.event_log import EventLog
 from ..prioritization.discovery import discover_prioritization_rules
-from ..settings.resource_model_settings import ResourceModelSettings, CalendarType
+from ..settings.resource_model_settings import CalendarType, ResourceModelSettings
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.prosimos import simulate_and_evaluate
-from ..utilities import hyperopt_step, get_simulation_parameters_path, get_process_model_path
+from ..utilities import get_process_model_path, get_simulation_parameters_path, hyperopt_step
+from .repair import repair_with_missing_activities
+from .settings import HyperoptIterationParams
 
 
 class ResourceModelOptimizer:
@@ -145,7 +146,11 @@ class ResourceModelOptimizer:
 
         # Simulate candidate and evaluate its quality
         status, evaluation_measurements = hyperopt_step(
-            status, self._simulate_bps_model, current_bps_model, hyperopt_iteration_params.output_dir
+            status,
+            self._simulate_bps_model,
+            current_bps_model,
+            hyperopt_iteration_params.output_dir,
+            hyperopt_iteration_params.calendar_discovery_params.granularity,
         )
 
         # Define the response of this iteration
@@ -212,7 +217,7 @@ class ResourceModelOptimizer:
         # Return settings of the best iteration
         return best_hyperopt_parameters
 
-    def _discover_resource_model(self, params: CalendarDiscoveryParams) -> ResourceModel:
+    def _discover_resource_model(self, params: CalendarDiscoveryParameters) -> ResourceModel:
         print_step(f"Discovering resource model with {params}")
         return discover_resource_model(
             event_log=self.event_log.train_partition,
@@ -227,45 +232,55 @@ class ResourceModelOptimizer:
 
     def _define_search_space(self, settings: ResourceModelSettings):
         space = {}
-        # If discovery type requires discovery, create space for parameters
+
+        # If discovery type requires discovery, create search space for parameters
         if settings.discovery_type in [
             CalendarType.UNDIFFERENTIATED,
             CalendarType.DIFFERENTIATED_BY_RESOURCE,
             CalendarType.DIFFERENTIATED_BY_POOL,
         ]:
-            # granularity
             if isinstance(settings.granularity, tuple):
                 space["granularity"] = hp.uniform("granularity", settings.granularity[0], settings.granularity[1])
             else:
                 space["granularity"] = settings.granularity
-            # confidence
+
             if isinstance(settings.confidence, tuple):
                 space["confidence"] = hp.uniform("confidence", settings.confidence[0], settings.confidence[1])
             else:
                 space["confidence"] = settings.confidence
-            # support
+
             if isinstance(settings.support, tuple):
                 space["support"] = hp.uniform("support", settings.support[0], settings.support[1])
             else:
                 space["support"] = settings.support
-            # participation
+
             if isinstance(settings.participation, tuple):
                 space["participation"] = hp.uniform(
                     "participation", settings.participation[0], settings.participation[1]
                 )
             else:
                 space["participation"] = settings.participation
-            # prioritization
+
             if settings.discover_prioritization_rules and len(self._prioritization_rules) > 0:
                 space["discover_prioritization_rules"] = hp.choice("discover_prioritization_rules", [True, False])
             else:
                 space["discover_prioritization_rules"] = False
-            # batching
+
             if settings.discover_batching_rules and len(self._batching_rules) > 0:
                 space["discover_batching_rules"] = hp.choice("discover_batching_rules", [True, False])
             else:
                 space["discover_batching_rules"] = False
-        # Return space
+        elif settings.discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
+            if isinstance(settings.granularity, tuple):
+                space["granularity"] = hp.uniform("granularity", settings.granularity[0], settings.granularity[1])
+            else:
+                space["granularity"] = settings.granularity
+
+            if isinstance(settings.fuzzy_angle, tuple):
+                space["fuzzy_angle"] = hp.uniform("fuzzy_angle", settings.fuzzy_angle[0], settings.fuzzy_angle[1])
+            else:
+                space["fuzzy_angle"] = settings.fuzzy_angle
+
         return space
 
     def _process_measurements(self, params: HyperoptIterationParams, status: str, evaluation_measurements: list):
@@ -319,10 +334,10 @@ class ResourceModelOptimizer:
         # Return updated status and processed response
         return status, response
 
-    def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path) -> List[dict]:
+    def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path, granularity: int) -> List[dict]:
         bps_model.replace_activity_names_with_ids()
 
-        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
+        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name, granule_size=granularity)
 
         evaluation_measures = simulate_and_evaluate(
             model_path=bps_model.process_model,

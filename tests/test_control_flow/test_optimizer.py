@@ -3,7 +3,9 @@ import pytest
 from hyperopt import STATUS_OK
 from pix_framework.discovery.case_arrival import discover_case_arrival_model
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
-from pix_framework.discovery.resource_calendars import CalendarDiscoveryParams
+from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import (
+    CalendarDiscoveryParameters,
+)
 from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id
 from pix_framework.io.event_log import APROMORE_LOG_IDS
@@ -79,7 +81,7 @@ def test_control_flow_optimizer(entry_point, test_data):
     resource_model = discover_resource_model(
         event_log.train_validation_partition,
         event_log.log_ids,
-        CalendarDiscoveryParams(),
+        CalendarDiscoveryParameters(),
     )
     bps_model = BPSModel(
         case_arrival_model=case_arrival_model,
@@ -156,7 +158,7 @@ def test_control_flow_optimizer_model_provided(entry_point, test_data):
     resource_model = discover_resource_model(
         event_log.train_validation_partition,
         event_log.log_ids,
-        CalendarDiscoveryParams(),
+        CalendarDiscoveryParameters(),
     )
     bps_model = BPSModel(
         process_model=model_path,

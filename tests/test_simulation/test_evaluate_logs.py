@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 from pix_framework.io.event_log import EventLogIDs, read_csv_log
-
 from simod.settings.common_settings import Metric
 from simod.simulation.prosimos import evaluate_logs
 
