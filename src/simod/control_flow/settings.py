@@ -64,26 +64,26 @@ class HyperoptIterationParams:
         project_name: str,
     ) -> "HyperoptIterationParams":
         """Create the params for this run from the hyperopt dictionary returned by the fmin function."""
-        # Extract gateway probabilities method
         gateway_probabilities_method = GatewayProbabilitiesDiscoveryMethod.from_str(
             hyperopt_dict["gateway_probabilities_method"]
         )
-        # Extract model discovery parameters if needed (by default None)
-        epsilon = None
-        eta = None
-        concurrency = None
-        prioritize_parallelism = None
-        replace_or_joins = None
-        # If the model was not provided, extract discovery parameters
+
+        epsilon, eta, concurrency, prioritize_parallelism, replace_or_joins = None, None, None, None, None
+
         if provided_model_path is None:
             if mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
                 concurrency = hyperopt_dict["concurrency"]
-            elif mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
+            elif mining_algorithm in [
+                ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3,
+                ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1,
+            ]:
                 epsilon = hyperopt_dict["epsilon"]
                 eta = hyperopt_dict["eta"]
                 prioritize_parallelism = hyperopt_dict["prioritize_parallelism"]
                 replace_or_joins = hyperopt_dict.get("replace_or_joins")
-        # Return parameters instance
+            elif mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
+                epsilon = hyperopt_dict["epsilon"]
+
         return HyperoptIterationParams(
             output_dir=output_dir,
             provided_model_path=provided_model_path,

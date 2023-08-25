@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union, List, Tuple, Optional
+from typing import List, Optional, Tuple, Union
 
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
 
-from .common_settings import Metric
 from ..utilities import parse_single_value_or_interval
+from .common_settings import Metric
 
 
 class ProcessModelDiscoveryAlgorithm(str, Enum):
@@ -60,30 +60,30 @@ class ControlFlowSettings:
 
     @staticmethod
     def from_dict(config: dict) -> "ControlFlowSettings":
-        # Optimization metric
         optimization_metric = Metric.from_str(config.get("optimization_metric", "n_gram_distance"))
-        # Number of iterations for the optimization process
         num_iterations = config.get("num_iterations", 10)
-        # Num evaluations per iteration
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
-        # Gateway probabilities discovery method
         gateway_probabilities = GatewayProbabilitiesDiscoveryMethod.from_str(
             config.get("gateway_probabilities", "discovery")
         )
-        # Process model discovery algorithm
+
         mining_algorithm = ProcessModelDiscoveryAlgorithm.from_str(config.get("mining_algorithm", "sm3"))
+        concurrency, epsilon, eta, replace_or_joins, prioritize_parallelism = None, None, None, None, None
         if mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-            # Split Miner 2, set concurrency threshold
             concurrency = parse_single_value_or_interval(config.get("concurrency", (0.0, 1.0)))
-            epsilon, eta, replace_or_joins, prioritize_parallelism = None, None, None, None
-        else:
-            # Split Miner 3, set epsilon/eta/replace_or_joins/prioritize_parallelism
-            concurrency = None
-            epsilon = parse_single_value_or_interval(config.get("epsilon", (0.0, 1.0)))
+        elif mining_algorithm in [
+            ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3,
+            ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1,
+        ]:
             eta = parse_single_value_or_interval(config.get("eta", (0.0, 1.0)))
+            epsilon = parse_single_value_or_interval(config.get("epsilon", (0.0, 1.0)))
             replace_or_joins = config.get("replace_or_joins", False)
             prioritize_parallelism = config.get("prioritize_parallelism", False)
-        # Instantiate class
+        elif mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
+            epsilon = parse_single_value_or_interval(config.get("epsilon", (0.0, 1.0)))
+        else:
+            raise ValueError(f"Unknown process model discovery algorithm: {mining_algorithm}")
+
         return ControlFlowSettings(
             optimization_metric=optimization_metric,
             num_iterations=num_iterations,
