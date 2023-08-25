@@ -13,7 +13,7 @@ from simod.utilities import execute_external_command, is_windows
 
 sm2_path: Path = PROJECT_DIR / "external_tools/splitminer2/sm2.jar"
 sm3_path: Path = PROJECT_DIR / "external_tools/splitminer3/bpmtk.jar"
-split_miner_jar_path: Path = PROJECT_DIR / "external_tools/splitminer-1.5-all.jar"
+split_miner_jar_path: Path = PROJECT_DIR / "external_tools/splitminer-1.6-all.jar"
 
 
 def discover_process_model(log_path: Path, output_model_path: Path, params: HyperoptIterationParams):
@@ -211,7 +211,7 @@ def _prepare_split_miner_params(
 ) -> Tuple[List[str], str, str, str]:
     if is_windows():
         # Windows: ';' as separator and escape string with '"'
-        args = ["java"]
+        args = ["java", "-Djava.awt.headless=true"]
         split_miner_path = '"' + str(split_miner)
         if lib_dir:
             split_miner_path += ";" + os.path.join(os.path.dirname(split_miner), "lib", "*") + '"'
@@ -224,7 +224,7 @@ def _prepare_split_miner_params(
             model_output_path = '"' + str(output_model_path) + '"'
     else:
         # Linux: ':' as separator and add memory specs
-        args = ["java", "-Xmx2G", "-Xms1024M"]
+        args = ["java", "-Xmx2G", "-Xms1024M", "-Djava.awt.headless=true"]
         split_miner_path = str(split_miner)
         if lib_dir:
             split_miner_path += ":" + os.path.join(os.path.dirname(split_miner), "lib", "*")
