@@ -105,6 +105,13 @@ jobs:
     outputs:
       version: ${{ steps.versioning.outputs.version }}
     if: github.ref == 'refs/heads/master'
+    environment:
+      name: PyPI
+      url: https://pypi.org/p/simod
+    permissions:
+      id-token: write
+      contents: write
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -150,3 +157,6 @@ jobs:
             dist/*
           tag_name: ${{ steps.versioning.outputs.version }}
           body_path: CHANGELOG.md
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
