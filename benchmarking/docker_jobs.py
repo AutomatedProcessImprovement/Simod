@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 # Simod configuration string to generate the configuration file for each experiment
-configuration_str = Path("input/config.yml").read_text()
+configuration_str = Path("input/config_no_extraneous.yml").read_text()
 
 # Path to the directory containing the logs and configuration files in the Docker container
 container_input_dir = Path("/usr/src/Simod/input")
@@ -105,7 +105,7 @@ def main():
             run_with_docker(experiment)
             duration = time.time() - start
             f.write(f"{experiment.configuration_path.stem}: {duration}\n")
-            # flushing saves each record to disk (not guaranteed though) without waiting 
+            # flushing saves each record to disk (not guaranteed though) without waiting
             # for other experiments to finish in case they crash
             f.flush()
             print(f"Finished {experiment.configuration_path} in {duration} seconds")
