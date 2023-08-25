@@ -44,7 +44,7 @@ class ExtraneousDelaysOptimizer:
             num_evaluation_simulations=self.settings.num_evaluations_per_iteration,
             training_partition_ratio=0.5,
             optimization_metric=self.settings.optimization_metric,
-            discovery_method=DiscoveryMethod.COMPLEX,
+            discovery_method=self.settings.discovery_method,
             timer_placement=TimerPlacement.BEFORE,
             simulation_engine=SimulationEngine.PROSIMOS,
         )
