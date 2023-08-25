@@ -30,6 +30,9 @@ common:
     - circadian_event_distribution
     - arrival_event_distribution
     - cycle_time_distribution
+  # Whether to simulate the arrival times using the distribution of inter-arrival times observed in the training log,
+  # or fitting a parameterized probabilistic distribution (e.g., norm, expon) with these observed values.
+  use_observed_arrival_distribution: false
   # Whether to delete all files created during the optimization phases or not
   clean_intermediate_files: true
   # Whether to discover case attributes or not
@@ -55,7 +58,7 @@ control_flow:
   # Metric to guide the optimization process (loss function to minimize)
   optimization_metric: n_gram_distance
   # Number of optimization iterations over the search space
-  num_iterations: 10
+  num_iterations: 20
   # Number of times to evaluate each iteration (using the mean of all of them)
   num_evaluations_per_iteration: 3
   # Methods for discovering gateway probabilities
@@ -92,7 +95,7 @@ resource_model:
   # Metric to guide the optimization process (loss function to minimize)
   optimization_metric: circadian_emd
   # Number of optimization iterations over the search space
-  num_iterations: 10
+  num_iterations: 20
   # Number of times to evaluate each iteration (using the mean of all of them)
   num_evaluations_per_iteration: 3
   # Whether to discover prioritization or batching behavior
