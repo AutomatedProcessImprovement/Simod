@@ -148,7 +148,7 @@ def discover_process_model_with_split_miner_2(log_path: Path, output_model_path:
     """
     # Define args depending on the system is running
     args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        sm2_path, log_path, output_model_path
+        sm2_path, log_path, output_model_path, headless=False
     )
     # Prepare command structure
     args += [
@@ -185,7 +185,7 @@ def discover_process_model_with_split_miner_3(
     """
     # Define args depending on the system is running
     args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        sm3_path, log_path, output_model_path
+        sm3_path, log_path, output_model_path, headless=False
     )
     # Prepare command structure
     args += [
@@ -207,11 +207,18 @@ def discover_process_model_with_split_miner_3(
 
 
 def _prepare_split_miner_params(
-    split_miner: Path, log_path: Path, output_model_path: Path, lib_dir: bool = True, strip_output_suffix: bool = True
+    split_miner: Path,
+    log_path: Path,
+    output_model_path: Path,
+    lib_dir: bool = True,
+    strip_output_suffix: bool = True,
+    headless: bool = True,
 ) -> Tuple[List[str], str, str, str]:
     if is_windows():
         # Windows: ';' as separator and escape string with '"'
-        args = ["java", "-Djava.awt.headless=true"]
+        args = ["java"]
+        if headless:
+            args += ["-Djava.awt.headless=true"]
         split_miner_path = '"' + str(split_miner)
         if lib_dir:
             split_miner_path += ";" + os.path.join(os.path.dirname(split_miner), "lib", "*") + '"'
@@ -224,7 +231,9 @@ def _prepare_split_miner_params(
             model_output_path = '"' + str(output_model_path) + '"'
     else:
         # Linux: ':' as separator and add memory specs
-        args = ["java", "-Xmx2G", "-Xms1024M", "-Djava.awt.headless=true"]
+        args = ["java", "-Xmx2G", "-Xms1024M"]
+        if headless:
+            args += ["-Djava.awt.headless=true"]
         split_miner_path = str(split_miner)
         if lib_dir:
             split_miner_path += ":" + os.path.join(os.path.dirname(split_miner), "lib", "*")
