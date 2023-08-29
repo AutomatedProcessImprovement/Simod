@@ -135,6 +135,9 @@ jobs:
       - name: Install poetry
         run: pip install poetry
 
+      - name: Build
+        run: poetry install && poetry build
+
       - name: Generate licenses.md
         run: |
           poetry run pip install pip-licenses
