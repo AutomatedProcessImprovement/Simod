@@ -60,6 +60,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: pylint.txt
+          path: ./pylint.txt
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
