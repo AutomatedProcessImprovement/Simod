@@ -25,32 +25,36 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      matrix:
+        python-version: [ '3.9' ]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Install
         shell: bash
-        working-directory: /usr/src/Simod
-        run: poetry install
+        run: |
+          pip install poetry
+          poetry install
 
       - name: Test
         shell: bash
-        working-directory: /usr/src/Simod
         run: poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x -k "not test_build_fuzzy_calendars and not test_bpic15 and not test_missing_activities_repaired" -m "not benchmark"
 
       - name: PyLint
         shell: bash
-        working-directory: /usr/src/Simod
         run: poetry run pylint -j 0 --exit-zero src/simod > pylint.txt
 
       - name: Upload PyLint output
         uses: actions/upload-artifact@v3
         with:
           name: pylint.txt
-          path: /usr/src/Simod/pylint.txt
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
