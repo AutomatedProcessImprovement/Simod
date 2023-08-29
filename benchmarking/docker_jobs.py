@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 # Simod configuration string to generate the configuration file for each experiment
-configuration_str = Path("input/config_no_extraneous.yml").read_text()
+configuration_str = Path("input/config_observed_arrivals.yml").read_text()
 
 # Path to the directory containing the logs and configuration files in the Docker container
 container_input_dir = Path("/usr/src/Simod/input")
