@@ -4,7 +4,7 @@ version: 4
 ##########
 common:
   # Path to the event log in CSV format
-  train_log_path: resources/event_logs/LoanApp_simplified_train.csv.gz
+  train_log_path: ../event_logs/LoanApp_simplified_train.csv.gz
   # Specify the name for each of the columns in the CSV file (XES standard by default)
   log_ids:
     case: "case_id"
@@ -13,7 +13,7 @@ common:
     start_time: "start_time"
     end_time: "end_time"
   # Event log to evaluate the discovered BPS model with
-  test_log_path: resources/event_logs/LoanApp_simplified_test.csv.gz
+  test_log_path: ../event_logs/LoanApp_simplified_test.csv.gz
   # Number of evaluations of the discovered BPS model
   num_final_evaluations: 10
   # Metrics to evaluate the discovered BPS model

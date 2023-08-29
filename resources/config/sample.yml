@@ -1,7 +1,7 @@
 version: 4
 common:
-  train_log_path: resources/event_logs/LoanApp_simplified_train.csv.gz
-  test_log_path: resources/event_logs/LoanApp_simplified_test.csv.gz
+  train_log_path: ../event_logs/LoanApp_simplified_train.csv.gz
+  test_log_path: ../event_logs/LoanApp_simplified_test.csv.gz
   # model_path: resources/models/LoanApp_simplified.bpmn  # Uncomment to use this BPMN model as process model
   num_final_evaluations: 10  # Number of evaluations of the discovered BPS model.
   evaluation_metrics: # Metrics to evaluate the discovered BPS model with.

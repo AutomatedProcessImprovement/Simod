@@ -60,14 +60,20 @@ class EventLog:
         """
         # Check event log prerequisites
         if not train_log_path.name.endswith(".csv") and not train_log_path.name.endswith(".csv.gz"):
-            raise ValueError(f"The specified training log has an unsupported extension ({train_log_path.name}). "
-                             f"Only 'csv' and 'csv.gz' supported.")
+            raise ValueError(
+                f"The specified training log has an unsupported extension ({train_log_path.name}). "
+                f"Only 'csv' and 'csv.gz' supported."
+            )
         if test_log_path is not None:
             if not test_log_path.name.endswith(".csv") and not test_log_path.name.endswith(".csv.gz"):
-                raise ValueError(f"The specified test log has an unsupported extension ({test_log_path.name}). "
-                                 f"Only 'csv' and 'csv.gz' supported.")
+                raise ValueError(
+                    f"The specified test log has an unsupported extension ({test_log_path.name}). "
+                    f"Only 'csv' and 'csv.gz' supported."
+                )
+
         # Read training event log
         event_log = read_csv_log(train_log_path, log_ids)
+
         # Preprocess training event log
         preprocessor = Preprocessor(event_log, log_ids)
         processed_event_log = preprocessor.run(
@@ -75,6 +81,7 @@ class EventLog:
             enable_time_concurrency_threshold=preprocessing_settings.enable_time_concurrency_threshold,
             concurrency_thresholds=preprocessing_settings.concurrency_thresholds,
         )
+
         # Get test if needed, and split train+validation
         if test_log_path is not None:
             # Test log provided, the input log is train+validation
@@ -88,6 +95,7 @@ class EventLog:
             train_validation_df = processed_event_log
             test_df = None
         train_df, validation_df = split_log(train_validation_df, log_ids, training_percentage=split_ratio)
+
         # Return EventLog instance with different partitions
         return EventLog(
             log_train=train_df,

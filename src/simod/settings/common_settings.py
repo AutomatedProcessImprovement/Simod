@@ -100,35 +100,42 @@ class CommonSettings:
         )
 
     @staticmethod
-    def from_dict(config: dict) -> "CommonSettings":
+    def from_dict(config: dict, config_dir: Optional[Path] = None) -> "CommonSettings":
+        base_files_dir = config_dir or Path.cwd()
+
         # Training log path
         train_log_path = Path(config["train_log_path"])
         if not train_log_path.is_absolute():
-            train_log_path = PROJECT_DIR / train_log_path
+            train_log_path = base_files_dir / train_log_path
+
         # Log IDs
         if "log_ids" in config:
             log_ids = EventLogIDs.from_dict(config["log_ids"])
         else:
             log_ids = DEFAULT_XES_IDS
+
         # Test log path
         if "test_log_path" in config:
             test_log_path = Path(config["test_log_path"])
             if not test_log_path.is_absolute():
-                test_log_path = PROJECT_DIR / test_log_path
+                test_log_path = base_files_dir / test_log_path
         else:
             test_log_path = None
+
         # Process model path
         if "model_path" in config:
             model_path = Path(config["model_path"])
             if not model_path.is_absolute():
-                model_path = PROJECT_DIR / model_path
+                model_path = base_files_dir / model_path
         else:
             model_path = None
+
         # Flag to perform final evaluation (set to true if there is a test log)
         if test_log_path is not None:
             perform_final_evaluation = True
         else:
             perform_final_evaluation = config.get("perform_final_evaluation", False)
+
         # Number of final evaluations & metrics to evaluate
         if perform_final_evaluation:
             num_final_evaluations = config.get("num_final_evaluations", 10)
@@ -148,16 +155,19 @@ class CommonSettings:
         else:
             num_final_evaluations = 0
             metrics = []
+
         # Quality check
         if perform_final_evaluation and num_final_evaluations == 0:
-            print("Wrong configuration! perform_final_evaluation=True but "
-                  "num_final_evaluations=0. Setting to 10 by default.")
+            print(
+                "Wrong configuration! perform_final_evaluation=True but "
+                "num_final_evaluations=0. Setting to 10 by default."
+            )
             num_final_evaluations = 10
-        # Common config
+
         use_observed_arrival_distribution = config.get("use_observed_arrival_distribution", False)
         clean_up = config.get("clean_intermediate_files", True)
         discover_case_attributes = config.get("discover_case_attributes", False)
-        # Return common configuration
+
         return CommonSettings(
             train_log_path=train_log_path,
             log_ids=log_ids,

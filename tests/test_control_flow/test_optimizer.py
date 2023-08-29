@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
 from hyperopt import STATUS_OK
@@ -15,8 +17,9 @@ from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams
 from simod.event_log.event_log import EventLog
 from simod.settings.control_flow_settings import ControlFlowSettings, ProcessModelDiscoveryAlgorithm
-from simod.settings.simod_settings import PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
+
+PROJECT_DIR = Path(__file__).parent.parent.parent
 
 control_flow_config_sm1 = {
     "max_evaluations": 3,

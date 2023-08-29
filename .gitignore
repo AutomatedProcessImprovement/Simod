@@ -1,4 +1,5 @@
 outputs
+output
 *.pyc
 *.stats
 venv*

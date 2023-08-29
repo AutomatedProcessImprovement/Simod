@@ -1,7 +1,7 @@
 version: 4
 common:
-  train_log_path: resources/event_logs/BPIC_2012_train.csv.gz
-  test_log_path: resources/event_logs/BPIC_2012_test.csv.gz
+  train_log_path: ../event_logs/BPIC_2012_train.csv.gz
+  test_log_path: ../event_logs/BPIC_2012_test.csv.gz
   num_final_evaluations: 10
   evaluation_metrics:
     - 3_gram_distance

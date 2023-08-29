@@ -1,7 +1,7 @@
 import copy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import yaml
 
@@ -11,11 +11,9 @@ from .extraneous_delays_settings import ExtraneousDelaysSettings
 from .preprocessing_settings import PreprocessingSettings
 from .resource_model_settings import ResourceModelSettings
 from ..cli_formatter import print_notice
-from ..utilities import get_project_dir
 
 QBP_NAMESPACE_URI = "http://www.qbp-simulator.com/Schema201212"
 BPMN_NAMESPACE_URI = "http://www.omg.org/spec/BPMN/20100524/MODEL"
-PROJECT_DIR = get_project_dir()
 
 
 @dataclass
@@ -48,7 +46,7 @@ class SimodSettings:
         )
 
     @staticmethod
-    def from_yaml(config: dict) -> "SimodSettings":
+    def from_yaml(config: dict, config_dir: Optional[Path] = None) -> "SimodSettings":
         assert config["version"] in [2, 4], "Configuration version must be 2 or 4"
 
         # Transform from previous version to the latest if needed
@@ -57,7 +55,7 @@ class SimodSettings:
 
         # Get each of the settings components if present, default otherwise
         if "common" in config:
-            common_settings = CommonSettings.from_dict(config["common"])
+            common_settings = CommonSettings.from_dict(config["common"], config_dir=config_dir)
         else:
             print_notice("No 'common' settings provided, running Simod with default values.")
             common_settings = CommonSettings.default()
@@ -99,16 +97,10 @@ class SimodSettings:
         )
 
     @staticmethod
-    def from_stream(stream) -> "SimodSettings":
-        import yaml
-
-        config = yaml.safe_load(stream)
-        return SimodSettings.from_yaml(config)
-
-    @staticmethod
     def from_path(file_path: Path) -> "SimodSettings":
         with file_path.open() as f:
-            return SimodSettings.from_stream(f)
+            config = yaml.safe_load(f)
+            return SimodSettings.from_yaml(config, config_dir=file_path.parent)
 
     def to_dict(self) -> dict:
         dictionary = {

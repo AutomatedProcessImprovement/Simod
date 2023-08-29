@@ -4,7 +4,7 @@ version: 4
 ##########
 common:
   # Path to the event log in CSV format
-  train_log_path: resources/event_logs/LoanApp_simplified_train.csv.gz
+  train_log_path: ../event_logs/LoanApp_simplified_train.csv.gz
   # Specify the name for each of the columns in the CSV file (XES standard by default)
   log_ids:
     case: "case_id"
@@ -13,7 +13,7 @@ common:
     start_time: "start_time"
     end_time: "end_time"
   # Use this process model and skip its discovery
-  model_path: resources/models/LoanApp_simplified.bpmn
+  model_path: ../models/LoanApp_simplified.bpmn
   # Whether to discover case attributes or not
   discover_case_attributes: false
 #################

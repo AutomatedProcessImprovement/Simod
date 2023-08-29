@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
 from hyperopt import STATUS_OK
@@ -14,13 +16,15 @@ from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id
 from pix_framework.io.bpm_graph import BPMNGraph
 from pix_framework.io.event_log import APROMORE_LOG_IDS
+
 from simod.event_log.event_log import EventLog
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.settings import HyperoptIterationParams
 from simod.settings.common_settings import Metric
 from simod.settings.resource_model_settings import ResourceModelSettings
-from simod.settings.simod_settings import PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
+
+PROJECT_DIR = Path(__file__).parent.parent.parent
 
 resource_model_config_single_values = {
     "optimization_metric": "absolute_hourly_emd",

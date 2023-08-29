@@ -10,6 +10,9 @@ configuration_str = Path("input/config_observed_arrivals.yml").read_text()
 # Path to the directory containing the logs and configuration files in the Docker container
 container_input_dir = Path("/usr/src/Simod/input")
 
+# TODO: use file paths relative to the configuration file
+# TODO: remove Xvfb
+
 
 @dataclass
 class Experiment:

@@ -13,8 +13,10 @@ the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulato
 ## Requirements
 
 - Python 3.9
-- Java 1.8 is required by Split Miner which is used for process model discovery
-- Use [Poetry](https://python-poetry.org/) for building, installing, and managing Python dependencies
+- Java 1.8
+- _Optional_. If using Docker or compiling from source, use [Poetry](https://python-poetry.org/) for building,
+  installing, and
+  managing Python dependencies
 
 ## Getting Started
 

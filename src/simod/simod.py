@@ -28,7 +28,7 @@ from simod.prioritization.discovery import discover_prioritization_rules
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.repair import repair_with_missing_activities
 from simod.resource_model.settings import HyperoptIterationParams as ResourceModelHyperoptIterationParams
-from simod.settings.simod_settings import PROJECT_DIR, SimodSettings
+from simod.settings.simod_settings import SimodSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
@@ -67,7 +67,7 @@ class Simod:
         self._event_log = event_log
         self._best_bps_model = BPSModel(process_model=self._settings.common.model_path)
         if output_dir is None:
-            self._output_dir = PROJECT_DIR / "outputs" / get_random_folder_id()
+            self._output_dir = Path(__file__).parent.parent.parent / "outputs" / get_random_folder_id()
             create_folder(self._output_dir)
         else:
             self._output_dir = output_dir
@@ -223,7 +223,7 @@ class Simod:
         if self._settings.common.perform_final_evaluation:
             print_subsection("Evaluate")
             simulation_dir = self._best_result_dir / "evaluation"
-            simulation_dir.mkdir(parents=True)
+            simulation_dir.mkdir(parents=True, exist_ok=True)
             self._evaluate_model(self.final_bps_model.process_model, json_parameters_path, simulation_dir)
 
         # --- Export settings and clean temporal files --- #
