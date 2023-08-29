@@ -1,8 +1,6 @@
 *
 !src
-!external_tools/splitminer2
-!external_tools/splitminer3
-!tests
+!lib
 !*.bash
 !*.sh
 !LICENSE

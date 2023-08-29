@@ -16,9 +16,9 @@ common:
     case: case_id
     activity: activity
     resource: resource
-    start_time: Start_Time
-    end_time: End_Time
-    enabled_time: Enabled_Time
+    start_time: start_time
+    end_time: end_time
+    enabled_time: AssignedTime
   clean_intermediate_files: false
 preprocessing:
   multitasking: false  # Reassign activity durations when happening in multitasking.
