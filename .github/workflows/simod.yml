@@ -22,9 +22,61 @@ env:
   DOCKERHUB_REPO: nokal/simod
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      matrix:
+        python-version: [ '3.9' ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'corretto'
+          java-version: '8'
+
+      - name: Install
+        shell: bash
+        run: |
+          pip install poetry
+          poetry install
+
+      - name: Test
+        shell: bash
+        run: poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x -k "not test_build_fuzzy_calendars and not test_bpic15 and not test_missing_activities_repaired" -m "not benchmark"
+
+      - name: PyLint
+        shell: bash
+        run: poetry run pylint -j 0 --exit-zero src/simod > pylint.txt
+
+      - name: Upload PyLint output
+        uses: actions/upload-artifact@v3
+        with:
+          name: pylint.txt
+          path: ./pylint.txt
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          env_vars: OS,PYTHON
+          fail_ci_if_error: false
+          name: codecov-umbrella
+          verbose: true
+
+  build-and-publish-images:
+    runs-on: ubuntu-latest
+    needs: [ test ]
+    timeout-minutes: 120
+    if: github.ref == 'refs/heads/master'
     outputs:
       version: ${{ steps.versioning.outputs.version }}
       docker_image: ${{ env.DOCKERHUB_REPO }}:${{ steps.versioning.outputs.version }}
@@ -61,50 +113,19 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
 
-  test:
-    needs: [ build ]
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ needs.build.outputs.docker_image }}
-    env:
-      BRANCH_NAME: master
-    steps:
-      - name: Testing
-        shell: bash
-        run: |
-          Xvfb :99 &>/dev/null & disown
-          cd /usr/src/Simod
-          poetry install
-          poetry run pytest --cov=. --cov-report=xml --durations=0 -v -x -k "not test_build_fuzzy_calendars and not test_bpic15 and not test_missing_activities_repaired" -m "not benchmark"
-
-      - name: PyLint
-        shell: bash
-        run: |
-          cd /usr/src/Simod
-          poetry run pylint -j 0 --exit-zero src/simod > pylint.txt
-
-      - name: Upload PyLint output
-        uses: actions/upload-artifact@v3
-        with:
-          name: pylint.txt
-          path: /usr/src/Simod/pylint.txt
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          env_vars: OS,PYTHON
-          fail_ci_if_error: false
-          name: codecov-umbrella
-          verbose: true
-
-  release:
+  release-pypi:
     needs: [ test ]
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.versioning.outputs.version }}
     if: github.ref == 'refs/heads/master'
+    environment:
+      name: PyPI
+      url: https://pypi.org/p/simod
+    permissions:
+      id-token: write
+      contents: write
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -150,3 +171,6 @@ jobs:
             dist/*
           tag_name: ${{ steps.versioning.outputs.version }}
           body_path: CHANGELOG.md
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

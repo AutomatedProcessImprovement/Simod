@@ -4,7 +4,7 @@ common:
   test_log_path: resources/event_logs/LoanApp_simplified_test.csv.gz
   # model_path: resources/models/LoanApp_simplified.bpmn  # Uncomment to use this BPMN model as process model
   num_final_evaluations: 10  # Number of evaluations of the discovered BPS model.
-  evaluation_metrics:  # Metrics to evaluate the discovered BPS model with.
+  evaluation_metrics: # Metrics to evaluate the discovered BPS model with.
     - 3_gram_distance
     - 2_gram_distance
     - absolute_event_distribution
@@ -16,9 +16,9 @@ common:
     case: case_id
     activity: activity
     resource: resource
-    start_time: Start_Time
-    end_time: End_Time
-    enabled_time: Enabled_Time
+    start_time: start_time
+    end_time: end_time
+    enabled_time: AssignedTime
   clean_intermediate_files: false
 preprocessing:
   multitasking: false  # Reassign activity durations when happening in multitasking.
@@ -30,10 +30,10 @@ control_flow:
   optimization_metric: n_gram_distance
   num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
   num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
-  gateway_probabilities:  # Methods to discover the probabilities of each gateway
+  gateway_probabilities: # Methods to discover the probabilities of each gateway
     - equiprobable
     - discovery
-  discovery_algorithm: sm3  # Process model discovery algorithm: sm2 (Split Miner v2) or sm3 (Split Miner v3)
+  discovery_algorithm: sm1  # Process model discovery algorithm: sm1 (Split Miner v1) or sm2 (Split Miner v2)
   epsilon:
     - 0.0
     - 1.0

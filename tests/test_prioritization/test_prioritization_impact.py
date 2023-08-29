@@ -18,10 +18,7 @@ preprocessing:
 control_flow:
   optimization_metric: cycle_time_emd
   max_evaluations: 10
-  mining_algorithm: sm3
-  concurrency:
-    - 0.0
-    - 1.0
+  mining_algorithm: sm1
   epsilon:
     - 0.0
     - 1.0

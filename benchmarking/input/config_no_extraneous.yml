@@ -1,0 +1,57 @@
+version: 4
+common:
+  train_log_path: <train_log_path>
+  test_log_path: <test_log_path>
+  num_final_evaluations: 10
+  evaluation_metrics:
+    - 3_gram_distance
+    - 2_gram_distance
+    - absolute_event_distribution
+    - relative_event_distribution
+    - circadian_event_distribution
+    - arrival_event_distribution
+    - cycle_time_distribution
+  log_ids:
+    case: case_id
+    activity: activity
+    resource: resource
+    start_time: start_time
+    end_time: end_time
+    enabled_time: enabled_time
+preprocessing:
+  multitasking: false
+  enable_time_concurrency_threshold: 0.5
+  concurrency_df: 0.75
+  concurrency_l2l: 0.9
+  concurrency_l1l: 0.9
+control_flow:
+  optimization_metric: n_gram_distance
+  num_iterations: 30
+  num_evaluations_per_iteration: 5
+  gateway_probabilities: discovery
+  discovery_algorithm: sm1
+  epsilon:
+    - 0.1
+    - 1.0
+  eta:
+    - 0.2
+    - 0.6
+  replace_or_joins:
+    - true
+    - false
+  prioritize_parallelism:
+    - true
+    - false
+resource_model:
+  optimization_metric: circadian_event_distribution
+  num_iterations: 40
+  num_evaluations_per_iteration: 5
+  resource_profiles:
+    discovery_type: differentiated_fuzzy
+    granularity:
+      - 15
+      - 60
+    fuzzy_angle:
+      - 0.1
+      - 0.9
+

@@ -3,11 +3,9 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
 
-simod_version = "3.5.25"
-results_dir = Path(__file__).parent / Path(f"results/{simod_version}/pooled")
+simod_version = "3.6.0"
+results_dir = Path(__file__).parent / Path(f"results/{simod_version}/fuzzy")
 
 metric_names_mapping = {
     "absolute_event_distribution": "AED",
@@ -20,10 +18,10 @@ metric_names_mapping = {
 }
 
 event_log_names_mapping = {
-    "BPIC_2012_train.csv": "BPIC12",
-    "BPIC_2017_train.csv": "BPIC17",
-    "CallCenter_train.csv": "CALL",
-    "AcademicCredentials_train.csv": "AC_CRE",
+    "BPIC_2012_train": "BPIC12",
+    "BPIC_2017_train": "BPIC17",
+    "CallCenter_train": "CALL",
+    "AcademicCredentials_train": "AC_CRE",
 }
 
 
@@ -37,8 +35,9 @@ class DiscoveryResult:
     _name: Optional[str] = None
 
     def __post_init__(self):
-        self._evaluation_measures_path = next(self.result_dir.glob("evaluation_*.csv"))
-        self._simulated_log_paths = list((self.result_dir / "simulation").glob("simulated_*.csv"))
+        evaluation_dir = self.result_dir / "evaluation"
+        self._evaluation_measures_path = next(evaluation_dir.glob("evaluation_*.csv"))
+        self._simulated_log_paths = list((evaluation_dir / "simulation").glob("simulated_*.csv"))
         self._name = next(self.result_dir.glob("*.bpmn")).stem
         self._name = event_log_names_mapping[self._name]
         self._evaluation_measures = pd.read_csv(self._evaluation_measures_path).drop(columns=["run_num"])
@@ -68,155 +67,5 @@ results = [DiscoveryResult(result_dir / "best_result") for result_dir in results
 mean_evaluation_measures = pd.concat([result.mean_evaluation_measures for result in results]).reset_index(drop=True)
 mean_evaluation_measures["simod_version"] = simod_version
 
-# Previous measurements
-previous_results = pd.DataFrame(
-    [
-        {
-            "name": "AC_CRE",
-            "metric": "AED",
-            "distance": 117.32,
-        },
-        {
-            "name": "AC_CRE",
-            "metric": "CAR",
-            "distance": 110.38,
-        },
-        {
-            "name": "AC_CRE",
-            "metric": "CED",
-            "distance": 3.11,
-        },
-        {
-            "name": "AC_CRE",
-            "metric": "RED",
-            "distance": 48.19,
-        },
-        {
-            "name": "AC_CRE",
-            "metric": "CTD",
-            "distance": 62.23,
-        },
-        {
-            "name": "AC_CRE",
-            "metric": "NGD",
-            "distance": 0.24,
-        },
-        {
-            "name": "BPIC12",
-            "metric": "AED",
-            "distance": 313.30,
-        },
-        {
-            "name": "BPIC12",
-            "metric": "CAR",
-            "distance": 336.42,
-        },
-        {
-            "name": "BPIC12",
-            "metric": "CED",
-            "distance": 2.10,
-        },
-        {
-            "name": "BPIC12",
-            "metric": "RED",
-            "distance": 96.82,
-        },
-        {
-            "name": "BPIC12",
-            "metric": "CTD",
-            "distance": 93.45,
-        },
-        {
-            "name": "BPIC12",
-            "metric": "NGD",
-            "distance": 0.56,
-        },
-        {
-            "name": "BPIC17",
-            "metric": "AED",
-            "distance": 314.92,
-        },
-        {
-            "name": "BPIC17",
-            "metric": "CAR",
-            "distance": 390.04,
-        },
-        {
-            "name": "BPIC17",
-            "metric": "CED",
-            "distance": 1.65,
-        },
-        {
-            "name": "BPIC17",
-            "metric": "RED",
-            "distance": 132.31,
-        },
-        {
-            "name": "BPIC17",
-            "metric": "CTD",
-            "distance": 102.85,
-        },
-        {
-            "name": "BPIC17",
-            "metric": "NGD",
-            "distance": 0.37,
-        },
-        {
-            "name": "CALL",
-            "metric": "AED",
-            "distance": 61.76,
-        },
-        {
-            "name": "CALL",
-            "metric": "CAR",
-            "distance": 61.68,
-        },
-        {
-            "name": "CALL",
-            "metric": "CED",
-            "distance": 4.72,
-        },
-        {
-            "name": "CALL",
-            "metric": "RED",
-            "distance": 0.0,
-        },
-        {
-            "name": "CALL",
-            "metric": "CTD",
-            "distance": 8.18,
-        },
-        {
-            "name": "CALL",
-            "metric": "NGD",
-            "distance": 0.08,
-        },
-    ]
-)
-previous_results["simod_version"] = "2023.03"
-
-# Both measurements
-both_results = pd.concat([mean_evaluation_measures, previous_results]).reset_index(drop=True)
-both_results.to_csv("measurements.csv", index=False)
-
-# Comparison
-comparison = both_results.pivot_table(
-    index=["name", "metric"],
-    columns=["simod_version"],
-    values=["distance"],
-    aggfunc="mean",
-).reset_index()
-
-comparison.columns = ["_".join(col).strip() for col in comparison.columns.values]
-comparison = comparison.rename(columns={"name_": "name", "metric_": "metric"})
-comparison["distance_diff"] = comparison[f"distance_{simod_version}"] - comparison["distance_2023.03"]
-comparison.to_csv("comparison.csv", index=False)
-
-# Plot
-fig, ax = plt.subplots(figsize=(10, 5))
-sns.barplot(data=comparison, x="metric", y="distance_diff", hue="name", ax=ax)
-ax.set_xlabel("Metric")
-ax.set_ylabel("Distance difference")
-ax.set_title(f"Distance difference between Simod {simod_version} and 2023.03")
-plt.tight_layout()
-plt.savefig("comparison.png")
+# Save measurements
+mean_evaluation_measures.to_csv("measurements.csv", index=False)

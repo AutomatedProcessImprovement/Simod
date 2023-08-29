@@ -29,7 +29,7 @@ control_flow:
   num_iterations: 2
   num_evaluations_per_iteration: 5
   gateway_probabilities: discovery
-  discovery_algorithm: sm3
+  discovery_algorithm: sm1
   epsilon:
     - 0.1
     - 1.0

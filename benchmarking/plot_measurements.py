@@ -20,4 +20,4 @@ for group_name, group_df in df.groupby(["metric", "name"]):
     sns.barplot(data=group_df, x="simod_version", y="distance", ax=ax)
 
 plt.tight_layout()
-plt.savefig("measurements.png")
+plt.savefig(Path(__file__).parent / "measurements.png")

@@ -15,14 +15,14 @@ from pix_framework.discovery.gateway_probabilities import (
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 from pix_framework.io.bpm_graph import BPMNGraph
 
+from .discovery import discover_process_model
+from .settings import HyperoptIterationParams
 from ..cli_formatter import print_message, print_step, print_subsection
 from ..event_log.event_log import EventLog
 from ..settings.control_flow_settings import ControlFlowSettings, ProcessModelDiscoveryAlgorithm
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import get_process_model_path, get_simulation_parameters_path, hyperopt_step
-from .discovery import discover_process_model
-from .settings import HyperoptIterationParams
 
 
 class ControlFlowOptimizer:
@@ -199,48 +199,45 @@ class ControlFlowOptimizer:
 
     def _define_search_space(self, settings: ControlFlowSettings) -> dict:
         space = {}
-        # Add gateway probabilities method
         if isinstance(settings.gateway_probabilities, list):
             space["gateway_probabilities_method"] = hp.choice(
                 "gateway_probabilities_method", settings.gateway_probabilities
             )
         else:
             space["gateway_probabilities_method"] = settings.gateway_probabilities
+
         # Process model discovery parameters if we need to discover it
         if self._need_to_discover_model:
-            if settings.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-                # Split Miner 2, concurrency parameter
-                if isinstance(settings.concurrency, tuple):
-                    space["concurrency"] = hp.uniform("concurrency", settings.concurrency[0], settings.concurrency[1])
-                else:
-                    space["concurrency"] = settings.concurrency
-            elif settings.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
-                # Split Miner 3
-                # epsilon
+            if settings.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
                 if isinstance(settings.epsilon, tuple):
                     space["epsilon"] = hp.uniform("epsilon", settings.epsilon[0], settings.epsilon[1])
                 else:
                     space["epsilon"] = settings.epsilon
-                # eta
+
                 if isinstance(settings.eta, tuple):
                     space["eta"] = hp.uniform("eta", settings.eta[0], settings.eta[1])
                 else:
                     space["eta"] = settings.eta
-                # prioritize_parallelism
+
                 if isinstance(settings.prioritize_parallelism, list):
                     space["prioritize_parallelism"] = hp.choice(
                         "prioritize_parallelism", [str(value) for value in settings.prioritize_parallelism]
                     )
                 else:
                     space["prioritize_parallelism"] = str(settings.prioritize_parallelism)
-                # replace_or_joins
+
                 if isinstance(settings.replace_or_joins, list):
                     space["replace_or_joins"] = hp.choice(
                         "replace_or_joins", [str(value) for value in settings.replace_or_joins]
                     )
                 else:
                     space["replace_or_joins"] = str(settings.replace_or_joins)
-        # Return search space
+            elif settings.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
+                if isinstance(settings.epsilon, tuple):
+                    space["epsilon"] = hp.uniform("epsilon", settings.epsilon[0], settings.epsilon[1])
+                else:
+                    space["epsilon"] = settings.epsilon
+
         return space
 
     def cleanup(self):

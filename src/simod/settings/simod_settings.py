@@ -88,7 +88,6 @@ class SimodSettings:
             control_flow_settings.eta = None
             control_flow_settings.prioritize_parallelism = None
             control_flow_settings.replace_or_joins = None
-            control_flow_settings.concurrency = None
 
         return SimodSettings(
             version=config["version"],

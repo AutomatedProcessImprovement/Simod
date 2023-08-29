@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
 # This script is used for running Simod from a Docker container.
-# It starts the virtual X11 server and runs Simod via poetry.
-
-Xvfb :99 &>/dev/null & disown
 
 # configuration path from the command line
 CONFIG_PATH=$1
@@ -22,5 +19,5 @@ if [ -z "$OUTPUT_DIR" ]; then
     OUTPUT_DIR=$(pwd)/outputs
 fi
 
-# run simod
+# run Simod
 poetry run simod optimize --config_path $CONFIG_PATH --output_dir $OUTPUT_DIR
