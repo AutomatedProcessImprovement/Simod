@@ -4,13 +4,14 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "simod"
-version = "3.6.5"
+version = "3.6.6"
 authors = [
     "David Chapela <david.chapela@ut.ee>",
     "Ihar Suvorau <ihar.suvorau@gmail.com>",
     "Manuel Camargo <manuel.camargo@ut.ee>",
 ]
 description = "Simod is a Python tool for automated discovery of business process simulation models from event logs."
+readme = "README.md"
 packages = [{ include = "simod", from = "src" }]
 include = [{ path = "lib/splitminer-*.jar" }]
 
