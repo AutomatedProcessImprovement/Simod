@@ -112,13 +112,16 @@ class SimodSettings:
             return SimodSettings.from_stream(f)
 
     def to_dict(self) -> dict:
-        return {
+        dictionary = {
             "version": self.version,
             "common": self.common.to_dict(),
             "preprocessing": self.preprocessing.to_dict(),
             "control_flow": self.control_flow.to_dict(),
             "resource_model": self.resource_model.to_dict(),
         }
+        if self.extraneous_activity_delays is not None:
+            dictionary["extraneous_activity_delays"] = self.extraneous_activity_delays.to_dict()
+        return dictionary
 
     def to_yaml(self, output_dir: Path) -> Path:
         """
