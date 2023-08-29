@@ -1,4 +1,4 @@
-FROM openjdk:22-ea-8-slim-bullseye
+FROM openjdk:8
 
 RUN apt-get update && apt-get install -y \
     python3 \
