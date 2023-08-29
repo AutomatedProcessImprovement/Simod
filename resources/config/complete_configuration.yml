@@ -65,25 +65,21 @@ control_flow:
   gateway_probabilities:
     - equiprobable
     - discovery
-  # Discover process model with SplitMiner v3 (options: sm2 or sm3)
-  mining_algorithm: sm3
-  # Only for Split Miner v2: parameter for the number of concurrent relations between events to be captured (between 0.0 and 1.0)
-  concurrency:
-    - 0.0
-    - 1.0
-  # Only for Split Miner v3: Number of concurrent relations between events to be captured (between 0.0 and 1.0)
+  # Discover process model with SplitMiner v1 (options: sm1 or sm2)
+  mining_algorithm: sm1
+  # For Split Miner v1 and v2: Number of concurrent relations between events to be captured (between 0.0 and 1.0)
   epsilon:
     - 0.0
     - 1.0
-  # Only for Split Miner v3: Threshold for filtering the incoming and outgoing edges (between 0.0 and 1.0)
+  # Only for Split Miner v1: Threshold for filtering the incoming and outgoing edges (between 0.0 and 1.0)
   eta:
     - 0.0
     - 1.0
-  # Only for Split Miner v3: Whether to replace non-trivial OR joins or not (true or false)
+  # Only for Split Miner v1: Whether to replace non-trivial OR joins or not (true or false)
   replace_or_joins:
     - true
     - false
-  # Only for Split Miner v3: Whether to prioritize parallelism over loops or not (true or false)
+  # Only for Split Miner v1: Whether to prioritize parallelism over loops or not (true or false)
   prioritize_parallelism:
     - true
     - false

@@ -4,35 +4,45 @@ from typing import List, Optional, Tuple, Union
 
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
 
-from ..utilities import parse_single_value_or_interval
 from .common_settings import Metric
+from ..utilities import parse_single_value_or_interval
 
 
 class ProcessModelDiscoveryAlgorithm(str, Enum):
-    SPLIT_MINER_2 = "sm2"
-    SPLIT_MINER_3 = "sm3"
-    SPLIT_MINER_V1 = "split_miner_v1"
-    SPLIT_MINER_V2 = "split_miner_v2"
+    SPLIT_MINER_V1 = "sm1"
+    SPLIT_MINER_V2 = "sm2"
 
     @classmethod
     def from_str(cls, value: str) -> "ProcessModelDiscoveryAlgorithm":
-        if value.lower() in ["sm2", "splitminer2", "split miner 2", "split_miner_2", "split-miner-2"]:
-            return cls.SPLIT_MINER_2
-        elif value.lower() in ["sm3", "splitminer3", "split miner 3", "split_miner_3", "split-miner-3"]:
-            return cls.SPLIT_MINER_3
-        elif value.lower() in ["split_miner_v1", "split-miner-v1", "splitminer-v1", "split miner v1"]:
-            return cls.SPLIT_MINER_V1
-        elif value.lower() in ["split_miner_v2", "split-miner-v2", "splitminer-v2", "split miner v2"]:
+        if value.lower() in [
+            "sm2",
+            "splitminer2",
+            "split miner 2",
+            "split_miner_2",
+            "split-miner-2",
+            "split_miner_v2",
+            "split-miner-v2",
+            "splitminer-v2",
+            "split miner v2",
+        ]:
             return cls.SPLIT_MINER_V2
+        elif value.lower() in [
+            "sm1",
+            "splitminer1",
+            "split miner 1",
+            "split_miner_1",
+            "split-miner-1",
+            "split_miner_v1",
+            "split-miner-v1",
+            "splitminer-v1",
+            "split miner v1",
+        ]:
+            return cls.SPLIT_MINER_V1
         else:
             raise ValueError(f"Unknown process model discovery algorithm: {value}")
 
     def __str__(self):
-        if self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-            return "Split Miner 2"
-        elif self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
-            return "Split Miner 3"
-        elif self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
+        if self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
             return "Split Miner v1"
         elif self == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
             return "Split Miner v2"
@@ -51,8 +61,7 @@ class ControlFlowSettings:
     gateway_probabilities: Union[
         GatewayProbabilitiesDiscoveryMethod, List[GatewayProbabilitiesDiscoveryMethod]
     ] = GatewayProbabilitiesDiscoveryMethod.DISCOVERY
-    mining_algorithm: Optional[ProcessModelDiscoveryAlgorithm] = ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3
-    concurrency: Optional[Union[float, Tuple[float, float]]] = None
+    mining_algorithm: Optional[ProcessModelDiscoveryAlgorithm] = ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1
     epsilon: Optional[Union[float, Tuple[float, float]]] = (0.0, 1.0)  # parallelism threshold (epsilon)
     eta: Optional[Union[float, Tuple[float, float]]] = (0.0, 1.0)  # percentile for frequency threshold (eta)
     replace_or_joins: Optional[Union[bool, List[bool]]] = False  # should replace non-trivial OR joins
@@ -67,14 +76,9 @@ class ControlFlowSettings:
             config.get("gateway_probabilities", "discovery")
         )
 
-        mining_algorithm = ProcessModelDiscoveryAlgorithm.from_str(config.get("mining_algorithm", "sm3"))
-        concurrency, epsilon, eta, replace_or_joins, prioritize_parallelism = None, None, None, None, None
-        if mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-            concurrency = parse_single_value_or_interval(config.get("concurrency", (0.0, 1.0)))
-        elif mining_algorithm in [
-            ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3,
-            ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1,
-        ]:
+        mining_algorithm = ProcessModelDiscoveryAlgorithm.from_str(config.get("mining_algorithm", "sm1"))
+        epsilon, eta, replace_or_joins, prioritize_parallelism = None, None, None, None
+        if mining_algorithm in [ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1]:
             eta = parse_single_value_or_interval(config.get("eta", (0.0, 1.0)))
             epsilon = parse_single_value_or_interval(config.get("epsilon", (0.0, 1.0)))
             replace_or_joins = config.get("replace_or_joins", False)
@@ -90,7 +94,6 @@ class ControlFlowSettings:
             num_evaluations_per_iteration=num_evaluations_per_iteration,
             gateway_probabilities=gateway_probabilities,
             mining_algorithm=mining_algorithm,
-            concurrency=concurrency,
             epsilon=epsilon,
             eta=eta,
             replace_or_joins=replace_or_joins,
@@ -98,28 +101,25 @@ class ControlFlowSettings:
         )
 
     def to_dict(self) -> dict:
-        # Parse general settings
         dictionary = {
             "optimization_metric": self.optimization_metric.value,
             "num_iterations": self.num_iterations,
             "num_evaluations_per_iteration": self.num_evaluations_per_iteration,
         }
-        # Parse gateway probabilities
+
         if isinstance(self.gateway_probabilities, GatewayProbabilitiesDiscoveryMethod):
             dictionary["gateway_probabilities"] = self.gateway_probabilities.value
         else:
             dictionary["gateway_probabilities"] = [method.value for method in self.gateway_probabilities]
-        # Parse discovery algorithm parameters
+
         if self.mining_algorithm is not None:
             dictionary["mining_algorithm"] = self.mining_algorithm.value
-            if self.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-                # Split Miner 2, set concurrency threshold
-                dictionary["concurrency"] = self.concurrency
-            else:
-                # Split Miner 3, set epsilon/eta/replace_or_joins/prioritize_parallelism
+            if self.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
+                dictionary["epsilon"] = self.epsilon
+            elif self.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
                 dictionary["epsilon"] = self.epsilon
                 dictionary["eta"] = self.eta
                 dictionary["replace_or_joins"] = self.replace_or_joins
                 dictionary["prioritize_parallelism"] = self.prioritize_parallelism
-        # Return dictionary
+
         return dictionary

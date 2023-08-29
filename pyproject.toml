@@ -12,7 +12,7 @@ authors = [
 ]
 description = "Simod is a Python tool for automated discovery of business process simulation models from event logs."
 packages = [{ include = "simod", from = "src" }]
-include = [{ path = "external_tools/splitminer-*.jar" }]
+include = [{ path = "lib/splitminer-*.jar" }]
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.12"

@@ -48,7 +48,7 @@ control_flow:
     - equiprobable
     - discovery
   # Discover process model with SplitMiner v3
-  mining_algorithm: sm3
+  mining_algorithm: sm1
   # Number of concurrent relations between events to be captured
   epsilon:
     - 0.0

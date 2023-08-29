@@ -15,14 +15,14 @@ from pix_framework.discovery.gateway_probabilities import (
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 from pix_framework.io.bpm_graph import BPMNGraph
 
+from .discovery import discover_process_model
+from .settings import HyperoptIterationParams
 from ..cli_formatter import print_message, print_step, print_subsection
 from ..event_log.event_log import EventLog
 from ..settings.control_flow_settings import ControlFlowSettings, ProcessModelDiscoveryAlgorithm
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import get_process_model_path, get_simulation_parameters_path, hyperopt_step
-from .discovery import discover_process_model
-from .settings import HyperoptIterationParams
 
 
 class ControlFlowOptimizer:
@@ -208,15 +208,7 @@ class ControlFlowOptimizer:
 
         # Process model discovery parameters if we need to discover it
         if self._need_to_discover_model:
-            if settings.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-                if isinstance(settings.concurrency, tuple):
-                    space["concurrency"] = hp.uniform("concurrency", settings.concurrency[0], settings.concurrency[1])
-                else:
-                    space["concurrency"] = settings.concurrency
-            elif settings.mining_algorithm in [
-                ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3,
-                ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1,
-            ]:
+            if settings.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
                 if isinstance(settings.epsilon, tuple):
                     space["epsilon"] = hp.uniform("epsilon", settings.epsilon[0], settings.epsilon[1])
                 else:

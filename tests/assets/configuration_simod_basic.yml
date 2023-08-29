@@ -12,7 +12,7 @@ control_flow:
   optimization_metric: n_gram_distance
   num_iterations: 3
   num_evaluations_per_iteration: 3
-  discovery_algorithm: sm3
+  discovery_algorithm: sm1
   epsilon:
     - 0.0
     - 1.0

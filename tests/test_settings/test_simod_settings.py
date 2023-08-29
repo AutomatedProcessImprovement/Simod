@@ -18,10 +18,7 @@ preprocessing:
   multitasking: false
 control_flow:
   num_iterations: 2
-  mining_algorithm: sm3
-  concurrency:
-    - 0.0
-    - 1.0
+  mining_algorithm: sm1
   epsilon:
     - 0.0
     - 1.0
@@ -87,28 +84,19 @@ def assert_control_flow(config: dict, result: SimodSettings):
     config_control_flow = config["control_flow"]
     result_control_flow = result.control_flow
     for key in config_control_flow:
-        if config_control_flow["mining_algorithm"] == "sm3":
-            if key == "concurrency":
-                # sm3 does not use concurrency
-                assert result_control_flow.concurrency is None
-                continue
-            elif key in ["epsilon", "eta"]:
+        if config_control_flow["mining_algorithm"] == "sm1":
+            if key in ["epsilon", "eta"]:
                 assert tuple(config_control_flow[key]) == result_control_flow.epsilon, f"{key} is not equal"
                 continue
         elif config_control_flow["mining_algorithm"] == "sm2" and key in [
-            "concurrency",
             "epsilon",
             "eta",
             "replace_or_joins",
             "prioritize_parallelism",
         ]:
-            if key == "concurrency":
-                # pair is stored as a tuple internally, so we need to convert it for comparison
-                assert tuple(config_control_flow[key]) == result_control_flow.concurrency, f"{key} is not equal"
-                continue
             if config_control_flow["mining_algorithm"] == "sm2":
-                # sm2 doesn't use epsilon, eta, replace_or_joins, prioritize_parallelism are None
-                assert result_control_flow.epsilon is None, "epsilon is not None for sm2"
+                assert result_control_flow.epsilon is not None, "epsilon is None for sm2"
+                # sm2 doesn't use eta, replace_or_joins, prioritize_parallelism are None
                 assert result_control_flow.eta is None, "eta is not None for sm2"
                 assert result_control_flow.replace_or_joins is None, "replace_or_joins is not None for sm2"
                 assert result_control_flow.prioritize_parallelism is None, "prioritize_parallelism is not None for sm2"

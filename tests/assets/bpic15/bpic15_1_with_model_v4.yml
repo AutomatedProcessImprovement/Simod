@@ -25,7 +25,7 @@ control_flow:
   gateway_probabilities: # Methods to discover the probabilities of each gateway
     - equiprobable
     - discovery
-  discovery_algorithm: sm3  # Process model discovery algorithm: sm2 (Split Miner v2) or sm3 (Split Miner v3)
+  discovery_algorithm: sm1  # Process model discovery algorithm: sm1 (Split Miner v1) or sm2 (Split Miner v2)
   epsilon:
     - 0.0
     - 1.0

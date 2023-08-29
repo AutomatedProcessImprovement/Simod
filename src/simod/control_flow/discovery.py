@@ -11,9 +11,7 @@ from simod.settings.control_flow_settings import (
 from simod.settings.simod_settings import PROJECT_DIR
 from simod.utilities import execute_external_command, is_windows
 
-sm2_path: Path = PROJECT_DIR / "external_tools/splitminer2/sm2.jar"
-sm3_path: Path = PROJECT_DIR / "external_tools/splitminer3/bpmtk.jar"
-split_miner_jar_path: Path = PROJECT_DIR / "external_tools/splitminer-1.6-all.jar"
+split_miner_jar_path: Path = PROJECT_DIR / "lib/splitminer-1.6-all.jar"
 
 
 def discover_process_model(log_path: Path, output_model_path: Path, params: HyperoptIterationParams):
@@ -25,18 +23,7 @@ def discover_process_model(log_path: Path, output_model_path: Path, params: Hype
     :param output_model_path: Path to write the discovered process model.
     :param params: configuration class specifying the process model discovery algorithm and its parameters.
     """
-    if params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-        discover_process_model_with_split_miner_2(log_path, output_model_path, params.concurrency)
-    elif params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
-        discover_process_model_with_split_miner_3(
-            log_path,
-            output_model_path,
-            params.eta,
-            params.epsilon,
-            params.prioritize_parallelism,
-            params.replace_or_joins,
-        )
-    elif params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
+    if params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
         discover_process_model_with_split_miner_v1(
             SplitMinerV1Settings(
                 log_path,
@@ -99,12 +86,11 @@ def discover_process_model_with_split_miner_v1(settings: SplitMinerV1Settings):
         str(settings.epsilon),
     ]
 
+    # Boolean flags added only when they are True
     if settings.parallelism_first:
         args += ["--parallelismFirst"]
-
     if settings.replace_or_joins:
         args += ["--replaceIORs"]
-
     if settings.remove_loop_activity_markers:
         args += ["--removeLoopActivityMarkers"]
 
@@ -130,79 +116,10 @@ def discover_process_model_with_split_miner_v2(settings: SplitMinerV2Settings):
         model_output_path,
         "--epsilon",
         str(settings.epsilon),
-        "--splitminer2",
+        "--splitminer2",  # Boolean flag is always added here to run Split Miner v2
     ]
 
     print_step(f"SplitMiner v2 is running with the following arguments: {args}")
-    execute_external_command(args)
-
-
-# TODO: concurrency is named "epsilon" in Split Miner 2
-def discover_process_model_with_split_miner_2(log_path: Path, output_model_path: Path, concurrency: float):
-    """
-    Discover, with Split Miner 2, a process model using the (XES) log in [log_path].
-
-    :param log_path: Path to the event log in XES format.
-    :param output_model_path: Path to write the discovered process model.
-    :param concurrency: concurrency threshold.
-    """
-    # Define args depending on the system is running
-    args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        sm2_path, log_path, output_model_path, headless=False
-    )
-    # Prepare command structure
-    args += [
-        "-cp",
-        split_miner_path,
-        "au.edu.unimelb.services.ServiceProvider",
-        "SM2",
-        input_log_path,
-        model_output_path,
-        str(concurrency),
-    ]
-    # Execute command
-    print_step(f"SplitMiner2 is running with the following arguments: {args}")
-    execute_external_command(args)
-
-
-def discover_process_model_with_split_miner_3(
-    log_path: Path,
-    output_model_path: Path,
-    eta: float,
-    epsilon: float,
-    prioritize_parallelism: bool,
-    replace_or_joins: bool,
-):
-    """
-    Discover, with Split Miner 3, a process model using the (XES) log in [log_path].
-
-    :param log_path: Path to the event log in XES format.
-    :param output_model_path: Path to write the discovered process model.
-    :param eta: percentile for frequency threshold.
-    :param epsilon: parallelism threshold.
-    :param prioritize_parallelism: boolean flag denoting if SM3 should prioritize parallelism over loops.
-    :param replace_or_joins: boolean flag denoting if SM3 should replace non-trivial OR joins.
-    """
-    # Define args depending on the system is running
-    args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        sm3_path, log_path, output_model_path, headless=False
-    )
-    # Prepare command structure
-    args += [
-        "-cp",
-        split_miner_path,
-        "au.edu.unimelb.services.ServiceProvider",
-        "SMD",
-        str(eta),
-        str(epsilon),
-        str(prioritize_parallelism).lower(),  # Prioritize parallelism over loops
-        str(replace_or_joins).lower(),  # Replace non-trivial OR joins
-        "false",  # Remove loop activity markers (false increases model complexity)
-        input_log_path,
-        model_output_path,
-    ]
-    # Execute command
-    print_step(f"SplitMiner3 is running with the following arguments: {args}")
     execute_external_command(args)
 
 
@@ -228,7 +145,8 @@ def _prepare_split_miner_params(
         else:
             if ".bpmn" not in str(output_model_path):
                 model_output_path = str(output_model_path.with_suffix(".bpmn"))
-            model_output_path = '"' + str(output_model_path) + '"'
+            else:
+                model_output_path = '"' + str(output_model_path) + '"'
     else:
         # Linux: ':' as separator and add memory specs
         args = ["java", "-Xmx2G", "-Xms1024M"]
@@ -243,6 +161,7 @@ def _prepare_split_miner_params(
         else:
             if ".bpmn" not in str(output_model_path):
                 model_output_path = str(output_model_path.with_suffix(".bpmn"))
-            model_output_path = str(output_model_path)
-    # Return params
+            else:
+                model_output_path = str(output_model_path)
+
     return args, split_miner_path, input_log_path, model_output_path

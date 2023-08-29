@@ -8,7 +8,8 @@ from pix_framework.discovery.resource_calendar_and_performance.calendar_discover
 )
 from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id
-from pix_framework.io.event_log import APROMORE_LOG_IDS
+from pix_framework.io.event_log import APROMORE_LOG_IDS, EventLogIDs
+
 from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams
@@ -17,21 +18,23 @@ from simod.settings.control_flow_settings import ControlFlowSettings, ProcessMod
 from simod.settings.simod_settings import PROJECT_DIR
 from simod.simulation.parameters.BPS_model import BPSModel
 
-control_flow_config_sm3 = {
+control_flow_config_sm1 = {
     "max_evaluations": 3,
     "gateway_probabilities": ["equiprobable", "discovery"],
-    "mining_algorithm": "sm3",
+    "mining_algorithm": "sm1",
     "epsilon": (0.2, 0.8),
     "eta": (0.2, 0.8),
     "replace_or_joins": [True, False],
     "prioritize_parallelism": [True, False],
+    "num_iterations": 10,
 }
 
 control_flow_config_sm2 = {
     "max_evaluations": 3,
     "mining_algorithm": "sm2",
-    "concurrency": (0.2, 0.8),
+    "epsilon": (0.2, 0.8),
     "gateway_probabilities": ["equiprobable", "discovery"],
+    "num_iterations": 10,
 }
 
 control_flow_config_model_provided = {
@@ -39,16 +42,18 @@ control_flow_config_model_provided = {
     "gateway_probabilities": ["equiprobable", "discovery"],
 }
 
+event_log_name = "Control_flow_optimization_test.csv"
+
 control_flow_optimizer_test_data = [
     {
-        "name": "sm3",
-        "parameters": control_flow_config_sm3,
-        "event_log": "Control_flow_optimization_test.csv",
+        "name": "sm1",
+        "parameters": control_flow_config_sm1,
+        "event_log": event_log_name,
     },
     {
         "name": "sm2",
         "parameters": control_flow_config_sm2,
-        "event_log": "Control_flow_optimization_test.csv",
+        "event_log": event_log_name,
     },
 ]
 
@@ -72,7 +77,17 @@ def test_control_flow_optimizer(entry_point, test_data):
     base_dir = PROJECT_DIR / "outputs" / get_random_folder_id(prefix="test_control_flow_optimizer_")
     create_folder(base_dir)
     log_path = entry_point / test_data["event_log"]
-    event_log = EventLog.from_path(log_path, APROMORE_LOG_IDS)
+    event_log = EventLog.from_path(
+        log_path,
+        EventLogIDs(
+            case="Case_ID",
+            activity="Activity",
+            start_time="Start_Time",
+            end_time="End_Time",
+            resource="Resource",
+            enabled_time="AssignedTime",
+        ),
+    )
 
     case_arrival_model = discover_case_arrival_model(
         event_log.train_validation_partition,
@@ -104,18 +119,17 @@ def test_control_flow_optimizer(entry_point, test_data):
     assert result.output_dir.exists()
     assert result.gateway_probabilities_method in test_data["parameters"]["gateway_probabilities"]
     # Assert discovery parameters depending on the algorithm
-    if result.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_2:
-        assert result.concurrency is not None
+    if result.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
+        assert result.epsilon is not None
         assert (
-            float(test_data["parameters"]["concurrency"][0])
-            <= result.concurrency
-            <= float(test_data["parameters"]["concurrency"][1])
+            float(test_data["parameters"]["epsilon"][0])
+            <= result.epsilon
+            <= float(test_data["parameters"]["epsilon"][1])
         )
         assert result.prioritize_parallelism is None
         assert result.replace_or_joins is None
         assert result.eta is None
-        assert result.epsilon is None
-    elif result.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_3:
+    elif result.mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
         assert result.prioritize_parallelism is not None
         assert result.replace_or_joins is not None
         assert result.eta is not None
@@ -126,7 +140,6 @@ def test_control_flow_optimizer(entry_point, test_data):
             <= result.epsilon
             <= float(test_data["parameters"]["epsilon"][1])
         )
-        assert result.concurrency is None
     # Assert the discovered model exists and is a BPMN file
     assert optimizer.best_bps_model.process_model is not None
     bpmn_reader = BPMNReaderWriter(optimizer.best_bps_model.process_model)
