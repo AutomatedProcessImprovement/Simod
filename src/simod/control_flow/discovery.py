@@ -10,7 +10,7 @@ from simod.settings.control_flow_settings import (
 )
 from simod.utilities import execute_external_command, is_windows
 
-split_miner_jar_path: Path = Path(__file__).parent.parent.parent.parent / "lib/splitminer-1.6-all.jar"
+split_miner_jar_path: Path = Path(__file__).parent / "lib/splitminer-1.6-all.jar"
 
 
 def discover_process_model(log_path: Path, output_model_path: Path, params: HyperoptIterationParams):
