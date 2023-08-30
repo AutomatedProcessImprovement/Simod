@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
@@ -69,7 +68,7 @@ def discover_process_model_with_split_miner_v1(settings: SplitMinerV1Settings):
     global split_miner_jar_path
 
     args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        split_miner_jar_path, settings.log_path, settings.output_model_path, lib_dir=False, strip_output_suffix=False
+        split_miner_jar_path, settings.log_path, settings.output_model_path, strip_output_suffix=False
     )
 
     args += [
@@ -103,7 +102,7 @@ def discover_process_model_with_split_miner_v2(settings: SplitMinerV2Settings):
     assert settings.epsilon is not None, "Epsilon must be provided for Split Miner v2."
 
     args, split_miner_path, input_log_path, model_output_path = _prepare_split_miner_params(
-        split_miner_jar_path, settings.log_path, settings.output_model_path, lib_dir=False, strip_output_suffix=False
+        split_miner_jar_path, settings.log_path, settings.output_model_path, strip_output_suffix=False
     )
 
     args += [
@@ -126,7 +125,6 @@ def _prepare_split_miner_params(
     split_miner: Path,
     log_path: Path,
     output_model_path: Path,
-    lib_dir: bool = True,
     strip_output_suffix: bool = True,
     headless: bool = True,
 ) -> Tuple[List[str], str, str, str]:
@@ -135,9 +133,7 @@ def _prepare_split_miner_params(
         args = ["java"]
         if headless:
             args += ["-Djava.awt.headless=true"]
-        split_miner_path = '"' + str(split_miner)
-        if lib_dir:
-            split_miner_path += ";" + os.path.join(os.path.dirname(split_miner), "lib", "*") + '"'
+        split_miner_path = '"' + str(split_miner) + '"'
         input_log_path = '"' + str(log_path) + '"'
         if strip_output_suffix:
             model_output_path = '"' + str(output_model_path.with_suffix("")) + '"'
@@ -152,8 +148,6 @@ def _prepare_split_miner_params(
         if headless:
             args += ["-Djava.awt.headless=true"]
         split_miner_path = str(split_miner)
-        if lib_dir:
-            split_miner_path += ":" + os.path.join(os.path.dirname(split_miner), "lib", "*")
         input_log_path = str(log_path)
         if strip_output_suffix:
             model_output_path = str(output_model_path.with_suffix(""))
