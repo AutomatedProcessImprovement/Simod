@@ -12,11 +12,21 @@ the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulato
 
 ## Requirements
 
-- Python 3.9
-- Java 1.8
+- Python 3.9. For Windows, [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) is the last
+  distribution with Windows installers.
+- Java 1.8. For example,
+  use [Amazon Corretto 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html).
+- Cargo package manager and the Rust toolchain (for Rust dependencies). Install it with [rustup.rs](https://rustup.rs/).
 - _Optional_. If using Docker or compiling from source, use [Poetry](https://python-poetry.org/) for building,
   installing, and
   managing Python dependencies
+
+| Dependency          | Version | Notes                                                                                                                                          |
+|---------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| Python              | 3.9     | For Windows, [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) is the last distribution with Windows installers.          |
+| Java                | 1.8     | For example, use [Amazon Corretto 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html).                           |
+| Cargo and Rust      | latest  | Install it with [rustup.rs](https://rustup.rs/).                                                                                               |
+| Poetry (_optional_) | latest  | If using Docker or compiling from source, use [Poetry](https://python-poetry.org/) for building, installing, and managing Python dependencies. |
 
 ## Getting Started
 
