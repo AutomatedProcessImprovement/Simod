@@ -32,7 +32,9 @@ simod optimize --config_path resources/config/sample.yml
 ```
 
 Use your own configuration file instead of `resources/config/sample.yml` and specify the path to the event log in the
-configuration file.
+configuration file itself. Paths are relative to the configuration file or absolute.
+
+PyPI project is available at https://pypi.org/project/simod/.
 
 ### Docker
 
@@ -43,7 +45,7 @@ docker pull nokal/simod
 To start a container:
 
 ```shell
-docker run -it -v /path/to/resources/:/usr/src/Simod/resources -v /path/to/output:/usr/src/Simod/outputs nokal/simod:v3.2.1 bash
+docker run -it -v /path/to/resources/:/usr/src/Simod/resources -v /path/to/output:/usr/src/Simod/outputs nokal/simod bash
 ```
 
 Use the `resources` directory to store event logs and configuration files. The `outputs` directory will contain the
