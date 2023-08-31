@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 
 simod_version = "3.6.0"
-results_dir = Path(__file__).parent / Path(f"results/{simod_version}/fuzzy")
+results_dir = Path(__file__).parent / Path(f"results/{simod_version}/diff_observed-arrivals")
 
 metric_names_mapping = {
     "absolute_event_distribution": "AED",
