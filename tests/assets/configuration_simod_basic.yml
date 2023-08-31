@@ -6,6 +6,12 @@ common:
   discover_case_attributes: true
   evaluation_metrics:
     - absolute_hourly_emd
+  log_ids:
+    case: "case:concept:name"
+    activity: "concept:name"
+    resource: "org:resource"
+    start_time: "start_timestamp"
+    end_time: "time:timestamp"
 preprocessing:
   multitasking: false
 control_flow:

@@ -2,11 +2,17 @@ version: 4
 common:
   train_log_path: tests/assets/LoanApp_simplified.csv.gz
   test_log_path: tests/assets/LoanApp_simplified.csv.gz
-  model_path: tests/assets/LoanApp_simplified.bpmn
+  process_model_path: tests/assets/LoanApp_simplified.bpmn
   num_final_evaluations: 1
   clean_intermediate_files: false
   evaluation_metrics:
     - absolute_hourly_emd
+  log_ids:
+    case: "case:concept:name"
+    activity: "concept:name"
+    resource: "org:resource"
+    start_time: "start_timestamp"
+    end_time: "time:timestamp"
 preprocessing:
   multitasking: false
 control_flow:

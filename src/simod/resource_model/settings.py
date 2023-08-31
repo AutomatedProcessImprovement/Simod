@@ -16,7 +16,7 @@ class HyperoptIterationParams:
 
     # General settings
     output_dir: Path  # Directory where to output all the files of the current iteration
-    model_path: Path  # Path to BPMN model
+    process_model_path: Path  # Path to BPMN model
     project_name: str  # Name of the project for file naming
 
     optimization_metric: Metric  # Metric to evaluate the candidate of this iteration
@@ -29,7 +29,7 @@ class HyperoptIterationParams:
         # Save common params
         optimization_parameters = {
             "output_dir": str(self.output_dir),
-            "model_path": str(self.model_path),
+            "process_model_path": str(self.process_model_path),
             "project_name": str(self.project_name),
             "optimization_metric": str(self.optimization_metric),
             "discover_prioritization_rules": str(self.discover_prioritization_rules),
@@ -44,7 +44,7 @@ class HyperoptIterationParams:
         optimization_metric: Metric,
         discovery_type: CalendarType,
         output_dir: Path,
-        model_path: Path,
+        process_model_path: Path,
         project_name: str,
     ) -> "HyperoptIterationParams":
         """Create the params for this run from the hyperopt dictionary returned by the fmin function."""
@@ -78,7 +78,7 @@ class HyperoptIterationParams:
 
         return HyperoptIterationParams(
             output_dir=output_dir,
-            model_path=model_path,
+            process_model_path=process_model_path,
             project_name=project_name,
             optimization_metric=optimization_metric,
             calendar_discovery_params=CalendarDiscoveryParameters(

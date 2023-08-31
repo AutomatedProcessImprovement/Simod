@@ -163,7 +163,7 @@ def test_control_flow_optimizer_model_provided(entry_point, test_data):
     base_dir = PROJECT_DIR / "outputs" / get_random_folder_id(prefix="test_control_flow_optimizer_")
     create_folder(base_dir)
     log_path = entry_point / test_data["event_log"]
-    model_path = entry_point / test_data["process_model"]
+    process_model_path = entry_point / test_data["process_model"]
     event_log = EventLog.from_path(log_path, APROMORE_LOG_IDS)
 
     case_arrival_model = discover_case_arrival_model(
@@ -176,7 +176,7 @@ def test_control_flow_optimizer_model_provided(entry_point, test_data):
         CalendarDiscoveryParameters(),
     )
     bps_model = BPSModel(
-        process_model=model_path,
+        process_model=process_model_path,
         case_arrival_model=case_arrival_model,
         resource_model=resource_model,
     )

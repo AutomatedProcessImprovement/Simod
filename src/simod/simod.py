@@ -65,7 +65,7 @@ class Simod:
     ):
         self._settings = settings
         self._event_log = event_log
-        self._best_bps_model = BPSModel(process_model=self._settings.common.model_path)
+        self._best_bps_model = BPSModel(process_model=self._settings.common.process_model_path)
         if output_dir is None:
             self._output_dir = Path(__file__).parent.parent.parent / "outputs" / get_random_folder_id()
             create_folder(self._output_dir)
@@ -90,8 +90,8 @@ class Simod:
         # because we split the event log into train, test, and validation partitions.
         # We use model_activities to repair resource_model later after its discovery from a reduced event log.
         model_activities: Optional[list[str]] = None
-        if self._settings.common.model_path is not None:
-            model_activities = get_activities_names_from_bpmn(self._settings.common.model_path)
+        if self._settings.common.process_model_path is not None:
+            model_activities = get_activities_names_from_bpmn(self._settings.common.process_model_path)
 
         # --- Discover Default Case Arrival and Resource Allocation models --- #
         print_section("Discovering initial BPS Model")
@@ -153,7 +153,7 @@ class Simod:
             case_attributes=self._best_bps_model.case_attributes,
         )
         # Process model
-        if self._settings.common.model_path is None:
+        if self._settings.common.process_model_path is None:
             # Discover process model with best control-flow parameters
             print_subsection(
                 f"Discovering process model with best control-flow settings: {best_control_flow_params.to_dict()}"
@@ -170,7 +170,7 @@ class Simod:
         else:
             # Copy provided process model to best result folder
             print_subsection("Using provided process model")
-            shutil.copy(self._settings.common.model_path, self.final_bps_model.process_model)
+            shutil.copy(self._settings.common.process_model_path, self.final_bps_model.process_model)
         # Gateway probabilities
         print_subsection("Discovering gateway probabilities")
         best_bpmn_graph = BPMNGraph.from_bpmn_path(self.final_bps_model.process_model)
@@ -287,7 +287,7 @@ class Simod:
         self._event_log.test_partition.to_csv(output_dir / "test_log.csv", index=False)
 
         measurements = simulate_and_evaluate(
-            model_path=process_model,
+            process_model_path=process_model,
             parameters_path=json_parameters,
             output_dir=output_dir,
             simulation_cases=simulation_cases,
@@ -308,7 +308,7 @@ class Simod:
         self._resource_model_optimizer.cleanup()
         if self._settings.extraneous_activity_delays is not None:
             self._extraneous_delays_optimizer.cleanup()
-        if self._settings.common.model_path is None:
+        if self._settings.common.process_model_path is None:
             final_xes_log_path = self._best_result_dir / f"{self._event_log.process_name}_train_val.xes"
             remove_asset(final_xes_log_path)
 

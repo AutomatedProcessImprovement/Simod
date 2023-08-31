@@ -13,7 +13,7 @@ common:
     start_time: "start_time"
     end_time: "end_time"
   # Use this process model and skip its discovery
-  model_path: ../models/LoanApp_simplified.bpmn
+  process_model_path: ../models/LoanApp_simplified.bpmn
   # Whether to discover case attributes or not
   discover_case_attributes: false
 #################

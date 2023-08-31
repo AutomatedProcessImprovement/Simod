@@ -1,7 +1,7 @@
 version: 4
 common:
   train_log_path: tests/assets/bpic15/BPIC15_1.csv.gz
-  model_path: tests/assets/bpic15/BPIC15_1.bpmn
+  process_model_path: tests/assets/bpic15/BPIC15_1.bpmn
   num_final_evaluations: 1  # Number of evaluations of the discovered BPS model.
   evaluation_metrics: # Metrics to evaluate the discovered BPS model with.
     - 3_gram_distance
