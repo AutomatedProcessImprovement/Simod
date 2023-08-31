@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Union, List, Optional
 
-from pix_framework.io.event_log import EventLogIDs, DEFAULT_XES_IDS, PROSIMOS_LOG_IDS
+from pix_framework.io.event_log import EventLogIDs, PROSIMOS_LOG_IDS
 
 from ..utilities import get_project_dir
 
@@ -105,7 +105,7 @@ class CommonSettings:
         if "log_ids" in config:
             log_ids = EventLogIDs.from_dict(config["log_ids"])
         else:
-            log_ids = DEFAULT_XES_IDS
+            log_ids = PROSIMOS_LOG_IDS
 
         # Test log path
         if "test_log_path" in config:
