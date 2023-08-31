@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 from pix_framework.filesystem.file_manager import get_random_folder_id
+from pix_framework.io.bpmn import get_activities_names_from_bpmn
 from pix_framework.io.event_log import DEFAULT_XES_IDS
 
-from simod.bpm.graph import get_activities_names_from_bpmn
 from simod.event_log.event_log import EventLog
 from simod.settings.common_settings import PROJECT_DIR
 from simod.settings.simod_settings import SimodSettings
