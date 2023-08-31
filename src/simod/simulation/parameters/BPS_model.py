@@ -8,9 +8,9 @@ from pix_framework.discovery.case_arrival import CaseArrivalModel
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
 from pix_framework.discovery.resource_calendar_and_performance.fuzzy.resource_calendar import FuzzyResourceCalendar
 from pix_framework.discovery.resource_model import ResourceModel
+from pix_framework.io.bpmn import get_activities_ids_by_name_from_bpmn
 
 from simod.batching.types import BatchingRule
-from simod.bpm.graph import get_activities_ids_by_name_from_bpmn
 from simod.case_attributes.types import CaseAttribute
 from simod.extraneous_delays.types import ExtraneousDelay
 from simod.prioritization.types import PrioritizationRule
