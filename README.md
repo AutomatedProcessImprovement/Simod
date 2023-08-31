@@ -10,14 +10,25 @@ Simod takes as input an event log in CSV format, a configuration file, and (opti
 returns a business process simulation scenario that can be simulated using
 the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulator, which is embedded in Simod.
 
-## Requirements
+## Dependencies
 
-| Dependency          | Version | Notes                                                                                                                                          |
-|---------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| Python              | 3.9     | For Windows, [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) is the last distribution with Windows installers.          |
-| Java                | 1.8     | For example, use [Amazon Corretto 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html).                           |
-| Cargo and Rust      | latest  | Install it with [rustup.rs](https://rustup.rs/).                                                                                               |
-| Poetry (_optional_) | latest  | If using Docker or compiling from source, use [Poetry](https://python-poetry.org/) for building, installing, and managing Python dependencies. |
+### Required
+
+| Dependency | Version | Notes                                                                                                                                          |
+|------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| Python     | 3.9     | For Windows, [Python 3.9.13](https://www.python.org/downloads/release/python-3913/) is the last distribution with Windows installers.          |
+| Java       | 1.8     | For example, use [Amazon Corretto 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html).                           |
+| Poetry     | latest  | If using Docker or compiling from source, use [Poetry](https://python-poetry.org/) for building, installing, and managing Python dependencies. |
+
+### Optional
+
+Depending on your CPU architecture, some dependencies might not be pre-compiled for your platform. In that case, you
+will
+most likely also need the following dependencies:
+
+| Dependency     | Version | Notes                                            |
+|----------------|---------|--------------------------------------------------|
+| Cargo and Rust | latest  | Install it with [rustup.rs](https://rustup.rs/). |
 
 ## Getting Started
 
