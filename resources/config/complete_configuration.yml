@@ -14,7 +14,7 @@ common:
     start_time: "start_time"
     end_time: "end_time"
   # Use this process model and skip its discovery
-  model_path: ../models/LoanApp_simplified.bpmn
+  process_model_path: ../models/LoanApp_simplified.bpmn
   # Event log to evaluate the discovered BPS model with
   test_log_path: ../event_logs/LoanApp_simplified_test.csv.gz
   # Flag to perform evaluation (if 'test_log_path' not provided) with a test partition of the input log

@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 from typing import Optional
 
 import click
+import yaml
 from pix_framework.filesystem.file_manager import get_random_folder_id
 
 from simod.event_log.event_log import EventLog
@@ -47,7 +49,35 @@ from simod.simod import Simod
     help="Path to the event log file when using the --one-shot flag. "
     "Columns must be named 'case_id', 'activity', 'start_time', 'end_time', 'resource'.",
 )
-def main(configuration: Optional[Path], output: Optional[Path], one_shot: bool, event_log: Optional[Path]) -> Path:
+@click.option(
+    "--schema-yaml",
+    required=False,
+    is_flag=True,
+    help="Print the configuration YAML schema and exit.",
+)
+@click.option(
+    "--schema-json",
+    required=False,
+    is_flag=True,
+    help="Print the configuration JSON schema and exit.",
+)
+@click.version_option()
+def main(
+    configuration: Optional[Path],
+    output: Optional[Path],
+    one_shot: bool,
+    event_log: Optional[Path],
+    schema_yaml: bool,
+    schema_json: bool,
+) -> None:
+    if schema_yaml:
+        print(yaml.dump(SimodSettings().model_json_schema()))
+        return
+
+    if schema_json:
+        print(json.dumps(SimodSettings().model_json_schema()))
+        return
+
     if one_shot:
         settings = SimodSettings.one_shot()
         settings.common.train_log_path = event_log
@@ -69,8 +99,6 @@ def main(configuration: Optional[Path], output: Optional[Path], one_shot: bool, 
     # Instantiate and run Simod
     simod = Simod(settings, event_log=event_log, output_dir=output)
     simod.run()
-
-    return output
 
 
 if __name__ == "__main__":

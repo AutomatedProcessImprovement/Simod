@@ -15,6 +15,8 @@ from pix_framework.discovery.resource_model import ResourceModel, discover_resou
 from pix_framework.discovery.resource_profiles import discover_pool_resource_profiles
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 
+from .repair import repair_with_missing_activities
+from .settings import HyperoptIterationParams
 from ..batching.discovery import discover_batching_rules
 from ..cli_formatter import print_message, print_step, print_subsection
 from ..event_log.event_log import EventLog
@@ -23,8 +25,6 @@ from ..settings.resource_model_settings import CalendarType, ResourceModelSettin
 from ..simulation.parameters.BPS_model import BPSModel
 from ..simulation.prosimos import simulate_and_evaluate
 from ..utilities import get_process_model_path, get_simulation_parameters_path, hyperopt_step
-from .repair import repair_with_missing_activities
-from .settings import HyperoptIterationParams
 
 
 class ResourceModelOptimizer:
@@ -118,7 +118,7 @@ class ResourceModelOptimizer:
             optimization_metric=self.settings.optimization_metric,
             discovery_type=self.settings.discovery_type,
             output_dir=output_dir,
-            model_path=current_bps_model.process_model,
+            process_model_path=current_bps_model.process_model,
             project_name=self.event_log.process_name,
         )
         print_message(f"Parameters: {hyperopt_iteration_params}")
@@ -194,14 +194,14 @@ class ResourceModelOptimizer:
             discovery_type=self.settings.discovery_type,
             output_dir=best_result["output_dir"],
             project_name=self.event_log.process_name,
-            model_path=self.initial_bps_model.process_model,
+            process_model_path=self.initial_bps_model.process_model,
         )
 
         # Instantiate best BPS model
         self.best_bps_model = self.initial_bps_model.deep_copy()
         # Update best process model (save it in base directory)
         self.best_bps_model.process_model = get_process_model_path(self.base_directory, self.event_log.process_name)
-        shutil.copyfile(best_result["model_path"], self.best_bps_model.process_model)
+        shutil.copyfile(best_result["process_model_path"], self.best_bps_model.process_model)
         # Update simulation parameters (save them in base directory)
         best_parameters_path = get_simulation_parameters_path(self.base_directory, self.event_log.process_name)
         shutil.copyfile(
@@ -314,7 +314,7 @@ class ResourceModelOptimizer:
 
     @staticmethod
     def _define_response(
-        status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
+        status: str, evaluation_measurements: list, output_dir: Path, process_model_path: Path
     ) -> Tuple[str, dict]:
         # Compute mean distance if status is OK
         if status is STATUS_OK:
@@ -329,7 +329,7 @@ class ResourceModelOptimizer:
             "loss": distance,  # Loss value for the fmin function
             "status": status,  # Status of the optimization iteration
             "output_dir": output_dir,
-            "model_path": model_path,
+            "process_model_path": process_model_path,
         }
         # Return updated status and processed response
         return status, response
@@ -340,7 +340,7 @@ class ResourceModelOptimizer:
         json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name, granule_size=granularity)
 
         evaluation_measures = simulate_and_evaluate(
-            model_path=bps_model.process_model,
+            process_model_path=bps_model.process_model,
             parameters_path=json_parameters_path,
             output_dir=output_dir,
             simulation_cases=self.event_log.validation_partition[self.event_log.log_ids.case].nunique(),

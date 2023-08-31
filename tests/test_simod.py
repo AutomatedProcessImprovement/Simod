@@ -73,8 +73,8 @@ def test_simod(test_data, entry_point):
 
     if settings.common.test_log_path:
         settings.common.test_log_path = (entry_point / Path(settings.common.test_log_path).name).absolute()
-    if settings.common.model_path:
-        settings.common.model_path = (entry_point / Path(settings.common.model_path).name).absolute()
+    if settings.common.process_model_path:
+        settings.common.process_model_path = (entry_point / Path(settings.common.process_model_path).name).absolute()
 
     event_log = EventLog.from_path(
         train_log_path=settings.common.train_log_path,
@@ -139,7 +139,7 @@ def test_missing_activities_repaired(entry_point):
     log_path = entry_point / "LoanApp_simplified_without_approve_loan_offer.csv"
     settings = SimodSettings.default()
     settings.common.train_log_path = log_path
-    settings.common.model_path = bpmn_path
+    settings.common.process_model_path = bpmn_path
     settings.common.log_ids = DEFAULT_XES_IDS
     event_log = EventLog.from_path(
         train_log_path=settings.common.train_log_path,

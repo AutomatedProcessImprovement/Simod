@@ -1,8 +1,8 @@
-from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Tuple, Union
 
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
+from pydantic import BaseModel
 
 from .common_settings import Metric
 from ..utilities import parse_single_value_or_interval
@@ -49,8 +49,7 @@ class ProcessModelDiscoveryAlgorithm(str, Enum):
         return f"Unknown ProcessModelDiscoveryAlgorithm {str(self)}"
 
 
-@dataclass
-class ControlFlowSettings:
+class ControlFlowSettings(BaseModel):
     """
     Control-flow optimization settings.
     """

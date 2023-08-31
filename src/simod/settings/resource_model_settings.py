@@ -1,14 +1,13 @@
-from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
 from pix_framework.discovery.resource_calendar_and_performance.calendar_discovery_parameters import CalendarType
+from pydantic import BaseModel
 
 from simod.settings.common_settings import Metric
 from simod.utilities import parse_single_value_or_interval
 
 
-@dataclass
-class ResourceModelSettings:
+class ResourceModelSettings(BaseModel):
     """
     Resource Model optimization settings.
     """

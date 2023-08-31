@@ -1,9 +1,10 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 from enum import Enum
 from pathlib import Path
 from typing import Union, List, Optional
 
 from pix_framework.io.event_log import EventLogIDs, PROSIMOS_LOG_IDS
+from pydantic import BaseModel
 
 from ..utilities import get_project_dir
 
@@ -76,13 +77,12 @@ class Metric(str, Enum):
         return f"Unknown Metric {str(self)}"
 
 
-@dataclass
-class CommonSettings:
+class CommonSettings(BaseModel):
     # Log & Model parameters
     train_log_path: Path = Path("default_path.csv")
     log_ids: EventLogIDs = PROSIMOS_LOG_IDS
     test_log_path: Optional[Path] = None
-    model_path: Optional[Path] = None
+    process_model_path: Optional[Path] = None
     # Final evaluation parameters
     perform_final_evaluation: bool = False
     num_final_evaluations: int = 10
@@ -116,12 +116,12 @@ class CommonSettings:
             test_log_path = None
 
         # Process model path
-        if "model_path" in config:
-            model_path = Path(config["model_path"])
-            if not model_path.is_absolute():
-                model_path = base_files_dir / model_path
+        if "process_model_path" in config:
+            process_model_path = Path(config["process_model_path"])
+            if not process_model_path.is_absolute():
+                process_model_path = base_files_dir / process_model_path
         else:
-            model_path = None
+            process_model_path = None
 
         # Flag to perform final evaluation (set to true if there is a test log)
         if test_log_path is not None:
@@ -165,7 +165,7 @@ class CommonSettings:
             train_log_path=train_log_path,
             log_ids=log_ids,
             test_log_path=test_log_path,
-            model_path=model_path,
+            process_model_path=process_model_path,
             perform_final_evaluation=perform_final_evaluation,
             num_final_evaluations=num_final_evaluations,
             evaluation_metrics=metrics,
@@ -179,7 +179,7 @@ class CommonSettings:
             "train_log_path": str(self.train_log_path),
             "test_log_path": str(self.test_log_path) if self.test_log_path is not None else None,
             "log_ids": self.log_ids.to_dict(),
-            "model_path": str(self.model_path) if self.model_path is not None else None,
+            "process_model_path": str(self.process_model_path) if self.process_model_path is not None else None,
             "num_final_evaluations": self.num_final_evaluations,
             "evaluation_metrics": [str(metric) for metric in self.evaluation_metrics],
             "use_observed_arrival_distribution": self.use_observed_arrival_distribution,

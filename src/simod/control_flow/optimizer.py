@@ -160,7 +160,9 @@ class ControlFlowOptimizer:
         # Process best results
         results = pd.DataFrame(self._bayes_trials.results).sort_values("loss")
         best_result = results[results.status == STATUS_OK].iloc[0]
-        assert best_result["model_path"].exists(), f"Best model path {best_result['model_path']} does not exist"
+        assert best_result[
+            "process_model_path"
+        ].exists(), f"Best model path {best_result['process_model_path']} does not exist"
 
         # Re-build parameters of the best hyperopt iteration
         best_hyperopt_parameters = HyperoptIterationParams.from_hyperopt_dict(
@@ -177,7 +179,7 @@ class ControlFlowOptimizer:
         # Update best process model (save it in base directory)
         self.best_bps_model.process_model = get_process_model_path(self.base_directory, self.event_log.process_name)
         best_model_path = (
-            best_result["model_path"] if self._need_to_discover_model else self.initial_bps_model.process_model
+            best_result["process_model_path"] if self._need_to_discover_model else self.initial_bps_model.process_model
         )
         shutil.copyfile(best_model_path, self.best_bps_model.process_model)
         # Update simulation parameters (save them in base directory)
@@ -245,7 +247,7 @@ class ControlFlowOptimizer:
 
     @staticmethod
     def _define_response(
-        status: str, evaluation_measurements: list, output_dir: Path, model_path: Path
+        status: str, evaluation_measurements: list, output_dir: Path, process_model_path: Path
     ) -> Tuple[str, dict]:
         # Compute mean distance if status is OK
         if status is STATUS_OK:
@@ -260,7 +262,7 @@ class ControlFlowOptimizer:
             "loss": distance,  # Loss value for the fmin function
             "status": status,  # Status of the optimization iteration
             "output_dir": output_dir,
-            "model_path": model_path,
+            "process_model_path": process_model_path,
         }
         # Return updated status and processed response
         return status, response
@@ -309,7 +311,7 @@ class ControlFlowOptimizer:
         json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
 
         evaluation_measures = simulate_and_evaluate(
-            model_path=bps_model.process_model,
+            process_model_path=bps_model.process_model,
             parameters_path=json_parameters_path,
             output_dir=output_dir,
             simulation_cases=self.event_log.validation_partition[self.event_log.log_ids.case].nunique(),

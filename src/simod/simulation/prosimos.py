@@ -18,7 +18,6 @@ from prosimos.simulation_engine import run_simulation
 
 from simod.cli_formatter import print_message, print_notice, print_warning
 from simod.metrics import compute_metric
-
 from ..settings.common_settings import Metric
 
 cpu_count = multiprocessing.cpu_count()
@@ -102,7 +101,7 @@ def simulate(settings: ProsimosSettings):
 
 
 def simulate_and_evaluate(
-    model_path: Path,
+    process_model_path: Path,
     parameters_path: Path,
     output_dir: Path,
     simulation_cases: int,
@@ -115,7 +114,7 @@ def simulate_and_evaluate(
     """
     Simulates a process model using Prosimos num_simulations times in parallel.
 
-    :param model_path: Path to the BPMN model.
+    :param process_model_path: Path to the BPMN model.
     :param parameters_path: Path to the Prosimos parameters.
     :param output_dir: Path to the output directory for simulated logs.
     :param simulation_cases: Number of cases to simulate.
@@ -129,7 +128,7 @@ def simulate_and_evaluate(
     """
 
     simulation_log_paths = simulate_in_parallel(
-        model_path, num_simulations, output_dir, parameters_path, simulation_cases, simulation_start_time
+        process_model_path, num_simulations, output_dir, parameters_path, simulation_cases, simulation_start_time
     )
 
     evaluation_measurements = evaluate_logs(metrics, simulation_log_paths, validation_log, validation_log_ids)
@@ -138,7 +137,7 @@ def simulate_and_evaluate(
 
 
 def simulate_in_parallel(
-    model_path: Path,
+    process_model_path: Path,
     num_simulations: int,
     output_dir: Path,
     parameters_path: Path,
@@ -148,7 +147,7 @@ def simulate_in_parallel(
     """
     Simulates a process model using Prosimos num_simulations times in parallel.
 
-    :param model_path: Path to the BPMN model.
+    :param process_model_path: Path to the BPMN model.
     :param num_simulations: Number of simulations to run in parallel. Default: 1. Each simulation produces a log.
     :param output_dir: Path to the output directory for simulated logs.
     :param parameters_path: Path to the Prosimos parameters.
@@ -162,7 +161,7 @@ def simulate_in_parallel(
 
     simulation_arguments = [
         ProsimosSettings(
-            bpmn_path=model_path,
+            bpmn_path=process_model_path,
             parameters_path=parameters_path,
             output_log_path=output_dir / f"simulated_log_{rep}.csv",
             num_simulation_cases=simulation_cases,

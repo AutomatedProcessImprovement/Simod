@@ -1,9 +1,9 @@
 import copy
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Union, Optional
 
 import yaml
+from pydantic import BaseModel
 
 from .common_settings import CommonSettings
 from .control_flow_settings import ControlFlowSettings
@@ -16,17 +16,16 @@ QBP_NAMESPACE_URI = "http://www.qbp-simulator.com/Schema201212"
 BPMN_NAMESPACE_URI = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 
 
-@dataclass
-class SimodSettings:
+class SimodSettings(BaseModel):
     """
     Simod configuration v4 with the settings for all the stages and optimizations.
     If configuration is provided in v2, is transformed to v4.
     """
 
-    common: CommonSettings
-    preprocessing: PreprocessingSettings
-    control_flow: ControlFlowSettings
-    resource_model: ResourceModelSettings
+    common: CommonSettings = CommonSettings()
+    preprocessing: PreprocessingSettings = PreprocessingSettings()
+    control_flow: ControlFlowSettings = ControlFlowSettings()
+    resource_model: ResourceModelSettings = ResourceModelSettings()
     extraneous_activity_delays: Union[ExtraneousDelaysSettings, None] = None
     version: int = 4
 
@@ -89,7 +88,7 @@ class SimodSettings:
             extraneous_delays_settings = None
 
         # If the model is provided, we don't execute SplitMiner, ignore mining_algorithm settings
-        if common_settings.model_path is not None:
+        if common_settings.process_model_path is not None:
             print_notice("Ignoring process model discovery settings (the model is provided)")
             control_flow_settings.mining_algorithm = None
             control_flow_settings.epsilon = None

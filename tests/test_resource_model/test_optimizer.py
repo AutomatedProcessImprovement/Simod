@@ -117,7 +117,7 @@ def test_resource_model_optimizer(entry_point, test_data):
 
     # Assert generic result properties and fields
     assert type(result) is HyperoptIterationParams
-    assert result.model_path == process_model_path
+    assert result.process_model_path == process_model_path
     assert result.output_dir is not None
     assert result.output_dir.exists()
     # Assert discovery parameters depending on the algorithm

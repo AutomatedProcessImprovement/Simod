@@ -1,15 +1,13 @@
-from dataclasses import dataclass
-
 from extraneous_activity_delays.config import (
     OptimizationMetric as ExtraneousDelaysOptimizationMetric,
     DiscoveryMethod as ExtraneousDelaysDiscoveryMethod,
 )
+from pydantic import BaseModel
 
 from simod.settings.common_settings import Metric
 
 
-@dataclass
-class ExtraneousDelaysSettings:
+class ExtraneousDelaysSettings(BaseModel):
     optimization_metric: ExtraneousDelaysOptimizationMetric = ExtraneousDelaysOptimizationMetric.RELATIVE_EMD
     discovery_method: ExtraneousDelaysDiscoveryMethod = ExtraneousDelaysDiscoveryMethod.COMPLEX
     num_iterations: int = 1
