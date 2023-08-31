@@ -87,12 +87,6 @@ of each element:
 - Complete configuration example with all the possible
   parameters ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/complete_configuration.yml)).
 
-You can run any of these examples by executing the following command:
-
-```shell
-poetry run simod optimize --config_path resources/config/configuration_example.yml
-```
-
 ## For developers
 
 ### Testing
