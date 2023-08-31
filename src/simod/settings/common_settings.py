@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Union, List, Optional
 
-from pix_framework.io.event_log import EventLogIDs, DEFAULT_XES_IDS
+from pix_framework.io.event_log import EventLogIDs, PROSIMOS_LOG_IDS
 
 from ..utilities import get_project_dir
 
@@ -79,8 +79,8 @@ class Metric(str, Enum):
 @dataclass
 class CommonSettings:
     # Log & Model parameters
-    train_log_path: Path
-    log_ids: EventLogIDs
+    train_log_path: Path = Path("default_path.csv")
+    log_ids: EventLogIDs = PROSIMOS_LOG_IDS
     test_log_path: Optional[Path] = None
     model_path: Optional[Path] = None
     # Final evaluation parameters
@@ -91,13 +91,6 @@ class CommonSettings:
     use_observed_arrival_distribution: bool = False
     clean_intermediate_files: bool = True
     discover_case_attributes: bool = False
-
-    @staticmethod
-    def default() -> "CommonSettings":
-        return CommonSettings(
-            train_log_path=Path("default_path.csv"),
-            log_ids=DEFAULT_XES_IDS,
-        )
 
     @staticmethod
     def from_dict(config: dict, config_dir: Optional[Path] = None) -> "CommonSettings":
@@ -112,7 +105,7 @@ class CommonSettings:
         if "log_ids" in config:
             log_ids = EventLogIDs.from_dict(config["log_ids"])
         else:
-            log_ids = DEFAULT_XES_IDS
+            log_ids = PROSIMOS_LOG_IDS
 
         # Test log path
         if "test_log_path" in config:

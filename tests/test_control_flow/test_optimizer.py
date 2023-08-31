@@ -10,9 +10,9 @@ from pix_framework.discovery.resource_calendar_and_performance.calendar_discover
 )
 from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id
+from pix_framework.io.bpmn import get_activities_names_from_bpmn
 from pix_framework.io.event_log import APROMORE_LOG_IDS, EventLogIDs
 
-from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams
 from simod.event_log.event_log import EventLog
@@ -145,8 +145,7 @@ def test_control_flow_optimizer(entry_point, test_data):
         )
     # Assert the discovered model exists and is a BPMN file
     assert optimizer.best_bps_model.process_model is not None
-    bpmn_reader = BPMNReaderWriter(optimizer.best_bps_model.process_model)
-    activities = bpmn_reader.read_activities()
+    activities = get_activities_names_from_bpmn(optimizer.best_bps_model.process_model)
     assert len(activities) > 0
     # Assert that the returned result actually has the smallest distance
     assert len(optimizer.evaluation_measurements) > 0
@@ -198,8 +197,7 @@ def test_control_flow_optimizer_model_provided(entry_point, test_data):
     assert result.output_dir.exists()
     # Assert the discovered model exists and is a BPMN file
     assert optimizer.best_bps_model.process_model is not None
-    bpmn_reader = BPMNReaderWriter(optimizer.best_bps_model.process_model)
-    activities = bpmn_reader.read_activities()
+    activities = get_activities_names_from_bpmn(optimizer.best_bps_model.process_model)
     assert len(activities) > 0
     # Assert that the best gateways probabilities is 'discovery'
     assert result.gateway_probabilities_method == GatewayProbabilitiesDiscoveryMethod.DISCOVERY

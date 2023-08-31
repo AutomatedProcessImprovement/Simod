@@ -12,9 +12,9 @@ from pix_framework.discovery.resource_calendar_and_performance.calendar_discover
 from pix_framework.discovery.resource_model import discover_resource_model
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 from pix_framework.io.bpm_graph import BPMNGraph
+from pix_framework.io.bpmn import get_activities_names_from_bpmn
 
 from simod.batching.discovery import discover_batching_rules
-from simod.bpm.graph import get_activities_names_from_bpmn
 from simod.case_attributes.discovery import discover_case_attributes
 from simod.cli_formatter import print_section, print_subsection
 from simod.control_flow.discovery import discover_process_model

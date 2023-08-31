@@ -68,6 +68,20 @@ class ControlFlowSettings:
     prioritize_parallelism: Optional[Union[bool, List[bool]]] = False  # should prioritize parallelism on loops
 
     @staticmethod
+    def one_shot() -> "ControlFlowSettings":
+        return ControlFlowSettings(
+            optimization_metric=Metric.THREE_GRAM_DISTANCE,
+            num_iterations=1,
+            num_evaluations_per_iteration=1,
+            gateway_probabilities=GatewayProbabilitiesDiscoveryMethod.DISCOVERY,
+            mining_algorithm=ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1,
+            epsilon=0.3,
+            eta=0.5,
+            replace_or_joins=False,
+            prioritize_parallelism=False,
+        )
+
+    @staticmethod
     def from_dict(config: dict) -> "ControlFlowSettings":
         optimization_metric = Metric.from_str(config.get("optimization_metric", "n_gram_distance"))
         num_iterations = config.get("num_iterations", 10)

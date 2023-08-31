@@ -4,10 +4,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "simod"
-version = "3.6.9"
+version = "3.6.10"
 authors = [
-    "David Chapela <david.chapela@ut.ee>",
     "Ihar Suvorau <ihar.suvorau@gmail.com>",
+    "David Chapela <david.chapela@ut.ee>",
     "Manuel Camargo <manuel.camargo@ut.ee>",
 ]
 description = "Simod is a Python tool for automated discovery of business process simulation models from event logs."

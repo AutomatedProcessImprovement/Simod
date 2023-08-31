@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 from pix_framework.discovery.gateway_probabilities import GatewayProbabilitiesDiscoveryMethod
+from pix_framework.io.bpmn import get_activities_names_from_bpmn
 
-from simod.bpm.reader_writer import BPMNReaderWriter
 from simod.control_flow.discovery import discover_process_model
 from simod.control_flow.settings import HyperoptIterationParams
 from simod.settings.common_settings import Metric
@@ -55,9 +55,9 @@ def test_discover_process_model(entry_point, test_data):
             prioritize_parallelism=test_data["config_data"]["prioritize_parallelism"],
         )
         discover_process_model(log_path, output_path, params)
+
         # Assert file exists
         assert output_path.exists()
         # Assert is BPMN readable and has activities
-        bpmn_reader = BPMNReaderWriter(output_path)
-        activities = bpmn_reader.read_activities()
+        activities = get_activities_names_from_bpmn(output_path)
         assert len(activities) > 0

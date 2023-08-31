@@ -38,11 +38,21 @@ class SimodSettings:
         """
 
         return SimodSettings(
-            common=CommonSettings.default(),
+            common=CommonSettings(),
             preprocessing=PreprocessingSettings(),
             control_flow=ControlFlowSettings(),
             resource_model=ResourceModelSettings(),
-            extraneous_activity_delays=ExtraneousDelaysSettings.default(),
+            extraneous_activity_delays=ExtraneousDelaysSettings(),
+        )
+
+    @staticmethod
+    def one_shot() -> "SimodSettings":
+        return SimodSettings(
+            common=CommonSettings(),
+            preprocessing=PreprocessingSettings(),
+            control_flow=ControlFlowSettings.one_shot(),
+            resource_model=ResourceModelSettings.one_shot(),
+            extraneous_activity_delays=ExtraneousDelaysSettings(),
         )
 
     @staticmethod
@@ -58,7 +68,7 @@ class SimodSettings:
             common_settings = CommonSettings.from_dict(config["common"], config_dir=config_dir)
         else:
             print_notice("No 'common' settings provided, running Simod with default values.")
-            common_settings = CommonSettings.default()
+            common_settings = CommonSettings()
         if "preprocessing" in config:
             preprocessing_settings = PreprocessingSettings.from_dict(config["preprocessing"])
         else:

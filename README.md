@@ -83,6 +83,7 @@ of each element:
   log ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example_with_evaluation.yml)).
 - Basic configuration to discover a BPS model with a provided BPMN process model as starting
   point ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example_with_provided_process_model.yml)).
+- Basic configuration to discover a BPS model with no optimization process (one-shot) ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_one_shot.yml)).
 - Complete configuration example with all the possible
   parameters ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/complete_configuration.yml)).
 
