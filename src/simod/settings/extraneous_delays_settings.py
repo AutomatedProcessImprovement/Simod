@@ -1,35 +1,26 @@
 from dataclasses import dataclass
 
-from extraneous_activity_delays.config import OptimizationMetric as ExtraneousDelaysOptimizationMetric, \
-    DiscoveryMethod as ExtraneousDelaysDiscoveryMethod
+from extraneous_activity_delays.config import (
+    OptimizationMetric as ExtraneousDelaysOptimizationMetric,
+    DiscoveryMethod as ExtraneousDelaysDiscoveryMethod,
+)
 
 from simod.settings.common_settings import Metric
 
 
 @dataclass
 class ExtraneousDelaysSettings:
-    optimization_metric: ExtraneousDelaysOptimizationMetric
-    discovery_method: ExtraneousDelaysDiscoveryMethod
+    optimization_metric: ExtraneousDelaysOptimizationMetric = ExtraneousDelaysOptimizationMetric.RELATIVE_EMD
+    discovery_method: ExtraneousDelaysDiscoveryMethod = ExtraneousDelaysDiscoveryMethod.COMPLEX
     num_iterations: int = 1
     num_evaluations_per_iteration: int = 3
-
-    @staticmethod
-    def default() -> "ExtraneousDelaysSettings":
-        return ExtraneousDelaysSettings(
-            optimization_metric=ExtraneousDelaysOptimizationMetric.RELATIVE_EMD,
-            discovery_method=ExtraneousDelaysDiscoveryMethod.COMPLEX,
-            num_iterations=1,
-            num_evaluations_per_iteration=3,
-        )
 
     @staticmethod
     def from_dict(config: dict) -> "ExtraneousDelaysSettings":
         optimization_metric = ExtraneousDelaysSettings._match_metric(
             config.get("optimization_metric", "relative_event_distribution")
         )
-        discovery_method = ExtraneousDelaysSettings._match_method(
-            config.get("discovery_method", "eclipse-aware")
-        )
+        discovery_method = ExtraneousDelaysSettings._match_method(config.get("discovery_method", "eclipse-aware"))
         num_iterations = config.get("num_iterations", 1)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
 

@@ -28,7 +28,7 @@ preprocessing:
   concurrency_l1l: 0.9  # concurrency oracle.
 control_flow:
   optimization_metric: n_gram_distance
-  num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
+  num_iterations: 3  # Number of iterations to run the hyper-optimization process for control-flow discovery
   num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
   gateway_probabilities: # Methods to discover the probabilities of each gateway
     - equiprobable
@@ -48,7 +48,7 @@ control_flow:
     - false
 resource_model:
   optimization_metric: circadian_event_distribution
-  num_iterations: 10  # Number of iterations to run the hyper-optimization process for control-flow discovery
+  num_iterations: 3  # Number of iterations to run the hyper-optimization process for control-flow discovery
   num_evaluations_per_iteration: 5  # Number of times to evaluate each iteration (using the mean of all of them)
   resource_profiles:
     discovery_type: differentiated  # Resource discovery type ('undifferentiated', 'pool', or 'differentiated')

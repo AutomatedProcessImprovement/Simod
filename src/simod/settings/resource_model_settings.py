@@ -26,6 +26,22 @@ class ResourceModelSettings:
     fuzzy_angle: Optional[Union[float, Tuple[float, float]]] = (0.1, 0.9)
 
     @staticmethod
+    def one_shot() -> "ResourceModelSettings":
+        return ResourceModelSettings(
+            optimization_metric=Metric.CIRCADIAN_EMD,
+            num_iterations=1,
+            num_evaluations_per_iteration=1,
+            discovery_type=CalendarType.DIFFERENTIATED_BY_RESOURCE,
+            granularity=30,
+            confidence=0.6,
+            support=0.2,
+            participation=0.4,
+            discover_prioritization_rules=False,
+            discover_batching_rules=False,
+            fuzzy_angle=None,
+        )
+
+    @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
         optimization_metric = Metric.from_str(config.get("optimization_metric", "circadian_emd"))
         num_iterations = config.get("num_iterations", 10)
