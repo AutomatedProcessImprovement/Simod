@@ -40,11 +40,11 @@ Then, install Simod and run it with the following commands:
 
 ```shell
 pip install simod
-simod optimize --config_path resources/config/sample.yml
+simod --configuration resources/config/configuration_example.yml
 ```
 
-Use your own configuration file instead of `resources/config/sample.yml` and specify the path to the event log in the
-configuration file itself. Paths are relative to the configuration file or absolute.
+Use your own configuration file instead of `resources/config/configuration_example.yml` and specify the path to the 
+event log in the configuration file itself. Paths are relative to the configuration file, or absolute.
 
 PyPI project is available at https://pypi.org/project/simod/.
 
@@ -66,7 +66,7 @@ results of Simod.
 From inside the container, you can run Simod with:
 
 ```shell
-poetry run simod optimize --config_path <path-to-config>
+poetry run simod --configuration <path-to-config>
 ```
 
 Docker images for different Simod versions are available at https://hub.docker.com/r/nokal/simod/tags.
@@ -86,12 +86,6 @@ of each element:
 - Basic configuration to discover a BPS model with no optimization process (one-shot) ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_one_shot.yml)).
 - Complete configuration example with all the possible
   parameters ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/complete_configuration.yml)).
-
-You can run any of these examples by executing the following command:
-
-```shell
-poetry run simod optimize --config_path resources/config/configuration_example.yml
-```
 
 ## For developers
 

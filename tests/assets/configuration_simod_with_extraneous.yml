@@ -1,13 +1,14 @@
 version: 4
 common:
-  train_log_path: tests/assets/LoanApp_simplified.csv.gz
+  train_log_path: LoanApp_simplified.csv.gz
   discover_case_attributes: true
   log_ids:
-    case: "case:concept:name"
-    activity: "concept:name"
-    resource: "org:resource"
-    start_time: "start_timestamp"
-    end_time: "time:timestamp"
+    case: case:concept:name
+    activity: concept:name
+    resource: org:resource
+    start_time: start_timestamp
+    end_time: time:timestamp
+    enabled_time: enabled_time
 preprocessing:
   multitasking: false
 control_flow:
