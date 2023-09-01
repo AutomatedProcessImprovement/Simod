@@ -1,9 +1,9 @@
 from dataclasses import field
 from enum import Enum
 from pathlib import Path
-from typing import Union, List, Optional
+from typing import List, Optional, Union
 
-from pix_framework.io.event_log import EventLogIDs, PROSIMOS_LOG_IDS
+from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs
 from pydantic import BaseModel
 
 from ..utilities import get_project_dir
@@ -108,7 +108,7 @@ class CommonSettings(BaseModel):
             log_ids = PROSIMOS_LOG_IDS
 
         # Test log path
-        if "test_log_path" in config:
+        if "test_log_path" in config and config["test_log_path"] is not None:
             test_log_path = Path(config["test_log_path"])
             if not test_log_path.is_absolute():
                 test_log_path = base_files_dir / test_log_path
@@ -116,7 +116,7 @@ class CommonSettings(BaseModel):
             test_log_path = None
 
         # Process model path
-        if "process_model_path" in config:
+        if "process_model_path" in config and config["process_model_path"] is not None:
             process_model_path = Path(config["process_model_path"])
             if not process_model_path.is_absolute():
                 process_model_path = base_files_dir / process_model_path
