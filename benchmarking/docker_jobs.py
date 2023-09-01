@@ -12,6 +12,7 @@ container_input_dir = Path("/usr/src/Simod/input")
 
 # TODO: use file paths relative to the configuration file
 # TODO: remove Xvfb
+# TODO: update running Simod via CLI
 
 
 @dataclass

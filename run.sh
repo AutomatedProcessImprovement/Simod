@@ -20,4 +20,4 @@ if [ -z "$OUTPUT_DIR" ]; then
 fi
 
 # run Simod
-poetry run simod optimize --config_path $CONFIG_PATH --output_dir $OUTPUT_DIR
+poetry run simod --configuration $CONFIG_PATH --output $OUTPUT_DIR
