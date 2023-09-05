@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "simod"
-version = "3.6.13"
+version = "3.6.14"
 authors = [
     "Ihar Suvorau <ihar.suvorau@gmail.com>",
     "David Chapela <david.chapela@ut.ee>",
@@ -35,9 +35,9 @@ statistics = "^1.0.3.5"
 tqdm = "^4.64.1"
 xmltodict = "^0.13.0"
 prosimos = "^2.0.3"
-extraneous-activity-delays = "^2.1.19"
+extraneous-activity-delays = "^2.1.20"
 openxes-cli-py = "^0.1.15"
-pix-framework = "^0.13.5"
+pix-framework = "^0.13.6"
 log-distance-measures = "^1.0.2"
 
 [tool.poetry.group.dev.dependencies]

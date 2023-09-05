@@ -338,13 +338,13 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "extraneous-activity-delays"
-version = "2.1.19"
+version = "2.1.20"
 description = ""
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "extraneous_activity_delays-2.1.19-py3-none-any.whl", hash = "sha256:3c3fd5b732b18101a7d67a948f147f059aaa8e605d52fec52410802ce52f2512"},
-    {file = "extraneous_activity_delays-2.1.19.tar.gz", hash = "sha256:77df24657233faf687ea344756db31a02d91eba50146116f8f732b0ec787eb8e"},
+    {file = "extraneous_activity_delays-2.1.20-py3-none-any.whl", hash = "sha256:c7eb58b265aad30b5ac71981e1cbf19b98ac63cd004e86b5e67136043e5aad6e"},
+    {file = "extraneous_activity_delays-2.1.20.tar.gz", hash = "sha256:41619b3039de4fefb5a6a7f9c642e8e4139bc2ae2213198fc7496b3e9aa9f3f7"},
 ]
 
 [package.dependencies]
@@ -1277,13 +1277,13 @@ tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "pa
 
 [[package]]
 name = "pix-framework"
-version = "0.13.5"
+version = "0.13.6"
 description = "Process Improvement Explorer Framework contains process discovery and improvement modules of the Process Improvement Explorer project."
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "pix_framework-0.13.5-py3-none-any.whl", hash = "sha256:39c863368f928776b173e90047e04f38e796cf0eb5d8e278158a096e5e02e9d9"},
-    {file = "pix_framework-0.13.5.tar.gz", hash = "sha256:dec86b2876188715a72aad507be83a1080e6c29e8e86e2279438a79e83d26cd6"},
+    {file = "pix_framework-0.13.6-py3-none-any.whl", hash = "sha256:fe8c5c536bf5fc047ab807628a6faf9d4db35a6906ed3702192e09f9128a358c"},
+    {file = "pix_framework-0.13.6.tar.gz", hash = "sha256:479c74d11fb8dc976515a0f792622d78110e66384b886b7d39516a176bd0ea02"},
 ]
 
 [package.dependencies]
@@ -1659,13 +1659,13 @@ diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pytest"
-version = "7.4.0"
+version = "7.4.1"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-7.4.0-py3-none-any.whl", hash = "sha256:78bf16451a2eb8c7a2ea98e32dc119fd2aa758f1d5d66dbf0a59d69a3969df32"},
-    {file = "pytest-7.4.0.tar.gz", hash = "sha256:b4bf8c45bd59934ed84001ad51e11b4ee40d40a1229d2c79f9c592b0a3f6bd8a"},
+    {file = "pytest-7.4.1-py3-none-any.whl", hash = "sha256:460c9a59b14e27c602eb5ece2e47bec99dc5fc5f6513cf924a7d03a578991b1f"},
+    {file = "pytest-7.4.1.tar.gz", hash = "sha256:2f2301e797521b23e4d2585a0a3d7b5e50fdddaaf7e7d6773ea26ddb17c213ab"},
 ]
 
 [package.dependencies]
@@ -1761,13 +1761,13 @@ dev = ["atomicwrites (==1.2.1)", "attrs (==19.2.0)", "coverage (==6.5.0)", "hatc
 
 [[package]]
 name = "pytz"
-version = "2023.3"
+version = "2023.3.post1"
 description = "World timezone definitions, modern and historical"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pytz-2023.3-py2.py3-none-any.whl", hash = "sha256:a151b3abb88eda1d4e34a9814df37de2a80e301e68ba0fd856fb9b46bfbbbffb"},
-    {file = "pytz-2023.3.tar.gz", hash = "sha256:1d8ce29db189191fb55338ee6d0387d82ab59f3d00eac103412d64e0ebd0c588"},
+    {file = "pytz-2023.3.post1-py2.py3-none-any.whl", hash = "sha256:ce42d816b81b68506614c11e8937d3aa9e41007ceb50bfdcb0749b921bf646c7"},
+    {file = "pytz-2023.3.post1.tar.gz", hash = "sha256:7b4fddbeb94a1eba4b557da24f19fdf9db575192544270a9101d8509f9f43d7b"},
 ]
 
 [[package]]
@@ -2328,4 +2328,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.12"
-content-hash = "df83035f36e8917cd37c158c2eaa17c33aaaa44c8361f8803ad470799a79472f"
+content-hash = "c05c32ee660109ac2c29ecf45d631e11534449c10ba90b35e9efa0469d167985"
