@@ -9,6 +9,7 @@ on:
       - 'tests/**'
       - '.github/workflows/**'
       - 'Dockerfile'
+      - 'pyproject.toml'
   pull_request:
     branches: [ master ]
     paths:
