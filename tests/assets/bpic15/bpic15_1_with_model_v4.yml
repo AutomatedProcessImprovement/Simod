@@ -1,7 +1,7 @@
 version: 4
 common:
-  train_log_path: tests/assets/bpic15/BPIC15_1.csv.gz
-  process_model_path: tests/assets/bpic15/BPIC15_1.bpmn
+  train_log_path: BPIC15_1.csv.gz
+  process_model_path: BPIC15_1.bpmn
   num_final_evaluations: 1  # Number of evaluations of the discovered BPS model.
   evaluation_metrics: # Metrics to evaluate the discovered BPS model with.
     - 3_gram_distance
@@ -12,6 +12,13 @@ common:
     - arrival_event_distribution
     - cycle_time_distribution
   clean_intermediate_files: false
+  log_ids:
+    case: case:concept:name
+    activity: concept:name
+    resource: org:resource
+    start_time: start_timestamp
+    end_time: time:timestamp
+    enabled_time: enabled_time
 preprocessing:
   multitasking: false  # Reassign activity durations when happening in multitasking.
   enable_time_concurrency_threshold: 0.5  # Concurrency threshold for the enabled time computation.
