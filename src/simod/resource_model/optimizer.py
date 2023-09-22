@@ -74,6 +74,7 @@ class ResourceModelOptimizer:
         )
         # Instantiate trials for hyper-optimization process
         self._bayes_trials = Trials()
+        self.iteration_index = 0
         # Discover resource pools (performance purposes) if needed
         if self.settings.discovery_type is CalendarType.DIFFERENTIATED_BY_POOL:
             self._resource_pools = discover_pool_resource_profiles(
@@ -103,7 +104,7 @@ class ResourceModelOptimizer:
 
     def _hyperopt_iteration(self, hyperopt_iteration_dict: dict):
         # Report new iteration
-        print_subsection("Resource Model optimization iteration")
+        print_subsection(f"Resource Model optimization iteration {self.iteration_index}")
 
         # Initialize status
         status = STATUS_OK
@@ -159,8 +160,9 @@ class ResourceModelOptimizer:
         )
         print(f"Resource Model optimization iteration response: {response}")
 
-        # Save the quality of this evaluation
+        # Save the quality of this evaluation and increase iteration index
         self._process_measurements(hyperopt_iteration_params, status, evaluation_measurements)
+        self.iteration_index += 1
 
         return response
 
@@ -170,6 +172,7 @@ class ResourceModelOptimizer:
         :return: The parameters of the best iteration of the optimization process.
         """
         # Define search space
+        self.iteration_index = 0
         search_space = self._define_search_space(settings=self.settings)
 
         # Launch optimization process

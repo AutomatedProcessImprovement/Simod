@@ -79,10 +79,11 @@ class ControlFlowOptimizer:
         )
         # Instantiate trials for hyper-optimization process
         self._bayes_trials = Trials()
+        self.iteration_index = 0
 
     def _hyperopt_iteration(self, hyperopt_iteration_dict: dict):
         # Report new iteration
-        print_subsection("Control-flow optimization iteration")
+        print_subsection(f"Control-flow optimization iteration {self.iteration_index}")
 
         # Initialize status
         status = STATUS_OK
@@ -133,8 +134,9 @@ class ControlFlowOptimizer:
         )
         print(f"Control-flow optimization iteration response: {response}")
 
-        # Save the quality of this evaluation
+        # Save the quality of this evaluation and increase iteration index
         self._process_measurements(hyperopt_iteration_params, status, evaluation_measurements)
+        self.iteration_index += 1
 
         return response
 
@@ -144,6 +146,7 @@ class ControlFlowOptimizer:
         :return: The parameters of the best iteration of the optimization process.
         """
         # Define search space
+        self.iteration_index = 0
         search_space = self._define_search_space(settings=self.settings)
 
         # Launch optimization process
