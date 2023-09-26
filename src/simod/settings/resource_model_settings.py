@@ -63,7 +63,7 @@ class ResourceModelSettings(BaseModel):
             support = parse_single_value_or_interval(resource_profiles.get("support", (0.01, 0.3)))
             participation = parse_single_value_or_interval(resource_profiles.get("participation", 0.4))
         elif discovery_type == CalendarType.DIFFERENTIATED_BY_RESOURCE_FUZZY:
-            granularity = parse_single_value_or_interval(resource_profiles.get("granularity", (15, 60)))
+            granularity = parse_single_value_or_interval(resource_profiles.get("granularity", (60, 120)))
             fuzzy_angle = parse_single_value_or_interval(resource_profiles.get("fuzzy_angle", (0.1, 1.0)))
 
         return ResourceModelSettings(

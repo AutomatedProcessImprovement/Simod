@@ -100,11 +100,13 @@ class Simod:
             self._event_log.log_ids,
             use_observed_arrival_distribution=self._settings.common.use_observed_arrival_distribution,
         )
+        calendar_discovery_parameters = CalendarDiscoveryParameters()
         self._best_bps_model.resource_model = discover_resource_model(
             self._event_log.train_partition,  # Only train to not discover tasks that won't exist for control-flow opt.
             self._event_log.log_ids,
-            CalendarDiscoveryParameters(),
+            calendar_discovery_parameters,
         )
+        self._best_bps_model.calendar_granularity = calendar_discovery_parameters.granularity
         if model_activities is not None:
             repair_with_missing_activities(
                 resource_model=self._best_bps_model.resource_model,
@@ -135,6 +137,7 @@ class Simod:
         print_section("Optimizing resource model parameters")
         best_resource_model_params = self._optimize_resource_model(model_activities)
         self._best_bps_model.resource_model = self._resource_model_optimizer.best_bps_model.resource_model
+        self._best_bps_model.calendar_granularity = self._resource_model_optimizer.best_bps_model.calendar_granularity
         self._best_bps_model.prioritization_rules = self._resource_model_optimizer.best_bps_model.prioritization_rules
         self._best_bps_model.batching_rules = self._resource_model_optimizer.best_bps_model.batching_rules
 
@@ -187,6 +190,7 @@ class Simod:
             log_ids=self._event_log.log_ids,
             params=best_resource_model_params.calendar_discovery_params,
         )
+        self.final_bps_model.calendar_granularity = best_resource_model_params.calendar_discovery_params.granularity
         if model_activities is not None:
             repair_with_missing_activities(
                 resource_model=self.final_bps_model.resource_model,

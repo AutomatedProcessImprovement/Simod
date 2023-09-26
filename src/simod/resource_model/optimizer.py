@@ -128,6 +128,7 @@ class ResourceModelOptimizer:
         status, current_bps_model.resource_model = hyperopt_step(
             status, self._discover_resource_model, hyperopt_iteration_params.calendar_discovery_params
         )
+        current_bps_model.calendar_granularity = hyperopt_iteration_params.calendar_discovery_params.granularity
 
         if self.model_activities is not None:
             repair_with_missing_activities(
@@ -150,8 +151,7 @@ class ResourceModelOptimizer:
             status,
             self._simulate_bps_model,
             current_bps_model,
-            hyperopt_iteration_params.output_dir,
-            hyperopt_iteration_params.calendar_discovery_params.granularity,
+            hyperopt_iteration_params.output_dir
         )
 
         # Define the response of this iteration
@@ -176,7 +176,7 @@ class ResourceModelOptimizer:
         search_space = self._define_search_space(settings=self.settings)
 
         # Launch optimization process
-        best_hyperopt_params = fmin(
+        params_best_iteration = fmin(
             fn=self._hyperopt_iteration,
             space=search_space,
             algo=tpe.suggest,
@@ -184,7 +184,7 @@ class ResourceModelOptimizer:
             trials=self._bayes_trials,
             show_progressbar=False,
         )
-        best_hyperopt_params = hyperopt.space_eval(search_space, best_hyperopt_params)
+        params_best_iteration = hyperopt.space_eval(search_space, params_best_iteration)
 
         # Process best results
         results = pd.DataFrame(self._bayes_trials.results).sort_values("loss")
@@ -192,7 +192,7 @@ class ResourceModelOptimizer:
 
         # Re-build parameters of the best hyperopt iteration
         best_hyperopt_parameters = HyperoptIterationParams.from_hyperopt_dict(
-            hyperopt_dict=best_hyperopt_params,
+            hyperopt_dict=params_best_iteration,
             optimization_metric=self.settings.optimization_metric,
             discovery_type=self.settings.discovery_type,
             output_dir=best_result["output_dir"],
@@ -212,6 +212,7 @@ class ResourceModelOptimizer:
         )
         # Update resource model
         self.best_bps_model.resource_model = ResourceModel.from_dict(json.load(open(best_parameters_path, "r")))
+        self.best_bps_model.calendar_granularity = best_hyperopt_parameters.calendar_discovery_params.granularity
 
         # Save evaluation measurements
         self.evaluation_measurements.sort_values("distance", ascending=True, inplace=True)
@@ -337,10 +338,10 @@ class ResourceModelOptimizer:
         # Return updated status and processed response
         return status, response
 
-    def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path, granularity: int) -> List[dict]:
+    def _simulate_bps_model(self, bps_model: BPSModel, output_dir: Path) -> List[dict]:
         bps_model.replace_activity_names_with_ids()
 
-        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name, granule_size=granularity)
+        json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
 
         evaluation_measures = simulate_and_evaluate(
             process_model_path=bps_model.process_model,

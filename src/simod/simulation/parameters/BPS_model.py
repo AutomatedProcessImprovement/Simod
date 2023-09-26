@@ -44,8 +44,9 @@ class BPSModel:
     case_attributes: Optional[List[CaseAttribute]] = None
     prioritization_rules: Optional[List[PrioritizationRule]] = None
     batching_rules: Optional[List[BatchingRule]] = None
+    calendar_granularity: Optional[int] = None
 
-    def to_prosimos_format(self, granule_size: int = 15) -> dict:
+    def to_prosimos_format(self) -> dict:
         # Get map activity label -> node ID
         activity_label_to_id = get_activities_ids_by_name_from_bpmn(self.process_model)
 
@@ -78,7 +79,7 @@ class BPSModel:
             attributes["model_type"] = "FUZZY"
         else:
             attributes["model_type"] = "CRISP"
-        attributes["granule_size"] = {"value": granule_size, "time_unit": "MINUTES"}
+        attributes["granule_size"] = {"value": self.calendar_granularity, "time_unit": "MINUTES"}
 
         return attributes
 
@@ -107,10 +108,10 @@ class BPSModel:
                     activity_resource_distributions.activity_id
                 ]
 
-    def to_json(self, output_dir: Path, process_name: str, granule_size: int = 15) -> Path:
+    def to_json(self, output_dir: Path, process_name: str) -> Path:
         json_parameters_path = get_simulation_parameters_path(output_dir, process_name)
 
         with json_parameters_path.open("w") as f:
-            json.dump(self.to_prosimos_format(granule_size=granule_size), f)
+            json.dump(self.to_prosimos_format(), f)
 
         return json_parameters_path
