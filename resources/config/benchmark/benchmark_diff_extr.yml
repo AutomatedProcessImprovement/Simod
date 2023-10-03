@@ -4,9 +4,9 @@ version: 4
 ##########
 common:
   # Path to the event log in CSV format
-  train_log_path: ../event_logs/AcademicCredentials_train.csv.gz
+  train_log_path: ../../event_logs/AcademicCredentials_train.csv.gz
   # Event log to evaluate the discovered BPS model with
-  test_log_path: ../event_logs/AcademicCredentials_test.csv.gz
+  test_log_path: ../../event_logs/AcademicCredentials_test.csv.gz
   # Use observed arrival distributions
   use_observed_arrival_distribution: false
   # Specify the name for each of the columns in the CSV file (XES standard by default)
