@@ -79,6 +79,8 @@ of each element:
 
 - Basic configuration to discover the full BPS
   model ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example.yml)).
+- Basic configuration to discover the full BPS model using fuzzy (probabilistic) resource 
+  calendars ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example_fuzzy.yml)).
 - Basic configuration to discover the full BPS model, and evaluate it with a specified event
   log ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example_with_evaluation.yml)).
 - Basic configuration to discover a BPS model with a provided BPMN process model as starting
