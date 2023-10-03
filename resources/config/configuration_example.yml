@@ -25,7 +25,7 @@ preprocessing:
 ################
 control_flow:
   # Metric to guide the optimization process (loss function to minimize)
-  optimization_metric: n_gram_distance
+  optimization_metric: two_gram_distance
   # Number of optimization iterations over the search space
   num_iterations: 20
   # Number of times to evaluate each iteration (using the mean of all of them)
@@ -38,12 +38,12 @@ control_flow:
   mining_algorithm: sm1
   # Number of concurrent relations between events to be captured
   epsilon:
-    - 0.0
-    - 1.0
+    - 0.05
+    - 0.4
   # Threshold for filtering the incoming and outgoing edges
   eta:
-    - 0.0
-    - 1.0
+    - 0.2
+    - 0.7
   # Whether to replace non-trivial OR joins or not
   replace_or_joins:
     - true
@@ -68,7 +68,7 @@ resource_model:
   # Resource profiles configuration
   resource_profiles:
     # Resource profile discovery type
-    discovery_type: pool
+    discovery_type: differentiated
     # Time granularity (in minutes) for the resource calendar (the higher the density of events in the log, the smaller the granularity can be)
     granularity:
       - 15
@@ -79,15 +79,15 @@ resource_model:
       - 0.85
     # Minimum support of the intervals in the discovered calendar (of a resource or set of resources)
     support:
-      - 0.01
-      - 0.3
+      - 0.05
+      - 0.5
     # Participation of a resource in the process to discover a calendar for them (gathered together otherwise)
     participation: 0.4
 #####################
 # Extraneous delays #
 #####################
 extraneous_activity_delays:
-  # Metric to guide the optimization process (loss function to minimize)
-  optimization_metric: relative_emd
+  # Method to compute the extraneous delay
+  discovery_method: eclipse-aware
   # Number of optimization iterations over the search space (1 = direct discovery, no optimization stage)
   num_iterations: 1

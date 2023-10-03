@@ -56,7 +56,7 @@ resource_model:
 # Extraneous delays #
 #####################
 extraneous_activity_delays:
-  # Metric to guide the optimization process (loss function to minimize)
-  optimization_metric: relative_emd
+  # Method to compute the extraneous delay
+  discovery_method: eclipse-aware
   # Number of optimization iterations over the search space (1 = direct discovery, no optimization stage)
   num_iterations: 1

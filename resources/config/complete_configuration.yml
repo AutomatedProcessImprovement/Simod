@@ -69,12 +69,12 @@ control_flow:
   mining_algorithm: sm1
   # For Split Miner v1 and v2: Number of concurrent relations between events to be captured (between 0.0 and 1.0)
   epsilon:
-    - 0.0
-    - 1.0
+    - 0.05
+    - 0.4
   # Only for Split Miner v1: Threshold for filtering the incoming and outgoing edges (between 0.0 and 1.0)
   eta:
-    - 0.0
-    - 1.0
+    - 0.2
+    - 0.7
   # Only for Split Miner v1: Whether to replace non-trivial OR joins or not (true or false)
   replace_or_joins:
     - true
@@ -99,7 +99,7 @@ resource_model:
   discover_batching_rules: false
   # Resource profiles configuration
   resource_profiles:
-    # Resource profile discovery type (differentiated, pool, undifferentiated)
+    # Resource profile discovery type (fuzzy, differentiated, pool, undifferentiated)
     discovery_type: differentiated
     # Time granularity (in minutes) for the resource calendar (the higher the density of events in the log, the smaller the granularity can be)
     granularity:
@@ -111,12 +111,16 @@ resource_model:
       - 0.85
     # Minimum support of the intervals in the discovered calendar of a resource or set of resources (between 0.0 and 1.0)
     support:
-      - 0.01
-      - 0.3
+      - 0.05
+      - 0.5
     # Participation of a resource in the process to discover a calendar for them, gathered together otherwise (between 0.0 and 1.0)
     participation:
       - 0.2
       - 0.5
+    # Angle of the fuzzy trapezoid when computing the availability probability for an activity (angle from start to end)
+    fuzzy_angle:
+      - 0.1
+      - 0.9
 
 #####################
 # Extraneous delays #
