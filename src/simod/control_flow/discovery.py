@@ -9,7 +9,8 @@ from simod.settings.control_flow_settings import (
 )
 from simod.utilities import execute_external_command, is_windows
 
-split_miner_jar_path: Path = Path(__file__).parent / "lib/splitminer-1.6-all.jar"
+split_miner_jar_path: Path = Path(__file__).parent / "lib/split-miner-1.7.1-all.jar"
+bpmn_layout_jar_path: Path = Path(__file__).parent / "lib/bpmn-layout-1.0.6-jar-with-dependencies.jar"
 
 
 def discover_process_model(log_path: Path, output_model_path: Path, params: HyperoptIterationParams):
@@ -38,6 +39,21 @@ def discover_process_model(log_path: Path, output_model_path: Path, params: Hype
         raise ValueError(f"Unknown process model discovery algorithm: {params.mining_algorithm}")
 
     assert output_model_path.exists(), f"Error trying to discover the process model in '{output_model_path}'."
+
+
+def add_bpmn_diagram_to_model(bpmn_model_path: Path):
+    """
+    Add BPMN diagram to the control flow of the existing BPMN model using the hierarchical layout algorithm.
+    This function overwrites the existing BPMN model file.
+
+    :param bpmn_model_path:
+    :return: None
+    """
+    global bpmn_layout_jar_path
+
+    args = ["java", "-jar", str(bpmn_layout_jar_path), str(bpmn_model_path)]
+    print_step(f"Adding BPMN diagram to the model: {args}")
+    execute_external_command(args)
 
 
 @dataclass

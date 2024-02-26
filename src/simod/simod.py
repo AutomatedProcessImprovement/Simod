@@ -17,7 +17,7 @@ from pix_framework.io.bpmn import get_activities_names_from_bpmn
 from simod.batching.discovery import discover_batching_rules
 from simod.case_attributes.discovery import discover_case_attributes
 from simod.cli_formatter import print_section, print_subsection
-from simod.control_flow.discovery import discover_process_model
+from simod.control_flow.discovery import discover_process_model, add_bpmn_diagram_to_model
 from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams as ControlFlowHyperoptIterationParams
 from simod.event_log.event_log import EventLog
@@ -237,6 +237,9 @@ class Simod:
         if self._settings.common.clean_intermediate_files:
             self._clean_up()
         self._settings.to_yaml(self._best_result_dir)
+
+        # --- Add BPMN diagram to the model --- #
+        add_bpmn_diagram_to_model(self.final_bps_model.process_model)
 
     def _optimize_control_flow(self) -> ControlFlowHyperoptIterationParams:
         """
