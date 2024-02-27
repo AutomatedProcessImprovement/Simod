@@ -163,12 +163,14 @@ jobs:
         id: versioning
         run: echo "version=$(poetry version --short)" >> "$GITHUB_OUTPUT"
 
-      - name: Assign a version tag
+      - name: Assign a version tag if not present
         run: |
-          git tag ${{ steps.versioning.outputs.version }}
-          git push --tags
+          if ! git rev-parse ${{ steps.versioning.outputs.version }}; then
+              git tag ${{ steps.versioning.outputs.version }}
+              git push --tags
+          fi
 
-      - name: Create a release
+      - name: Create a release if needed
         uses: softprops/action-gh-release@v1
         with:
           files: |
