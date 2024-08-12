@@ -1,5 +1,5 @@
 from pix_framework.io.event_log import DEFAULT_XES_IDS, read_csv_log
-from simod.case_attributes.discovery import discover_case_attributes
+from simod.data_attributes.discovery import discover_data_attributes
 from simod.prioritization.discovery import (
     discover_prioritization_rules,
 )
@@ -35,7 +35,7 @@ def test_discover_prioritization_rules(entry_point):
     log_ids = DEFAULT_XES_IDS
     log = read_csv_log(log_path, log_ids)
 
-    case_attributes = discover_case_attributes(log, log_ids)
+    global_attributes, case_attributes, event_attributes = discover_data_attributes(log, log_ids)
 
     rules = discover_prioritization_rules(log, log_ids, case_attributes)
 
