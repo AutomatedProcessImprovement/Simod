@@ -1,4 +1,5 @@
 import json
+import pprint
 import shutil
 from pathlib import Path
 from typing import List, Optional
@@ -32,6 +33,7 @@ from simod.settings.simod_settings import SimodSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
+from simod.branch_rules.discovery import discover_branch_rules, map_branch_rules_to_flows
 
 
 class Simod:
@@ -187,6 +189,18 @@ class Simod:
             bpmn_graph=best_bpmn_graph,
             discovery_method=best_control_flow_params.gateway_probabilities_method,
         )
+        #  Branch Rules
+        # if self._settings.common.discover_branch_rules:
+        #     print_section("Discovering branch conditions")
+        #     self._best_bps_model.branch_rules = discover_branch_rules(
+        #         self.final_bps_model.process_model,
+        #         self._event_log.train_validation_partition,
+        #         self._event_log.log_ids,
+        #     )
+        #     self.final_bps_model.gateway_probabilities = \
+        #         map_branch_rules_to_flows(self.final_bps_model.gateway_probabilities,
+        #                                 self._best_bps_model.branch_rules)
+
         # Resource model
         print_subsection("Discovering best resource model")
         self.final_bps_model.resource_model = discover_resource_model(
