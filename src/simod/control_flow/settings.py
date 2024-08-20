@@ -26,6 +26,7 @@ class HyperoptIterationParams:
     eta: Optional[float]  # Percentile for frequency threshold (eta)
     replace_or_joins: Optional[bool]  # Should replace non-trivial OR joins
     prioritize_parallelism: Optional[bool]  # Should prioritize parallelism on loops
+    f_score: Optional[float]  # quality gateway for branch rules (f_score)
 
     def to_dict(self) -> dict:
         """Returns a dictionary with the parameters for this run."""
@@ -47,6 +48,9 @@ class HyperoptIterationParams:
                 optimization_parameters["replace_or_joins"] = self.replace_or_joins
         else:
             optimization_parameters["provided_model_path"] = str(self.provided_model_path)
+
+        if self.f_score:
+            optimization_parameters["f_score"] = self.f_score
 
         return optimization_parameters
 
@@ -75,6 +79,8 @@ class HyperoptIterationParams:
             elif mining_algorithm == ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V2:
                 epsilon = hyperopt_dict["epsilon"]
 
+        f_score = hyperopt_dict.get("f_score", None)
+
         return HyperoptIterationParams(
             output_dir=output_dir,
             provided_model_path=provided_model_path,
@@ -86,4 +92,5 @@ class HyperoptIterationParams:
             eta=eta,
             prioritize_parallelism=prioritize_parallelism,
             replace_or_joins=replace_or_joins,
+            f_score=f_score
         )

@@ -122,12 +122,11 @@ class Simod:
         best_control_flow_params = self._optimize_control_flow()
         self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
+        self._best_bps_model.branch_rules = self._control_flow_optimizer.best_bps_model.branch_rules
 
         # --- Data Attributes --- #
-        if (
-            self._settings.common.discover_data_attributes
-            or self._settings.resource_model.discover_prioritization_rules
-        ):
+        if (self._settings.common.discover_data_attributes or
+                self._settings.resource_model.discover_prioritization_rules):
             print_section("Discovering data attributes")
             global_attributes, case_attributes, event_attributes = discover_data_attributes(
                 self._event_log.train_validation_partition,
@@ -159,7 +158,7 @@ class Simod:
             case_arrival_model=self._best_bps_model.case_arrival_model,
             case_attributes=self._best_bps_model.case_attributes,
             global_attributes=self._best_bps_model.global_attributes,
-            event_attributes=self._best_bps_model.event_attributes
+            event_attributes=self._best_bps_model.event_attributes,
         )
         # Process model
         if self._settings.common.process_model_path is None:
@@ -189,17 +188,18 @@ class Simod:
             bpmn_graph=best_bpmn_graph,
             discovery_method=best_control_flow_params.gateway_probabilities_method,
         )
+
         #  Branch Rules
-        # if self._settings.common.discover_branch_rules:
-        #     print_section("Discovering branch conditions")
-        #     self._best_bps_model.branch_rules = discover_branch_rules(
-        #         self.final_bps_model.process_model,
-        #         self._event_log.train_validation_partition,
-        #         self._event_log.log_ids,
-        #     )
-        #     self.final_bps_model.gateway_probabilities = \
-        #         map_branch_rules_to_flows(self.final_bps_model.gateway_probabilities,
-        #                                 self._best_bps_model.branch_rules)
+        if self._settings.control_flow.discover_branch_rules:
+            print_section("Discovering branch conditions")
+            self.final_bps_model.branch_rules = discover_branch_rules(
+                    best_bpmn_graph,
+                    self._event_log.train_validation_partition,
+                    self._event_log.log_ids,
+                    f_score=best_control_flow_params.f_score
+                )
+            self.final_bps_model.gateway_probabilities = \
+                map_branch_rules_to_flows(self.final_bps_model.gateway_probabilities, self.final_bps_model.branch_rules)
 
         # Resource model
         print_subsection("Discovering best resource model")

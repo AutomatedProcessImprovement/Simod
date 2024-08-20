@@ -1,8 +1,9 @@
 import pandas as pd
-from pix_framework.discovery.attributes.attribute_discovery import discover_attributes
-from pix_framework.io.event_log import EventLogIDs
 
 from simod.data_attributes.types import GlobalAttribute, CaseAttribute, EventAttribute
+
+from pix_framework.io.event_log import EventLogIDs
+from pix_framework.discovery.attributes.attribute_discovery import discover_attributes
 
 
 def discover_data_attributes(log: pd.DataFrame, log_ids: EventLogIDs) -> (list[CaseAttribute], list[GlobalAttribute], list[EventAttribute]):
@@ -28,4 +29,3 @@ def discover_data_attributes(log: pd.DataFrame, log_ids: EventLogIDs) -> (list[C
     event_attributes = list(map(EventAttribute.from_dict, attributes["event_attributes"]))
 
     return global_attributes, case_attributes, event_attributes
-

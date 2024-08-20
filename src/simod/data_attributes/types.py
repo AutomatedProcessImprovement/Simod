@@ -48,11 +48,7 @@ class CaseAttribute:
             return {
                 "name": self.name,
                 "type": self.type.value,
-                "values": [
-                    {"key": value["key"], "value": value["value"]}
-                    if isinstance(value, dict) else {"key": "", "value": value}
-                    for value in self.values
-                ],
+                "values": self.values
             }
 
 
@@ -84,11 +80,7 @@ class GlobalAttribute:
             return {
                 "name": self.name,
                 "type": self.type.value,
-                "values": [
-                    {"key": value["key"], "value": value["value"]}
-                    if isinstance(value, dict) else {"key": "", "value": value}
-                    for value in self.values
-                ],
+                "values": self.values
             }
 
 
@@ -120,11 +112,8 @@ class EventAttributeDetails:
             return {
                 "name": self.name,
                 "type": self.type.value,
-                "values": [
-                    {"key": value["key"], "value": value["value"]}
-                    if isinstance(value, dict) else {"key": "", "value": value}
-                    for value in self.values
-                ],
+                "values": self.values
+
             }
         elif self.type == EventAttributeType.EXPRESSION:
             return {
