@@ -37,8 +37,7 @@ xmltodict = "^0.13.0"
 prosimos = "^2.0.5"
 extraneous-activity-delays = "^2.1.21"
 openxes-cli-py = "^0.1.15"
-#pix-framework = "^0.13.15"
-pix-framework = { git = "https://github.com/AutomatedProcessImprovement/pix-framework.git", branch = "icpm2024v2" }
+pix-framework = "^0.13.16"
 log-distance-measures = "^1.0.2"
 
 [tool.poetry.group.dev.dependencies]
