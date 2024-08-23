@@ -65,9 +65,6 @@ def or_log_files(entry_point):
 def assert_branch_rules(bpmn_graph, log, log_ids, expected_conditions):
     branch_rules = discover_branch_rules(bpmn_graph, log, log_ids)
 
-    print("\n\n DISCOVERED RULES: ")
-    pprint.pprint(branch_rules)
-
     assert len(branch_rules) == expected_conditions["total_branch_rules"], \
         f"Expected {expected_conditions['total_branch_rules']} BranchRules, found {len(branch_rules)}"
 
