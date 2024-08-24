@@ -26,7 +26,7 @@ class HyperoptIterationParams:
     eta: Optional[float]  # Percentile for frequency threshold (eta)
     replace_or_joins: Optional[bool]  # Should replace non-trivial OR joins
     prioritize_parallelism: Optional[bool]  # Should prioritize parallelism on loops
-    f_score: Optional[float]  # quality gateway for branch rules (f_score)
+    f_score: Optional[float] = None  # quality gateway for branch rules (f_score)
 
     def to_dict(self) -> dict:
         """Returns a dictionary with the parameters for this run."""
