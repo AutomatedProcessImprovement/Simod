@@ -15,7 +15,7 @@ LOG_IDS = EventLogIDs(case="case_id",
 ASSET_DIR = "data_attributes"
 GLOBAL_ATTRIBUTE_LOG_PATHS = "global_attribute*.csv.gz"
 CASE_ATTRIBUTE_LOG_PATHS = "case_attribute*.csv.gz"
-EVENT_ATTRIBUTE_LOG_PATHS = "event_attribute*3.csv.gz"
+EVENT_ATTRIBUTE_LOG_PATHS = "event_attribute*.csv.gz"
 
 
 @pytest.fixture(scope="module")
