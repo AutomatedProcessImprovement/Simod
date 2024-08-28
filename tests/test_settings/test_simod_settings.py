@@ -1,11 +1,55 @@
 from pathlib import Path
 
-import pytest
 import yaml
 
 from simod.settings.simod_settings import SimodSettings
 
-settings = """
+settings_5 = """
+version: 5
+common:
+  train_log_path: assets/LoanApp_simplified.csv.gz
+  perform_final_evaluation: true
+  num_final_evaluations: 1
+  evaluation_metrics: 
+    - dl
+    - absolute_event_distribution
+  discover_data_attributes: true
+preprocessing:
+  multitasking: false
+control_flow:
+  num_iterations: 2
+  mining_algorithm: sm1
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
+  gateway_probabilities:
+    - equiprobable
+    - discovery
+  replace_or_joins:
+    - true
+    - false
+  prioritize_parallelism:
+    - true
+    - false
+resource_model:
+  num_iterations: 2
+  discover_prioritization_rules: true
+  resource_profiles:
+    discovery_type: differentiated_by_pool
+    granularity: 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01 
+      - 0.3
+    participation: 0.4
+"""
+
+settings_4 = """
 version: 4
 common:
   train_log_path: assets/LoanApp_simplified.csv.gz
@@ -14,6 +58,7 @@ common:
   evaluation_metrics: 
     - dl
     - absolute_event_distribution
+  discover_case_attributes: true
 preprocessing:
   multitasking: false
 control_flow:
@@ -50,9 +95,8 @@ resource_model:
 """
 
 
-@pytest.mark.parametrize("test_case", [settings], ids=["default"])
-def test_configuration(test_case):
-    config = yaml.safe_load(test_case)
+def test_configuration():
+    config = yaml.safe_load(settings_5)
     result = SimodSettings.from_yaml(config)
 
     assert result is not None
@@ -60,6 +104,14 @@ def test_configuration(test_case):
     assert_preprocessing(config, result)
     assert_control_flow(config, result)
     assert_resource_model(config, result)
+
+
+def test_configuration_legacy():
+    ground_truth = SimodSettings.from_yaml(yaml.safe_load(settings_5))
+    legacy = SimodSettings.from_yaml(yaml.safe_load(settings_4))
+
+    assert legacy is not None
+    assert ground_truth.to_dict() == legacy.to_dict()
 
 
 def assert_common(config: dict, result: SimodSettings):

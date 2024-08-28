@@ -1,4 +1,4 @@
-version: 4
+version: 5
 common:
   train_log_path: LoanApp_simplified.csv.gz
   discover_data_attributes: true
