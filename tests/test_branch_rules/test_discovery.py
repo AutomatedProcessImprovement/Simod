@@ -86,9 +86,9 @@ def test_discover_xor_branch_rules(entry_point, xor_log_files):
         assert_branch_rules(bpmn_graph, log, LOG_IDS, expected_conditions)
 
 
-# def test_discover_or_branch_rules(entry_point, or_log_files):
-#     bpmn_path = os.path.join(entry_point, ASSET_DIR, OR_BPMN)
-#     for log_path, expected_conditions in or_log_files:
-#         log = pd.read_csv(log_path, compression="gzip")
-#         bpmn_graph = BPMNGraph.from_bpmn_path(Path(bpmn_path))
-#         assert_branch_rules(bpmn_graph, log, LOG_IDS, expected_conditions)
+def test_discover_or_branch_rules(entry_point, or_log_files):
+    bpmn_path = os.path.join(entry_point, ASSET_DIR, OR_BPMN)
+    for log_path, expected_conditions in or_log_files:
+        log = pd.read_csv(log_path, compression="gzip")
+        bpmn_graph = BPMNGraph.from_bpmn_path(Path(bpmn_path))
+        assert_branch_rules(bpmn_graph, log, LOG_IDS, expected_conditions)

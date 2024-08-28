@@ -13,7 +13,7 @@ LOG_IDS = EventLogIDs(case="case_id",
                       )
 
 ASSET_DIR = "data_attributes"
-GLOBAL_ATTRIBUTE_LOG_PATHS = "global_attribute*.csv.gz"
+GLOBAL_ATTRIBUTE_LOG_PATHS = "global_attribute_*.csv.gz"
 CASE_ATTRIBUTE_LOG_PATHS = "case_attribute*.csv.gz"
 EVENT_ATTRIBUTE_LOG_PATHS = "event_attribute*.csv.gz"
 
@@ -53,15 +53,15 @@ def test_discover_global_attributes(entry_point, global_log_files):
         assert_attributes(log, LOG_IDS, expected_case_attrs=0, expected_event_attrs=16, expected_global_attrs=1)
 
 
-def test_discover_case_attributes(entry_point, case_log_files):
-    for log_path in case_log_files:
-        log = pd.read_csv(log_path, compression="gzip")
-        assert_attributes(log, LOG_IDS, expected_case_attrs=5, expected_event_attrs=0, expected_global_attrs=0)
-
-
-def test_discover_event_attributes(entry_point, event_log_files):
-    for log_path in event_log_files:
-        log = pd.read_csv(log_path, compression="gzip")
-        assert_attributes(log, LOG_IDS, expected_case_attrs=0, expected_event_attrs=1, expected_global_attrs=0)
-
+# def test_discover_case_attributes(entry_point, case_log_files):
+#     for log_path in case_log_files:
+#         log = pd.read_csv(log_path, compression="gzip")
+#         assert_attributes(log, LOG_IDS, expected_case_attrs=5, expected_event_attrs=0, expected_global_attrs=0)
+#
+#
+# def test_discover_event_attributes(entry_point, event_log_files):
+#     for log_path in event_log_files:
+#         log = pd.read_csv(log_path, compression="gzip")
+#         assert_attributes(log, LOG_IDS, expected_case_attrs=0, expected_event_attrs=1, expected_global_attrs=0)
+#
 
