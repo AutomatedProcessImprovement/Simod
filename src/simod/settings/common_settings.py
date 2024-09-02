@@ -90,7 +90,7 @@ class CommonSettings(BaseModel):
     # Common config
     use_observed_arrival_distribution: bool = False
     clean_intermediate_files: bool = True
-    discover_case_attributes: bool = False
+    discover_data_attributes: bool = False
 
     @staticmethod
     def from_dict(config: dict, config_dir: Optional[Path] = None) -> "CommonSettings":
@@ -159,7 +159,7 @@ class CommonSettings(BaseModel):
 
         use_observed_arrival_distribution = config.get("use_observed_arrival_distribution", False)
         clean_up = config.get("clean_intermediate_files", True)
-        discover_case_attributes = config.get("discover_case_attributes", False)
+        discover_data_attributes = config.get("discover_data_attributes", False)
 
         return CommonSettings(
             train_log_path=train_log_path,
@@ -171,7 +171,7 @@ class CommonSettings(BaseModel):
             evaluation_metrics=metrics,
             use_observed_arrival_distribution=use_observed_arrival_distribution,
             clean_intermediate_files=clean_up,
-            discover_case_attributes=discover_case_attributes,
+            discover_data_attributes=discover_data_attributes,
         )
 
     def to_dict(self) -> dict:
@@ -184,5 +184,5 @@ class CommonSettings(BaseModel):
             "evaluation_metrics": [str(metric) for metric in self.evaluation_metrics],
             "use_observed_arrival_distribution": self.use_observed_arrival_distribution,
             "clean_intermediate_files": self.clean_intermediate_files,
-            "discover_case_attributes": self.discover_case_attributes,
+            "discover_data_attributes": self.discover_data_attributes,
         }

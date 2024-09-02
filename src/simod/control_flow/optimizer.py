@@ -12,6 +12,8 @@ from pix_framework.discovery.gateway_probabilities import (
     GatewayProbabilitiesDiscoveryMethod,
     compute_gateway_probabilities,
 )
+from simod.branch_rules.discovery import discover_branch_rules, map_branch_rules_to_flows
+from simod.branch_rules.types import BranchRules
 from pix_framework.filesystem.file_manager import create_folder, get_random_folder_id, remove_asset
 from pix_framework.io.bpm_graph import BPMNGraph
 
@@ -75,6 +77,7 @@ class ControlFlowOptimizer:
                 "prioritize_parallelism",
                 "replace_or_joins",
                 "output_dir",
+                "f_score"
             ]
         )
         # Instantiate trials for hyper-optimization process
@@ -84,7 +87,6 @@ class ControlFlowOptimizer:
     def _hyperopt_iteration(self, hyperopt_iteration_dict: dict):
         # Report new iteration
         print_subsection(f"Control-flow optimization iteration {self.iteration_index}")
-
         # Initialize status
         status = STATUS_OK
         # Create folder for this iteration
@@ -122,6 +124,20 @@ class ControlFlowOptimizer:
             current_bps_model.process_model,
             hyperopt_iteration_params.gateway_probabilities_method,
         )
+
+        #  Discover branch rules
+        if self.settings.discover_branch_rules:
+            status, current_bps_model.branch_rules = hyperopt_step(
+                status,
+                self._discover_branch_rules,
+                current_bps_model.process_model,
+                hyperopt_iteration_params
+            )
+
+            current_bps_model.gateway_probabilities = map_branch_rules_to_flows(
+                current_bps_model.gateway_probabilities,
+                current_bps_model.branch_rules
+            )
 
         # Simulate candidate and evaluate its quality
         status, evaluation_measurements = hyperopt_step(
@@ -243,6 +259,12 @@ class ControlFlowOptimizer:
                 else:
                     space["epsilon"] = settings.epsilon
 
+        if settings.discover_branch_rules and settings.f_score:
+            if isinstance(settings.f_score, tuple):
+                space["f_score"] = hp.uniform("f_score", settings.f_score[0], settings.f_score[1])
+            else:
+                space["f_score"] = settings.f_score
+
         return space
 
     def cleanup(self):
@@ -296,6 +318,16 @@ class ControlFlowOptimizer:
         discover_process_model(self._xes_train_log_path, output_model_path, params)
         return output_model_path
 
+    def _discover_branch_rules(self, process_model: Path, params: HyperoptIterationParams) -> List[BranchRules]:
+        print_step(f"Discovering branch rules with f_score {params.f_score}")
+        bpmn_graph = BPMNGraph.from_bpmn_path(process_model)
+        return discover_branch_rules(
+            bpmn_graph,
+            self.event_log.train_partition,
+            self.event_log.log_ids,
+            f_score=params.f_score
+        )
+
     def _discover_gateway_probabilities(
         self, process_model: Path, gateway_probabilities_method: GatewayProbabilitiesDiscoveryMethod
     ) -> List[GatewayProbabilities]:
@@ -312,7 +344,6 @@ class ControlFlowOptimizer:
         bps_model.replace_activity_names_with_ids()
 
         json_parameters_path = bps_model.to_json(output_dir, self.event_log.process_name)
-
         evaluation_measures = simulate_and_evaluate(
             process_model_path=bps_model.process_model,
             parameters_path=json_parameters_path,

@@ -63,6 +63,8 @@ class ControlFlowSettings(BaseModel):
     mining_algorithm: Optional[ProcessModelDiscoveryAlgorithm] = ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1
     epsilon: Optional[Union[float, Tuple[float, float]]] = (0.0, 1.0)  # parallelism threshold (epsilon)
     eta: Optional[Union[float, Tuple[float, float]]] = (0.0, 1.0)  # percentile for frequency threshold (eta)
+    discover_branch_rules: Optional[bool] = False
+    f_score: Optional[Union[float, Tuple[float, float]]] = 0.7  # quality gateway for branch rules (f_score)
     replace_or_joins: Optional[Union[bool, List[bool]]] = False  # should replace non-trivial OR joins
     prioritize_parallelism: Optional[Union[bool, List[bool]]] = False  # should prioritize parallelism on loops
 
@@ -101,6 +103,11 @@ class ControlFlowSettings(BaseModel):
         else:
             raise ValueError(f"Unknown process model discovery algorithm: {mining_algorithm}")
 
+        discover_branch_rules = config.get("discover_branch_rules", False)
+        f_score = None
+        if discover_branch_rules:
+            f_score = parse_single_value_or_interval(config.get("f_score", (0.0, 1.0)))
+
         return ControlFlowSettings(
             optimization_metric=optimization_metric,
             num_iterations=num_iterations,
@@ -111,6 +118,8 @@ class ControlFlowSettings(BaseModel):
             eta=eta,
             replace_or_joins=replace_or_joins,
             prioritize_parallelism=prioritize_parallelism,
+            discover_branch_rules=discover_branch_rules,
+            f_score=f_score
         )
 
     def to_dict(self) -> dict:
@@ -134,5 +143,8 @@ class ControlFlowSettings(BaseModel):
                 dictionary["eta"] = self.eta
                 dictionary["replace_or_joins"] = self.replace_or_joins
                 dictionary["prioritize_parallelism"] = self.prioritize_parallelism
+
+        if self.discover_branch_rules and self.f_score is not None:
+            dictionary["f_score"] = self.f_score
 
         return dictionary

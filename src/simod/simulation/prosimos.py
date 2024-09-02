@@ -1,18 +1,11 @@
 import itertools
-import json
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor as Pool
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Tuple
 
 import pandas as pd
-from pix_framework.discovery.gateway_probabilities import GatewayProbabilities
-from pix_framework.discovery.resource_calendar_and_performance.crisp.resource_calendar import RCalendar
-from pix_framework.discovery.resource_calendar_and_performance.resource_activity_performance import (
-    ActivityResourceDistribution,
-)
-from pix_framework.discovery.resource_profiles import ResourceProfile
 from pix_framework.io.event_log import PROSIMOS_LOG_IDS, EventLogIDs, read_csv_log
 from prosimos.simulation_engine import run_simulation
 
@@ -21,53 +14,6 @@ from simod.metrics import compute_metric
 from ..settings.common_settings import Metric
 
 cpu_count = multiprocessing.cpu_count()
-
-
-@dataclass
-class SimulationParameters:
-    """
-    Prosimos simulation parameters.
-    """
-
-    resource_profiles: List[ResourceProfile]
-    resource_calendars: Dict[str, RCalendar]
-    task_resource_distributions: List[ActivityResourceDistribution]
-    arrival_distribution: dict
-    arrival_calendar: RCalendar
-    gateway_branching_probabilities: List[GatewayProbabilities]
-    event_distribution: Optional[dict]
-
-    def to_dict(self) -> dict:
-        """Dictionary compatible with Prosimos."""
-        parameters = {
-            "resource_profiles": [resource_profile.to_dict() for resource_profile in self.resource_profiles],
-            "resource_calendars": [
-                {
-                    "id": self.resource_calendars[calendar_id].calendar_id,
-                    "name": self.resource_calendars[calendar_id].calendar_id,
-                    "time_periods": self.resource_calendars[calendar_id].to_json(),
-                }
-                for calendar_id in self.resource_calendars
-            ],
-            "task_resource_distribution": [
-                activity_resources.to_dict() for activity_resources in self.task_resource_distributions
-            ],
-            "arrival_time_distribution": self.arrival_distribution,
-            "arrival_time_calendar": self.arrival_calendar.to_json(),
-            "gateway_branching_probabilities": [
-                gateway_probabilities.to_dict() for gateway_probabilities in self.gateway_branching_probabilities
-            ],
-        }
-
-        if self.event_distribution:
-            parameters["event_distribution"] = self.event_distribution
-
-        return parameters
-
-    def to_json_file(self, file_path: Path) -> None:
-        """JSON compatible with Prosimos."""
-        with file_path.open("w") as f:
-            json.dump(self.to_dict(), f)
 
 
 @dataclass

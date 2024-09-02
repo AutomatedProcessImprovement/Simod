@@ -27,7 +27,7 @@ class SimodSettings(BaseModel):
     control_flow: ControlFlowSettings = ControlFlowSettings()
     resource_model: ResourceModelSettings = ResourceModelSettings()
     extraneous_activity_delays: Union[ExtraneousDelaysSettings, None] = None
-    version: int = 4
+    version: int = 5
 
     @staticmethod
     def default() -> "SimodSettings":
@@ -56,11 +56,13 @@ class SimodSettings(BaseModel):
 
     @staticmethod
     def from_yaml(config: dict, config_dir: Optional[Path] = None) -> "SimodSettings":
-        assert config["version"] in [2, 4], "Configuration version must be 2 or 4"
+        assert config["version"] in [2, 4, 5], "Configuration version must be 2, 4, or 5"
 
         # Transform from previous version to the latest if needed
         if config["version"] == 2:
-            config = _parse_legacy_config(config)
+            config = _parse_legacy_config_2(config)
+        elif config["version"] == 4:
+            config = _parse_legacy_config_4(config)
 
         # Get each of the settings components if present, default otherwise
         if "common" in config:
@@ -136,11 +138,11 @@ class SimodSettings(BaseModel):
         return output_path
 
 
-def _parse_legacy_config(config: dict) -> dict:
+def _parse_legacy_config_2(config: dict) -> dict:
     parsed_config = copy.deepcopy(config)
     if config["version"] == 2:
-        # Transform dictionary from version 2 to 4
-        parsed_config["version"] = 4
+        # Transform dictionary from version 2 to 5
+        parsed_config["version"] = 5
         # Common elements
         if "log_path" in parsed_config["common"]:
             parsed_config["common"]["train_log_path"] = parsed_config["common"]["log_path"]
@@ -172,5 +174,18 @@ def _parse_legacy_config(config: dict) -> dict:
                 del parsed_config["resource_model"]["max_evaluations"]
             if "case_arrival" in parsed_config["resource_model"]:
                 del parsed_config["resource_model"]["case_arrival"]
+    # Return parsed configuration
+    return parsed_config
+
+
+def _parse_legacy_config_4(config: dict) -> dict:
+    parsed_config = copy.deepcopy(config)
+    if config["version"] == 4:
+        # Transform dictionary from version 4 to 5
+        parsed_config["version"] = 5
+        # Common elements
+        if "discover_case_attributes" in parsed_config["common"]:
+            parsed_config["common"]["discover_data_attributes"] = parsed_config["common"]["discover_case_attributes"]
+            del parsed_config["common"]["discover_case_attributes"]
     # Return parsed configuration
     return parsed_config

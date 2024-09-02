@@ -1,8 +1,8 @@
-version: 4
+version: 5
 common:
   train_log_path: LoanApp_simplified.csv.gz
   process_model_path: LoanApp_simplified.bpmn
-  discover_case_attributes: true
+  discover_data_attributes: true
   num_final_evaluations: 1
   evaluation_metrics:
     - absolute_hourly_emd

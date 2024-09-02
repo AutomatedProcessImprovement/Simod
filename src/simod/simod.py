@@ -15,7 +15,7 @@ from pix_framework.io.bpm_graph import BPMNGraph
 from pix_framework.io.bpmn import get_activities_names_from_bpmn
 
 from simod.batching.discovery import discover_batching_rules
-from simod.case_attributes.discovery import discover_case_attributes
+from simod.data_attributes.discovery import discover_data_attributes
 from simod.cli_formatter import print_section, print_subsection
 from simod.control_flow.discovery import discover_process_model, add_bpmn_diagram_to_model
 from simod.control_flow.optimizer import ControlFlowOptimizer
@@ -32,6 +32,7 @@ from simod.settings.simod_settings import SimodSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
+from simod.branch_rules.discovery import discover_branch_rules, map_branch_rules_to_flows
 
 
 class Simod:
@@ -120,18 +121,19 @@ class Simod:
         best_control_flow_params = self._optimize_control_flow()
         self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
+        self._best_bps_model.branch_rules = self._control_flow_optimizer.best_bps_model.branch_rules
 
-        # --- Case Attributes --- #
-        if (
-            self._settings.common.discover_case_attributes
-            or self._settings.resource_model.discover_prioritization_rules
-        ):
-            print_section("Discovering case attributes")
-            case_attributes = discover_case_attributes(
-                self._event_log.train_validation_partition,  # No optimization process here, use train + validation
+        # --- Data Attributes --- #
+        if (self._settings.common.discover_data_attributes or
+                self._settings.resource_model.discover_prioritization_rules):
+            print_section("Discovering data attributes")
+            global_attributes, case_attributes, event_attributes = discover_data_attributes(
+                self._event_log.train_validation_partition,
                 self._event_log.log_ids,
             )
+            self._best_bps_model.global_attributes = global_attributes
             self._best_bps_model.case_attributes = case_attributes
+            self._best_bps_model.event_attributes = event_attributes
 
         # --- Resource Model Discovery --- #
         print_section("Optimizing resource model parameters")
@@ -154,6 +156,8 @@ class Simod:
             process_model=get_process_model_path(self._best_result_dir, self._event_log.process_name),
             case_arrival_model=self._best_bps_model.case_arrival_model,
             case_attributes=self._best_bps_model.case_attributes,
+            global_attributes=self._best_bps_model.global_attributes,
+            event_attributes=self._best_bps_model.event_attributes,
         )
         # Process model
         if self._settings.common.process_model_path is None:
@@ -183,6 +187,19 @@ class Simod:
             bpmn_graph=best_bpmn_graph,
             discovery_method=best_control_flow_params.gateway_probabilities_method,
         )
+
+        #  Branch Rules
+        if self._settings.control_flow.discover_branch_rules:
+            print_section("Discovering branch conditions")
+            self.final_bps_model.branch_rules = discover_branch_rules(
+                    best_bpmn_graph,
+                    self._event_log.train_validation_partition,
+                    self._event_log.log_ids,
+                    f_score=best_control_flow_params.f_score
+                )
+            self.final_bps_model.gateway_probabilities = \
+                map_branch_rules_to_flows(self.final_bps_model.gateway_probabilities, self.final_bps_model.branch_rules)
+
         # Resource model
         print_subsection("Discovering best resource model")
         self.final_bps_model.resource_model = discover_resource_model(
