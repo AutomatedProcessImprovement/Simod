@@ -1,4 +1,10 @@
-version: 4
+#################################################################################################################
+# Same simple configuration as 'configuration_example.yml' but evaluation the quality of the final BPS model    #
+#################################################################################################################
+# - Increase the num_iterations to (potentially) improve the quality of that discovered model                   #
+# - Visit 'complete_configuration.yml' example for a description of all configurable parameters                 #
+#################################################################################################################
+version: 5
 ##########
 # Common #
 ##########
@@ -10,6 +16,7 @@ common:
     case: "case_id"
     activity: "activity"
     resource: "resource"
+    enabled_time: "enabled_time"  # If not present in the log, automatically computed
     start_time: "start_time"
     end_time: "end_time"
   # Event log to evaluate the discovered BPS model with
@@ -26,12 +33,12 @@ common:
     - arrival_event_distribution
     - cycle_time_distribution
   # Whether to discover case attributes or not
-  discover_case_attributes: false
+  discover_data_attributes: false
 #################
 # Preprocessing #
 #################
 preprocessing:
-  # Threshold to consider two activities as concurrent when computing the enabled time
+  # Threshold to consider two activities as concurrent when computing the enabled time (if necessary)
   enable_time_concurrency_threshold: 0.75
 ################
 # Control-flow #
@@ -44,9 +51,7 @@ control_flow:
   # Number of times to evaluate each iteration (using the mean of all of them)
   num_evaluations_per_iteration: 3
   # Methods for discovering gateway probabilities
-  gateway_probabilities:
-    - equiprobable
-    - discovery
+  gateway_probabilities: discovery
   # Discover process model with SplitMiner v3
   mining_algorithm: sm1
   # Number of concurrent relations between events to be captured
@@ -83,9 +88,7 @@ resource_model:
     # Resource profile discovery type
     discovery_type: differentiated
     # Time granularity (in minutes) for the resource calendar (the higher the density of events in the log, the smaller the granularity can be)
-    granularity:
-      - 15
-      - 60
+    granularity: 60
     # Minimum confidence of the intervals in the discovered calendar (of a resource or set of resources)
     confidence:
       - 0.5

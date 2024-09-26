@@ -1,4 +1,4 @@
-version: 4
+version: 5
 
 ##########
 # Common #
@@ -11,7 +11,8 @@ common:
     case: "case_id"
     activity: "activity"
     resource: "resource"
-    start_time: "start_time"
+    enabled_time: "enabled_time"  # If not present in the log, automatically estimated (see preprocessing)
+    start_time: "start_time"  # Should be present, but if not, can be estimated (see preprocessing)
     end_time: "end_time"
   # Use this process model and skip its discovery
   process_model_path: ../models/LoanApp_simplified.bpmn
@@ -35,18 +36,21 @@ common:
   use_observed_arrival_distribution: false
   # Whether to delete all files created during the optimization phases or not
   clean_intermediate_files: true
-  # Whether to discover case attributes or not
-  discover_case_attributes: false
+  # Whether to discover global/case/event attributes and their update rules or not
+  discover_data_attributes: false
 
 #################
 # Preprocessing #
 #################
 preprocessing:
   # If the log has start times, threshold to consider two activities as concurrent when computing the enabled time
+  # (if necessary). Two activities would be considered concurrent if their occurrences happening concurrently divided
+  # by their total occurrences is higher than this threshold.
   enable_time_concurrency_threshold: 0.75
-  # If true, remove the multitasking by adjusting the timestamps (start/end) of those activities being executed at the same time by the same resource.
+  # If true, preprocess multitasking (i.e., one resource performing more than one activity at the same time) by
+  # adjusting the timestamps (start/end) of those activities being executed at the same time by the same resource.
   multitasking: false
-  # Thresholds for the heuristics' concurrency oracle (only used to estimate start times if missing in the log).
+  # Thresholds for the heuristics' concurrency oracle (only used to estimate start times if missing).
   concurrency_df: 0.9 # Directly-Follows threshold
   concurrency_l2l: 0.9 # Length 2 loops threshold
   concurrency_l1l: 0.9 # Length 1 loops threshold

@@ -1,4 +1,12 @@
-version: 4
+#################################################################################################################
+# Simple configuration example with i) no evaluation of the final BPS model, ii) 20 iterations of control-flow  #
+# discovery, iii) 10 iterations of resource model (fuzzy availability) discovery, and iv) no discovery of       #
+# extraneous delays.                                                                                            #
+#################################################################################################################
+# - Increase the num_iterations to (potentially) improve the quality of that discovered model                   #
+# - Visit 'complete_configuration.yml' example for a description of all configurable parameters                 #
+#################################################################################################################
+version: 5
 ##########
 # Common #
 ##########
@@ -10,15 +18,16 @@ common:
     case: "case_id"
     activity: "activity"
     resource: "resource"
+    enabled_time: "enabled_time"  # If not present in the log, automatically computed
     start_time: "start_time"
     end_time: "end_time"
   # Whether to discover case attributes or not
-  discover_case_attributes: false
+  discover_data_attributes: false
 #################
 # Preprocessing #
 #################
 preprocessing:
-  # Threshold to consider two activities as concurrent when computing the enabled time
+  # Threshold to consider two activities as concurrent when computing the enabled time (if necessary)
   enable_time_concurrency_threshold: 0.75
 ################
 # Control-flow #
@@ -30,10 +39,8 @@ control_flow:
   num_iterations: 20
   # Number of times to evaluate each iteration (using the mean of all of them)
   num_evaluations_per_iteration: 3
-  # Methods for discovering gateway probabilities
-  gateway_probabilities:
-    - equiprobable
-    - discovery
+  # Method for discovering gateway probabilities
+  gateway_probabilities: discovery
   # Discover process model with SplitMiner v3
   mining_algorithm: sm1
   # Number of concurrent relations between events to be captured
@@ -59,7 +66,7 @@ resource_model:
   # Metric to guide the optimization process (loss function to minimize)
   optimization_metric: circadian_emd
   # Number of optimization iterations over the search space
-  num_iterations: 20
+  num_iterations: 10
   # Number of times to evaluate each iteration (using the mean of all of them)
   num_evaluations_per_iteration: 3
   # Whether to discover prioritization or batching behavior
@@ -68,21 +75,10 @@ resource_model:
   # Resource profiles configuration
   resource_profiles:
     # Resource profile discovery type
-    # Resource profile discovery type
     discovery_type: differentiated_fuzzy
     # Duration of each granule in the resource calendar that will get its own probability
-    granularity:
-      - 60
-      - 120
+    granularity: 60
     # Angle of the fuzzy trapezoid when computing the availability probability for an activity (angle from start to end)
     fuzzy_angle:
       - 0.1
       - 0.9
-#####################
-# Extraneous delays #
-#####################
-extraneous_activity_delays:
-  # Method to compute the extraneous delay
-  discovery_method: eclipse-aware
-  # Number of optimization iterations over the search space (1 = direct discovery, no optimization stage)
-  num_iterations: 1

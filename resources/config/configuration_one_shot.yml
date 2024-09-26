@@ -1,4 +1,10 @@
-version: 4
+#################################################################################################################
+# Simple configuration example for running SIMOD without parameter optimization steps. The defined parameters   #
+# should be individual values and not intervals, as there is no optimization.                                   #
+#################################################################################################################
+# - Visit 'complete_configuration.yml' example for a description of all configurable parameters                 #
+#################################################################################################################
+version: 5
 ##########
 # Common #
 ##########
@@ -10,6 +16,7 @@ common:
     case: "case_id"
     activity: "activity"
     resource: "resource"
+    enabled_time: "enabled_time"  # If not present in the log, automatically computed
     start_time: "start_time"
     end_time: "end_time"
 ################
@@ -31,7 +38,7 @@ control_flow:
   # Whether to replace non-trivial OR joins or not
   replace_or_joins: false
   # Whether to prioritize parallelism over loops or not
-  prioritize_parallelism: false
+  prioritize_parallelism: true
 ##################
 # Resource model #
 ##################
@@ -45,7 +52,7 @@ resource_model:
     # Resource profile discovery type
     discovery_type: differentiated
     # Time granularity (in minutes) for the resource calendar (the higher the density of events in the log, the smaller the granularity can be)
-    granularity: 30
+    granularity: 60
     # Minimum confidence of the intervals in the discovered calendar (of a resource or set of resources)
     confidence: 0.6
     # Minimum support of the intervals in the discovered calendar (of a resource or set of resources)
