@@ -87,6 +87,12 @@ control_flow:
   prioritize_parallelism:
     - true
     - false
+  # Discover data-aware branching rules, i.e., BPMN decision points based on value of data attributes
+  discover_branch_rules: true
+  # Minimum f-score value to consider the discovered data-aware branching rules
+  f_score:
+    - 0.3
+    - 0.9
 
 ##################
 # Resource model #
