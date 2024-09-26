@@ -21,8 +21,6 @@ common:
     enabled_time: "enabled_time"  # If not present in the log, automatically computed
     start_time: "start_time"
     end_time: "end_time"
-  # Use this process model and skip its discovery
-  process_model_path: ../models/LoanApp_simplified.bpmn
   # Whether to discover case attributes or not
   discover_data_attributes: true
 #################
@@ -38,11 +36,29 @@ control_flow:
   # Metric to guide the optimization process (loss function to minimize)
   optimization_metric: two_gram_distance
   # Number of optimization iterations over the search space
-  num_iterations: 10
+  num_iterations: 20
   # Number of times to evaluate each iteration (using the mean of all of them)
   num_evaluations_per_iteration: 3
   # Method for discovering gateway probabilities
   gateway_probabilities: discovery
+  # Discover process model with SplitMiner v3
+  mining_algorithm: sm1
+  # Number of concurrent relations between events to be captured
+  epsilon:
+    - 0.05
+    - 0.4
+  # Threshold for filtering the incoming and outgoing edges
+  eta:
+    - 0.2
+    - 0.7
+  # Whether to replace non-trivial OR joins or not
+  replace_or_joins:
+    - true
+    - false
+  # Whether to prioritize parallelism over loops or not
+  prioritize_parallelism:
+    - true
+    - false
   # Discover data-aware branching rules, i.e., BPMN decision points based on value of data attributes
   discover_branch_rules: true
   # Minimum f-score value to consider the discovered data-aware branching rules
