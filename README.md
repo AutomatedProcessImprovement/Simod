@@ -43,7 +43,7 @@ pip install simod
 simod --configuration resources/config/configuration_example.yml
 ```
 
-Use your own configuration file instead of `resources/config/configuration_example.yml` and specify the path to the 
+Use your own configuration file instead of `resources/config/configuration_example.yml` and specify the path to the
 event log in the configuration file itself. Paths are relative to the configuration file, or absolute.
 
 PyPI project is available at https://pypi.org/project/simod/.
@@ -79,8 +79,10 @@ of each element:
 
 - Basic configuration to discover the full BPS
   model ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example.yml)).
-- Basic configuration to discover the full BPS model using fuzzy (probabilistic) resource 
+- Basic configuration to discover the full BPS model using fuzzy (probabilistic) resource
   calendars ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example_fuzzy.yml)).
+- Basic configuration to discover the full BPS model with data-aware branching rules
+  ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example_data_aware.yml)).
 - Basic configuration to discover the full BPS model, and evaluate it with a specified event
   log ([here](https://github.com/AutomatedProcessImprovement/Simod/blob/master/resources/config/configuration_example_with_evaluation.yml)).
 - Basic configuration to discover a BPS model with a provided BPMN process model as starting
