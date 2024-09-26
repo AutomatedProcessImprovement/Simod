@@ -50,6 +50,7 @@ class HyperoptIterationParams:
             optimization_parameters["provided_model_path"] = str(self.provided_model_path)
 
         if self.f_score:
+            optimization_parameters["discover_branch_rules"] = True
             optimization_parameters["f_score"] = self.f_score
 
         return optimization_parameters
