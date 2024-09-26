@@ -51,7 +51,12 @@ def add_bpmn_diagram_to_model(bpmn_model_path: Path):
     """
     global bpmn_layout_jar_path
 
-    args = ["java", "-jar", str(bpmn_layout_jar_path), str(bpmn_model_path)]
+    args = [
+        "java",
+        "-jar",
+        '"' + str(bpmn_layout_jar_path) + '"',
+        '"' + str(bpmn_model_path) + '"'
+    ]
     print_step(f"Adding BPMN diagram to the model: {args}")
     execute_external_command(args)
 
@@ -138,11 +143,11 @@ def discover_process_model_with_split_miner_v2(settings: SplitMinerV2Settings):
 
 
 def _prepare_split_miner_params(
-    split_miner: Path,
-    log_path: Path,
-    output_model_path: Path,
-    strip_output_suffix: bool = True,
-    headless: bool = True,
+        split_miner: Path,
+        log_path: Path,
+        output_model_path: Path,
+        strip_output_suffix: bool = True,
+        headless: bool = True,
 ) -> Tuple[List[str], str, str, str]:
     if is_windows():
         # Windows: ';' as separator and escape string with '"'
