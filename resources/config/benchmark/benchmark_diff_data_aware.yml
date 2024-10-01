@@ -7,8 +7,6 @@ common:
   train_log_path: ../../event_logs/BPIC_2012_W_train.csv.gz
   # Event log to evaluate the discovered BPS model with
   test_log_path: ../../event_logs/BPIC_2012_W_test.csv.gz
-  # Use observed arrival distributions
-  use_observed_arrival_distribution: false
   # Specify the name for each of the columns in the CSV file (XES standard by default)
   log_ids:
     case: "case_id"
@@ -28,7 +26,7 @@ common:
     - arrival_event_distribution
     - cycle_time_distribution
   # Whether to discover case attributes or not
-  discover_data_attributes: false
+  discover_data_attributes: true
 #################
 # Preprocessing #
 #################
@@ -63,6 +61,12 @@ control_flow:
     - false
   # Whether to prioritize parallelism over loops or not
   prioritize_parallelism: true
+  # Discover data-aware branching rules, i.e., BPMN decision points based on value of data attributes
+  discover_branch_rules: true
+  # Minimum f-score value to consider the discovered data-aware branching rules
+  f_score:
+    - 0.3
+    - 0.9
 ##################
 # Resource model #
 ##################

@@ -1,14 +1,12 @@
-version: 4
+version: 5
 ##########
 # Common #
 ##########
 common:
   # Path to the event log in CSV format
-  train_log_path: ../../event_logs/AcademicCredentials_train.csv.gz
+  train_log_path: ../../event_logs/BPIC_2012_W_train.csv.gz
   # Event log to evaluate the discovered BPS model with
-  test_log_path: ../../event_logs/AcademicCredentials_test.csv.gz
-  # Use observed arrival distributions
-  use_observed_arrival_distribution: false
+  test_log_path: ../../event_logs/BPIC_2012_W_test.csv.gz
   # Specify the name for each of the columns in the CSV file (XES standard by default)
   log_ids:
     case: "case_id"
@@ -28,7 +26,7 @@ common:
     - arrival_event_distribution
     - cycle_time_distribution
   # Whether to discover case attributes or not
-  discover_case_attributes: false
+  discover_data_attributes: false
 #################
 # Preprocessing #
 #################
@@ -62,9 +60,7 @@ control_flow:
     - true
     - false
   # Whether to prioritize parallelism over loops or not
-  prioritize_parallelism:
-    - true
-    - false
+  prioritize_parallelism: true
 ##################
 # Resource model #
 ##################
@@ -83,9 +79,7 @@ resource_model:
     # Resource profile discovery type
     discovery_type: pool
     # Time granularity (in minutes) for the resource calendar (the higher the density of events in the log, the smaller the granularity can be)
-    granularity:
-      - 15
-      - 60
+    granularity: 60
     # Minimum confidence of the intervals in the discovered calendar (of a resource or set of resources)
     confidence:
       - 0.5
