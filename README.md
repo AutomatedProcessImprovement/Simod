@@ -3,11 +3,11 @@
 ![Simod](https://github.com/AutomatedProcessImprovement/Simod/actions/workflows/simod.yml/badge.svg)
 ![version](https://img.shields.io/github/v/tag/AutomatedProcessImprovement/simod)
 
-Simod combines process mining and machine learning techniques to automate the discovery and tuning of Business Process
+SIMOD combines process mining and machine learning techniques to automate the discovery and tuning of Business Process
 Simulation models from event logs extracted from enterprise information systems (ERPs, CRM, case management systems,
 etc.).
-Simod takes as input an event log in CSV format, a configuration file, and (optionally) a BPMN process model, and
-returns a business process simulation scenario that can be simulated using
+SIMOD takes as input an event log in CSV format, a configuration file, and (optionally) a BPMN process model, and
+discovers a business process simulation model that can be simulated using
 the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulator, which is embedded in Simod.
 
 ## Dependencies
@@ -23,8 +23,7 @@ the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulato
 ### Optional
 
 Depending on your CPU architecture, some dependencies might not be pre-compiled for your platform. In that case, you
-will
-most likely also need the following dependencies:
+will most likely also need the following dependencies:
 
 | Dependency     | Version | Notes                                            |
 |----------------|---------|--------------------------------------------------|
