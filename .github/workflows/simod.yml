@@ -118,7 +118,7 @@ jobs:
     name: Release, Python ${{ matrix.python-version }}
     needs: [ test ]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         python-version: [ '3.9' ]
