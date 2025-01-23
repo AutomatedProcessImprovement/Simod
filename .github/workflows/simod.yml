@@ -115,11 +115,13 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
   release-pypi:
+    name: Release, Python ${{ matrix.python-version }}
     needs: [ test ]
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.versioning.outputs.version }}
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        python-version: [ '3.9' ]
     environment:
       name: PyPI
       url: https://pypi.org/p/simod
@@ -128,27 +130,37 @@ jobs:
       contents: write
       packages: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
       - name: Install poetry
+        shell: bash
         run: pip install poetry
 
-      - name: Build
-        run: poetry install && poetry build
-
-      - name: Generate licenses.md
+      - name: Install project
         run: |
-          poetry run pip install pip-licenses
-          poetry run pip-licenses --with-system --with-urls --format=markdown --output-file=licenses.md
+          poetry install
 
-      - name: Upload licenses.md
-        uses: actions/upload-artifact@v4
+      - name: Build
+        run: |
+          poetry build
+
+      - name: Get version
+        id: get_version
+        run: |
+          echo "version=$(poetry version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
         with:
-          name: licenses.md
-          path: licenses.md
+          name: simod-${{ steps.get_version.outputs.version }}-py${{ matrix.python-version }}
+          path: dist
 
       - name: Generate changelog
         run: |
@@ -159,23 +171,17 @@ jobs:
           echo "" >> CHANGELOG.md
           echo "\`\`\`" >> CHANGELOG.md
 
-      - name: Get the version
-        id: versioning
-        run: echo "version=$(poetry version --short)" >> "$GITHUB_OUTPUT"
-
-      - name: Assign a version tag if not present
+      - name: Assign repository tag
         run: |
-          if ! git rev-parse ${{ steps.versioning.outputs.version }}; then
-              git tag ${{ steps.versioning.outputs.version }}
-              git push --tags
-          fi
+          git tag ${{ steps.get_version.outputs.version }}
+          git push --tags
 
-      - name: Create a release if needed
+      - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             dist/*
-          tag_name: ${{ steps.versioning.outputs.version }}
+          tag_name: ${{ steps.get_version.outputs.version }}
           body_path: CHANGELOG.md
 
       - name: Publish to PyPI
