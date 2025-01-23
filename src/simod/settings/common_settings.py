@@ -18,6 +18,7 @@ class Metric(str, Enum):
     TWO_GRAM_DISTANCE = "two_gram_distance"
     THREE_GRAM_DISTANCE = "three_gram_distance"
     CIRCADIAN_EMD = "circadian_event_distribution"
+    CIRCADIAN_WORKFORCE_EMD = "circadian_workforce_distribution"
     ARRIVAL_EMD = "arrival_event_distribution"
     RELATIVE_EMD = "relative_event_distribution"
     ABSOLUTE_EMD = "absolute_event_distribution"
@@ -40,6 +41,8 @@ class Metric(str, Enum):
             return cls.THREE_GRAM_DISTANCE
         elif value.lower() in ["circadian_event_distribution", "circadian_emd"]:
             return cls.CIRCADIAN_EMD
+        elif value.lower() in ["circadian_workforce_distribution", "workforce_emd", "workforce_distribution"]:
+            return cls.CIRCADIAN_WORKFORCE_EMD
         elif value.lower() in ["arrival_event_distribution", "arrival_emd"]:
             return cls.ARRIVAL_EMD
         elif value.lower() in ["relative_event_distribution", "relative_emd"]:
@@ -66,6 +69,8 @@ class Metric(str, Enum):
             return "THREE_GRAM_DISTANCE"
         elif self == Metric.CIRCADIAN_EMD:
             return "CIRCADIAN_EVENT_DISTRIBUTION"
+        elif self == Metric.CIRCADIAN_WORKFORCE_EMD:
+            return "CIRCADIAN_WORKFORCE_DISTRIBUTION"
         elif self == Metric.ARRIVAL_EMD:
             return "ARRIVAL_EVENT_DISTRIBUTION"
         elif self == Metric.RELATIVE_EMD:
@@ -140,6 +145,7 @@ class CommonSettings(BaseModel):
                     Metric.TWO_GRAM_DISTANCE,
                     Metric.THREE_GRAM_DISTANCE,
                     Metric.CIRCADIAN_EMD,
+                    Metric.CIRCADIAN_WORKFORCE_EMD,
                     Metric.ARRIVAL_EMD,
                     Metric.RELATIVE_EMD,
                     Metric.ABSOLUTE_EMD,

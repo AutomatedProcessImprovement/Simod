@@ -58,7 +58,7 @@ jobs:
         run: poetry run pylint -j 0 --exit-zero src/simod > pylint.txt
 
       - name: Upload PyLint output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pylint.txt
           path: ./pylint.txt
@@ -145,7 +145,7 @@ jobs:
           poetry run pip-licenses --with-system --with-urls --format=markdown --output-file=licenses.md
 
       - name: Upload licenses.md
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: licenses.md
           path: licenses.md
