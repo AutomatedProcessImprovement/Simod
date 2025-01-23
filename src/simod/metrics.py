@@ -9,6 +9,7 @@ from log_distance_measures.case_arrival_distribution import case_arrival_distrib
 from log_distance_measures.circadian_event_distribution import (
     circadian_event_distribution_distance,
 )
+from log_distance_measures.circadian_workforce_distribution import circadian_workforce_distribution_distance
 from log_distance_measures.config import AbsoluteTimestampType
 from log_distance_measures.control_flow_log_distance import control_flow_log_distance
 from log_distance_measures.cycle_time_distribution import (
@@ -47,6 +48,8 @@ def compute_metric(
         result = get_n_grams_distribution_distance(original_log, original_log_ids, simulated_log, simulated_log_ids, 3)
     elif metric is Metric.CIRCADIAN_EMD:
         result = get_circadian_emd(original_log, original_log_ids, simulated_log, simulated_log_ids)
+    elif metric is Metric.CIRCADIAN_WORKFORCE_EMD:
+        result = get_circadian_workforce_emd(original_log, original_log_ids, simulated_log, simulated_log_ids)
     elif metric is Metric.ARRIVAL_EMD:
         result = get_arrival_emd(original_log, original_log_ids, simulated_log, simulated_log_ids)
     elif metric is Metric.RELATIVE_EMD:
@@ -118,6 +121,25 @@ def get_circadian_emd(
         simulated_log,
         simulated_log_ids,
         AbsoluteTimestampType.BOTH,
+    )
+    return emd
+
+
+def get_circadian_workforce_emd(
+    original_log: pd.DataFrame,
+    original_log_ids: EventLogIDs,
+    simulated_log: pd.DataFrame,
+    simulated_log_ids: EventLogIDs,
+) -> float:
+    """
+    Distance measure computing how different the histograms of the active resources of two event logs are, comparing the
+    average number of active resources recorded each weekday at each hour (e.g., Monday 10am).
+    """
+    emd = circadian_workforce_distribution_distance(
+        original_log,
+        original_log_ids,
+        simulated_log,
+        simulated_log_ids,
     )
     return emd
 
