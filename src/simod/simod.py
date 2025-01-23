@@ -15,11 +15,12 @@ from pix_framework.io.bpm_graph import BPMNGraph
 from pix_framework.io.bpmn import get_activities_names_from_bpmn
 
 from simod.batching.discovery import discover_batching_rules
-from simod.data_attributes.discovery import discover_data_attributes
+from simod.branch_rules.discovery import discover_branch_rules, map_branch_rules_to_flows
 from simod.cli_formatter import print_section, print_subsection
 from simod.control_flow.discovery import discover_process_model, add_bpmn_diagram_to_model
 from simod.control_flow.optimizer import ControlFlowOptimizer
 from simod.control_flow.settings import HyperoptIterationParams as ControlFlowHyperoptIterationParams
+from simod.data_attributes.discovery import discover_data_attributes
 from simod.event_log.event_log import EventLog
 from simod.extraneous_delays.optimizer import ExtraneousDelaysOptimizer
 from simod.extraneous_delays.types import ExtraneousDelay
@@ -28,11 +29,11 @@ from simod.prioritization.discovery import discover_prioritization_rules
 from simod.resource_model.optimizer import ResourceModelOptimizer
 from simod.resource_model.repair import repair_with_missing_activities
 from simod.resource_model.settings import HyperoptIterationParams as ResourceModelHyperoptIterationParams
+from simod.runtime_meter import RuntimeMeter
 from simod.settings.simod_settings import SimodSettings
 from simod.simulation.parameters.BPS_model import BPSModel
 from simod.simulation.prosimos import simulate_and_evaluate
 from simod.utilities import get_process_model_path, get_simulation_parameters_path
-from simod.branch_rules.discovery import discover_branch_rules, map_branch_rules_to_flows
 
 
 class Simod:
@@ -87,6 +88,10 @@ class Simod:
         Optimizes the BPS model with the given event log and settings.
         """
 
+        # Runtime object
+        runtimes = RuntimeMeter()
+        runtimes.start(RuntimeMeter.TOTAL)
+
         # Model activities might be different from event log activities if the model has been provided,
         # because we split the event log into train, test, and validation partitions.
         # We use model_activities to repair resource_model later after its discovery from a reduced event log.
@@ -96,6 +101,7 @@ class Simod:
 
         # --- Discover Default Case Arrival and Resource Allocation models --- #
         print_section("Discovering initial BPS Model")
+        runtimes.start(RuntimeMeter.INITIAL_MODEL)
         self._best_bps_model.case_arrival_model = discover_case_arrival_model(
             self._event_log.train_validation_partition,  # No optimization process here, use train + validation
             self._event_log.log_ids,
@@ -115,18 +121,22 @@ class Simod:
                 event_log=self._event_log.train_validation_partition,
                 log_ids=self._event_log.log_ids,
             )
+        runtimes.stop(RuntimeMeter.INITIAL_MODEL)
 
         # --- Control-Flow Optimization --- #
         print_section("Optimizing control-flow parameters")
+        runtimes.start(RuntimeMeter.CONTROL_FLOW_MODEL)
         best_control_flow_params = self._optimize_control_flow()
         self._best_bps_model.process_model = self._control_flow_optimizer.best_bps_model.process_model
         self._best_bps_model.gateway_probabilities = self._control_flow_optimizer.best_bps_model.gateway_probabilities
         self._best_bps_model.branch_rules = self._control_flow_optimizer.best_bps_model.branch_rules
+        runtimes.stop(RuntimeMeter.CONTROL_FLOW_MODEL)
 
         # --- Data Attributes --- #
         if (self._settings.common.discover_data_attributes or
                 self._settings.resource_model.discover_prioritization_rules):
             print_section("Discovering data attributes")
+            runtimes.start(RuntimeMeter.DATA_ATTRIBUTES_MODEL)
             global_attributes, case_attributes, event_attributes = discover_data_attributes(
                 self._event_log.train_validation_partition,
                 self._event_log.log_ids,
@@ -134,24 +144,30 @@ class Simod:
             self._best_bps_model.global_attributes = global_attributes
             self._best_bps_model.case_attributes = case_attributes
             self._best_bps_model.event_attributes = event_attributes
+            runtimes.stop(RuntimeMeter.DATA_ATTRIBUTES_MODEL)
 
         # --- Resource Model Discovery --- #
         print_section("Optimizing resource model parameters")
+        runtimes.start(RuntimeMeter.RESOURCE_MODEL)
         best_resource_model_params = self._optimize_resource_model(model_activities)
         self._best_bps_model.resource_model = self._resource_model_optimizer.best_bps_model.resource_model
         self._best_bps_model.calendar_granularity = self._resource_model_optimizer.best_bps_model.calendar_granularity
         self._best_bps_model.prioritization_rules = self._resource_model_optimizer.best_bps_model.prioritization_rules
         self._best_bps_model.batching_rules = self._resource_model_optimizer.best_bps_model.batching_rules
+        runtimes.stop(RuntimeMeter.RESOURCE_MODEL)
 
         # --- Extraneous Delays Discovery --- #
         if self._settings.extraneous_activity_delays is not None:
             print_section("Discovering extraneous delays")
+            runtimes.start(RuntimeMeter.EXTRANEOUS_DELAYS)
             timers = self._optimize_extraneous_activity_delays()
             self._best_bps_model.extraneous_delays = timers
             add_timers_to_bpmn_model(self._best_bps_model.process_model, timers)  # Update BPMN model on disk
+            runtimes.stop(RuntimeMeter.EXTRANEOUS_DELAYS)
 
         # --- Discover final BPS model --- #
         print_section("Discovering final BPS model")
+        runtimes.start(RuntimeMeter.FINAL_MODEL)
         self.final_bps_model = BPSModel(  # Bypass all models already discovered with train+validation
             process_model=get_process_model_path(self._best_result_dir, self._event_log.process_name),
             case_arrival_model=self._best_bps_model.case_arrival_model,
@@ -187,19 +203,17 @@ class Simod:
             bpmn_graph=best_bpmn_graph,
             discovery_method=best_control_flow_params.gateway_probabilities_method,
         )
-
         #  Branch Rules
         if self._settings.control_flow.discover_branch_rules:
             print_section("Discovering branch conditions")
             self.final_bps_model.branch_rules = discover_branch_rules(
-                    best_bpmn_graph,
-                    self._event_log.train_validation_partition,
-                    self._event_log.log_ids,
-                    f_score=best_control_flow_params.f_score
-                )
+                best_bpmn_graph,
+                self._event_log.train_validation_partition,
+                self._event_log.log_ids,
+                f_score=best_control_flow_params.f_score
+            )
             self.final_bps_model.gateway_probabilities = \
                 map_branch_rules_to_flows(self.final_bps_model.gateway_probabilities, self.final_bps_model.branch_rules)
-
         # Resource model
         print_subsection("Discovering best resource model")
         self.final_bps_model.resource_model = discover_resource_model(
@@ -235,6 +249,9 @@ class Simod:
             self.final_bps_model.extraneous_delays = self._best_bps_model.extraneous_delays
             add_timers_to_bpmn_model(self.final_bps_model.process_model, self._best_bps_model.extraneous_delays)
         self.final_bps_model.replace_activity_names_with_ids()
+        runtimes.stop(RuntimeMeter.FINAL_MODEL)
+        runtimes.stop(RuntimeMeter.TOTAL)
+
         # Write JSON parameters to file
         json_parameters_path = get_simulation_parameters_path(self._best_result_dir, self._event_log.process_name)
         with json_parameters_path.open("w") as f:
@@ -243,14 +260,18 @@ class Simod:
         # --- Evaluate final BPS model --- #
         if self._settings.common.perform_final_evaluation:
             print_subsection("Evaluate")
+            runtimes.start(RuntimeMeter.EVALUATION)
             simulation_dir = self._best_result_dir / "evaluation"
             simulation_dir.mkdir(parents=True, exist_ok=True)
             self._evaluate_model(self.final_bps_model.process_model, json_parameters_path, simulation_dir)
+            runtimes.stop(RuntimeMeter.EVALUATION)
 
         # --- Export settings and clean temporal files --- #
+        print_section(f"Exporting canonical model, runtimes, settings and cleaning up intermediate files")
         canonical_model_path = self._best_result_dir / "canonical_model.json"
-        print_section(f"Exporting canonical model to {canonical_model_path}")
         _export_canonical_model(canonical_model_path, best_control_flow_params, best_resource_model_params)
+        runtimes_model_path = self._best_result_dir / "runtimes.json"
+        _export_runtimes(runtimes_model_path, runtimes)
         if self._settings.common.clean_intermediate_files:
             self._clean_up()
         self._settings.to_yaml(self._best_result_dir)
@@ -342,14 +363,17 @@ def _export_canonical_model(
     control_flow_settings: ControlFlowHyperoptIterationParams,
     calendar_settings: ResourceModelHyperoptIterationParams,
 ):
-    structure = control_flow_settings.to_dict()
-
-    calendars = calendar_settings.to_dict()
-
     canon = {
-        "control_flow": structure,
-        "calendars": calendars,
+        "control_flow": control_flow_settings.to_dict(),
+        "calendars": calendar_settings.to_dict(),
     }
-
     with open(file_path, "w") as f:
         json.dump(canon, f)
+
+
+def _export_runtimes(
+        file_path: Path,
+        runtimes: RuntimeMeter
+):
+    with open(file_path, "w") as f:
+        json.dump(runtimes.runtimes, f)
