@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "simod"
-version = "5.0.1"
+version = "5.0.2"
 authors = [
     "Ihar Suvorau <ihar.suvorau@gmail.com>",
     "David Chapela <david.chapela@ut.ee>",
