@@ -14,6 +14,31 @@ PROJECT_DIR = get_project_dir()
 
 
 class Metric(str, Enum):
+    """
+    Enum class storing the metrics used to evaluate the quality of a BPS model.
+
+    Attributes
+    ----------
+    DL : str
+        Control-flow Log Distance metric based in the Damerau-Levenshtein distance.
+    TWO_GRAM_DISTANCE : str
+        Two-gram distance metric.
+    THREE_GRAM_DISTANCE : str
+        Three-gram distance metric.
+    CIRCADIAN_EMD : str
+        Earth Mover's Distance (EMD) for circadian event distribution.
+    CIRCADIAN_WORKFORCE_EMD : str
+        EMD for circadian workforce distribution.
+    ARRIVAL_EMD : str
+        EMD for arrival event distribution.
+    RELATIVE_EMD : str
+        EMD for relative event distribution.
+    ABSOLUTE_EMD : str
+        EMD for absolute event distribution.
+    CYCLE_TIME_EMD : str
+        EMD for cycle time distribution.
+    """
+
     DL = "dl"
     TWO_GRAM_DISTANCE = "two_gram_distance"
     THREE_GRAM_DISTANCE = "three_gram_distance"
@@ -26,6 +51,26 @@ class Metric(str, Enum):
 
     @classmethod
     def from_str(cls, value: Union[str, List[str]]) -> "Union[Metric, List[Metric]]":
+        """
+        Converts a string (or list of strings) representing metric names into an instance (or list of instances)
+        of the :class:`Metric` enum.
+
+        Parameters
+        ----------
+        value : Union[str, List[str]]
+            A string representing a metric name or a list of metric names.
+
+        Returns
+        -------
+        Union[:class:`Metric`, List[:class:`Metric`]]
+            An instance of :class:`Metric` if a single string is provided,
+            or a list of :class:`Metric` instances if a list of strings is provided.
+
+        Raises
+        ------
+        ValueError
+            If the provided string does not match any metric name.
+        """
         if isinstance(value, str):
             return Metric._from_str(value)
         elif isinstance(value, list):
@@ -83,6 +128,36 @@ class Metric(str, Enum):
 
 
 class CommonSettings(BaseModel):
+    """
+    General configuration parameters of SIMOD and parameters common to all pipeline stages
+
+    Attributes
+    ----------
+        train_log_path : :class:`~pathlib.Path`
+            Path to the training log (the one used to discover the BPS model).
+        log_ids : :class:`EventLogIDs`
+            Dataclass storing the mapping between the column names in the CSV and their role (case_id, activity, etc.).
+        test_log_path : :class:`~pathlib.Path`, optional
+            Path to the event log to perform the final evaluation of the discovered BPS model (if desired).
+        process_model_path : :class:`~pathlib.Path`, optional
+            Path to the BPMN model for the control-flow (skip its discovery and use this one).
+        perform_final_evaluation : bool
+            Boolean indicating whether to perform the final evaluation of the discovered BPS model.
+            If true, either use the event log in [test_log_path] if specified, or split the training log to obtain a
+            testing set.
+        num_final_evaluations : int
+            Number of replications of the final evaluation to perform.
+        evaluation_metrics : list
+            List of :class:`Metric` evaluation metrics to use in the final evaluation.
+        use_observed_arrival_distribution : bool
+            Boolean indicating whether to use the distribution of observed case arrival times (true), or to discover a
+            probability distribution function to model them (false).
+        clean_intermediate_files : bool
+            Boolean indicating whether to delete all intermediate created files.
+        discover_data_attributes : bool
+            Boolean indicating whether to discover data attributes and their creation/update rules.
+
+    """
     # Log & Model parameters
     train_log_path: Path = Path("default_path.csv")
     log_ids: EventLogIDs = PROSIMOS_LOG_IDS
@@ -99,6 +174,22 @@ class CommonSettings(BaseModel):
 
     @staticmethod
     def from_dict(config: dict, config_dir: Optional[Path] = None) -> "CommonSettings":
+        """
+        Instantiates the SIMOD common configuration from a dictionary.
+
+        Parameters
+        ----------
+        config : dict
+            Dictionary with the configuration values for the SIMOD common parameters.
+        config_dir : :class:`~pathlib.Path`, optional
+            If the path to the event log(s) is specified in a relative manner, ``[config_dir]`` is used to complete
+            such paths. If ``None``, relative paths are complemented with the current directory.
+
+        Returns
+        -------
+        :class:`CommonSettings`
+            Instance of the SIMOD common configuration for the specified dictionary values.
+        """
         base_files_dir = config_dir or Path.cwd()
 
         # Training log path
@@ -181,6 +272,14 @@ class CommonSettings(BaseModel):
         )
 
     def to_dict(self) -> dict:
+        """
+        Translate the common configuration stored in this instance into a dictionary.
+
+        Returns
+        -------
+        dict
+            Python dictionary storing this configuration.
+        """
         return {
             "train_log_path": str(self.train_log_path),
             "test_log_path": str(self.test_log_path) if self.test_log_path is not None else None,
