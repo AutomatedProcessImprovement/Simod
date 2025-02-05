@@ -83,13 +83,13 @@ class Simod:
         self._best_result_dir = self._output_dir / "best_result"
         create_folder(self._best_result_dir)
 
-    def run(self):
+    def run(self, runtimes: Optional[RuntimeMeter] = None):
         """
         Optimizes the BPS model with the given event log and settings.
         """
 
         # Runtime object
-        runtimes = RuntimeMeter()
+        runtimes = RuntimeMeter() if runtimes is None else runtimes
         runtimes.start(RuntimeMeter.TOTAL)
 
         # Model activities might be different from event log activities if the model has been provided,
