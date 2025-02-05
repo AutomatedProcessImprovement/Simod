@@ -38,7 +38,18 @@ from simod.utilities import get_process_model_path, get_simulation_parameters_pa
 
 class Simod:
     """
-    SIMOD optimization.
+    Class to run the full pipeline of SIMOD in order to discover a BPS model from an event log.
+
+    Attributes
+    ----------
+        settings : :class:`~simod.settings.SimodSettings`
+            Configuration to run SIMOD and all its stages.
+        event_log : :class:`~simod.event_log.EventLog`
+            EventLog class storing the preprocessed training, validation, and (optionally) test partitions.
+        output_dir : :class:`~pathlib.Path`
+            Path to the folder where to write all the SIMOD outputs.
+        final_bps_model : :class:`~simod.simulation.parameters.BPS_model.BPSModel`
+            Instance of the best BPS model discovered by SIMOD.
     """
 
     # Event log with the train, validation and test logs.
@@ -85,7 +96,26 @@ class Simod:
 
     def run(self, runtimes: Optional[RuntimeMeter] = None):
         """
-        Optimizes the BPS model with the given event log and settings.
+        Executes the SIMOD pipeline to discover the BPS model that better reflects the behavior recorded in the input
+        event log based on the specified configuration.
+
+        Parameters
+        ----------
+        runtimes : :class:`~simod.runtime_meter.RuntimeMeter`, optional
+            Instance for tracking the runtime of the different stages in the SIMOD pipeline. When provided, SIMOD
+            pipeline stages will be tracked and reported along with stages previously tracked in the instance (e.g.,
+            preprocessing). If not provided, the runtime tracking reported will only contain SIMOD stages.
+
+        Returns
+        -------
+        None
+            The method performs in-place execution of the pipeline and does not return a value.
+
+        Notes
+        -----
+        - This method generates all output files under the folder ``[output_dir]/<latest_run>/best_result/``.
+        - This method updates internal attributes of the class, such as `final_bps_model`, with the best BPS model found
+          during the pipeline execution.
         """
 
         # Runtime object
