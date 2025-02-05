@@ -28,7 +28,18 @@ class Settings:
 
 class Preprocessor:
     """
-    Preprocessor executes event log pre-processing according to the `run()` arguments and returns the modified log back.
+    Handles event log pre-processing by executing various transformations
+    to estimate missing timestamps and adjust data for multitasking.
+
+    This class modifies an input event log based on the specified settings
+    and returns the pre-processed log.
+
+    Attributes
+    ----------
+    log : :class:`pandas.DataFrame`
+        The event log stored as a DataFrame.
+    log_ids : :class:`EventLogIDs`
+        Identifiers for mapping column names in the event log.
     """
 
     _log: pd.DataFrame
@@ -46,14 +57,24 @@ class Preprocessor:
         enable_time_concurrency_threshold: float = 0.75,
     ) -> pd.DataFrame:
         """
-        Executes all pre-processing steps and updates the configuration if necessary.
+        Executes event log pre-processing steps based on the specified parameters.
 
-        Start times discovery is always executed if the log does not contain the start time column.
+        This includes estimating missing start times, adjusting timestamps
+        for multitasking scenarios, and computing enabled times.
 
-        :param multitasking: Whether to adjust the timestamps for multitasking.
-        :param concurrency_thresholds: Thresholds for the Heuristics Miner to estimate start/enabled times.
-        :param enable_time_concurrency_threshold: Threshold for the Heuristics Miner to estimate enabled times.
-        :return: The pre-processed event log.
+        Parameters
+        ----------
+        multitasking : bool
+            Whether to adjust the timestamps for multitasking.
+        concurrency_thresholds : :class:`ConcurrencyThresholds`, optional
+            Thresholds for the Heuristics Miner to estimate start times.
+        enable_time_concurrency_threshold : float
+            Threshold for estimating enabled times.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`
+            The pre-processed event log.
         """
         print_section("Pre-processing")
 
