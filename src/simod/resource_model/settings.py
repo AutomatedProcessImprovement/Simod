@@ -26,7 +26,7 @@ class HyperoptIterationParams:
         Path to the BPMN process model used for optimization.
     project_name : str
         Name of the project for file naming purposes.
-    optimization_metric : :class:`Metric`
+    optimization_metric : :class:`~simod.settings.common_settings.Metric`
         Metric used to evaluate the quality of the current iteration's candidate.
     calendar_discovery_params : :class:`CalendarDiscoveryParameters`
         Parameters for the resource calendar (i.e., working schedules) discovery.

@@ -24,7 +24,7 @@ def add_timers_to_bpmn_model(
     ----------
     process_model : :class:`pathlib.Path`
         Path to the BPMN process model file to enhance.
-    delays : List[:class:`ExtraneousDelay`]
+    delays : List[:class:`~simod.extraneous_delays.types.ExtraneousDelay`]
         A list of extraneous delays, where each delay specifies an activity
         and the corresponding timer configuration.
     timer_placement : :class:`TimerPlacement`, optional

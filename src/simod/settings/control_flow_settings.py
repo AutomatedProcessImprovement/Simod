@@ -95,7 +95,7 @@ class ControlFlowSettings(BaseModel):
 
     Attributes
     ----------
-    optimization_metric : :class:`Metric`
+    optimization_metric : :class:`~simod.settings.common_settings.Metric`
         The metric used to evaluate process model quality at each iteration of the optimization process (i.e.,
         loss function).
     num_iterations : int
@@ -104,21 +104,21 @@ class ControlFlowSettings(BaseModel):
         The number of replications for the evaluations of each iteration.
     gateway_probabilities : Union[:class:`GatewayProbabilitiesDiscoveryMethod`, List[:class:`GatewayProbabilitiesDiscoveryMethod`]]
         Fixed method or list of methods to use in each iteration to discover gateway probabilities.
-    mining_algorithm : Optional[:class:`ProcessModelDiscoveryAlgorithm`]
+    mining_algorithm : :class:`ProcessModelDiscoveryAlgorithm`, optional
         The process model discovery algorithm to use.
-    epsilon : Optional[Union[float, Tuple[float, float]]]
+    epsilon : Union[float, Tuple[float, float]], optional
         Fixed number or range for the number of concurrent relations between events to be captured in the discovery
         algorithm (between 0.0 and 1.0).
-    eta : Optional[Union[float, Tuple[float, float]]]
+    eta : Union[float, Tuple[float, float]], optional
         Fixed number or range for the threshold for filtering the incoming and outgoing edges in the discovery
         algorithm (between 0.0 and 1.0).
-    replace_or_joins : Optional[Union[bool, List[bool]]]
+    replace_or_joins : Union[bool, List[bool]], optional
         Fixed value or list for whether to replace non-trivial OR joins.
-    prioritize_parallelism : Optional[Union[bool, List[bool]]]
+    prioritize_parallelism : Union[bool, List[bool]], optional
         Fixed value or list for whether to prioritize parallelism over loops.
-    discover_branch_rules : Optional[bool]
+    discover_branch_rules : bool, optional
         Whether to discover branch rules for gateways.
-    f_score : Optional[Union[float, Tuple[float, float]]]
+    f_score : Union[float, Tuple[float, float]], optional
         Fixed value or range for the minimum f-score value to consider the discovered data-aware branching rules.
     """
 

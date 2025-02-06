@@ -26,7 +26,7 @@ def discover_process_model(log_path: Path, output_model_path: Path, params: Hype
             Path to the event log in XES format, required for Split Miner algorithms.
         output_model_path : :class:`pathlib.Path`
             Path to save the discovered process model.
-        params : :class:`HyperoptIterationParams`
+        params : :class:`~simod.resource_model.settings.HyperoptIterationParams`
             Configuration containing the process model discovery algorithm and its parameters.
 
         Raises

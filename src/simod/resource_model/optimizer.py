@@ -40,16 +40,16 @@ class ResourceModelOptimizer:
 
     Attributes
     ----------
-    event_log : :class:`EventLog`
+    event_log : :class:`~simod.event_log.event_log.EventLog`
         Event log containing train and validation partitions.
-    initial_bps_model : :class:`BPSModel`
+    initial_bps_model : :class:`~simod.simulation.parameters.BPS_model.BPSModel`
         Business process simulation (BPS) model to use as a base, by replacing its resource model
         with the discovered one in each iteration.
-    settings : :class:`ControlFlowSettings`
+    settings : :class:`~simod.settings.resource_model_settings.ResourceModelSettings`
         Configuration settings to build the search space for the optimization process.
     base_directory : :class:`pathlib.Path`
         Root directory where output files will be stored.
-    best_bps_model : Optional[:class:`BPSModel`]
+    best_bps_model : :class:`~simod.simulation.parameters.BPS_model.BPSModel`, optional
         Best discovered BPS model after the optimization process.
     evaluation_measurements : :class:`pandas.DataFrame`
         Quality measures recorded for each hyperopt iteration.
@@ -208,7 +208,7 @@ class ResourceModelOptimizer:
 
         Returns
         -------
-        :class:`HyperoptIterationParams`
+        :class:`~simod.resource_model.settings.HyperoptIterationParams`
             The parameters of the best iteration of the optimization process.
         """
         # Define search space

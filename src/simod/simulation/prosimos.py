@@ -89,11 +89,11 @@ def simulate_and_evaluate(
 
     Parameters
     ----------
-    process_model_path : :class:`Path`
+    process_model_path : :class:`pathlib.Path`
         Path to the BPMN process model.
-    parameters_path : :class:`Path`
+    parameters_path : :class:`pathlib.Path`
         Path to the Prosimos simulation parameters JSON file.
-    output_dir : :class:`Path`
+    output_dir : :class:`pathlib.Path`
         Directory where simulated logs will be stored.
     simulation_cases : int
         Number of cases to simulate per run.
@@ -103,7 +103,7 @@ def simulate_and_evaluate(
         The actual event log to compare against.
     validation_log_ids : :class:`EventLogIDs`
         Column mappings for identifying events in the validation log.
-    metrics : List[:class:`simod.settings.common_settings.Metric`]
+    metrics : List[:class:`~simod.settings.common_settings.Metric`]
         A list of metrics used to evaluate the simulated logs.
     num_simulations : int, optional
         Number of parallel simulation runs (default is 1).

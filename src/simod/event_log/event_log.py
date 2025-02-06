@@ -83,11 +83,11 @@ class EventLog:
             Identifiers for mapping column names in the event log.
         preprocessing_settings : :class:`PreprocessingSettings`, optional
             Settings for preprocessing the event log.
-        need_test_partition : Optional[bool]
+        need_test_partition : bool, optional
             Whether to create a test partition if a separate test log is not provided.
-        process_name : Optional[str]
+        process_name : str, optional
             Name of the business process. If not provided, it is inferred from the file name.
-        test_log_path : Optional[:class:`pathlib.Path`]
+        test_log_path : :class:`pathlib.Path`, optional
             Path to the test event log file (CSV or CSV.GZ). If provided, the test log is loaded separately.
         split_ratio : float, default=0.8
             Ratio for splitting training and validation partitions.

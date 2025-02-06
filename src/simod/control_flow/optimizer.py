@@ -48,7 +48,7 @@ class ControlFlowOptimizer:
         Configuration settings to build the search space for the optimization process.
     base_directory : :class:`pathlib.Path`
         Root directory where output files will be stored.
-    best_bps_model : Optional[:class:`BPSModel`]
+    best_bps_model : :class:`BPSModel`, optional
         Best discovered BPS model after the optimization process.
     evaluation_measurements : :class:`pandas.DataFrame`
         Quality measures recorded for each hyperopt iteration.
@@ -198,7 +198,7 @@ class ControlFlowOptimizer:
 
         Returns
         -------
-        :class:`HyperoptIterationParams`
+        :class:`~simod.control_flow.settings.HyperoptIterationParams`
             The parameters of the best iteration of the optimization process.
 
         Raises

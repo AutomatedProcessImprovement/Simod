@@ -28,11 +28,11 @@ class ExtraneousDelaysOptimizer:
 
     Attributes
     ----------
-    event_log : :class:`EventLog`
+    event_log : :class:`~simod.event_log.event_log.EventLog`
         The event log containing the train and validation data.
-    bps_model : :class:`BPSModel`
+    bps_model : :class:`~simod.simulation.parameters.BPS_model.BPSModel`
         The business process simulation model to enhance with extraneous delays, including the BPMN representation.
-    settings : :class:`ExtraneousDelaysSettings`
+    settings : :class:`~simod.settings.extraneous_delays_settings.ExtraneousDelaysSettings`
         Configuration settings for extraneous delay discovery.
     base_directory : :class:`pathlib.Path`
         Directory where output files will be stored.
@@ -62,7 +62,7 @@ class ExtraneousDelaysOptimizer:
 
         Returns
         -------
-        List[:class:`ExtraneousDelay`]
+        List[:class:`~simod.extraneous_delays.types.ExtraneousDelay`]
             A list of detected extraneous delays, each containing activity names, delay IDs,
             and their corresponding duration distributions.
         """

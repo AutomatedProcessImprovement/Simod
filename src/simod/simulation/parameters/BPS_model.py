@@ -47,29 +47,29 @@ class BPSModel:
 
     Attributes
     ----------
-    process_model : Optional[:class:`pathlib.Path`]
+    process_model : :class:`pathlib.Path`, optional
         Path to the BPMN process model file.
-    gateway_probabilities : Optional[List[:class:`GatewayProbabilities`]]
+    gateway_probabilities : List[:class:`GatewayProbabilities`], optional
         Probabilities for gateway-based process routing.
-    case_arrival_model : Optional[:class:`CaseArrivalModel`]
+    case_arrival_model : :class:`CaseArrivalModel`, optional
         Model for the arrival of new cases in the simulation.
-    resource_model : Optional[:class:`ResourceModel`]
+    resource_model : :class:`ResourceModel`, optional
         Model for the resources involved in the process, their working schedules, etc.
-    extraneous_delays : Optional[List[:class:`ExtraneousDelay`]]
+    extraneous_delays : List[:class:`~simod.extraneous_delays.types.ExtraneousDelay`], optional
         A list of delays representing extraneous waiting times before/after activities.
-    case_attributes : Optional[List[:class:`CaseAttribute`]]
+    case_attributes : List[:class:`CaseAttribute`], optional
         Case-level attributes and their update rules.
-    global_attributes : Optional[List[:class:`GlobalAttribute`]]
+    global_attributes : List[:class:`GlobalAttribute`], optional
         Global attributes and their update rules.
-    event_attributes : Optional[List[:class:`EventAttribute`]]
+    event_attributes : List[:class:`EventAttribute`], optional
         Event-level attributes and their update rules.
-    prioritization_rules : Optional[List[:class:`PrioritizationRule`]]
+    prioritization_rules : List[:class:`PrioritizationRule`], optional
         A set of case prioritization rules for process execution.
-    batching_rules : Optional[List[:class:`BatchingRule`]]
+    batching_rules : List[:class:`BatchingRule`], optional
         Rules defining how activities are batched together.
-    branch_rules : Optional[List[:class:`BranchRules`]]
+    branch_rules : List[:class:`BranchRules`], optional
         Branching rules defining conditional flow behavior in decision points.
-    calendar_granularity : Optional[int]
+    calendar_granularity : int, optional
         Granularity of the resource calendar, expressed in minutes.
 
     Notes
@@ -161,7 +161,7 @@ class BPSModel:
 
         Returns
         -------
-        BPSModel
+        :class:`BPSModel`
             A new, independent copy of the current BPSModel instance.
 
         Notes
@@ -221,14 +221,14 @@ class BPSModel:
 
         Parameters
         ----------
-        output_dir : Path
+        output_dir : :class:`pathlib.Path`
             The directory where the JSON file should be saved.
         process_name : str
             The name of the process, used for naming the output file.
 
         Returns
         -------
-        Path
+        :class:`pathlib.Path`
             The full path to the generated JSON file.
 
         Notes

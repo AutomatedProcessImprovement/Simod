@@ -21,7 +21,7 @@ class HyperoptIterationParams:
     ----------
     output_dir : :class:`pathlib.Path`
         Directory where all output files for the current iteration will be stored.
-    provided_model_path : Optional[:class:`pathlib.Path`]
+    provided_model_path : :class:`pathlib.Path`, optional
         Path to a provided BPMN model, if available (no discovery needed).
     project_name : str
         Name of the project, mainly used for file naming.
@@ -31,15 +31,15 @@ class HyperoptIterationParams:
         Method for discovering gateway probabilities.
     mining_algorithm : :class:`ProcessModelDiscoveryAlgorithm`
         Algorithm used for process model discovery, if necessary.
-    epsilon : Optional[float]
+    epsilon : float, optional
         Number of concurrent relations between events to be captured in the discovery algorithm (between 0.0 and 1.0).
-    eta : Optional[float]
+    eta : float, optional
         Threshold for filtering the incoming and outgoing edges in the discovery algorithm (between 0.0 and 1.0).
-    replace_or_joins : Optional[bool]
+    replace_or_joins : bool, optional
         Whether to replace non-trivial OR joins in the discovered model.
-    prioritize_parallelism : Optional[bool]
+    prioritize_parallelism : bool, optional
         Whether to prioritize parallelism or loops for model discovery.
-    f_score : Optional[float], default=None
+    f_score : float], default=Non, optional
         Minimum f-score value to consider the discovered data-aware branching rules.
 
     Notes

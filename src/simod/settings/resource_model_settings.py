@@ -26,20 +26,20 @@ class ResourceModelSettings(BaseModel):
         The number of replications for the evaluations of each iteration.
     discovery_type : :class:`CalendarType`
         Type of calendar discovery method used for resource modeling.
-    granularity : Optional[Union[int, Tuple[int, int]]]
+    granularity : Union[int, Tuple[int, int]], optional
         Fixed value or range for the time granularity for calendar discovery, measured in minutes per granule (e.g.,
         60 will imply discovering resource calendars with slots of 1 hour). Must be divisible by 1,440 (number of
         minutes in a day).
-    confidence : Optional[Union[float, Tuple[float, float]]]
+    confidence : Union[float, Tuple[float, float]], optional
         Fixed value or range for the minimum confidence of the intervals in the discovered calendar of a resource
         or set of resources (between 0.0 and 1.0).
-    support : Optional[Union[float, Tuple[float, float]]]
+    support : Union[float, Tuple[float, float]], optional
         Fixed value or range for the minimum support of the intervals in the discovered calendar of a resource or
         set of resources (between 0.0 and 1.0).
-    participation : Optional[Union[float, Tuple[float, float]]]
+    participation : Union[float, Tuple[float, float]], optional
         Fixed value or range for the participation of a resource in the process to discover a calendar for them,
         gathered together otherwise (between 0.0 and 1.0).
-    fuzzy_angle : Optional[Union[float, Tuple[float, float]]]
+    fuzzy_angle : Union[float, Tuple[float, float]], optional
         Fixed value or range for the angle of the fuzzy trapezoid when computing the availability probability for an
         activity (angle from start to end).
     discover_prioritization_rules : bool

@@ -42,9 +42,9 @@ class Simod:
 
     Attributes
     ----------
-        settings : :class:`~simod.settings.SimodSettings`
+        settings : :class:`~simod.settings.simod_settings.SimodSettings`
             Configuration to run SIMOD and all its stages.
-        event_log : :class:`~simod.event_log.EventLog`
+        event_log : :class:`~simod.event_log.event_log.EventLog`
             EventLog class storing the preprocessed training, validation, and (optionally) test partitions.
         output_dir : :class:`~pathlib.Path`
             Path to the folder where to write all the SIMOD outputs.

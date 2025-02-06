@@ -27,7 +27,7 @@ class SimodSettings(BaseModel):
             General configuration parameters of SIMOD and parameters common to all pipeline stages.
         preprocessing : :class:`~simod.settings.preprocessing_settings.PreprocessingSettings`
             Configuration parameters for the preprocessing stage of SIMOD.
-        control_flow : :class:`~simod.settings.control_flow.ControlFlowSettings`
+        control_flow : :class:`~simod.settings.control_flow_settings.ControlFlowSettings`
             Configuration parameters for the control-flow model discovery stage.
         resource_model : :class:`~simod.settings.resource_model_settings.ResourceModelSettings`
             Configuration parameters for the resource model discovery stage.
