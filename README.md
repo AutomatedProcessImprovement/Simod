@@ -2,6 +2,7 @@
 
 ![Simod](https://github.com/AutomatedProcessImprovement/Simod/actions/workflows/simod.yml/badge.svg)
 ![version](https://img.shields.io/github/v/tag/AutomatedProcessImprovement/simod)
+[![Documentation Status](https://readthedocs.org/projects/simod/badge/?version=latest)](https://simod.readthedocs.io/en/latest/)
 
 SIMOD combines process mining and machine learning techniques to automate the discovery and tuning of Business Process
 Simulation models from event logs extracted from enterprise information systems (ERPs, CRM, case management systems,
@@ -111,3 +112,8 @@ Coverage:
 ```shell
 poetry run pytest -m "not integration" --cov=simod
 ```
+
+### Documentation
+
+For more details about the installation, usage, and implementation **visit the documentation here:**  
+📖 ️ [https://simod.readthedocs.io/en/latest/](https://simod.readthedocs.io/en/latest/)
