@@ -28,6 +28,37 @@ from ..utilities import get_process_model_path, get_simulation_parameters_path, 
 
 
 class ControlFlowOptimizer:
+    """
+    Optimizes the control-flow of a business process model using hyperparameter optimization.
+
+    This class performs iterative optimization to refine the structure of a process model
+    and discover optimal gateway probabilities. It evaluates different configurations to
+    improve the process model based on a given metric.
+
+    The search space is built based on the parameters ranges in [settings].
+
+    Attributes
+    ----------
+    event_log : :class:`EventLog`
+        Event log containing train and validation partitions.
+    initial_bps_model : :class:`BPSModel`
+        Business process simulation (BPS) model to use as a base, by replacing its control-flow model
+        with the discovered one in each iteration.
+    settings : :class:`ControlFlowSettings`
+        Configuration settings to build the search space for the optimization process.
+    base_directory : :class:`pathlib.Path`
+        Root directory where output files will be stored.
+    best_bps_model : Optional[:class:`BPSModel`]
+        Best discovered BPS model after the optimization process.
+    evaluation_measurements : :class:`pandas.DataFrame`
+        Quality measures recorded for each hyperopt iteration.
+
+    Notes
+    -----
+    - If no process model is provided, a discovery method will be used.
+    - Optimization is performed using TPE-hyperparameter optimization.
+    """
+
     # Event log with train/validation partitions
     event_log: EventLog
     # BPS model taken as starting point
@@ -158,8 +189,22 @@ class ControlFlowOptimizer:
 
     def run(self) -> HyperoptIterationParams:
         """
-        Run Control-Flow & Gateway Probabilities discovery
-        :return: The parameters of the best iteration of the optimization process.
+        Runs the control-flow optimization process.
+
+        This method defines the hyperparameter search space and executes a
+        TPE-hyperparameter optimization process to discover the best control-flow model.
+        It evaluates multiple iterations and selects the best-performing set of parameters
+        for its discovery.
+
+        Returns
+        -------
+        :class:`HyperoptIterationParams`
+            The parameters of the best iteration of the optimization process.
+
+        Raises
+        ------
+        AssertionError
+            If the best discovered process model path does not exist after optimization.
         """
         # Define search space
         self.iteration_index = 0
