@@ -12,7 +12,29 @@ from simod.utilities import nearest_divisor_for_granularity
 
 @dataclass
 class HyperoptIterationParams:
-    """Parameters for a single iteration of the Resource Model optimization process."""
+    """
+    Parameters for a single iteration of the Resource Model optimization process.
+
+    This class defines the necessary parameters for optimizing the resource model of the BPS model.
+    It includes the parameter values for the discovery of resource profiles, calendars, etc.
+
+    Attributes
+    ----------
+    output_dir : :class:`pathlib.Path`
+        Directory where all files of the current iteration will be stored.
+    process_model_path : :class:`pathlib.Path`
+        Path to the BPMN process model used for optimization.
+    project_name : str
+        Name of the project for file naming purposes.
+    optimization_metric : :class:`~simod.settings.common_settings.Metric`
+        Metric used to evaluate the quality of the current iteration's candidate.
+    calendar_discovery_params : :class:`CalendarDiscoveryParameters`
+        Parameters for the resource calendar (i.e., working schedules) discovery.
+    discover_prioritization_rules : bool, optional
+        Whether to attempt discovering prioritization rules (default: False).
+    discover_batching_rules : bool, optional
+        Whether to attempt discovering batching rules (default: False).
+    """
 
     # General settings
     output_dir: Path  # Directory where to output all the files of the current iteration
@@ -25,7 +47,14 @@ class HyperoptIterationParams:
     discover_batching_rules: bool = False  # Whether to try to add batching or not
 
     def to_dict(self) -> dict:
-        """Returns a dictionary with the parameters for this run."""
+        """
+        Converts the parameters of the current iteration into a dictionary format.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the iteration parameters.
+        """
         # Save common params
         optimization_parameters = {
             "output_dir": str(self.output_dir),

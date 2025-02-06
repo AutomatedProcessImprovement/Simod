@@ -9,6 +9,7 @@ class RuntimeMeter:
     runtimes: dict
 
     TOTAL: str = "SIMOD_TOTAL_RUNTIME"
+    PREPROCESSING: str = "preprocessing"
     INITIAL_MODEL: str = "discover-initial-BPS-model"
     CONTROL_FLOW_MODEL: str = "optimize-control-flow-model"
     RESOURCE_MODEL: str = "optimize-resource-model"

@@ -10,7 +10,42 @@ from simod.settings.control_flow_settings import ProcessModelDiscoveryAlgorithm
 
 @dataclass
 class HyperoptIterationParams:
-    """Parameters for a single iteration of the Control-Flow optimization process."""
+    """
+    Parameters for a single iteration of the Control-Flow optimization process.
+
+    This class defines the configuration settings used during an iteration of the
+    optimization process, including process model discovery, optimization metric,
+    and gateway probability discovery.
+
+    Attributes
+    ----------
+    output_dir : :class:`pathlib.Path`
+        Directory where all output files for the current iteration will be stored.
+    provided_model_path : :class:`pathlib.Path`, optional
+        Path to a provided BPMN model, if available (no discovery needed).
+    project_name : str
+        Name of the project, mainly used for file naming.
+    optimization_metric : :class:`Metric`
+        Metric used to evaluate the candidate process model in this iteration.
+    gateway_probabilities_method : :class:`GatewayProbabilitiesDiscoveryMethod`
+        Method for discovering gateway probabilities.
+    mining_algorithm : :class:`ProcessModelDiscoveryAlgorithm`
+        Algorithm used for process model discovery, if necessary.
+    epsilon : float, optional
+        Number of concurrent relations between events to be captured in the discovery algorithm (between 0.0 and 1.0).
+    eta : float, optional
+        Threshold for filtering the incoming and outgoing edges in the discovery algorithm (between 0.0 and 1.0).
+    replace_or_joins : bool, optional
+        Whether to replace non-trivial OR joins in the discovered model.
+    prioritize_parallelism : bool, optional
+        Whether to prioritize parallelism or loops for model discovery.
+    f_score : float], default=Non, optional
+        Minimum f-score value to consider the discovered data-aware branching rules.
+
+    Notes
+    -----
+    - If `provided_model_path` is specified, process model discovery will be skipped.
+    """
 
     # General settings
     output_dir: Path  # Directory where to output all the files of the current iteration
@@ -29,7 +64,17 @@ class HyperoptIterationParams:
     f_score: Optional[float] = None  # quality gateway for branch rules (f_score)
 
     def to_dict(self) -> dict:
-        """Returns a dictionary with the parameters for this run."""
+        """
+        Converts the instance into a dictionary representation of the optimization parameters.
+
+        The returned dictionary is structured based on whether a process model needs
+        to be discovered or if a pre-existing model is provided.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the optimization parameters for this iteration.
+        """
         optimization_parameters = {
             "output_dir": str(self.output_dir),
             "project_name": str(self.project_name),

@@ -28,6 +28,37 @@ from ..utilities import get_process_model_path, get_simulation_parameters_path, 
 
 
 class ResourceModelOptimizer:
+    """
+    Optimizes the resource model of a business process model using hyperparameter optimization.
+
+    This class performs iterative optimization to refine the resource model
+    and discover optimal resource profiles and availability calendars. It
+    evaluates different configurations to improve the process model based
+    on a given metric.
+
+    The search space is built based on the parameters ranges in [settings].
+
+    Attributes
+    ----------
+    event_log : :class:`~simod.event_log.event_log.EventLog`
+        Event log containing train and validation partitions.
+    initial_bps_model : :class:`~simod.simulation.parameters.BPS_model.BPSModel`
+        Business process simulation (BPS) model to use as a base, by replacing its resource model
+        with the discovered one in each iteration.
+    settings : :class:`~simod.settings.resource_model_settings.ResourceModelSettings`
+        Configuration settings to build the search space for the optimization process.
+    base_directory : :class:`pathlib.Path`
+        Root directory where output files will be stored.
+    best_bps_model : :class:`~simod.simulation.parameters.BPS_model.BPSModel`, optional
+        Best discovered BPS model after the optimization process.
+    evaluation_measurements : :class:`pandas.DataFrame`
+        Quality measures recorded for each hyperopt iteration.
+
+    Notes
+    -----
+    - Optimization is performed using TPE-hyperparameter optimization.
+    """
+
     # Event log with train/validation partitions
     event_log: EventLog
     # BPS model taken as starting point
@@ -168,8 +199,17 @@ class ResourceModelOptimizer:
 
     def run(self) -> HyperoptIterationParams:
         """
-        Run Resource Model (resource profiles, resource calendars and activity-resource performance) discovery.
-        :return: The parameters of the best iteration of the optimization process.
+        Runs the resource model optimization process.
+
+        This method defines the hyperparameter search space and executes a
+        TPE-hyperparameter optimization process to discover the best resource model.
+        It evaluates multiple iterations and selects the best-performing set of parameters
+        for its discovery.
+
+        Returns
+        -------
+        :class:`~simod.resource_model.settings.HyperoptIterationParams`
+            The parameters of the best iteration of the optimization process.
         """
         # Define search space
         self.iteration_index = 0

@@ -9,11 +9,46 @@ from ..utilities import parse_single_value_or_interval
 
 
 class ProcessModelDiscoveryAlgorithm(str, Enum):
+    """
+    Enumeration of process model discovery algorithms.
+
+    This enum defines the available algorithms for discovering process models from event logs.
+
+    Attributes
+    ----------
+    SPLIT_MINER_V1 : str
+        Represents the first version of the Split Miner algorithm (`"sm1"`).
+    SPLIT_MINER_V2 : str
+        Represents the second version of the Split Miner algorithm (`"sm2"`).
+    """
+
     SPLIT_MINER_V1 = "sm1"
     SPLIT_MINER_V2 = "sm2"
 
     @classmethod
     def from_str(cls, value: str) -> "ProcessModelDiscoveryAlgorithm":
+        """
+        Converts a string representation of a process model discovery algorithm
+        into the corresponding :class:`ProcessModelDiscoveryAlgorithm` instance.
+
+        This method allows flexible input formats for each algorithm, supporting
+        multiple variations of their names.
+
+        Parameters
+        ----------
+        value : str
+            A string representing a process model discovery algorithm.
+
+        Returns
+        -------
+        :class:`ProcessModelDiscoveryAlgorithm`
+            The corresponding enum instance for the given algorithm name.
+
+        Raises
+        ------
+        ValueError
+            If the provided string does not match any known algorithm.
+        """
         if value.lower() in [
             "sm2",
             "splitminer2",
@@ -51,7 +86,40 @@ class ProcessModelDiscoveryAlgorithm(str, Enum):
 
 class ControlFlowSettings(BaseModel):
     """
-    Control-flow optimization settings.
+    Control-flow model configuration parameters.
+
+    This class defines the ranges of the configurable parameters for optimizing the control-flow
+    structure of a discovered process model, including metric selection, iteration settings,
+    and various discovery algorithm parameters. In each iteration of the optimization process, the
+    parameters are sampled from these values or ranges.
+
+    Attributes
+    ----------
+    optimization_metric : :class:`~simod.settings.common_settings.Metric`
+        The metric used to evaluate process model quality at each iteration of the optimization process (i.e.,
+        loss function).
+    num_iterations : int
+        The number of optimization iterations to perform.
+    num_evaluations_per_iteration : int
+        The number of replications for the evaluations of each iteration.
+    gateway_probabilities : Union[:class:`GatewayProbabilitiesDiscoveryMethod`, List[:class:`GatewayProbabilitiesDiscoveryMethod`]]
+        Fixed method or list of methods to use in each iteration to discover gateway probabilities.
+    mining_algorithm : :class:`ProcessModelDiscoveryAlgorithm`, optional
+        The process model discovery algorithm to use.
+    epsilon : Union[float, Tuple[float, float]], optional
+        Fixed number or range for the number of concurrent relations between events to be captured in the discovery
+        algorithm (between 0.0 and 1.0).
+    eta : Union[float, Tuple[float, float]], optional
+        Fixed number or range for the threshold for filtering the incoming and outgoing edges in the discovery
+        algorithm (between 0.0 and 1.0).
+    replace_or_joins : Union[bool, List[bool]], optional
+        Fixed value or list for whether to replace non-trivial OR joins.
+    prioritize_parallelism : Union[bool, List[bool]], optional
+        Fixed value or list for whether to prioritize parallelism over loops.
+    discover_branch_rules : bool, optional
+        Whether to discover branch rules for gateways.
+    f_score : Union[float, Tuple[float, float]], optional
+        Fixed value or range for the minimum f-score value to consider the discovered data-aware branching rules.
     """
 
     optimization_metric: Metric = Metric.THREE_GRAM_DISTANCE
@@ -70,6 +138,15 @@ class ControlFlowSettings(BaseModel):
 
     @staticmethod
     def one_shot() -> "ControlFlowSettings":
+        """
+        Instantiates the control-flow model configuration for the one-shot mode (i.e., no optimization, one single
+        iteration).
+
+        Returns
+        -------
+        :class:`ControlFlowSettings`
+            Instance of the control-flow model configuration for the one-shot mode.
+        """
         return ControlFlowSettings(
             optimization_metric=Metric.THREE_GRAM_DISTANCE,
             num_iterations=1,
@@ -84,6 +161,19 @@ class ControlFlowSettings(BaseModel):
 
     @staticmethod
     def from_dict(config: dict) -> "ControlFlowSettings":
+        """
+        Instantiates the control-flow model configuration from a dictionary.
+
+        Parameters
+        ----------
+        config : dict
+            Dictionary with the configuration values for the control-flow model parameters.
+
+        Returns
+        -------
+        :class:`ControlFlowSettings`
+            Instance of the control-flow model configuration for the specified dictionary values.
+        """
         optimization_metric = Metric.from_str(config.get("optimization_metric", "n_gram_distance"))
         num_iterations = config.get("num_iterations", 10)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
@@ -123,6 +213,14 @@ class ControlFlowSettings(BaseModel):
         )
 
     def to_dict(self) -> dict:
+        """
+        Translate the control-flow model configuration stored in this instance into a dictionary.
+
+        Returns
+        -------
+        dict
+            Python dictionary storing this configuration.
+        """
         dictionary = {
             "optimization_metric": self.optimization_metric.value,
             "num_iterations": self.num_iterations,

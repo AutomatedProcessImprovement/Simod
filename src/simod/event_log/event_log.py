@@ -13,9 +13,26 @@ from ..utilities import get_process_name_from_log_path
 
 class EventLog:
     """
-    Event log class that contains the log and its splits, and column names.
+    Represents an event log containing process execution data and its partitioned subsets.
 
-    Use static methods to create an EventLog from a path in other ways that are implemented.
+    This class provides functionality for storing and managing an event log, including
+    training, validation, and test partitions. It also supports exporting logs to XES format
+    and loading event logs from files.
+
+    Attributes
+    ----------
+    train_partition : :class:`pandas.DataFrame`
+        DataFrame containing the training partition of the event log.
+    validation_partition : :class:`pandas.DataFrame`
+        DataFrame containing the validation partition of the event log.
+    train_validation_partition : :class:`pandas.DataFrame`
+        DataFrame containing both training and validation data.
+    test_partition : :class:`pandas.DataFrame`
+        DataFrame containing the test partition of the event log, if available.
+    log_ids : :class:`EventLogIDs`
+        Identifiers for mapping column names in the event log.
+    process_name : str
+        The name of the business process associated with the event log, primarily used for file naming.
     """
 
     train_partition: pd.DataFrame
@@ -56,7 +73,34 @@ class EventLog:
         split_ratio: float = 0.8,
     ) -> "EventLog":
         """
-        Loads an event log from a file and does the log split for training, validation, and test.
+        Loads an event log from a file and performs partitioning into training, validation, and test subsets.
+
+        Parameters
+        ----------
+        train_log_path : :class:`pathlib.Path`
+            Path to the training event log file (CSV or CSV.GZ).
+        log_ids : :class:`EventLogIDs`
+            Identifiers for mapping column names in the event log.
+        preprocessing_settings : :class:`PreprocessingSettings`, optional
+            Settings for preprocessing the event log.
+        need_test_partition : bool, optional
+            Whether to create a test partition if a separate test log is not provided.
+        process_name : str, optional
+            Name of the business process. If not provided, it is inferred from the file name.
+        test_log_path : :class:`pathlib.Path`, optional
+            Path to the test event log file (CSV or CSV.GZ). If provided, the test log is loaded separately.
+        split_ratio : float, default=0.8
+            Ratio for splitting training and validation partitions.
+
+        Returns
+        -------
+        :class:`EventLog`
+            An instance of :class:`EventLog` with training, validation, and test partitions.
+
+        Raises
+        ------
+        ValueError
+            If the specified training or test log has an unsupported file extension.
         """
         # Check event log prerequisites
         if not train_log_path.name.endswith(".csv") and not train_log_path.name.endswith(".csv.gz"):
@@ -108,25 +152,45 @@ class EventLog:
 
     def train_to_xes(self, path: Path):
         """
-        Saves the training log to a XES file.
+        Saves the training log to an XES file.
+
+        Parameters
+        ----------
+        path : :class:`pathlib.Path`
+            Destination path for the XES file.
         """
         write_xes(self.train_partition, self.log_ids, path)
 
     def validation_to_xes(self, path: Path):
         """
-        Saves the validation log to a XES file.
+        Saves the validation log to an XES file.
+
+        Parameters
+        ----------
+        path : :class:`pathlib.Path`
+            Destination path for the XES file.
         """
         write_xes(self.validation_partition, self.log_ids, path)
 
     def train_validation_to_xes(self, path: Path):
         """
-        Saves the validation log to a XES file.
+        Saves the combined training and validation log to an XES file.
+
+        Parameters
+        ----------
+        path : :class:`pathlib.Path`
+            Destination path for the XES file.
         """
         write_xes(self.train_validation_partition, self.log_ids, path)
 
     def test_to_xes(self, path: Path):
         """
-        Saves the test log to a XES file.
+        Saves the test log to an XES file.
+
+        Parameters
+        ----------
+        path : :class:`pathlib.Path`
+            Destination path for the XES file.
         """
         write_xes(self.test_partition, self.log_ids, path)
 

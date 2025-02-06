@@ -15,14 +15,33 @@ def add_timers_to_bpmn_model(
     timer_placement: TimerPlacement = TimerPlacement.BEFORE,
 ):
     """
-    Enhance the BPMN model received by adding a timer previous (or after) to each activity denoted by [timers].
+    Enhances a BPMN model by adding timers before or after specified activities.
 
-    :param process_model:       Path to the process model (in BPMN format) to enhance.
-    :param delays:              Dict with the name of each activity as key, and the timer configuration as value.
-    :param timer_placement:     Option to consider the placement of the timers either BEFORE (the extraneous delay
-                                is considered to be happening previously to an activity instance) or AFTER (the
-                                extraneous delay is considered to be happening afterward an activity instance) each
-                                activity.
+    This function modifies a given BPMN process model by inserting timers
+    before or after activities that have identified extraneous delays.
+
+    Parameters
+    ----------
+    process_model : :class:`pathlib.Path`
+        Path to the BPMN process model file to enhance.
+    delays : List[:class:`~simod.extraneous_delays.types.ExtraneousDelay`]
+        A list of extraneous delays, where each delay specifies an activity
+        and the corresponding timer configuration.
+    timer_placement : :class:`TimerPlacement`, optional
+        Specifies whether the timers should be placed **BEFORE** (indicating the
+        delay happens before an activity instance) or **AFTER** (indicating the
+        delay happens afterward). Default is `TimerPlacement.BEFORE`.
+
+    Notes
+    -----
+    - This function modifies the BPMN file in place.
+    - The method searches for tasks within the BPMN model and inserts timers
+      based on the provided delays.
+
+    Raises
+    ------
+    ValueError
+        If the BPMN model file does not contain any tasks.
     """
     if len(delays) > 0:
         # Extract process

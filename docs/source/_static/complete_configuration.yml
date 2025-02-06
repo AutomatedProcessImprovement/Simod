@@ -1,0 +1,146 @@
+version: 5
+
+##########
+# Common #
+##########
+common:
+  # Path to the event log in CSV format
+  train_log_path: ../event_logs/LoanApp_simplified_train.csv.gz
+  # Specify the name for each of the columns in the CSV file (XES standard by default)
+  log_ids:
+    case: "case_id"
+    activity: "activity"
+    resource: "resource"
+    enabled_time: "enabled_time"  # If not present in the log, automatically estimated (see preprocessing)
+    start_time: "start_time"  # Should be present, but if not, can be estimated (see preprocessing)
+    end_time: "end_time"
+  # Use this process model and skip its discovery
+  process_model_path: ../models/LoanApp_simplified.bpmn
+  # Event log to evaluate the discovered BPS model with
+  test_log_path: ../event_logs/LoanApp_simplified_test.csv.gz
+  # Flag to perform evaluation (if 'test_log_path' not provided) with a test partition of the input log
+  perform_final_evaluation: true
+  # Number of evaluations of the discovered BPS model
+  num_final_evaluations: 10
+  # Metrics to evaluate the discovered BPS model (reported in an output file)
+  evaluation_metrics:
+    - 3_gram_distance
+    - 2_gram_distance
+    - absolute_event_distribution
+    - relative_event_distribution
+    - circadian_event_distribution
+    - arrival_event_distribution
+    - cycle_time_distribution
+  # Whether to simulate the arrival times using the distribution of inter-arrival times observed in the training log,
+  # or fitting a parameterized probabilistic distribution (e.g., norm, expon) with these observed values.
+  use_observed_arrival_distribution: false
+  # Whether to delete all files created during the optimization phases or not
+  clean_intermediate_files: true
+  # Whether to discover global/case/event attributes and their update rules or not
+  discover_data_attributes: false
+
+#################
+# Preprocessing #
+#################
+preprocessing:
+  # If the log has start times, threshold to consider two activities as concurrent when computing the enabled time
+  # (if necessary). Two activities would be considered concurrent if their occurrences happening concurrently divided
+  # by their total occurrences is higher than this threshold.
+  enable_time_concurrency_threshold: 0.75
+  # If true, preprocess multitasking (i.e., one resource performing more than one activity at the same time) by
+  # adjusting the timestamps (start/end) of those activities being executed at the same time by the same resource.
+  multitasking: false
+  # Thresholds for the heuristics' concurrency oracle (only used to estimate start times if missing).
+  concurrency_df: 0.9 # Directly-Follows threshold
+  concurrency_l2l: 0.9 # Length 2 loops threshold
+  concurrency_l1l: 0.9 # Length 1 loops threshold
+
+################
+# Control-flow #
+################
+control_flow:
+  # Metric to guide the optimization process (loss function to minimize)
+  optimization_metric: n_gram_distance
+  # Number of optimization iterations over the search space
+  num_iterations: 20
+  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 3
+  # Methods for discovering gateway probabilities
+  gateway_probabilities:
+    - equiprobable
+    - discovery
+  # Discover process model with SplitMiner v1 (options: sm1 or sm2)
+  mining_algorithm: sm1
+  # For Split Miner v1 and v2: Number of concurrent relations between events to be captured (between 0.0 and 1.0)
+  epsilon:
+    - 0.05
+    - 0.4
+  # Only for Split Miner v1: Threshold for filtering the incoming and outgoing edges (between 0.0 and 1.0)
+  eta:
+    - 0.2
+    - 0.7
+  # Only for Split Miner v1: Whether to replace non-trivial OR joins or not (true or false)
+  replace_or_joins:
+    - true
+    - false
+  # Only for Split Miner v1: Whether to prioritize parallelism over loops or not (true or false)
+  prioritize_parallelism:
+    - true
+    - false
+  # Discover data-aware branching rules, i.e., BPMN decision points based on value of data attributes
+  discover_branch_rules: true
+  # Minimum f-score value to consider the discovered data-aware branching rules
+  f_score:
+    - 0.3
+    - 0.9
+
+##################
+# Resource model #
+##################
+resource_model:
+  # Metric to guide the optimization process (loss function to minimize)
+  optimization_metric: circadian_emd
+  # Number of optimization iterations over the search space
+  num_iterations: 20
+  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 3
+  # Whether to discover prioritization or batching behavior
+  discover_prioritization_rules: false
+  discover_batching_rules: false
+  # Resource profiles configuration
+  resource_profiles:
+    # Resource profile discovery type (fuzzy, differentiated, pool, undifferentiated)
+    discovery_type: differentiated
+    # Time granularity (in minutes) for the resource calendar (the higher the density of events in the log, the smaller the granularity can be)
+    granularity:
+      - 15
+      - 60
+    # Minimum confidence of the intervals in the discovered calendar of a resource or set of resources (between 0.0 and 1.0)
+    confidence:
+      - 0.5
+      - 0.85
+    # Minimum support of the intervals in the discovered calendar of a resource or set of resources (between 0.0 and 1.0)
+    support:
+      - 0.05
+      - 0.5
+    # Participation of a resource in the process to discover a calendar for them, gathered together otherwise (between 0.0 and 1.0)
+    participation:
+      - 0.2
+      - 0.5
+    # Angle of the fuzzy trapezoid when computing the availability probability for an activity (angle from start to end)
+    fuzzy_angle:
+      - 0.1
+      - 0.9
+
+#####################
+# Extraneous delays #
+#####################
+extraneous_activity_delays:
+  # Metric to guide the optimization process (loss function to minimize)
+  optimization_metric: relative_emd
+  # Method to compute the extraneous delay (naive or eclipse-aware)
+  discovery_method: eclipse-aware
+  # Number of optimization iterations over the search space (1 = direct discovery, no optimization stage)
+  num_iterations: 1
+  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 3

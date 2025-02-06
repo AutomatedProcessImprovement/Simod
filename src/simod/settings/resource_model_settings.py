@@ -9,7 +9,43 @@ from simod.utilities import parse_single_value_or_interval
 
 class ResourceModelSettings(BaseModel):
     """
-    Resource Model optimization settings.
+    Configuration settings for resource model optimization.
+
+    This class defines parameters for optimizing resource allocation and
+    scheduling in process simulations, including optimization metrics,
+    discovery methods, and statistical thresholds. In each iteration of the optimization process, the
+    parameters are sampled from these values or ranges.
+
+    Attributes
+    ----------
+    optimization_metric : :class:`Metric`
+        The metric used to evaluate the quality of resource model optimization in each iteration (i.e., loss function).
+    num_iterations : int
+        The number of optimization iterations to perform.
+    num_evaluations_per_iteration : int
+        The number of replications for the evaluations of each iteration.
+    discovery_type : :class:`CalendarType`
+        Type of calendar discovery method used for resource modeling.
+    granularity : Union[int, Tuple[int, int]], optional
+        Fixed value or range for the time granularity for calendar discovery, measured in minutes per granule (e.g.,
+        60 will imply discovering resource calendars with slots of 1 hour). Must be divisible by 1,440 (number of
+        minutes in a day).
+    confidence : Union[float, Tuple[float, float]], optional
+        Fixed value or range for the minimum confidence of the intervals in the discovered calendar of a resource
+        or set of resources (between 0.0 and 1.0).
+    support : Union[float, Tuple[float, float]], optional
+        Fixed value or range for the minimum support of the intervals in the discovered calendar of a resource or
+        set of resources (between 0.0 and 1.0).
+    participation : Union[float, Tuple[float, float]], optional
+        Fixed value or range for the participation of a resource in the process to discover a calendar for them,
+        gathered together otherwise (between 0.0 and 1.0).
+    fuzzy_angle : Union[float, Tuple[float, float]], optional
+        Fixed value or range for the angle of the fuzzy trapezoid when computing the availability probability for an
+        activity (angle from start to end).
+    discover_prioritization_rules : bool
+        Whether to discover case prioritization rules.
+    discover_batching_rules : bool
+        Whether to discover batching rules for resource allocation.
     """
 
     optimization_metric: Metric = Metric.CIRCADIAN_EMD
@@ -26,6 +62,15 @@ class ResourceModelSettings(BaseModel):
 
     @staticmethod
     def one_shot() -> "ResourceModelSettings":
+        """
+        Instantiates the resource model configuration for the one-shot mode (i.e., no optimization, one single
+        iteration).
+
+        Returns
+        -------
+        :class:`ResourceModelSettings`
+            Instance of the resource model configuration for the one-shot mode.
+        """
         return ResourceModelSettings(
             optimization_metric=Metric.CIRCADIAN_EMD,
             num_iterations=1,
@@ -42,6 +87,19 @@ class ResourceModelSettings(BaseModel):
 
     @staticmethod
     def from_dict(config: dict) -> "ResourceModelSettings":
+        """
+        Instantiates the resource model configuration from a dictionary.
+
+        Parameters
+        ----------
+        config : dict
+            Dictionary with the configuration values for the resource model parameters.
+
+        Returns
+        -------
+        :class:`ResourceModelSettings`
+            Instance of the resource model configuration for the specified dictionary values.
+        """
         optimization_metric = Metric.from_str(config.get("optimization_metric", "circadian_emd"))
         num_iterations = config.get("num_iterations", 10)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
@@ -81,6 +139,14 @@ class ResourceModelSettings(BaseModel):
         )
 
     def to_dict(self) -> dict:
+        """
+        Translate the resource model configuration stored in this instance into a dictionary.
+
+        Returns
+        -------
+        dict
+            Python dictionary storing this configuration.
+        """
         # Parse general settings
         dictionary = {
             "optimization_metric": self.optimization_metric.value,

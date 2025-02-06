@@ -1,0 +1,69 @@
+#################################################################################################################
+# Simple configuration example for running SIMOD without parameter optimization steps. The defined parameters   #
+# should be individual values and not intervals, as there is no optimization.                                   #
+#################################################################################################################
+# - Visit 'complete_configuration.yml' example for a description of all configurable parameters                 #
+#################################################################################################################
+version: 5
+##########
+# Common #
+##########
+common:
+  # Path to the event log in CSV format
+  train_log_path: ../event_logs/LoanApp_simplified_train.csv.gz
+  # Specify the name for each of the columns in the CSV file (XES standard by default)
+  log_ids:
+    case: "case_id"
+    activity: "activity"
+    resource: "resource"
+    enabled_time: "enabled_time"  # If not present in the log, automatically computed
+    start_time: "start_time"
+    end_time: "end_time"
+################
+# Control-flow #
+################
+control_flow:
+  # Number of optimization iterations over the search space
+  num_iterations: 1
+  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 1
+  # Methods for discovering gateway probabilities
+  gateway_probabilities: discovery
+  # Discover process model with SplitMiner v3
+  mining_algorithm: sm1
+  # Number of concurrent relations between events to be captured
+  epsilon: 0.3
+  # Threshold for filtering the incoming and outgoing edges
+  eta: 0.5
+  # Whether to replace non-trivial OR joins or not
+  replace_or_joins: false
+  # Whether to prioritize parallelism over loops or not
+  prioritize_parallelism: true
+##################
+# Resource model #
+##################
+resource_model:
+  # Number of optimization iterations over the search space
+  num_iterations: 1
+  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 1
+  # Resource profiles configuration
+  resource_profiles:
+    # Resource profile discovery type
+    discovery_type: differentiated
+    # Time granularity (in minutes) for the resource calendar (the higher the density of events in the log, the smaller the granularity can be)
+    granularity: 60
+    # Minimum confidence of the intervals in the discovered calendar (of a resource or set of resources)
+    confidence: 0.6
+    # Minimum support of the intervals in the discovered calendar (of a resource or set of resources)
+    support: 0.2
+    # Participation of a resource in the process to discover a calendar for them (gathered together otherwise)
+    participation: 0.4
+#####################
+# Extraneous delays #
+#####################
+extraneous_activity_delays:
+  # Method to compute the extraneous delay
+  discovery_method: eclipse-aware
+  # Number of optimization iterations over the search space (1 = direct discovery, no optimization stage)
+  num_iterations: 1

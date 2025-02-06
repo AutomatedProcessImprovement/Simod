@@ -4,7 +4,6 @@ from typing import List
 
 from extraneous_activity_delays.config import (
     Configuration as ExtraneousActivityDelaysConfiguration,
-    DiscoveryMethod,
     TimerPlacement,
     SimulationEngine,
     SimulationModel,
@@ -21,6 +20,24 @@ from simod.simulation.parameters.BPS_model import BPSModel
 
 
 class ExtraneousDelaysOptimizer:
+    """
+    Optimizer for the discovery of the extraneous delays model.
+
+    This class performs either a direct discovery of the extraneous delays of the process, or launches an iterative
+    optimization that first discovers the extraneous delays and then adjusts their size to better reflect reality.
+
+    Attributes
+    ----------
+    event_log : :class:`~simod.event_log.event_log.EventLog`
+        The event log containing the train and validation data.
+    bps_model : :class:`~simod.simulation.parameters.BPS_model.BPSModel`
+        The business process simulation model to enhance with extraneous delays, including the BPMN representation.
+    settings : :class:`~simod.settings.extraneous_delays_settings.ExtraneousDelaysSettings`
+        Configuration settings for extraneous delay discovery.
+    base_directory : :class:`pathlib.Path`
+        Directory where output files will be stored.
+    """
+
     def __init__(
         self,
         event_log: EventLog,
@@ -36,6 +53,19 @@ class ExtraneousDelaysOptimizer:
         assert self.bps_model.process_model is not None, "BPMN model is not specified."
 
     def run(self) -> List[ExtraneousDelay]:
+        """
+        Executes the extraneous delay discovery process.
+
+        This method configures the optimization process, applies either a direct enhancement
+        or a hyperparameter optimization approach to identify delays, and returns the best
+        detected delays as a list of `ExtraneousDelay` objects.
+
+        Returns
+        -------
+        List[:class:`~simod.extraneous_delays.types.ExtraneousDelay`]
+            A list of detected extraneous delays, each containing activity names, delay IDs,
+            and their corresponding duration distributions.
+        """
         # Set-up configuration for extraneous delay discovery
         configuration = ExtraneousActivityDelaysConfiguration(
             log_ids=self.event_log.log_ids,

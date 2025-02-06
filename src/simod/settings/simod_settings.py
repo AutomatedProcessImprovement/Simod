@@ -18,8 +18,24 @@ BPMN_NAMESPACE_URI = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 
 class SimodSettings(BaseModel):
     """
-    Simod configuration v4 with the settings for all the stages and optimizations.
-    If configuration is provided in v2, is transformed to v4.
+    SIMOD configuration v5 with the settings for all the stages and optimizations.
+    If configuration is provided in v2 or v4, it is automatically translated to v5.
+
+    Attributes
+    ----------
+        common : :class:`~simod.settings.common_settings.CommonSettings`
+            General configuration parameters of SIMOD and parameters common to all pipeline stages.
+        preprocessing : :class:`~simod.settings.preprocessing_settings.PreprocessingSettings`
+            Configuration parameters for the preprocessing stage of SIMOD.
+        control_flow : :class:`~simod.settings.control_flow_settings.ControlFlowSettings`
+            Configuration parameters for the control-flow model discovery stage.
+        resource_model : :class:`~simod.settings.resource_model_settings.ResourceModelSettings`
+            Configuration parameters for the resource model discovery stage.
+        extraneous_activity_delays : :class:`~simod.settings.extraneous_delays_settings.ExtraneousDelaysSettings`
+            Configuration parameters for the extraneous delays model discovery stage. If not provided, the extraneous
+            delays are not discovered.
+        version : int
+            SIMOD version.
     """
 
     common: CommonSettings = CommonSettings()
@@ -32,8 +48,12 @@ class SimodSettings(BaseModel):
     @staticmethod
     def default() -> "SimodSettings":
         """
-        Default configuration for Simod. Used mostly for testing purposes. Most of those settings should be discovered
-        by Simod automatically.
+        Default configuration for SIMOD.
+
+        Returns
+        -------
+        :class:`SimodSettings`
+            Instance of the SIMOD configuration with the default values.
         """
 
         return SimodSettings(
@@ -46,6 +66,15 @@ class SimodSettings(BaseModel):
 
     @staticmethod
     def one_shot() -> "SimodSettings":
+        """
+        Configuration for SIMOD one-shot. This mode runs SIMOD without optimizing each BPS model component (i.e.,
+        directly discover each BPS model component with default parameters).
+
+        Returns
+        -------
+        :class:`SimodSettings`
+            Instance of the SIMOD configuration for one-shot mode.
+        """
         return SimodSettings(
             common=CommonSettings(),
             preprocessing=PreprocessingSettings(),
@@ -56,6 +85,22 @@ class SimodSettings(BaseModel):
 
     @staticmethod
     def from_yaml(config: dict, config_dir: Optional[Path] = None) -> "SimodSettings":
+        """
+        Instantiates the SIMOD configuration from a dictionary following the expected YAML structure.
+
+        Parameters
+        ----------
+        config : dict
+            Dictionary with the configuration values for each of the SIMOD elements.
+        config_dir : :class:`~pathlib.Path`, optional
+            If the path to the event log(s) is specified in a relative manner, ``[config_dir]`` is used to complete
+            such paths. If ``None``, relative paths are complemented with the current directory.
+
+        Returns
+        -------
+        :class:`SimodSettings`
+            Instance of the SIMOD configuration for the specified dictionary values.
+        """
         assert config["version"] in [2, 4, 5], "Configuration version must be 2, 4, or 5"
 
         # Transform from previous version to the latest if needed
@@ -109,11 +154,32 @@ class SimodSettings(BaseModel):
 
     @staticmethod
     def from_path(file_path: Path) -> "SimodSettings":
+        """
+        Instantiates the SIMOD configuration from a YAML file.
+
+        Parameters
+        ----------
+        file_path : :class:`~pathlib.Path`
+            Path to the YAML file storing the configuration.
+
+        Returns
+        -------
+        :class:`SimodSettings`
+            Instance of the SIMOD configuration for the specified YAML file.
+        """
         with file_path.open() as f:
             config = yaml.safe_load(f)
             return SimodSettings.from_yaml(config, config_dir=file_path.parent)
 
     def to_dict(self) -> dict:
+        """
+        Translate the SIMOD configuration stored in this instance into a dictionary.
+
+        Returns
+        -------
+        dict
+            Python dictionary storing this configuration.
+        """
         dictionary = {
             "version": self.version,
             "common": self.common.to_dict(),
@@ -128,8 +194,16 @@ class SimodSettings(BaseModel):
     def to_yaml(self, output_dir: Path) -> Path:
         """
         Saves the configuration to a YAML file in the provided output directory.
-        :param output_dir: Output directory.
-        :return: None.
+
+        Parameters
+        ----------
+        output_dir : :class:`~pathlib.Path`
+            Path to the output directory where to store the YAML file with the configuration.
+
+        Returns
+        -------
+        :class:`~pathlib.Path`
+            Path to the YAML file with the configuration.
         """
         data = yaml.dump(self.to_dict(), sort_keys=False)
         output_path = output_dir / "configuration.yaml"

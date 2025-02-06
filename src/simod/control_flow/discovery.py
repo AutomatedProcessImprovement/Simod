@@ -15,13 +15,25 @@ bpmn_layout_jar_path: Path = Path(__file__).parent / "lib/bpmn-layout-1.0.6-jar-
 
 def discover_process_model(log_path: Path, output_model_path: Path, params: HyperoptIterationParams):
     """
-    Run the process model discovery algorithm specified in the [params] to discover
-    a process model in [output_model_path] from the (XES) event log in [log_path].
+        Runs the specified process model discovery algorithm to extract a process model
+        from an event log and save it to the given output path.
 
-    :param log_path: Path to the event log in XES format for the Split Miner algorithms.
-    :param output_model_path: Path to write the discovered process model.
-    :param params: configuration class specifying the process model discovery algorithm and its parameters.
-    """
+        This function supports Split Miner V1 and Split Miner V2 as discovery algorithms.
+
+        Parameters
+        ----------
+        log_path : :class:`pathlib.Path`
+            Path to the event log in XES format, required for Split Miner algorithms.
+        output_model_path : :class:`pathlib.Path`
+            Path to save the discovered process model.
+        params : :class:`~simod.resource_model.settings.HyperoptIterationParams`
+            Configuration containing the process model discovery algorithm and its parameters.
+
+        Raises
+        ------
+        ValueError
+            If the specified process model discovery algorithm is unknown.
+        """
     if params.mining_algorithm is ProcessModelDiscoveryAlgorithm.SPLIT_MINER_V1:
         discover_process_model_with_split_miner_v1(
             SplitMinerV1Settings(

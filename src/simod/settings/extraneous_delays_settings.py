@@ -8,6 +8,27 @@ from simod.settings.common_settings import Metric
 
 
 class ExtraneousDelaysSettings(BaseModel):
+    """
+    Configuration settings for extraneous delay optimization.
+
+    This class defines parameters for discovering and optimizing extraneous
+    delays in process simulations, including optimization metrics, discovery
+    methods, and iteration settings. In each iteration of the optimization process, the
+    parameters are sampled from these values or ranges.
+
+    Attributes
+    ----------
+    optimization_metric : :class:`ExtraneousDelaysOptimizationMetric`
+        The metric used to evaluate process model quality at each iteration of the optimization process (i.e.,
+        loss function).
+    num_iterations : int
+        The number of optimization iterations to perform.
+    num_evaluations_per_iteration : int
+        The number of replications for the evaluations of each iteration.
+    discovery_method : :class:`ExtraneousDelaysDiscoveryMethod`
+        The method used to discover extraneous delays.
+    """
+
     optimization_metric: ExtraneousDelaysOptimizationMetric = ExtraneousDelaysOptimizationMetric.RELATIVE_EMD
     discovery_method: ExtraneousDelaysDiscoveryMethod = ExtraneousDelaysDiscoveryMethod.COMPLEX
     num_iterations: int = 1
@@ -15,6 +36,19 @@ class ExtraneousDelaysSettings(BaseModel):
 
     @staticmethod
     def from_dict(config: dict) -> "ExtraneousDelaysSettings":
+        """
+        Instantiates the extraneous delays model configuration from a dictionary.
+
+        Parameters
+        ----------
+        config : dict
+            Dictionary with the configuration values for the extraneous delays model parameters.
+
+        Returns
+        -------
+        :class:`ExtraneousDelaysSettings`
+            Instance of the extraneous delays model configuration for the specified dictionary values.
+        """
         optimization_metric = ExtraneousDelaysSettings._match_metric(
             config.get("optimization_metric", "relative_event_distribution")
         )
@@ -30,6 +64,14 @@ class ExtraneousDelaysSettings(BaseModel):
         )
 
     def to_dict(self) -> dict:
+        """
+        Translate the extraneous delays model configuration stored in this instance into a dictionary.
+
+        Returns
+        -------
+        dict
+            Python dictionary storing this configuration.
+        """
         return {
             "optimization_metric": str(self.optimization_metric.name),
             "discovery_method": str(self.discovery_method.name),
