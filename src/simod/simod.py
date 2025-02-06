@@ -405,5 +405,12 @@ def _export_runtimes(
         file_path: Path,
         runtimes: RuntimeMeter
 ):
-    with open(file_path, "w") as f:
-        json.dump(runtimes.runtimes, f)
+    with open(file_path, "w") as file:
+        json.dump(
+            runtimes.runtimes | {'explanation': f"Add '{RuntimeMeter.PREPROCESSING}' with '{RuntimeMeter.TOTAL}' "
+                                                f"for the runtime of the entire SIMOD pipeline and preprocessing "
+                                                f"stage. '{RuntimeMeter.EVALUATION}', if reported, should be left out "
+                                                f"as it measures the quality assessment of the final BPS model (i.e., "
+                                                f"it is not part of the discovery process."},
+            file
+        )
