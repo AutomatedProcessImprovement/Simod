@@ -13,7 +13,8 @@ class ExtraneousDelaysSettings(BaseModel):
 
     This class defines parameters for discovering and optimizing extraneous
     delays in process simulations, including optimization metrics, discovery
-    methods, and iteration settings.
+    methods, and iteration settings. In each iteration of the optimization process, the
+    parameters are sampled from these values or ranges.
 
     Attributes
     ----------

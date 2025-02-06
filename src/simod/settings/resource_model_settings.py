@@ -13,7 +13,8 @@ class ResourceModelSettings(BaseModel):
 
     This class defines parameters for optimizing resource allocation and
     scheduling in process simulations, including optimization metrics,
-    discovery methods, and statistical thresholds.
+    discovery methods, and statistical thresholds. In each iteration of the optimization process, the
+    parameters are sampled from these values or ranges.
 
     Attributes
     ----------
@@ -26,20 +27,21 @@ class ResourceModelSettings(BaseModel):
     discovery_type : :class:`CalendarType`
         Type of calendar discovery method used for resource modeling.
     granularity : Optional[Union[int, Tuple[int, int]]]
-        Time granularity for calendar discovery, measured in minutes per granule (e.g., 60 will imply discovering
-        resource calendars with slots of 1 hour).
+        Fixed value or range for the time granularity for calendar discovery, measured in minutes per granule (e.g.,
+        60 will imply discovering resource calendars with slots of 1 hour). Must be divisible by 1,440 (number of
+        minutes in a day).
     confidence : Optional[Union[float, Tuple[float, float]]]
-        Minimum confidence of the intervals in the discovered calendar of a resource or set of resources (between
-        0.0 and 1.0)
+        Fixed value or range for the minimum confidence of the intervals in the discovered calendar of a resource
+        or set of resources (between 0.0 and 1.0).
     support : Optional[Union[float, Tuple[float, float]]]
-        Minimum support of the intervals in the discovered calendar of a resource or set of resources (between 0.0
-        and 1.0)
+        Fixed value or range for the minimum support of the intervals in the discovered calendar of a resource or
+        set of resources (between 0.0 and 1.0).
     participation : Optional[Union[float, Tuple[float, float]]]
-        Participation of a resource in the process to discover a calendar for them, gathered together otherwise
-        (between 0.0 and 1.0)
+        Fixed value or range for the participation of a resource in the process to discover a calendar for them,
+        gathered together otherwise (between 0.0 and 1.0).
     fuzzy_angle : Optional[Union[float, Tuple[float, float]]]
-        Angle of the fuzzy trapezoid when computing the availability probability for an activity (angle from
-        start to end)
+        Fixed value or range for the angle of the fuzzy trapezoid when computing the availability probability for an
+        activity (angle from start to end).
     discover_prioritization_rules : bool
         Whether to discover case prioritization rules.
     discover_batching_rules : bool
