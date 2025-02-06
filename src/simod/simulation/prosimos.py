@@ -18,7 +18,22 @@ cpu_count = multiprocessing.cpu_count()
 
 @dataclass
 class ProsimosSettings:
-    """Prosimos simulator settings."""
+    """
+    Configuration settings for running a Prosimos simulation.
+
+    Attributes
+    ----------
+    bpmn_path : :class:`pathlib.Path`
+        Path to the BPMN process model.
+    parameters_path : :class:`pathlib.Path`
+        Path to the Prosimos simulation parameters JSON file.
+    output_log_path : :class:`pathlib.Path`
+        Path to store the generated simulation log.
+    num_simulation_cases : int
+        Number of cases to simulate.
+    simulation_start : :class:`pandas.Timestamp`
+        Start timestamp for the simulation.
+    """
 
     bpmn_path: Path
     parameters_path: Path
@@ -29,9 +44,18 @@ class ProsimosSettings:
 
 def simulate(settings: ProsimosSettings):
     """
-    Simulates a process model using Prosimos.
-    :param settings: Prosimos settings.
-    :return: None.
+    Runs a Prosimos simulation with the provided settings.
+
+    Parameters
+    ----------
+    settings : :class:`ProsimosSettings`
+        Configuration settings containing paths and parameters for the simulation.
+
+    Notes
+    -----
+    - The function prints the simulation settings and invokes `run_simulation()`.
+    - The labels of the start event, end event, and event timers are**not** recorded to the output log.
+    - The simulation generates a process log stored in `settings.output_log_path`.
     """
     print_message(f"Simulation settings: {settings}")
 
@@ -58,19 +82,41 @@ def simulate_and_evaluate(
     num_simulations: int = 1,
 ) -> List[dict]:
     """
-    Simulates a process model using Prosimos num_simulations times in parallel.
+    Simulates a process model using Prosimos multiple times and evaluates the results.
 
-    :param process_model_path: Path to the BPMN model.
-    :param parameters_path: Path to the Prosimos parameters.
-    :param output_dir: Path to the output directory for simulated logs.
-    :param simulation_cases: Number of cases to simulate.
-    :param simulation_start_time: Start time of the simulation.
-    :param validation_log: Validation log.
-    :param validation_log_ids: Validation log IDs.
-    :param metrics: Metrics to evaluate the simulated logs with.
-    :param num_simulations: Number of simulations to run in parallel. Default: 1. More simulations increase
-        the accuracy of evaluation metrics.
-    :return: Evaluation metrics.
+    This function runs the simulation `num_simulations` times in parallel,
+    compares the generated logs with a validation log, and evaluates them using provided metrics.
+
+    Parameters
+    ----------
+    process_model_path : :class:`Path`
+        Path to the BPMN process model.
+    parameters_path : :class:`Path`
+        Path to the Prosimos simulation parameters JSON file.
+    output_dir : :class:`Path`
+        Directory where simulated logs will be stored.
+    simulation_cases : int
+        Number of cases to simulate per run.
+    simulation_start_time : :class:`pandas.Timestamp`
+        Start timestamp for the simulation.
+    validation_log : :class:`pandas.DataFrame`
+        The actual event log to compare against.
+    validation_log_ids : :class:`EventLogIDs`
+        Column mappings for identifying events in the validation log.
+    metrics : List[:class:`simod.settings.common_settings.Metric`]
+        A list of metrics used to evaluate the simulated logs.
+    num_simulations : int, optional
+        Number of parallel simulation runs (default is 1).
+
+    Returns
+    -------
+    List[dict]
+        A list of evaluation results, one for each simulated log.
+
+    Notes
+    -----
+    - Uses multiprocessing to speed up simulation when `num_simulations > 1`.
+    - Simulated logs are automatically compared with `validation_log`.
     """
 
     simulation_log_paths = simulate_in_parallel(

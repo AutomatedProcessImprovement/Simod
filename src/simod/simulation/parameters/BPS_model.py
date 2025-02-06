@@ -38,7 +38,44 @@ BRANCH_RULES_KEY = "branch_rules"
 @dataclass
 class BPSModel:
     """
-    BPS model class containing all the components to simulate a business process model.
+    Represents a Business Process Simulation (BPS) model containing all necessary components
+    to simulate a business process.
+
+    This class manages various elements such as the BPMN process model, resource configurations,
+    extraneous delays, case attributes, and prioritization/batching rules. It provides methods
+    to convert the model into a format compatible with Prosimos and handle activity ID mappings.
+
+    Attributes
+    ----------
+    process_model : Optional[:class:`pathlib.Path`]
+        Path to the BPMN process model file.
+    gateway_probabilities : Optional[List[:class:`GatewayProbabilities`]]
+        Probabilities for gateway-based process routing.
+    case_arrival_model : Optional[:class:`CaseArrivalModel`]
+        Model for the arrival of new cases in the simulation.
+    resource_model : Optional[:class:`ResourceModel`]
+        Model for the resources involved in the process, their working schedules, etc.
+    extraneous_delays : Optional[List[:class:`ExtraneousDelay`]]
+        A list of delays representing extraneous waiting times before/after activities.
+    case_attributes : Optional[List[:class:`CaseAttribute`]]
+        Case-level attributes and their update rules.
+    global_attributes : Optional[List[:class:`GlobalAttribute`]]
+        Global attributes and their update rules.
+    event_attributes : Optional[List[:class:`EventAttribute`]]
+        Event-level attributes and their update rules.
+    prioritization_rules : Optional[List[:class:`PrioritizationRule`]]
+        A set of case prioritization rules for process execution.
+    batching_rules : Optional[List[:class:`BatchingRule`]]
+        Rules defining how activities are batched together.
+    branch_rules : Optional[List[:class:`BranchRules`]]
+        Branching rules defining conditional flow behavior in decision points.
+    calendar_granularity : Optional[int]
+        Granularity of the resource calendar, expressed in minutes.
+
+    Notes
+    -----
+    - `to_prosimos_format` transforms the model into a dictionary format used by Prosimos.
+    - `replace_activity_names_with_ids` modifies activity references to use BPMN IDs instead of names.
     """
 
     process_model: Optional[Path] = None  # A path to the model for now, in future the loaded BPMN model
@@ -55,6 +92,25 @@ class BPSModel:
     calendar_granularity: Optional[int] = None
 
     def to_prosimos_format(self) -> dict:
+        """
+        Converts the BPS model into a dictionary format compatible with the Prosimos simulation engine.
+
+        This method extracts all relevant process simulation attributes, including resource models,
+        delays, prioritization rules, and activity mappings, and structures them in a format
+        understood by Prosimos.
+
+        Returns
+        -------
+        dict
+            A dictionary representation of the BPS model, ready for simulation in Prosimos.
+
+        Notes
+        -----
+        - If the resource model contains a fuzzy calendar, the model type is set to "FUZZY";
+          otherwise, it defaults to "CRISP".
+        - The function ensures activity labels are properly linked to their respective BPMN IDs.
+        """
+
         # Get map activity label -> node ID
         activity_label_to_id = get_activities_ids_by_name_from_bpmn(self.process_model)
 
@@ -98,13 +154,42 @@ class BPSModel:
         return attributes
 
     def deep_copy(self) -> "BPSModel":
+        """
+        Creates a deep copy of the current BPSModel instance.
+
+        This ensures that modifying the copied instance does not affect the original.
+
+        Returns
+        -------
+        BPSModel
+            A new, independent copy of the current BPSModel instance.
+
+        Notes
+        -----
+        This method uses Python's `copy.deepcopy()` to create a full recursive copy of the model.
+        """
         return copy.deepcopy(self)
 
     def replace_activity_names_with_ids(self):
         """
-        Updates activity labels with activity IDs from the current (BPMN) process model.
+        Replaces activity names with their corresponding IDs from the BPMN process model.
 
-        In BPSModel, the activities are referenced by their name, Prosimos uses IDs instead from the BPMN model.
+        Prosimos requires activity references to be identified by their BPMN node IDs instead of
+        activity labels. This method updates:
+
+        - Resource associations in the resource profiles.
+        - Activity-resource distributions.
+        - Event attributes referencing activity names.
+
+        Raises
+        ------
+        KeyError
+            If an activity name does not exist in the BPMN model.
+
+        Notes
+        -----
+        - This method modifies the model in place.
+        - It ensures compatibility with Prosimos by aligning activity references with BPMN IDs.
         """
         # Get map activity label -> node ID
         activity_label_to_id = get_activities_ids_by_name_from_bpmn(self.process_model)
@@ -128,6 +213,30 @@ class BPSModel:
                 event_attribute.event_id = activity_label_to_id[event_attribute.event_id]
 
     def to_json(self, output_dir: Path, process_name: str) -> Path:
+        """
+        Saves the BPS model in a Prosimos-compatible JSON format.
+
+        This method generates a structured JSON file containing all necessary simulation parameters,
+        ensuring that the model can be directly used by the Prosimos engine.
+
+        Parameters
+        ----------
+        output_dir : Path
+            The directory where the JSON file should be saved.
+        process_name : str
+            The name of the process, used for naming the output file.
+
+        Returns
+        -------
+        Path
+            The full path to the generated JSON file.
+
+        Notes
+        -----
+        - The JSON file is created in `output_dir` with a filename based on `process_name`.
+        - Uses `json.dump()` to serialize the model into a structured format.
+        - Ensures all attributes are converted into a valid Prosimos format before writing.
+        """
         json_parameters_path = get_simulation_parameters_path(output_dir, process_name)
 
         with json_parameters_path.open("w") as f:
