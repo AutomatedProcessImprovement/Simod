@@ -157,7 +157,7 @@ jobs:
           echo "version=$(poetry version --short)" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: simod-${{ steps.get_version.outputs.version }}-py${{ matrix.python-version }}
           path: dist
