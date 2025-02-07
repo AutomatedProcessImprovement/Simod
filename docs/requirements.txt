@@ -21,3 +21,4 @@ extraneous-activity-delays==2.2.1
 openxes-cli-py==0.1.15
 pix-framework==0.13.17
 log-distance-measures==2.0.2
+sphinx-rtd-theme
