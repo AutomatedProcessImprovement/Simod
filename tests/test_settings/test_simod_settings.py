@@ -2,7 +2,60 @@ from pathlib import Path
 
 import yaml
 
+from simod.settings.case_arrival_settings import CaseArrivalSettings
 from simod.settings.simod_settings import SimodSettings
+
+settings_5_2 = """
+version: 5.2
+common:
+  train_log_path: assets/LoanApp_simplified.csv.gz
+  perform_final_evaluation: true
+  num_final_evaluations: 1
+  evaluation_metrics: 
+    - dl
+    - absolute_event_distribution
+  discover_data_attributes: true
+preprocessing:
+  multitasking: false
+case_arrival:
+  num_iterations: 2
+  optimization_metric: arrival_event_distribution
+  num_evaluations_per_iteration: 4
+  outlier_threshold:
+    - 5.0
+    - 50.0
+control_flow:
+  num_iterations: 2
+  mining_algorithm: sm1
+  epsilon:
+    - 0.0
+    - 1.0
+  eta:
+    - 0.0
+    - 1.0
+  gateway_probabilities:
+    - equiprobable
+    - discovery
+  replace_or_joins:
+    - true
+    - false
+  prioritize_parallelism:
+    - true
+    - false
+resource_model:
+  num_iterations: 2
+  discover_prioritization_rules: true
+  resource_profiles:
+    discovery_type: differentiated_by_pool
+    granularity: 60
+    confidence:
+      - 0.5
+      - 0.85
+    support:
+      - 0.01 
+      - 0.3
+    participation: 0.4
+"""
 
 settings_5 = """
 version: 5
@@ -14,6 +67,7 @@ common:
     - dl
     - absolute_event_distribution
   discover_data_attributes: true
+  use_observed_arrival_distribution: true
 preprocessing:
   multitasking: false
 control_flow:
@@ -95,8 +149,8 @@ resource_model:
 """
 
 
-def test_configuration():
-    config = yaml.safe_load(settings_5)
+def test_latest_configuration():
+    config = yaml.safe_load(settings_5_2)
     result = SimodSettings.from_yaml(config)
 
     assert result is not None
@@ -106,11 +160,24 @@ def test_configuration():
     assert_resource_model(config, result)
 
 
-def test_configuration_legacy():
-    ground_truth = SimodSettings.from_yaml(yaml.safe_load(settings_5))
+def test_configuration_legacy_5():
+    ground_truth = SimodSettings.from_yaml(yaml.safe_load(settings_5_2))
+    legacy = SimodSettings.from_yaml(yaml.safe_load(settings_5))
+
+    assert legacy is not None
+    assert legacy.case_arrival.use_observed_arrival_distribution
+    legacy.case_arrival = ground_truth.case_arrival  # Override different case_arrival component to compare the rest
+    assert ground_truth.to_dict() == legacy.to_dict()
+
+
+def test_configuration_legacy_4():
+    ground_truth = SimodSettings.from_yaml(yaml.safe_load(settings_5_2))
     legacy = SimodSettings.from_yaml(yaml.safe_load(settings_4))
 
     assert legacy is not None
+    assert not legacy.case_arrival.use_observed_arrival_distribution
+    assert legacy.case_arrival.to_dict() == CaseArrivalSettings().to_dict()  # Assert case arrival model is default
+    legacy.case_arrival = ground_truth.case_arrival  # Override different case_arrival component to compare the rest
     assert ground_truth.to_dict() == legacy.to_dict()
 
 

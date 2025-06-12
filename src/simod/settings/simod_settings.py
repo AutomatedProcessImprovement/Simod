@@ -5,6 +5,7 @@ from typing import Union, Optional
 import yaml
 from pydantic import BaseModel
 
+from .case_arrival_settings import CaseArrivalSettings
 from .common_settings import CommonSettings
 from .control_flow_settings import ControlFlowSettings
 from .extraneous_delays_settings import ExtraneousDelaysSettings
@@ -18,8 +19,8 @@ BPMN_NAMESPACE_URI = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 
 class SimodSettings(BaseModel):
     """
-    SIMOD configuration v5 with the settings for all the stages and optimizations.
-    If configuration is provided in v2 or v4, it is automatically translated to v5.
+    SIMOD configuration v5.2 with the settings for all the stages and optimizations.
+    If configuration is provided in v2, v4, or v5 it is automatically translated to v5.2.
 
     Attributes
     ----------
@@ -34,16 +35,17 @@ class SimodSettings(BaseModel):
         extraneous_activity_delays : :class:`~simod.settings.extraneous_delays_settings.ExtraneousDelaysSettings`
             Configuration parameters for the extraneous delays model discovery stage. If not provided, the extraneous
             delays are not discovered.
-        version : int
+        version : float
             SIMOD version.
     """
 
     common: CommonSettings = CommonSettings()
     preprocessing: PreprocessingSettings = PreprocessingSettings()
+    case_arrival: CaseArrivalSettings = CaseArrivalSettings()
     control_flow: ControlFlowSettings = ControlFlowSettings()
     resource_model: ResourceModelSettings = ResourceModelSettings()
     extraneous_activity_delays: Union[ExtraneousDelaysSettings, None] = None
-    version: int = 5
+    version: float = 5.2
 
     @staticmethod
     def default() -> "SimodSettings":
@@ -59,6 +61,7 @@ class SimodSettings(BaseModel):
         return SimodSettings(
             common=CommonSettings(),
             preprocessing=PreprocessingSettings(),
+            case_arrival=CaseArrivalSettings(),
             control_flow=ControlFlowSettings(),
             resource_model=ResourceModelSettings(),
             extraneous_activity_delays=ExtraneousDelaysSettings(),
@@ -78,6 +81,7 @@ class SimodSettings(BaseModel):
         return SimodSettings(
             common=CommonSettings(),
             preprocessing=PreprocessingSettings(),
+            case_arrival=CaseArrivalSettings.one_shot(),
             control_flow=ControlFlowSettings.one_shot(),
             resource_model=ResourceModelSettings.one_shot(),
             extraneous_activity_delays=ExtraneousDelaysSettings(),
@@ -101,13 +105,15 @@ class SimodSettings(BaseModel):
         :class:`SimodSettings`
             Instance of the SIMOD configuration for the specified dictionary values.
         """
-        assert config["version"] in [2, 4, 5], "Configuration version must be 2, 4, or 5"
+        assert config["version"] in [2, 4, 5, 5.2], "Configuration version must be 2, 4, 5, or 5.2"
 
         # Transform from previous version to the latest if needed
         if config["version"] == 2:
             config = _parse_legacy_config_2(config)
         elif config["version"] == 4:
             config = _parse_legacy_config_4(config)
+        elif config["version"] == 5:
+            config = _parse_legacy_config_5(config)
 
         # Get each of the settings components if present, default otherwise
         if "common" in config:
@@ -119,6 +125,11 @@ class SimodSettings(BaseModel):
             preprocessing_settings = PreprocessingSettings.from_dict(config["preprocessing"])
         else:
             preprocessing_settings = PreprocessingSettings()
+        if "case_arrival" in config:
+            case_arrival_settings = CaseArrivalSettings.from_dict(config["case_arrival"])
+        else:
+            print_notice("No 'case_arrival' settings provided, running Simod with default values.")
+            case_arrival_settings = CaseArrivalSettings()
         if "control_flow" in config:
             control_flow_settings = ControlFlowSettings.from_dict(config["control_flow"])
         else:
@@ -147,6 +158,7 @@ class SimodSettings(BaseModel):
             version=config["version"],
             common=common_settings,
             preprocessing=preprocessing_settings,
+            case_arrival=case_arrival_settings,
             control_flow=control_flow_settings,
             resource_model=resource_model_settings,
             extraneous_activity_delays=extraneous_delays_settings,
@@ -184,6 +196,7 @@ class SimodSettings(BaseModel):
             "version": self.version,
             "common": self.common.to_dict(),
             "preprocessing": self.preprocessing.to_dict(),
+            "case_arrival": self.case_arrival.to_dict(),
             "control_flow": self.control_flow.to_dict(),
             "resource_model": self.resource_model.to_dict(),
         }
@@ -215,8 +228,8 @@ class SimodSettings(BaseModel):
 def _parse_legacy_config_2(config: dict) -> dict:
     parsed_config = copy.deepcopy(config)
     if config["version"] == 2:
-        # Transform dictionary from version 2 to 5
-        parsed_config["version"] = 5
+        # Transform dictionary from version 2 to 5.2
+        parsed_config["version"] = 5.2
         # Common elements
         if "log_path" in parsed_config["common"]:
             parsed_config["common"]["train_log_path"] = parsed_config["common"]["log_path"]
@@ -255,11 +268,28 @@ def _parse_legacy_config_2(config: dict) -> dict:
 def _parse_legacy_config_4(config: dict) -> dict:
     parsed_config = copy.deepcopy(config)
     if config["version"] == 4:
-        # Transform dictionary from version 4 to 5
+        # Transform dictionary from version 4 to 5.2
         parsed_config["version"] = 5
         # Common elements
         if "discover_case_attributes" in parsed_config["common"]:
             parsed_config["common"]["discover_data_attributes"] = parsed_config["common"]["discover_case_attributes"]
             del parsed_config["common"]["discover_case_attributes"]
+        # Transform from v5 to v5.2
+        parsed_config = _parse_legacy_config_5(parsed_config)
+    # Return parsed configuration
+    return parsed_config
+
+
+def _parse_legacy_config_5(config: dict) -> dict:
+    parsed_config = copy.deepcopy(config)
+    if config["version"] == 5:
+        # Transform dictionary from version 4 to 5
+        parsed_config["version"] = 5.2
+        # Common elements
+        if "use_observed_arrival_distribution" in parsed_config["common"]:
+            parsed_config["case_arrival"] = {
+                "use_observed_arrival_distribution": parsed_config["common"]["use_observed_arrival_distribution"]
+            }
+            del parsed_config["common"]["use_observed_arrival_distribution"]
     # Return parsed configuration
     return parsed_config
