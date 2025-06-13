@@ -31,9 +31,6 @@ common:
     - circadian_event_distribution
     - arrival_event_distribution
     - cycle_time_distribution
-  # Whether to simulate the arrival times using the distribution of inter-arrival times observed in the training log,
-  # or fitting a parameterized probabilistic distribution (e.g., norm, expon) with these observed values.
-  use_observed_arrival_distribution: false
   # Whether to delete all files created during the optimization phases or not
   clean_intermediate_files: true
   # Whether to discover global/case/event attributes and their update rules or not
@@ -59,7 +56,22 @@ preprocessing:
 # Case Arrival model #
 ######################
 case_arrival:
-
+  # Metric to guide the optimization process (loss function to minimize)
+  optimization_metric: arrival_event_distribution
+  # Number of optimization iterations over the search space
+  num_iterations: 5
+  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 3
+  # Whether to simulate the arrival times using the distribution of inter-arrival times observed in the training log,
+  # or fitting a parameterized probabilistic distribution (e.g., norm, expon) with these observed values.
+  use_observed_arrival_distribution: false
+  # When fitting a probabilistic distribution, threshold used to filter out outliers in the sample of inter-arrival
+  # times observed in the training event log (fixed or range between two floats). Increasing the outlier threshold
+  # increases the "range" of accepted values, thus, potentially decreasing the number of observations considered
+  # an outlier.
+  outlier_threshold:
+    - 5.0
+    - 50.0
 
 ################
 # Control-flow #
