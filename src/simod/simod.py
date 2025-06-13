@@ -16,6 +16,8 @@ from pix_framework.io.bpmn import get_activities_names_from_bpmn
 
 from simod.batching.discovery import discover_batching_rules
 from simod.branch_rules.discovery import discover_branch_rules, map_branch_rules_to_flows
+from simod.case_arrival.optimizer import CaseArrivalOptimizer
+from simod.case_arrival.settings import HyperoptIterationParams as CaseArrivalHyperoptIterationParams
 from simod.cli_formatter import print_section, print_subsection
 from simod.control_flow.discovery import discover_process_model, add_bpmn_diagram_to_model
 from simod.control_flow.optimizer import ControlFlowOptimizer
@@ -66,6 +68,8 @@ class Simod:
 
     # Optimizer for the Control-Flow and Gateway Probabilities
     _control_flow_optimizer: Optional[ControlFlowOptimizer]
+    # Optimizer for the Case Arrival Model
+    _case_arrival_optimizer: Optional[CaseArrivalOptimizer]
     # Optimizer for the Resource Model
     _resource_model_optimizer: Optional[ResourceModelOptimizer]
     # Optimizer for the Extraneous Delay Timers
@@ -89,6 +93,10 @@ class Simod:
         create_folder(self._control_flow_dir)
         self._resource_model_dir = self._output_dir / "resource_model"
         create_folder(self._resource_model_dir)
+        self._discover_inter_arrival_times = not self._settings.case_arrival.use_observed_arrival_distribution
+        if self._discover_inter_arrival_times:
+            self._case_arrival_dir = self._output_dir / "case_arrival"
+            create_folder(self._case_arrival_dir)
         if self._settings.extraneous_activity_delays is not None:
             self._extraneous_delays_dir = self._output_dir / "extraneous-delay-timers"
             create_folder(self._extraneous_delays_dir)
@@ -134,9 +142,9 @@ class Simod:
         print_section("Discovering initial BPS Model")
         runtimes.start(RuntimeMeter.INITIAL_MODEL)
         self._best_bps_model.case_arrival_model = discover_case_arrival_model(
-            self._event_log.train_validation_partition,  # No optimization process here, use train + validation
+            self._event_log.train_partition,
             self._event_log.log_ids,
-            use_observed_arrival_distribution=self._settings.common.use_observed_arrival_distribution,
+            use_observed_arrival_distribution=self._settings.case_arrival.use_observed_arrival_distribution,
         )
         calendar_discovery_parameters = CalendarDiscoveryParameters()
         self._best_bps_model.resource_model = discover_resource_model(
@@ -177,6 +185,14 @@ class Simod:
             self._best_bps_model.event_attributes = event_attributes
             runtimes.stop(RuntimeMeter.DATA_ATTRIBUTES_MODEL)
 
+        # --- Case Arrival Optimization --- #
+        if self._discover_inter_arrival_times:
+            print_section("Optimizing control-flow parameters")
+            runtimes.start(RuntimeMeter.CASE_ARRIVAL_MODEL)
+            best_case_arrival_params = self._optimize_case_arrival()
+            self._best_bps_model.case_arrival_model = self._case_arrival_optimizer.best_bps_model.case_arrival_model
+            runtimes.stop(RuntimeMeter.CASE_ARRIVAL_MODEL)
+
         # --- Resource Model Discovery --- #
         print_section("Optimizing resource model parameters")
         runtimes.start(RuntimeMeter.RESOURCE_MODEL)
@@ -201,7 +217,6 @@ class Simod:
         runtimes.start(RuntimeMeter.FINAL_MODEL)
         self.final_bps_model = BPSModel(  # Bypass all models already discovered with train+validation
             process_model=get_process_model_path(self._best_result_dir, self._event_log.process_name),
-            case_arrival_model=self._best_bps_model.case_arrival_model,
             case_attributes=self._best_bps_model.case_attributes,
             global_attributes=self._best_bps_model.global_attributes,
             event_attributes=self._best_bps_model.event_attributes,
@@ -248,6 +263,19 @@ class Simod:
             )
             self.final_bps_model.gateway_probabilities = \
                 map_branch_rules_to_flows(self.final_bps_model.gateway_probabilities, self.final_bps_model.branch_rules)
+        # Case arrival model
+        if self._discover_inter_arrival_times:
+            self.final_bps_model.case_arrival_model = discover_case_arrival_model(
+                self._event_log.train_validation_partition,
+                self._event_log.log_ids,
+                outlier_threshold=best_case_arrival_params.outlier_threshold,
+            )
+        else:
+            self.final_bps_model.case_arrival_model = discover_case_arrival_model(
+                self._event_log.train_validation_partition,
+                self._event_log.log_ids,
+                use_observed_arrival_distribution=True,
+            )
         # Resource model
         print_subsection("Discovering best resource model")
         self.final_bps_model.resource_model = discover_resource_model(
@@ -275,7 +303,8 @@ class Simod:
         if best_resource_model_params.discover_batching_rules:
             print_subsection("Discovering batching rules")
             self.final_bps_model.batching_rules = discover_batching_rules(
-                self._event_log.train_validation_partition, self._event_log.log_ids
+                self._event_log.train_validation_partition,
+                self._event_log.log_ids,
             )
         # Extraneous delays
         if self._best_bps_model.extraneous_delays is not None:
@@ -303,7 +332,12 @@ class Simod:
         # --- Export settings and clean temporal files --- #
         print_section(f"Exporting canonical model, runtimes, settings and cleaning up intermediate files")
         canonical_model_path = self._best_result_dir / "canonical_model.json"
-        _export_canonical_model(canonical_model_path, best_control_flow_params, best_resource_model_params)
+        _export_canonical_model(
+            file_path=canonical_model_path,
+            case_arrival_settings=best_case_arrival_params if self._discover_inter_arrival_times else None,
+            control_flow_settings=best_control_flow_params,
+            resource_model_settings=best_resource_model_params,
+        )
         runtimes_model_path = self._best_result_dir / "runtimes.json"
         _export_runtimes(runtimes_model_path, runtimes)
         if self._settings.common.clean_intermediate_files:
@@ -326,8 +360,22 @@ class Simod:
         best_control_flow_params = self._control_flow_optimizer.run()
         return best_control_flow_params
 
+    def _optimize_case_arrival(self) -> CaseArrivalHyperoptIterationParams:
+        """
+        Case Arrival (inter-arrival distribution) discovery.
+        """
+        self._case_arrival_optimizer = CaseArrivalOptimizer(
+            event_log=self._event_log,
+            bps_model=self._best_bps_model,
+            settings=self._settings.case_arrival,
+            base_directory=self._case_arrival_dir,
+        )
+        best_case_arrival_params = self._case_arrival_optimizer.run()
+        return best_case_arrival_params
+
     def _optimize_resource_model(
-        self, model_activities: Optional[list[str]] = None
+        self,
+        model_activities: Optional[list[str]] = None,
     ) -> ResourceModelHyperoptIterationParams:
         """
         Resource Model (resource profiles, calendars an activity performances) discovery.
@@ -385,6 +433,8 @@ class Simod:
         print_section("Removing intermediate files")
         self._control_flow_optimizer.cleanup()
         self._resource_model_optimizer.cleanup()
+        if self._discover_inter_arrival_times:
+            self._case_arrival_optimizer.cleanup()
         if self._settings.extraneous_activity_delays is not None:
             self._extraneous_delays_optimizer.cleanup()
         if self._settings.common.process_model_path is None:
@@ -394,13 +444,18 @@ class Simod:
 
 def _export_canonical_model(
     file_path: Path,
+    case_arrival_settings: Optional[CaseArrivalHyperoptIterationParams],
     control_flow_settings: ControlFlowHyperoptIterationParams,
-    calendar_settings: ResourceModelHyperoptIterationParams,
+    resource_model_settings: ResourceModelHyperoptIterationParams,
 ):
+    # Create dict with best params of each HyperOpt step
     canon = {
         "control_flow": control_flow_settings.to_dict(),
-        "calendars": calendar_settings.to_dict(),
+        "resource_model": resource_model_settings.to_dict(),
     }
+    if case_arrival_settings is not None:
+        canon["case_arrival"] = case_arrival_settings.to_dict()
+    # Export to file
     with open(file_path, "w") as f:
         json.dump(canon, f)
 
