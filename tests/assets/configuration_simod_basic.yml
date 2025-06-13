@@ -1,9 +1,10 @@
-version: 5
+version: 5.2
 common:
   train_log_path: LoanApp_simplified.csv.gz
   test_log_path: LoanApp_simplified.csv.gz
   num_final_evaluations: 1
   discover_data_attributes: true
+  clean_intermediate_files: false
   evaluation_metrics:
     - absolute_hourly_emd
   log_ids:

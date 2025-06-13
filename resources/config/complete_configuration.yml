@@ -55,6 +55,12 @@ preprocessing:
   concurrency_l2l: 0.9 # Length 2 loops threshold
   concurrency_l1l: 0.9 # Length 1 loops threshold
 
+######################
+# Case Arrival model #
+######################
+case_arrival:
+
+
 ################
 # Control-flow #
 ################
