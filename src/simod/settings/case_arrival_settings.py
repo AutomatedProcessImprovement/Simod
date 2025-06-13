@@ -34,9 +34,9 @@ class CaseArrivalSettings(BaseModel):
     """
 
     optimization_metric: Metric = Metric.ARRIVAL_EMD
-    num_iterations: int = 10
+    num_iterations: int = 5
     num_evaluations_per_iteration: int = 3
-    outlier_threshold: Optional[Union[float, Tuple[float, float]]] = 20.0
+    outlier_threshold: Optional[Union[float, Tuple[float, float]]] = (5.0, 50.0)
     use_observed_arrival_distribution: bool = False
 
     @staticmethod
@@ -74,10 +74,10 @@ class CaseArrivalSettings(BaseModel):
             Instance of the case arrival model configuration for the specified dictionary values.
         """
         optimization_metric = Metric.from_str(config.get("optimization_metric", "arrival_event_distribution"))
-        num_iterations = config.get("num_iterations", 10)
+        num_iterations = config.get("num_iterations", 5)
         num_evaluations_per_iteration = config.get("num_evaluations_per_iteration", 3)
 
-        outlier_threshold = parse_single_value_or_interval(config.get("outlier_threshold", (0.0, 50.0)))
+        outlier_threshold = parse_single_value_or_interval(config.get("outlier_threshold", (5.0, 50.0)))
         use_observed_arrival_distribution = config.get("use_observed_arrival_distribution", False)
 
         return CaseArrivalSettings(
