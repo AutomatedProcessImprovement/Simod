@@ -1,26 +1,21 @@
-#################################################################################################################
-# Same simple configuration as 'configuration_example.yml' but evaluation the quality of the final BPS model    #
-#################################################################################################################
-# - Increase the num_iterations to (potentially) improve the quality of that discovered model                   #
-# - Visit 'complete_configuration.yml' example for a description of all configurable parameters                 #
-#################################################################################################################
 version: 5.2
 ##########
 # Common #
 ##########
 common:
   # Path to the event log in CSV format
-  train_log_path: ../event_logs/LoanApp_simplified_train.csv.gz
+  train_log_path: ../../event_logs/WorkOrders_predrift_train.csv.gz
+  # Event log to evaluate the discovered BPS model with
+  test_log_path: ../../event_logs/WorkOrders_predrift_test.csv.gz
+  # Use this process model and skip its discovery
+  process_model_path: ../../../outputs/WorkOrders_predrift_diff/best_result/WorkOrders_predrift_train.bpmn
   # Specify the name for each of the columns in the CSV file (XES standard by default)
   log_ids:
     case: "case_id"
     activity: "activity"
     resource: "resource"
-    enabled_time: "enabled_time"  # If not present in the log, automatically computed
     start_time: "start_time"
     end_time: "end_time"
-  # Event log to evaluate the discovered BPS model with
-  test_log_path: ../event_logs/LoanApp_simplified_test.csv.gz
   # Number of evaluations of the discovered BPS model
   num_final_evaluations: 10
   # Metrics to evaluate the discovered BPS model
@@ -30,16 +25,37 @@ common:
     - absolute_event_distribution
     - relative_event_distribution
     - circadian_event_distribution
+    - circadian_workforce_distribution
     - arrival_event_distribution
     - cycle_time_distribution
   # Whether to discover case attributes or not
   discover_data_attributes: false
+######################
+# Case Arrival model #
+######################
+case_arrival:
+  # Metric to guide the optimization process (loss function to minimize)
+  optimization_metric: arrival_event_distribution
+  # Number of optimization iterations over the search space
+  num_iterations: 5
+  # Number of times to evaluate each iteration (using the mean of all of them)
+  num_evaluations_per_iteration: 3
+  # Whether to simulate the arrival times using the distribution of inter-arrival times observed in the training log,
+  # or fitting a parameterized probabilistic distribution (e.g., norm, expon) with these observed values.
+  use_observed_arrival_distribution: false
+  # When fitting a probabilistic distribution, threshold used to filter out outliers in the sample of inter-arrival
+  # times observed in the training event log (fixed or range between two floats). Increasing the outlier threshold
+  # increases the "range" of accepted values, thus, potentially decreasing the number of observations considered
+  # an outlier.
+  outlier_threshold:
+    - 5.0
+    - 50.0
 #################
 # Preprocessing #
 #################
 preprocessing:
-  # Threshold to consider two activities as concurrent when computing the enabled time (if necessary)
-  enable_time_concurrency_threshold: 0.75
+  multitasking: false
+  enable_time_concurrency_threshold: 0.5
 ################
 # Control-flow #
 ################
@@ -47,29 +63,11 @@ control_flow:
   # Metric to guide the optimization process (loss function to minimize)
   optimization_metric: two_gram_distance
   # Number of optimization iterations over the search space
-  num_iterations: 20
+  num_iterations: 1
   # Number of times to evaluate each iteration (using the mean of all of them)
-  num_evaluations_per_iteration: 3
+  num_evaluations_per_iteration: 1
   # Methods for discovering gateway probabilities
   gateway_probabilities: discovery
-  # Discover process model with SplitMiner v3
-  mining_algorithm: sm1
-  # Number of concurrent relations between events to be captured
-  epsilon:
-    - 0.05
-    - 0.4
-  # Threshold for filtering the incoming and outgoing edges
-  eta:
-    - 0.2
-    - 0.7
-  # Whether to replace non-trivial OR joins or not
-  replace_or_joins:
-    - true
-    - false
-  # Whether to prioritize parallelism over loops or not
-  prioritize_parallelism:
-    - true
-    - false
 ##################
 # Resource model #
 ##################
@@ -77,9 +75,9 @@ resource_model:
   # Metric to guide the optimization process (loss function to minimize)
   optimization_metric: circadian_emd
   # Number of optimization iterations over the search space
-  num_iterations: 20
+  num_iterations: 40
   # Number of times to evaluate each iteration (using the mean of all of them)
-  num_evaluations_per_iteration: 3
+  num_evaluations_per_iteration: 5
   # Whether to discover prioritization or batching behavior
   discover_prioritization_rules: false
   discover_batching_rules: false
@@ -103,7 +101,9 @@ resource_model:
 # Extraneous delays #
 #####################
 extraneous_activity_delays:
-  # Method to compute the extraneous delay
+  # Method to compute the extraneous delay (naive or eclipse-aware)
   discovery_method: eclipse-aware
+  # Metric to guide the optimization process (loss function to minimize)
+  optimization_metric: relative_emd
   # Number of optimization iterations over the search space (1 = direct discovery, no optimization stage)
-  num_iterations: 1
+  num_iterations: 20

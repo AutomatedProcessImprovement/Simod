@@ -149,9 +149,6 @@ class CommonSettings(BaseModel):
             Number of replications of the final evaluation to perform.
         evaluation_metrics : list
             List of :class:`Metric` evaluation metrics to use in the final evaluation.
-        use_observed_arrival_distribution : bool
-            Boolean indicating whether to use the distribution of observed case arrival times (true), or to discover a
-            probability distribution function to model them (false).
         clean_intermediate_files : bool
             Boolean indicating whether to delete all intermediate created files.
         discover_data_attributes : bool
@@ -168,7 +165,6 @@ class CommonSettings(BaseModel):
     num_final_evaluations: int = 10
     evaluation_metrics: List[Metric] = field(default_factory=list)
     # Common config
-    use_observed_arrival_distribution: bool = False
     clean_intermediate_files: bool = True
     discover_data_attributes: bool = False
 
@@ -254,7 +250,6 @@ class CommonSettings(BaseModel):
             )
             num_final_evaluations = 10
 
-        use_observed_arrival_distribution = config.get("use_observed_arrival_distribution", False)
         clean_up = config.get("clean_intermediate_files", True)
         discover_data_attributes = config.get("discover_data_attributes", False)
 
@@ -266,7 +261,6 @@ class CommonSettings(BaseModel):
             perform_final_evaluation=perform_final_evaluation,
             num_final_evaluations=num_final_evaluations,
             evaluation_metrics=metrics,
-            use_observed_arrival_distribution=use_observed_arrival_distribution,
             clean_intermediate_files=clean_up,
             discover_data_attributes=discover_data_attributes,
         )
@@ -287,7 +281,6 @@ class CommonSettings(BaseModel):
             "process_model_path": str(self.process_model_path) if self.process_model_path is not None else None,
             "num_final_evaluations": self.num_final_evaluations,
             "evaluation_metrics": [str(metric) for metric in self.evaluation_metrics],
-            "use_observed_arrival_distribution": self.use_observed_arrival_distribution,
             "clean_intermediate_files": self.clean_intermediate_files,
             "discover_data_attributes": self.discover_data_attributes,
         }

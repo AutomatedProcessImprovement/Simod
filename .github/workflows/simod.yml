@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       matrix:
-        python-version: [ '3.9' ]
+        python-version: [ '3.11' ]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -121,7 +121,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     strategy:
       matrix:
-        python-version: [ '3.9' ]
+        python-version: [ '3.11' ]
     environment:
       name: PyPI
       url: https://pypi.org/p/simod

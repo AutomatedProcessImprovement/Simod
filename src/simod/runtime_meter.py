@@ -12,6 +12,7 @@ class RuntimeMeter:
     PREPROCESSING: str = "preprocessing"
     INITIAL_MODEL: str = "discover-initial-BPS-model"
     CONTROL_FLOW_MODEL: str = "optimize-control-flow-model"
+    CASE_ARRIVAL_MODEL: str = "case-arrival-model"
     RESOURCE_MODEL: str = "optimize-resource-model"
     DATA_ATTRIBUTES_MODEL: str = "discover-data-attributes"
     EXTRANEOUS_DELAYS: str = "discover-extraneous-delays"

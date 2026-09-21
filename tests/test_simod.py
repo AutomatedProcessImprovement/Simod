@@ -17,14 +17,25 @@ test_cases = [
     {
         "name": "Simod basic",
         "config_file": "configuration_simod_basic.yml",
+        "observed_arrivals": False,
         "expect_extraneous": False,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
         "perform_final_evaluation": True,
     },
     {
+        "name": "Simod observed arrivals",
+        "config_file": "configuration_simod_with_observed_arrivals.yml",
+        "observed_arrivals": True,
+        "expect_extraneous": False,
+        "expect_batching_rules": False,
+        "expect_prioritization_rules": False,
+        "perform_final_evaluation": False,
+    },
+    {
         "name": "Simod extraneous",
         "config_file": "configuration_simod_with_extraneous.yml",
+        "observed_arrivals": False,
         "expect_extraneous": True,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
@@ -33,6 +44,7 @@ test_cases = [
     {
         "name": "Simod with model",
         "config_file": "configuration_simod_with_model.yml",
+        "observed_arrivals": False,
         "expect_extraneous": False,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
@@ -41,6 +53,7 @@ test_cases = [
     {
         "name": "Simod with model & extraneous",
         "config_file": "configuration_simod_with_model_and_extraneous.yml",
+        "observed_arrivals": False,
         "expect_extraneous": True,
         "expect_batching_rules": False,
         "expect_prioritization_rules": False,
@@ -49,6 +62,7 @@ test_cases = [
     {
         "name": "Simod with model & prioritization",
         "config_file": "configuration_simod_with_model_and_prioritization.yml",
+        "observed_arrivals": False,
         "expect_extraneous": False,
         "expect_batching_rules": False,
         "expect_prioritization_rules": True,
@@ -57,6 +71,7 @@ test_cases = [
     {
         "name": "Simod with model & batching",
         "config_file": "configuration_simod_with_model_and_batching.yml",
+        "observed_arrivals": False,
         "expect_extraneous": False,
         "expect_batching_rules": True,
         "expect_prioritization_rules": False,
@@ -89,13 +104,23 @@ def test_simod(test_data, entry_point):
     assert optimizer.final_bps_model.process_model is not None
     assert optimizer.final_bps_model.resource_model is not None
     assert optimizer.final_bps_model.case_arrival_model is not None
+    case_arrival_model = optimizer.final_bps_model.case_arrival_model
     assert optimizer.final_bps_model.case_attributes is not None
     assert len(optimizer.final_bps_model.case_attributes) > 0
+    if test_data["observed_arrivals"]:
+        assert case_arrival_model.inter_arrival_times["distribution_name"] == "histogram_sampling"
+        assert not (optimizer._output_dir / "case_arrival").exists()
+    else:
+        assert case_arrival_model.inter_arrival_times["distribution_name"] != "histogram_sampling"
+        assert (optimizer._output_dir / "case_arrival").exists()  # Created folder for arrival optimization
+        assert len(os.listdir(optimizer._output_dir / "case_arrival")) > 0  # Folder not empty
     if test_data["expect_extraneous"]:
         assert optimizer.final_bps_model.extraneous_delays is not None
         assert len(optimizer.final_bps_model.extraneous_delays) == 2
+        assert (optimizer._output_dir / "extraneous-delay-timers").exists()  # Created folder for arrival optimization
     else:
         assert optimizer.final_bps_model.extraneous_delays is None
+        assert not (optimizer._output_dir / "extraneous-delay-timers").exists()
     if test_data["expect_batching_rules"]:
         # Check if any of the iterations has batching rules
         batching_found = _search_element_in_resource_model_iterations(optimizer._output_dir, BATCHING_RULES_KEY)

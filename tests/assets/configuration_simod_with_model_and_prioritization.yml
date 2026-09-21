@@ -1,4 +1,4 @@
-version: 5
+version: 5.2
 common:
   train_log_path: LoanApp_simplified.csv.gz
   test_log_path: LoanApp_simplified.csv.gz
