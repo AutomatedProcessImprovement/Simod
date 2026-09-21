@@ -187,7 +187,7 @@ class Simod:
 
         # --- Case Arrival Optimization --- #
         if self._discover_inter_arrival_times:
-            print_section("Optimizing control-flow parameters")
+            print_section("Optimizing case arrival parameters")
             runtimes.start(RuntimeMeter.CASE_ARRIVAL_MODEL)
             best_case_arrival_params = self._optimize_case_arrival()
             self._best_bps_model.case_arrival_model = self._case_arrival_optimizer.best_bps_model.case_arrival_model
@@ -358,6 +358,10 @@ class Simod:
             base_directory=self._control_flow_dir,
         )
         best_control_flow_params = self._control_flow_optimizer.run()
+        shutil.copy(
+            self._control_flow_dir / "evaluation_measures.csv",
+            self._best_result_dir / "control_flow_iterations_measures.csv"
+        )
         return best_control_flow_params
 
     def _optimize_case_arrival(self) -> CaseArrivalHyperoptIterationParams:
@@ -371,6 +375,10 @@ class Simod:
             base_directory=self._case_arrival_dir,
         )
         best_case_arrival_params = self._case_arrival_optimizer.run()
+        shutil.copy(
+            self._case_arrival_dir / "evaluation_measures.csv",
+            self._best_result_dir / "arrival_model_iterations_measures.csv"
+        )
         return best_case_arrival_params
 
     def _optimize_resource_model(
@@ -388,6 +396,10 @@ class Simod:
             model_activities=model_activities,
         )
         best_resource_model_params = self._resource_model_optimizer.run()
+        shutil.copy(
+            self._resource_model_dir / "evaluation_measures.csv",
+            self._best_result_dir / "resource_model_iterations_measures.csv"
+        )
         return best_resource_model_params
 
     def _optimize_extraneous_activity_delays(self) -> List[ExtraneousDelay]:
