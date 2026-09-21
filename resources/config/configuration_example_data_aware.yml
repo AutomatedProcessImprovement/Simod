@@ -6,7 +6,7 @@
 # - Increase the num_iterations to (potentially) improve the quality of that discovered model                   #
 # - Visit 'complete_configuration.yml' example for a description of all configurable parameters                 #
 #################################################################################################################
-version: 5
+version: 5.2
 ##########
 # Common #
 ##########

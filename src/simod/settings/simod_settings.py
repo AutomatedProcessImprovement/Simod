@@ -283,7 +283,7 @@ def _parse_legacy_config_4(config: dict) -> dict:
 def _parse_legacy_config_5(config: dict) -> dict:
     parsed_config = copy.deepcopy(config)
     if config["version"] == 5:
-        # Transform dictionary from version 4 to 5
+        # Transform dictionary from version 5 to 5.2
         parsed_config["version"] = 5.2
         # Common elements
         if "use_observed_arrival_distribution" in parsed_config["common"]:
