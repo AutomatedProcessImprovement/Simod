@@ -205,7 +205,7 @@ class Simod:
 
         # --- Extraneous Delays Discovery --- #
         if self._settings.extraneous_activity_delays is not None:
-            print_section("Discovering extraneous delays")
+            print_section("Optimizing extraneous delays")
             runtimes.start(RuntimeMeter.EXTRANEOUS_DELAYS)
             timers = self._optimize_extraneous_activity_delays()
             self._best_bps_model.extraneous_delays = timers
@@ -482,6 +482,6 @@ def _export_runtimes(
                                                 f"for the runtime of the entire SIMOD pipeline and preprocessing "
                                                 f"stage. '{RuntimeMeter.EVALUATION}', if reported, should be left out "
                                                 f"as it measures the quality assessment of the final BPS model (i.e., "
-                                                f"it is not part of the discovery process."},
+                                                f"it is not part of the discovery process)."},
             file
         )
