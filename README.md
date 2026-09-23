@@ -9,7 +9,7 @@ Simulation models from event logs extracted from enterprise information systems 
 etc.).
 SIMOD takes as input an event log in CSV format, a configuration file, and (optionally) a BPMN process model, and
 discovers a business process simulation model that can be simulated using
-the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulator, which is embedded in Simod.
+the [Prosimos](https://github.com/AutomatedProcessImprovement/Prosimos) simulation engine, which is embedded in Simod.
 
 ## Dependencies
 
